@@ -21,6 +21,9 @@ dist/
 .pnpm-store/
 *.tsbuildinfo
 
+# Repository-local caches for pinned development tools
+.cache/
+
 # Local configuration and secrets
 .env
 .env.*

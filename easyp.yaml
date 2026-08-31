@@ -1,0 +1,38 @@
+lint:
+  use:
+    - MINIMAL
+    - BASIC
+    - DEFAULT
+    - COMMENTS
+  enum_zero_value_suffix: UNSPECIFIED
+  service_suffix: Service
+  allow_comment_ignores: false
+
+deps:
+  - github.com/googleapis/googleapis@9af1fae615707962433f1d7338e707cde4d9e55e
+
+generate:
+  inputs:
+    - directory:
+        path: .
+        root: api/proto
+  plugins:
+    - path: ${PROTO_TOOLS_BIN:-.cache/protobuf/bin}/protoc-gen-go
+      out: ${PROTO_GO_OUT:-api/gen/go}
+      opts:
+        module: github.com/v0hmly/marketmesh/api/gen/go
+    - path: ${PROTO_TOOLS_BIN:-.cache/protobuf/bin}/protoc-gen-go-grpc
+      out: ${PROTO_GO_OUT:-api/gen/go}
+      opts:
+        module: github.com/v0hmly/marketmesh/api/gen/go
+    - path: ${PROTO_TOOLS_BIN:-.cache/protobuf/bin}/protoc-gen-connect-go
+      out: ${PROTO_GO_OUT:-api/gen/go}
+      opts:
+        module: github.com/v0hmly/marketmesh/api/gen/go
+    - path: ${PROTOC_GEN_ES_PATH:-node_modules/.bin/protoc-gen-es}
+      out: ${PROTO_TS_OUT:-api/gen/ts}
+      opts:
+        target: ts
+
+breaking:
+  against_git_ref: dev
