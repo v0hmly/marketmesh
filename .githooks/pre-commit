@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -eu
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "${repo_root}"
+
+if ! command -v task >/dev/null 2>&1; then
+  printf '%s\n' 'Для pre-commit проверки требуется Task: https://taskfile.dev/' >&2
+  exit 1
+fi
+
+exec task verify

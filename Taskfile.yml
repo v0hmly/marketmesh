@@ -13,6 +13,22 @@ tasks:
     cmds:
       - task --list
 
+  hooks:install:
+    desc: Подключить репозиторные Git hooks
+    preconditions:
+      - sh: test -x .githooks/pre-commit
+        msg: Не найден исполняемый .githooks/pre-commit
+    cmds:
+      - |
+        configured_path="$(git config --local --get core.hooksPath || true)"
+        if [ -n "${configured_path}" ] && [ "${configured_path}" != ".githooks" ]; then
+          printf 'core.hooksPath уже настроен: %s\n' "${configured_path}" >&2
+          printf '%s\n' 'Удалите или перенесите существующие hooks перед установкой.' >&2
+          exit 1
+        fi
+        git config --local core.hooksPath .githooks
+        printf '%s\n' 'Git hooks подключены из .githooks.'
+
   fmt:
     desc: Отформатировать Go-код во всех модулях
     cmds:
