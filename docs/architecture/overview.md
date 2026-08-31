@@ -143,3 +143,5 @@ flowchart LR
 - [ADR-0008: пограничное состояние, кэширование и ограничение частоты](../adr/0008-edge-state-caching-and-rate-limiting.md)
 - [ADR-0009: объектное хранилище между зонами доверия](../adr/0009-object-storage-across-trust-zones.md)
 - [ADR-0010: композиция и поставка микрофронтендов](../adr/0010-microfrontend-composition-and-deployment.md)
+- [ADR-0011: гексагональная архитектура Go-микросервисов](../adr/0011-go-service-hexagonal-architecture.md)
+- [ADR-0012: структура монорепозитория и Go workspace](../adr/0012-monorepository-and-go-workspace.md)

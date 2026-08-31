@@ -1,0 +1,41 @@
+# Go binaries and test artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+coverage/
+coverage.out
+coverage.html
+vendor/
+
+# Go workspace state not required by individual modules
+go.work.sum
+
+# Node.js dependencies and build artifacts
+node_modules/
+dist/
+.pnpm-store/
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+tmp/
+.tmp/

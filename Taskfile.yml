@@ -1,0 +1,84 @@
+version: "3"
+
+silent: true
+
+vars:
+  WORKSPACE_TOOL: ./tools/go-workspace.sh
+
+tasks:
+  default:
+    desc: Показать доступные задачи
+    cmds:
+      - task --list
+
+  fmt:
+    desc: Отформатировать Go-код во всех модулях
+    cmds:
+      - "{{.WORKSPACE_TOOL}} fmt"
+
+  fmt-check:
+    desc: Проверить форматирование Go-кода
+    cmds:
+      - "{{.WORKSPACE_TOOL}} fmt-check"
+
+  vet:
+    desc: Выполнить go vet во всех модулях
+    cmds:
+      - "{{.WORKSPACE_TOOL}} vet"
+
+  test:
+    desc: Выполнить тесты во всех модулях
+    cmds:
+      - "{{.WORKSPACE_TOOL}} test"
+
+  test-race:
+    desc: Выполнить тесты с race detector во всех модулях
+    cmds:
+      - "{{.WORKSPACE_TOOL}} test-race"
+
+  build:
+    desc: Собрать все Go-пакеты во всех модулях
+    cmds:
+      - "{{.WORKSPACE_TOOL}} build"
+
+  arch:
+    desc: Проверить workspace и архитектурные зависимости
+    cmds:
+      - "{{.WORKSPACE_TOOL}} arch"
+
+  verify:
+    desc: Выполнить обязательные локальные проверки Go workspace
+    cmds:
+      - task: fmt-check
+      - task: vet
+      - task: test-race
+      - task: build
+      - task: arch
+
+  frontend:build:
+    desc: Собрать все frontend-пакеты
+    cmds:
+      - pnpm build
+
+  frontend:test:
+    desc: Выполнить тесты всех frontend-пакетов
+    cmds:
+      - pnpm test
+
+  frontend:lint:
+    desc: Выполнить lint всех frontend-пакетов
+    cmds:
+      - pnpm lint
+
+  frontend:typecheck:
+    desc: Проверить типы всех frontend-пакетов
+    cmds:
+      - pnpm typecheck
+
+  frontend:verify:
+    desc: Выполнить все frontend-проверки
+    cmds:
+      - task: frontend:build
+      - task: frontend:test
+      - task: frontend:lint
+      - task: frontend:typecheck
