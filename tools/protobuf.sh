@@ -9,11 +9,20 @@ readonly REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/protobuf-versions.env"
 
 readonly CACHE_DIR="${PROTO_CACHE_DIR:-${REPO_ROOT}/.cache/protobuf}"
-readonly BIN_DIR="${CACHE_DIR}/bin"
+readonly BIN_DIR="${REPO_ROOT}/bin"
+readonly LEGACY_BIN_DIR="${CACHE_DIR}/bin"
 readonly DOWNLOAD_DIR="${CACHE_DIR}/downloads"
 readonly EASYP_BIN="${BIN_DIR}/easyp"
 readonly PROTOC_BIN="${BIN_DIR}/protoc"
-readonly PROTOC_GEN_ES_BIN="${REPO_ROOT}/node_modules/.bin/protoc-gen-es"
+readonly PROTOC_GEN_ES_SOURCE="${REPO_ROOT}/node_modules/.bin/protoc-gen-es"
+readonly PROTOC_GEN_ES_BIN="${BIN_DIR}/protoc-gen-es"
+readonly -a LEGACY_BINARIES=(
+  easyp
+  protoc
+  protoc-gen-connect-go
+  protoc-gen-go
+  protoc-gen-go-grpc
+)
 
 sha256_file() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -130,6 +139,22 @@ install_go_plugin() {
   GOBIN="${BIN_DIR}" go install "${module}@v${version}"
 }
 
+migrate_legacy_binaries() {
+  local binary
+
+  if [[ ! -d "${LEGACY_BIN_DIR}" ]]; then
+    return
+  fi
+
+  for binary in "${LEGACY_BINARIES[@]}"; do
+    if [[ -e "${LEGACY_BIN_DIR}/${binary}" ]] && [[ ! -e "${BIN_DIR}/${binary}" ]]; then
+      mv "${LEGACY_BIN_DIR}/${binary}" "${BIN_DIR}/${binary}"
+    fi
+  done
+
+  rmdir "${LEGACY_BIN_DIR}" 2>/dev/null || true
+}
+
 install_es_plugin() {
   local configured_version
   configured_version="$(
@@ -142,18 +167,56 @@ install_es_plugin() {
     return 1
   fi
 
-  if [[ -x "${PROTOC_GEN_ES_BIN}" ]] && "${PROTOC_GEN_ES_BIN}" --version 2>&1 | grep -q "v${PROTOC_GEN_ES_VERSION}"; then
+  if [[ ! -x "${PROTOC_GEN_ES_SOURCE}" ]] || \
+    ! "${PROTOC_GEN_ES_SOURCE}" --version 2>&1 | grep -q "v${PROTOC_GEN_ES_VERSION}"; then
+    (
+      cd "${REPO_ROOT}"
+      pnpm install --frozen-lockfile
+    )
+  fi
+
+  if [[ -x "${PROTOC_GEN_ES_BIN}" ]] && \
+    "${PROTOC_GEN_ES_BIN}" --version 2>&1 | grep -q "v${PROTOC_GEN_ES_VERSION}"; then
     return
   fi
 
-  (
-    cd "${REPO_ROOT}"
-    pnpm install --frozen-lockfile
+  {
+    printf '%s\n' '#!/bin/sh'
+    printf '%s\n' 'set -eu'
+    printf '%s\n' 'script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)'
+    printf '%s\n' 'exec "${script_dir}/../node_modules/.bin/protoc-gen-es" "$@"'
+  } >"${PROTOC_GEN_ES_BIN}"
+  chmod 0755 "${PROTOC_GEN_ES_BIN}"
+
+  if ! "${PROTOC_GEN_ES_BIN}" --version 2>&1 | grep -q "v${PROTOC_GEN_ES_VERSION}"; then
+    printf 'Не удалось установить protoc-gen-es версии %s в %s.\n' \
+      "${PROTOC_GEN_ES_VERSION}" "${PROTOC_GEN_ES_BIN}" >&2
+    return 1
+  fi
+}
+
+verify_binary_layout() {
+  local binary
+  local -a binaries=(
+    easyp
+    protoc
+    protoc-gen-connect-go
+    protoc-gen-es
+    protoc-gen-go
+    protoc-gen-go-grpc
   )
+
+  for binary in "${binaries[@]}"; do
+    if [[ ! -x "${BIN_DIR}/${binary}" ]]; then
+      printf 'Ожидался исполняемый файл %s в корневом bin.\n' "${BIN_DIR}/${binary}" >&2
+      return 1
+    fi
+  done
 }
 
 bootstrap() {
   mkdir -p "${BIN_DIR}" "${DOWNLOAD_DIR}"
+  migrate_legacy_binaries
 
   local platform_values
   local easyp_platform
@@ -181,6 +244,7 @@ bootstrap() {
     "${PROTOC_GEN_CONNECT_GO_VERSION}" \
     "${PROTOC_GEN_CONNECT_GO_VERSION}"
   install_es_plugin
+  verify_binary_layout
 }
 
 run_easyp() {

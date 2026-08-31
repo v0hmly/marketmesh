@@ -28,7 +28,7 @@ Go-часть организована как multimodule workspace. Кажды�
 - OpenSSL для генерации локальных development credentials;
 - Git, curl, tar и unzip — для bootstrap и самопроверки protobuf toolchain.
 
-EasyP, `protoc` и плагины protobuf устанавливаются в репозиторный кэш командой `task api:bootstrap`; системная установка и версии `latest` не используются.
+EasyP, `protoc` и плагины protobuf устанавливаются в игнорируемый корневой каталог `bin` командой `task api:bootstrap`; архивы загрузок и зависимости остаются в `.cache`. Системная установка и версии `latest` не используются.
 
 ## Команды из корня
 
