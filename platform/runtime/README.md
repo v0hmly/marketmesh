@@ -1,6 +1,6 @@
 # Runtime Go-сервиса
 
-Пакет `runtime` предоставляет небольшой общий слой для запуска Go-сервисов MarketMesh. Он управляет только конфигурацией, health probes и жизненным циклом. Регистрация RPC, маршруты, бизнес-логика, listener, TLS и ручная сборка графа зависимостей остаются в `services/<service>/internal/app`.
+Пакет `runtime` предоставляет небольшой transport-agnostic слой для запуска Go-сервисов MarketMesh. Он управляет только конфигурацией, readiness и жизненным циклом. HTTP, gRPC, регистрация маршрутов и RPC, listener, TLS и ручная сборка графа зависимостей остаются в transport-библиотеках и `services/<service>/internal/app`.
 
 Пакет не меняет process-wide logger, OpenTelemetry providers или другие глобальные singleton и ничего не запускает через `init`.
 
@@ -29,7 +29,7 @@ runner, err := runtime.NewRunner(
 		Health:          health,
 	},
 	telemetryComponent, // запускается первой, останавливается последней
-	httpComponent,
+	transportComponent,
 )
 if err != nil {
 	return err
@@ -43,9 +43,9 @@ return runner.Run(ctx)
 
 Возвращённая ошибка логируется ровно один раз в `internal/app`. `cmd/<service>` использует её только для ненулевого process exit code.
 
-## Liveness и readiness
+## Readiness
 
-Новый `Health` сначала жив, но не готов. `Runner` вызывает `MarkReady` после запуска компонентов и `MarkNotReady` до их cancellation. Liveness не зависит от readiness и критических зависимостей, поэтому временная недоступность БД не провоцирует бессмысленный restart процесса.
+Новый `Health` сначала не готов. `Runner` вызывает `MarkReady` после запуска компонентов и `MarkNotReady` до их cancellation. Конкретный transport adapter вызывает `Ready(ctx)` и самостоятельно преобразует результат в свой протокол, не раскрывая детали ошибок зависимости.
 
 ```go
 health, err := runtime.NewHealth(runtime.HealthConfig{
@@ -58,36 +58,13 @@ health, err := runtime.NewHealth(runtime.HealthConfig{
 	},
 })
 
-mux.Handle("GET /livez", health.LivenessHandler())
-mux.Handle("GET /readyz", health.ReadinessHandler())
+if err := health.Ready(ctx); err != nil {
+	// Transport adapter возвращает только безопасный protocol status.
+}
 ```
 
-HTTP probe никогда не возвращает наружу ошибку зависимости. Все checks получают общий ограниченный context и должны прекращать работу после его cancellation.
-
-## HTTP
-
-`NewHTTPServer` требует явно положительные `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, `IdleTimeout`, `MaxHeaderBytes` и `MaxBodyBytes`. Последний применяется через `http.MaxBytesHandler`. Пакет возвращает обычный `*http.Server`; TLS и listener остаются видимы в composition root.
-
-`NewHTTPComponent` адаптирует готовые server и listener к `Component` и использует `http.Server.Shutdown`.
-
-## gRPC
-
-`NewGRPCServer` требует connection timeout, максимальный RPC timeout, keepalive timeout и пределы входящего/исходящего сообщения. Встроенные unary/stream interceptors добавляют deadline только если клиентский deadline отсутствует или длиннее разрешённого. Дополнительные interceptors и telemetry `StatsHandler` передаются явно через `GRPCServerConfig`.
-
-```go
-server, err := runtime.NewGRPCServer(runtime.GRPCServerConfig{
-	ConnectionTimeout:      5 * time.Second,
-	RequestTimeout:         10 * time.Second,
-	KeepaliveTime:          30 * time.Second,
-	KeepaliveTimeout:       10 * time.Second,
-	MaxReceiveMessageBytes: 4 << 20,
-	MaxSendMessageBytes:    4 << 20,
-	StatsHandler:           pipeline.GRPCServerStatsHandler(),
-})
-```
-
-TLS credentials передаются полем `Credentials`; production gRPC без TLS допустим только за доверенной границей, где шифрование обеспечивает согласованный service mesh. `NewGRPCComponent` выполняет `GracefulStop`, а по истечении deadline вызывает `Stop`.
+Все checks получают общий ограниченный context и должны прекращать работу после его cancellation. Liveness является свойством процесса и transport/deployment adapter; временная неготовность зависимости не должна провоцировать бессмысленный restart процесса.
 
 ## Пример интеграции
 
-Минимальная интеграция находится в [`services/user/internal/app`](../../services/user/internal/app). `main` создаёт signal-aware root context и делегирует запуск `app.Run`; `internal/app` явно создаёт config, logger, telemetry, health, listener, HTTP server и `Runner`. Бизнес-логики в примере нет.
+Минимальная интеграция находится в [`services/user/internal/app`](../../services/user/internal/app). `main` создаёт signal-aware root context и делегирует запуск `app.Run`; `internal/app` явно создаёт config, logger, telemetry, health, transport adapters и `Runner`. Бизнес-логики в примере нет.
