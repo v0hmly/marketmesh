@@ -5,6 +5,7 @@ silent: true
 vars:
   WORKSPACE_TOOL: ./tools/go-workspace.sh
   PROTOBUF_TOOL: ./tools/protobuf.sh
+  INFRA_TOOL: ./infra/compose/scripts/local.sh
 
 tasks:
   default:
@@ -116,6 +117,71 @@ tasks:
       - task: test-race
       - task: build
       - task: arch
+
+  infra:env:
+    desc: Создать локальную конфигурацию инфраструктуры без вывода секретов
+    cmds:
+      - "{{.INFRA_TOOL}} env"
+
+  infra:config:
+    desc: Проверить итоговую Docker Compose конфигурацию
+    cmds:
+      - "{{.INFRA_TOOL}} config"
+
+  infra:up:
+    desc: Запустить локальную инфраструктуру и дождаться готовности
+    cmds:
+      - "{{.INFRA_TOOL}} up"
+
+  infra:ready:
+    desc: Проверить готовность локальной инфраструктуры
+    cmds:
+      - "{{.INFRA_TOOL}} ready"
+
+  infra:smoke:
+    desc: Проверить PostgreSQL и сетевую изоляцию DMZ
+    cmds:
+      - "{{.INFRA_TOOL}} smoke"
+
+  infra:persistence:
+    desc: Проверить сохранность данных после обычного restart
+    cmds:
+      - "{{.INFRA_TOOL}} persistence"
+
+  infra:verify:
+    desc: Запустить окружение и выполнить все инфраструктурные проверки
+    cmds:
+      - "{{.INFRA_TOOL}} verify"
+
+  infra:status:
+    desc: Показать состояние контейнеров инфраструктуры
+    cmds:
+      - "{{.INFRA_TOOL}} status"
+
+  infra:logs:
+    desc: Следить за логами локальной инфраструктуры
+    cmds:
+      - "{{.INFRA_TOOL}} logs"
+
+  infra:psql-rw:
+    desc: Открыть psql через RW endpoint primary
+    cmds:
+      - "{{.INFRA_TOOL}} psql-rw"
+
+  infra:psql-ro:
+    desc: Открыть psql через RO endpoint synchronous replica
+    cmds:
+      - "{{.INFRA_TOOL}} psql-ro"
+
+  infra:down:
+    desc: Остановить окружение с сохранением данных
+    cmds:
+      - "{{.INFRA_TOOL}} down"
+
+  infra:clean:
+    desc: Остановить окружение и полностью удалить его volumes
+    cmds:
+      - "{{.INFRA_TOOL}} clean"
 
   frontend:build:
     desc: Собрать все frontend-пакеты

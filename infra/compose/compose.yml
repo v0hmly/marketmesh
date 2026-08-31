@@ -1,0 +1,331 @@
+name: marketmesh
+
+x-postgres-common: &postgres-common
+  image: postgres:18.6-bookworm
+  restart: unless-stopped
+  shm_size: 128mb
+  environment: &postgres-environment
+    PGDATA: /var/lib/postgresql/18/docker
+    POSTGRES_DB: marketmesh
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?run task infra:up to create infra/compose/.env}
+  security_opt:
+    - no-new-privileges:true
+  deploy:
+    resources:
+      limits:
+        cpus: "0.50"
+        memory: 512M
+
+x-redis-common: &redis-common
+  image: redis:8.10.1-alpine3.23
+  restart: unless-stopped
+  command:
+    - /bin/sh
+    - -ceu
+    - |-
+      printf 'requirepass "%s"\n' "$${REDIS_PASSWORD}" > /tmp/marketmesh-redis.conf
+      exec redis-server /tmp/marketmesh-redis.conf \
+        --appendonly yes \
+        --appendfsync everysec \
+        --save 60 1
+  security_opt:
+    - no-new-privileges:true
+  deploy:
+    resources:
+      limits:
+        cpus: "0.25"
+        memory: 128M
+
+x-seaweed-common: &seaweed-common
+  image: chrislusf/seaweedfs:4.41
+  restart: unless-stopped
+  command:
+    - mini
+    - -dir=/data
+    - -ip.bind=0.0.0.0
+    - -master.volumeSizeLimitMB=256
+  security_opt:
+    - no-new-privileges:true
+  healthcheck:
+    test: ["CMD", "/usr/bin/weed", "version"]
+    interval: 10s
+    timeout: 5s
+    retries: 12
+    start_period: 20s
+  deploy:
+    resources:
+      limits:
+        cpus: "0.50"
+        memory: 384M
+
+x-otel-common: &otel-common
+  image: otel/opentelemetry-collector-contrib:0.159.0
+  restart: unless-stopped
+  command:
+    - --config=/etc/otelcol-contrib/config.yaml
+  volumes:
+    - ./otel/collector.yml:/etc/otelcol-contrib/config.yaml:ro
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  healthcheck:
+    test:
+      - CMD
+      - /otelcol-contrib
+      - validate
+      - --config=/etc/otelcol-contrib/config.yaml
+    interval: 15s
+    timeout: 5s
+    retries: 6
+  deploy:
+    resources:
+      limits:
+        cpus: "0.25"
+        memory: 192M
+
+services:
+  postgres-primary:
+    <<: *postgres-common
+    environment:
+      <<: *postgres-environment
+      APP_RW_PASSWORD: ${POSTGRES_APP_RW_PASSWORD:?missing POSTGRES_APP_RW_PASSWORD}
+      APP_RO_PASSWORD: ${POSTGRES_APP_RO_PASSWORD:?missing POSTGRES_APP_RO_PASSWORD}
+      REPLICATOR_PASSWORD: ${POSTGRES_REPLICATOR_PASSWORD:?missing POSTGRES_REPLICATOR_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=6
+      - -c
+      - max_replication_slots=6
+      - -c
+      - max_slot_wal_keep_size=512MB
+      - -c
+      - wal_keep_size=128MB
+      - -c
+      - password_encryption=scram-sha-256
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql
+      - ./postgres/init-primary.sh:/docker-entrypoint-initdb.d/10-marketmesh.sh:ro
+    networks:
+      internal:
+        aliases:
+          - postgres-rw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready --quiet --username "$${POSTGRES_USER}" --dbname "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  postgres-sync:
+    <<: *postgres-common
+    environment:
+      <<: *postgres-environment
+      PRIMARY_HOST: postgres-rw
+      REPLICA_APPLICATION_NAME: postgres_sync
+      REPLICATION_SLOT: postgres_sync_slot
+      REPLICATOR_PASSWORD: ${POSTGRES_REPLICATOR_PASSWORD:?missing POSTGRES_REPLICATOR_PASSWORD}
+    entrypoint: ["/usr/local/bin/replica-entrypoint"]
+    command: ["postgres", "-c", "hot_standby=on"]
+    volumes:
+      - postgres-sync-data:/var/lib/postgresql
+      - ./postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint:ro
+    networks:
+      internal:
+        aliases:
+          - postgres-ro
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready --quiet --username "$${POSTGRES_USER}" --dbname "$${POSTGRES_DB}" &&
+          test "$$(psql --username "$${POSTGRES_USER}" --dbname "$${POSTGRES_DB}" --tuples-only --no-align --command 'SELECT pg_is_in_recovery()')" = t
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  postgres-async:
+    <<: *postgres-common
+    environment:
+      <<: *postgres-environment
+      PRIMARY_HOST: postgres-rw
+      REPLICA_APPLICATION_NAME: postgres_async
+      REPLICATION_SLOT: postgres_async_slot
+      REPLICATOR_PASSWORD: ${POSTGRES_REPLICATOR_PASSWORD:?missing POSTGRES_REPLICATOR_PASSWORD}
+    entrypoint: ["/usr/local/bin/replica-entrypoint"]
+    command: ["postgres", "-c", "hot_standby=on"]
+    volumes:
+      - postgres-async-data:/var/lib/postgresql
+      - ./postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint:ro
+    networks:
+      - internal
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready --quiet --username "$${POSTGRES_USER}" --dbname "$${POSTGRES_DB}" &&
+          test "$$(psql --username "$${POSTGRES_USER}" --dbname "$${POSTGRES_DB}" --tuples-only --no-align --command 'SELECT pg_is_in_recovery()')" = t
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  redis-edge:
+    <<: *redis-common
+    environment:
+      REDIS_PASSWORD: ${REDIS_EDGE_PASSWORD:?missing REDIS_EDGE_PASSWORD}
+    volumes:
+      - redis-edge-data:/data
+    networks:
+      dmz:
+        aliases:
+          - edge-state
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli --no-auth-warning ping | grep -qx PONG
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis-auth:
+    <<: *redis-common
+    environment:
+      REDIS_PASSWORD: ${REDIS_AUTH_PASSWORD:?missing REDIS_AUTH_PASSWORD}
+    volumes:
+      - redis-auth-data:/data
+    networks:
+      internal:
+        aliases:
+          - auth-state
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli --no-auth-warning ping | grep -qx PONG
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  seaweed-quarantine:
+    <<: *seaweed-common
+    environment:
+      AWS_ACCESS_KEY_ID: ${SEAWEED_QUARANTINE_ACCESS_KEY:?missing SEAWEED_QUARANTINE_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${SEAWEED_QUARANTINE_SECRET_KEY:?missing SEAWEED_QUARANTINE_SECRET_KEY}
+      S3_BUCKET: quarantine
+    volumes:
+      - seaweed-quarantine-data:/data
+    networks:
+      dmz:
+        aliases:
+          - object-quarantine
+
+  seaweed-public:
+    <<: *seaweed-common
+    environment:
+      AWS_ACCESS_KEY_ID: ${SEAWEED_PUBLIC_ACCESS_KEY:?missing SEAWEED_PUBLIC_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${SEAWEED_PUBLIC_SECRET_KEY:?missing SEAWEED_PUBLIC_SECRET_KEY}
+      S3_BUCKET: public
+    volumes:
+      - seaweed-public-data:/data
+    networks:
+      dmz:
+        aliases:
+          - object-public
+
+  seaweed-internal:
+    <<: *seaweed-common
+    environment:
+      AWS_ACCESS_KEY_ID: ${SEAWEED_INTERNAL_ACCESS_KEY:?missing SEAWEED_INTERNAL_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${SEAWEED_INTERNAL_SECRET_KEY:?missing SEAWEED_INTERNAL_SECRET_KEY}
+      S3_BUCKET: source,processed
+    volumes:
+      - seaweed-internal-data:/data
+    networks:
+      internal:
+        aliases:
+          - object-internal
+
+  otel-collector-dmz:
+    <<: *otel-common
+    networks:
+      dmz:
+        aliases:
+          - otel-collector
+
+  otel-collector-internal:
+    <<: *otel-common
+    networks:
+      internal:
+        aliases:
+          - otel-collector
+
+  postgres-check:
+    image: postgres:18.6-bookworm
+    profiles: ["checks"]
+    environment:
+      PGDATABASE: marketmesh
+      POSTGRES_ADMIN_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?missing POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_APP_RW_PASSWORD: ${POSTGRES_APP_RW_PASSWORD:?missing POSTGRES_APP_RW_PASSWORD}
+      POSTGRES_APP_RO_PASSWORD: ${POSTGRES_APP_RO_PASSWORD:?missing POSTGRES_APP_RO_PASSWORD}
+    entrypoint: ["/bin/bash", "/checks/postgres-smoke.sh"]
+    volumes:
+      - ./checks/postgres-smoke.sh:/checks/postgres-smoke.sh:ro
+    networks:
+      - internal
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      postgres-sync:
+        condition: service_healthy
+      postgres-async:
+        condition: service_healthy
+
+  dmz-probe:
+    image: alpine:3.23.5
+    profiles: ["checks"]
+    entrypoint: ["/bin/sh", "/checks/dmz-network.sh"]
+    volumes:
+      - ./checks/dmz-network.sh:/checks/dmz-network.sh:ro
+    networks:
+      - dmz
+    depends_on:
+      redis-edge:
+        condition: service_healthy
+      seaweed-quarantine:
+        condition: service_healthy
+      seaweed-public:
+        condition: service_healthy
+      otel-collector-dmz:
+        condition: service_healthy
+
+networks:
+  dmz:
+    name: marketmesh-dmz
+    internal: true
+  internal:
+    name: marketmesh-internal
+    internal: true
+
+volumes:
+  postgres-primary-data:
+  postgres-sync-data:
+  postgres-async-data:
+  redis-edge-data:
+  redis-auth-data:
+  seaweed-quarantine-data:
+  seaweed-public-data:
+  seaweed-internal-data:
