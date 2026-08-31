@@ -1,0 +1,9 @@
+{
+  "name": "@marketmesh/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@bufbuild/protobuf": "2.14.0"
+  }
+}

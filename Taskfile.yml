@@ -4,6 +4,7 @@ silent: true
 
 vars:
   WORKSPACE_TOOL: ./tools/go-workspace.sh
+  PROTOBUF_TOOL: ./tools/protobuf.sh
 
 tasks:
   default:
@@ -46,9 +47,70 @@ tasks:
     cmds:
       - "{{.WORKSPACE_TOOL}} arch"
 
-  verify:
-    desc: Выполнить обязательные локальные проверки Go workspace
+  api:bootstrap:
+    desc: Установить зафиксированные protobuf-инструменты в локальный cache
     cmds:
+      - "{{.PROTOBUF_TOOL}} bootstrap"
+
+  api:versions:
+    desc: Показать фактические версии protobuf-инструментов
+    cmds:
+      - "{{.PROTOBUF_TOOL}} versions"
+
+  api:config:
+    desc: Проверить easyp.yaml
+    cmds:
+      - "{{.PROTOBUF_TOOL}} config"
+
+  api:deps:
+    desc: Скачать protobuf-зависимости строго по easyp.lock
+    cmds:
+      - "{{.PROTOBUF_TOOL}} deps"
+
+  api:deps:update:
+    desc: Обновить protobuf-зависимости и easyp.lock
+    cmds:
+      - "{{.PROTOBUF_TOOL}} deps-update"
+
+  api:lint:
+    desc: Проверить protobuf-схемы с помощью EasyP
+    cmds:
+      - "{{.PROTOBUF_TOOL}} lint"
+
+  api:generate:
+    desc: Воспроизводимо сгенерировать Go и TypeScript контракты
+    cmds:
+      - "{{.PROTOBUF_TOOL}} generate"
+
+  api:breaking:
+    desc: Проверить protobuf-совместимость относительно dev
+    cmds:
+      - "{{.PROTOBUF_TOOL}} breaking"
+
+  api:generate-check:
+    desc: Проверить актуальность сгенерированных контрактов без изменения рабочего дерева
+    cmds:
+      - "{{.PROTOBUF_TOOL}} generate-check"
+
+  api:self-test:
+    desc: Проверить генераторы, отрицательный lint и breaking change
+    cmds:
+      - "{{.PROTOBUF_TOOL}} self-test"
+
+  api:verify:
+    desc: Выполнить все проверки protobuf toolchain и контрактов
+    cmds:
+      - task: api:config
+      - task: api:deps
+      - task: api:lint
+      - task: api:breaking
+      - task: api:generate-check
+      - task: api:self-test
+
+  verify:
+    desc: Выполнить обязательные локальные проверки workspace
+    cmds:
+      - task: api:verify
       - task: fmt-check
       - task: vet
       - task: test-race

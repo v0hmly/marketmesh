@@ -24,7 +24,10 @@ Go-часть организована как multimodule workspace. Кажды�
 - Node.js 24.19 или новее;
 - pnpm 11.19.0;
 - Task 3.53 или новее;
-- GNU Make — для альтернативного интерфейса команд.
+- GNU Make — для альтернативного интерфейса команд;
+- Git, curl, tar и unzip — для bootstrap и самопроверки protobuf toolchain.
+
+EasyP, `protoc` и плагины protobuf устанавливаются в репозиторный кэш командой `task api:bootstrap`; системная установка и версии `latest` не используются.
 
 ## Команды из корня
 
@@ -36,10 +39,11 @@ task test       # выполнить модульные тесты
 task test-race  # выполнить тесты с race detector
 task build      # собрать все Go-пакеты
 task arch       # проверить модульные пути и запрещённые зависимости
-task verify     # выполнить обязательный локальный набор проверок
+task api:verify # проверить protobuf workflow и контракты
+task verify     # выполнить обязательный локальный набор проверок workspace
 ```
 
-Те же команды доступны через Makefile, например `make test` и `make verify`. Оба интерфейса вызывают единый скрипт `tools/go-workspace.sh`.
+Те же команды доступны через Makefile, например `make test`, `make api-verify` и `make verify`. Go-команды обоих интерфейсов вызывают `tools/go-workspace.sh`, а protobuf-команды — `tools/protobuf.sh`.
 
 Frontend-команды запускаются через корневой pnpm workspace:
 
