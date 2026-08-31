@@ -6,7 +6,7 @@
 *.dylib
 *.test
 *.out
-bin/
+/bin/
 coverage/
 coverage.out
 coverage.html

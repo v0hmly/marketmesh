@@ -48,7 +48,7 @@ tasks:
       - "{{.WORKSPACE_TOOL}} arch"
 
   api:bootstrap:
-    desc: Установить зафиксированные protobuf-инструменты в локальный cache
+    desc: Установить зафиксированные protobuf-инструменты в корневой bin
     cmds:
       - "{{.PROTOBUF_TOOL}} bootstrap"
 
