@@ -9,9 +9,6 @@ trim_trailing_whitespace = true
 [*.go]
 indent_style = tab
 
-[{*.md,*.yaml,*.yml,*.json,Makefile}]
+[{*.md,*.yaml,*.yml,*.json}]
 indent_style = space
 indent_size = 2
-
-[Makefile]
-indent_style = tab

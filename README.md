@@ -24,7 +24,8 @@ Go-часть организована как multimodule workspace. Кажды�
 - Node.js 24.19 или новее;
 - pnpm 11.19.0;
 - Task 3.53 или новее;
-- GNU Make — для альтернативного интерфейса команд;
+- Docker 29 с Docker Compose v2 либо совместимая версия OrbStack;
+- OpenSSL для генерации локальных development credentials;
 - Git, curl, tar и unzip — для bootstrap и самопроверки protobuf toolchain.
 
 EasyP, `protoc` и плагины protobuf устанавливаются в репозиторный кэш командой `task api:bootstrap`; системная установка и версии `latest` не используются.
@@ -41,9 +42,11 @@ task build      # собрать все Go-пакеты
 task arch       # проверить модульные пути и запрещённые зависимости
 task api:verify # проверить protobuf workflow и контракты
 task verify     # выполнить обязательный локальный набор проверок workspace
+task infra:up   # запустить локальную инфраструктуру
+task infra:smoke # проверить репликацию PostgreSQL и изоляцию DMZ
 ```
 
-Те же команды доступны через Makefile, например `make test`, `make api-verify` и `make verify`. Go-команды обоих интерфейсов вызывают `tools/go-workspace.sh`, а protobuf-команды — `tools/protobuf.sh`.
+Taskfile вызывает `tools/go-workspace.sh` для Go-команд и `tools/protobuf.sh` для protobuf-команд.
 
 Frontend-команды запускаются через корневой pnpm workspace:
 
@@ -57,6 +60,11 @@ pnpm typecheck
 Эквивалентные команды Task: `task frontend:build`, `task frontend:test`, `task frontend:lint`, `task frontend:typecheck` и `task frontend:verify`.
 
 Пока frontend-пакеты не созданы, эти команды завершаются без выполнения вложенных скриптов.
+
+Локальная инфраструктура PostgreSQL, Redis, SeaweedFS и OpenTelemetry описана в
+[руководстве Docker Compose](infra/compose/README.md). Команда
+`task infra:verify` запускает окружение и выполняет полный smoke test, включая
+проверку persistent volumes после restart.
 
 ## Архитектура и процесс
 

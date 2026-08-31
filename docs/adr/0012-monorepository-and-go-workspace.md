@@ -58,8 +58,7 @@ marketmesh/
 ├── docs/
 ├── go.work
 ├── pnpm-workspace.yaml
-├── Taskfile.yml
-└── Makefile
+└── Taskfile.yml
 ```
 
 `api/proto` является источником публичных, внутренних и туннельных protobuf-схем. `api/gen/go` и `api/gen/ts` содержат только воспроизводимо сгенерированные результаты и не редактируются вручную.
