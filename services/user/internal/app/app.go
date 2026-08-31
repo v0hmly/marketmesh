@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os"
 
 	"github.com/v0hmly/marketmesh/platform/logger"
@@ -116,25 +115,7 @@ func runService(
 		return fmt.Errorf("creating health checks: %w", err)
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("GET /livez", health.LivenessHandler())
-	mux.Handle("GET /readyz", health.ReadinessHandler())
-
-	httpServer, err := serviceruntime.NewHTTPServer(
-		serviceruntime.HTTPServerConfig{
-			ReadHeaderTimeout: config.httpReadHeaderTimeout,
-			ReadTimeout:       config.httpReadTimeout,
-			WriteTimeout:      config.httpWriteTimeout,
-			IdleTimeout:       config.httpIdleTimeout,
-			MaxHeaderBytes:    config.httpMaxHeaderBytes,
-			MaxBodyBytes:      config.httpMaxBodyBytes,
-			ErrorLog:          log.HTTPErrorLog(),
-		},
-		mux,
-	)
-	if err != nil {
-		return fmt.Errorf("creating HTTP server: %w", err)
-	}
+	httpServer := newHTTPServer(config, log, newHealthHandler(health))
 
 	listener, err := listen("tcp", config.httpAddress)
 	if err != nil {
@@ -150,10 +131,7 @@ func runService(
 		}
 	}()
 
-	httpComponent, err := serviceruntime.NewHTTPComponent("http", httpServer, listener)
-	if err != nil {
-		return fmt.Errorf("creating HTTP component: %w", err)
-	}
+	httpComponent := newHTTPComponent(httpServer, listener)
 	telemetryComponent := serviceruntime.Component{
 		Name: "telemetry",
 		Run: func(ctx context.Context) error {

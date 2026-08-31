@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -28,8 +27,8 @@ type HealthConfig struct {
 	Dependencies []CriticalDependency
 }
 
-// Health хранит readiness и проверяет критические зависимости. Liveness не
-// зависит от readiness: живой процесс может временно не принимать работу.
+// Health хранит transport-agnostic readiness и проверяет критические
+// зависимости. Конкретный transport самостоятельно отображает результат.
 type Health struct {
 	ready        atomic.Bool
 	checkTimeout time.Duration
@@ -131,27 +130,4 @@ func (health *Health) Ready(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// LivenessHandler возвращает 204, пока процесс способен обслужить probe.
-// Состояние readiness и внешних зависимостей на liveness не влияет.
-func (*Health) LivenessHandler() http.Handler {
-	return http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
-		response.Header().Set("Cache-Control", "no-store")
-		response.WriteHeader(http.StatusNoContent)
-	})
-}
-
-// ReadinessHandler возвращает 204 только после MarkReady и успешных checks.
-// Детали ошибок наружу не раскрываются.
-func (health *Health) ReadinessHandler() http.Handler {
-	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		response.Header().Set("Cache-Control", "no-store")
-		if err := health.Ready(request.Context()); err != nil {
-			http.Error(response, "not ready", http.StatusServiceUnavailable)
-			return
-		}
-
-		response.WriteHeader(http.StatusNoContent)
-	})
 }
