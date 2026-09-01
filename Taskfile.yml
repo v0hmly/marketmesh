@@ -204,6 +204,26 @@ tasks:
     cmds:
       - bash services/auth/internal/adapter/out/postgres/testdata/integration.sh
 
+  tunnel-e2e:images:
+    desc: Собрать локальные immutable-source образы MM-29 без публикации
+    cmds:
+      - bash e2e/tunnel/scripts/images.sh
+
+  tunnel-e2e:deploy:
+    desc: Развернуть workloads MM-29 в четырёх явных kubeconfig
+    cmds:
+      - go run ./e2e/tunnel/cmd/workloadctl deploy {{.CLI_ARGS}}
+
+  tunnel-e2e:inspect:
+    desc: Собрать bounded diagnostics workloads MM-29
+    cmds:
+      - go run ./e2e/tunnel/cmd/workloadctl inspect {{.CLI_ARGS}}
+
+  tunnel-e2e:undeploy:
+    desc: Собрать diagnostics и удалить точные workloads MM-29
+    cmds:
+      - go run ./e2e/tunnel/cmd/workloadctl undeploy {{.CLI_ARGS}}
+
   infra:down:
     desc: Остановить окружение с сохранением данных
     cmds:

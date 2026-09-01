@@ -320,6 +320,9 @@ func validateGatewayInHello(hello *contractv1.GatewayInHello) error {
 	if hello == nil {
 		return invalidFrame("hello", "is required")
 	}
+	if len(hello.GetInstanceId()) != InstanceIDBytes {
+		return invalidFrame("hello.instance_id", "must be 16 bytes")
+	}
 	if hello.GetSelectedProtocolVersion() != protocolVersion {
 		return unsupportedVersion("hello.selected_protocol_version")
 	}

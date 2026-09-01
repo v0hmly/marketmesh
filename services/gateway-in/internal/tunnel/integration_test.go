@@ -569,7 +569,10 @@ func (p *scriptedPeer) run() {
 		p.report(err)
 		return
 	}
-	if hello.GetHello() == nil || len(hello.GetHeader().GetTunnelId()) != 16 {
+	if hello.GetHello() == nil || len(hello.GetHeader().GetTunnelId()) != 16 ||
+		!bytes.Equal(hello.GetHello().GetInstanceId(), []byte{
+			0x55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		}) {
 		p.report(errors.New("gateway-in returned invalid Hello"))
 		return
 	}

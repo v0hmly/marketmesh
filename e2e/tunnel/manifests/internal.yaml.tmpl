@@ -1,0 +1,429 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mm29-fake-internal
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/name: fake-internal
+    app.kubernetes.io/part-of: marketmesh-tunnel-e2e
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  replicas: 2
+  minReadySeconds: 2
+  progressDeadlineSeconds: 120
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fake-internal
+      marketmesh.io/run-id: {{.RunID}}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fake-internal
+        app.kubernetes.io/part-of: marketmesh-tunnel-e2e
+        app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+        marketmesh.io/task: MM-29
+        marketmesh.io/dc: {{.DC}}
+        marketmesh.io/zone: internal
+        marketmesh.io/run-id: {{.RunID}}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: fake-internal
+          image: {{.FakeInternalImage}}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVICE_VERSION
+              value: {{.Version}}
+            - name: ENVIRONMENT
+              value: e2e-{{.DC}}-internal
+            - name: SERVICE_INSTANCE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: EXPECTED_GATEWAY_OUT_URI
+              value: {{.GatewayOutURI}}
+            - name: TLS_CERT_FILE
+              value: /var/run/marketmesh/internal/tls.crt
+            - name: TLS_KEY_FILE
+              value: /var/run/marketmesh/internal/tls.key
+            - name: TLS_CLIENT_CA_FILE
+              value: /var/run/marketmesh/internal/ca.crt
+            - name: MAX_LEDGER_ENTRIES
+              value: "10000"
+            - name: REQUEST_TIMEOUT
+              value: 5s
+            - name: SHUTDOWN_TIMEOUT
+              value: 20s
+            - name: LOG_LEVEL
+              value: info
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: grpc
+              containerPort: 9443
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /livez
+              port: http
+            periodSeconds: 1
+            timeoutSeconds: 1
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: [/fake-internal, prestop]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 192Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          volumeMounts:
+            - name: internal-tls
+              mountPath: /var/run/marketmesh/internal
+              readOnly: true
+      volumes:
+        - name: internal-tls
+          secret:
+            secretName: mm29-fake-internal-tls
+            defaultMode: 0440
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mm29-fake-internal
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/name: fake-internal
+    app.kubernetes.io/part-of: marketmesh-tunnel-e2e
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  selector:
+    app.kubernetes.io/name: fake-internal
+    marketmesh.io/run-id: {{.RunID}}
+  ports:
+    - name: grpc
+      port: 9443
+      targetPort: grpc
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mm29-gateway-out
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/name: gateway-out
+    app.kubernetes.io/part-of: marketmesh-tunnel-e2e
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  replicas: 2
+  minReadySeconds: 2
+  progressDeadlineSeconds: 120
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gateway-out
+      marketmesh.io/run-id: {{.RunID}}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gateway-out
+        app.kubernetes.io/part-of: marketmesh-tunnel-e2e
+        app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+        marketmesh.io/task: MM-29
+        marketmesh.io/dc: {{.DC}}
+        marketmesh.io/zone: internal
+        marketmesh.io/run-id: {{.RunID}}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: gateway-out
+          image: {{.GatewayOutImage}}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVICE_VERSION
+              value: {{.Version}}
+            - name: ENVIRONMENT
+              value: e2e-{{.DC}}-internal
+            - name: SERVICE_INSTANCE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: GATEWAY_IN_TARGET
+              value: {{.GatewayInTarget}}
+            - name: GATEWAY_IN_SERVER_NAME
+              value: mm29-gateway-in.marketmesh-e2e-tunnel.svc
+            - name: EXPECTED_GATEWAY_IN_URI
+              value: {{.GatewayInURI}}
+            - name: INTERNAL_TARGET
+              value: dns:///mm29-fake-internal.marketmesh-e2e-tunnel.svc:9443
+            - name: INTERNAL_SERVER_NAME
+              value: mm29-fake-internal.marketmesh-e2e-tunnel.svc
+            - name: EXPECTED_INTERNAL_URI
+              value: {{.FakeInternalURI}}
+            - name: TUNNEL_TLS_CERT_FILE
+              value: /var/run/marketmesh/tunnel/tls.crt
+            - name: TUNNEL_TLS_KEY_FILE
+              value: /var/run/marketmesh/tunnel/tls.key
+            - name: TUNNEL_TLS_ROOT_CA_FILE
+              value: /var/run/marketmesh/tunnel/ca.crt
+            - name: INTERNAL_TLS_CERT_FILE
+              value: /var/run/marketmesh/internal/tls.crt
+            - name: INTERNAL_TLS_KEY_FILE
+              value: /var/run/marketmesh/internal/tls.key
+            - name: INTERNAL_TLS_ROOT_CA_FILE
+              value: /var/run/marketmesh/internal/ca.crt
+            - name: CONNECT_TIMEOUT
+              value: 10s
+            - name: CALL_TIMEOUT
+              value: 10s
+            - name: SHUTDOWN_TIMEOUT
+              value: 20s
+            - name: HEALTH_CHECK_TIMEOUT
+              value: 2s
+            - name: LOG_LEVEL
+              value: info
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /livez
+              port: http
+            periodSeconds: 1
+            timeoutSeconds: 1
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: [/gateway-out, prestop]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 192Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          volumeMounts:
+            - name: tunnel-tls
+              mountPath: /var/run/marketmesh/tunnel
+              readOnly: true
+            - name: internal-tls
+              mountPath: /var/run/marketmesh/internal
+              readOnly: true
+      volumes:
+        - name: tunnel-tls
+          secret:
+            secretName: mm29-gateway-out-tunnel-tls
+            defaultMode: 0440
+        - name: internal-tls
+          secret:
+            secretName: mm29-gateway-out-internal-tls
+            defaultMode: 0440
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mm29-fake-internal
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fake-internal
+      marketmesh.io/run-id: {{.RunID}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mm29-gateway-out
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gateway-out
+      marketmesh.io/run-id: {{.RunID}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mm29-fake-internal
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fake-internal
+      marketmesh.io/run-id: {{.RunID}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: gateway-out
+              marketmesh.io/run-id: {{.RunID}}
+      ports:
+        - port: 9443
+          protocol: TCP
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mm29-gateway-out
+  namespace: marketmesh-e2e-tunnel
+  labels:
+    app.kubernetes.io/managed-by: marketmesh-e2e-tunnel
+    marketmesh.io/task: MM-29
+    marketmesh.io/dc: {{.DC}}
+    marketmesh.io/zone: internal
+    marketmesh.io/run-id: {{.RunID}}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: gateway-out
+      marketmesh.io/run-id: {{.RunID}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: fake-internal
+              marketmesh.io/run-id: {{.RunID}}
+      ports:
+        - port: 9443
+          protocol: TCP
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 30443
+          protocol: TCP

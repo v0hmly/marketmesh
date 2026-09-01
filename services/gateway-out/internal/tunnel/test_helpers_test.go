@@ -430,6 +430,7 @@ func acceptTestHello(
 		Header: &contractv1.FrameHeader{TunnelId: tunnelID},
 		Payload: &contractv1.ConnectResponse_Hello{
 			Hello: &contractv1.GatewayInHello{
+				InstanceId:              bytes.Repeat([]byte{0x24}, protocolv1.InstanceIDBytes),
 				SelectedProtocolVersion: protocolVersion,
 				Capabilities:            slicesClone(hello.GetCapabilities()),
 				TrafficClasses:          slicesClone(hello.GetTrafficClasses()),
