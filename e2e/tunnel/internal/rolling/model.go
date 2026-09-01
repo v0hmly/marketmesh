@@ -64,6 +64,7 @@ const (
 type Phase string
 
 const (
+	PhaseBefore    Phase = "before"
 	PhaseSteady    Phase = "steady"
 	PhaseRollout   Phase = "rollout"
 	PhaseRollback  Phase = "rollback"
@@ -123,6 +124,7 @@ type Transition struct {
 // Marker is intentionally finite and contains no payload, secret, or image reference.
 type Marker struct {
 	RunID     string
+	FaultID   string
 	DC        string
 	Zone      string
 	Component Component

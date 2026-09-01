@@ -30,8 +30,26 @@ func TestRunnerRun(t *testing.T) {
 	if probe.steadyCalls != 24 {
 		t.Fatalf("WaitSteady() calls = %d, want 24", probe.steadyCalls)
 	}
-	if len(probe.markers) != 60 {
-		t.Fatalf("markers = %d, want 60", len(probe.markers))
+	if len(probe.markers) != 48 {
+		t.Fatalf("markers = %d, want 48", len(probe.markers))
+	}
+	seenFaults := make(map[string]struct{}, 12)
+	for index := 0; index < len(probe.markers); index += 4 {
+		markers := probe.markers[index : index+4]
+		if markers[0].Phase != PhaseBefore || markers[1].Phase != PhaseRollout ||
+			markers[1].Result != ResultStarted || markers[2].Phase != PhaseSteady ||
+			markers[3].Phase != PhaseRecovered || markers[3].Result != ResultPassed {
+			t.Fatalf("marker lifecycle = %+v", markers)
+		}
+		for _, marker := range markers {
+			if marker.FaultID == "" || marker.FaultID != markers[0].FaultID {
+				t.Fatalf("marker fault IDs = %+v", markers)
+			}
+		}
+		if _, found := seenFaults[markers[0].FaultID]; found {
+			t.Fatalf("duplicate fault lifecycle %q", markers[0].FaultID)
+		}
+		seenFaults[markers[0].FaultID] = struct{}{}
 	}
 	for index := 1; index < len(probe.markers); index++ {
 		if probe.markers[index].Offset < probe.markers[index-1].Offset {
@@ -80,6 +98,14 @@ func TestRunnerVerifyRollback(t *testing.T) {
 	if kube.count("fault") != 1 || kube.count("diagnostics") != 1 ||
 		kube.count("rollback") != 1 {
 		t.Fatalf("kubernetes calls = %v", kube.calls)
+	}
+	for _, marker := range probe.markers {
+		if marker.Result == ResultFailed {
+			t.Fatalf("expected readiness fault emitted failed marker: %+v", marker)
+		}
+		if marker.FaultID != "mm34-rollback-dc-a-gateway-in" {
+			t.Fatalf("rollback marker fault ID = %q", marker.FaultID)
+		}
 	}
 }
 

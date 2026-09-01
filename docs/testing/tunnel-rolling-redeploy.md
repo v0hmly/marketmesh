@@ -102,6 +102,14 @@ tunnel до остановки gRPC transport. После drain процесс �
 направления перехода между DMZ/internal без одновременного уменьшения capacity
 нескольких компонентов.
 
+Исполняемые MM-27 scenario v1 находятся рядом с rolling package:
+`testdata/scenarios/rolling-update-mm34-a.json` и
+`testdata/scenarios/rolling-update-mm34-b.json`. Каждый файл содержит ровно 12
+уникальных fault expectations: image/config для трёх workload в обоих DC.
+`ValidateScenarioForPlan` требует точного совпадения порядка и target каждого
+fault с выбранным планом; общий пример MM-27 с тремя fault ID для полного
+прогона MM-34 не используется.
+
 Для каждого target выполняются два перехода соседних revisions:
 
 1. предыдущая → новая с изменением зафиксированного image digest;

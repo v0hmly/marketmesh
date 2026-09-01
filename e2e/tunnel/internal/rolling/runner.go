@@ -76,7 +76,11 @@ func (runner *Runner) Run(ctx context.Context, plan Plan) error {
 		if err := validateChange(step.Change); err != nil {
 			return err
 		}
-		if err := runner.runStep(ctx, start, step); err != nil {
+		faultID, err := faultIDForStep(plan.Variant, step)
+		if err != nil {
+			return err
+		}
+		if err := runner.runStep(ctx, start, faultID, step); err != nil {
 			return err
 		}
 	}
@@ -104,21 +108,25 @@ func (runner *Runner) VerifyRollback(ctx context.Context, target Target, fault F
 	if prepareErr != nil {
 		return fmt.Errorf("rolling: preparing kubernetes targets: %w", prepareErr)
 	}
-	if err := runner.waitSteady(ctx, start, target); err != nil {
+	faultID, err := rollbackFaultID(target)
+	if err != nil {
+		return err
+	}
+	if err := runner.waitSteady(ctx, start, target, faultID, PhaseBefore); err != nil {
 		return err
 	}
 	snapshot, err := runner.preflight(ctx, target)
 	if err != nil {
 		return err
 	}
-	if err := runner.mark(start, target, PhaseRollout, ResultStarted, fault.Revision); err != nil {
+	if err := runner.mark(start, faultID, target, PhaseRollout, ResultStarted, fault.Revision); err != nil {
 		return err
 	}
 	updateCtx, cancelUpdate := context.WithTimeout(ctx, runner.config.StepTimeout)
 	updateErr := runner.kube.InjectReadinessFault(updateCtx, target, fault, snapshot)
 	cancelUpdate()
 	if updateErr != nil {
-		return runner.failAndRollback(ctx, start, target, fault.Revision, snapshot, updateErr)
+		return runner.failAndRollback(ctx, start, faultID, target, fault.Revision, snapshot, updateErr)
 	}
 	waitCtx, cancelWait := context.WithTimeout(ctx, runner.config.StepTimeout)
 	waitErr := runner.kube.Wait(waitCtx, target, Expectation{
@@ -131,7 +139,7 @@ func (runner *Runner) VerifyRollback(ctx context.Context, target Target, fault F
 	if waitErr == nil {
 		waitErr = errors.New("rolling: readiness fault unexpectedly became ready")
 	}
-	rollbackErr := runner.failAndRollback(ctx, start, target, fault.Revision, snapshot, nil)
+	rollbackErr := runner.failAndRollback(ctx, start, faultID, target, fault.Revision, snapshot, nil)
 	if rollbackErr != nil || !errors.Is(waitErr, ErrReadinessNotReached) {
 		return errors.Join(waitErr, rollbackErr)
 	}
@@ -139,15 +147,15 @@ func (runner *Runner) VerifyRollback(ctx context.Context, target Target, fault F
 	return nil
 }
 
-func (runner *Runner) runStep(ctx context.Context, start time.Time, step Step) error {
-	if err := runner.waitSteady(ctx, start, step.Target); err != nil {
+func (runner *Runner) runStep(ctx context.Context, start time.Time, faultID string, step Step) error {
+	if err := runner.waitSteady(ctx, start, step.Target, faultID, PhaseBefore); err != nil {
 		return err
 	}
 	snapshot, err := runner.preflight(ctx, step.Target)
 	if err != nil {
 		return err
 	}
-	if err := runner.mark(start, step.Target, PhaseRollout, ResultStarted, step.Change.Revision); err != nil {
+	if err := runner.mark(start, faultID, step.Target, PhaseRollout, ResultStarted, step.Change.Revision); err != nil {
 		return err
 	}
 	updateCtx, cancelUpdate := context.WithTimeout(ctx, runner.config.StepTimeout)
@@ -157,6 +165,7 @@ func (runner *Runner) runStep(ctx context.Context, start time.Time, step Step) e
 		return runner.failAndRollback(
 			ctx,
 			start,
+			faultID,
 			step.Target,
 			step.Change.Revision,
 			snapshot,
@@ -174,20 +183,18 @@ func (runner *Runner) runStep(ctx context.Context, start time.Time, step Step) e
 		return runner.failAndRollback(
 			ctx,
 			start,
+			faultID,
 			step.Target,
 			step.Change.Revision,
 			snapshot,
 			fmt.Errorf("rolling: waiting for target: %w", waitErr),
 		)
 	}
-	if err := runner.waitSteady(ctx, start, step.Target); err != nil {
-		return runner.failAndRollback(ctx, start, step.Target, step.Change.Revision, snapshot, err)
+	if err := runner.waitSteady(ctx, start, step.Target, faultID, PhaseSteady); err != nil {
+		return runner.failAndRollback(ctx, start, faultID, step.Target, step.Change.Revision, snapshot, err)
 	}
-	if err := runner.mark(start, step.Target, PhaseRollout, ResultPassed, step.Change.Revision); err != nil {
-		return runner.failAndRollback(ctx, start, step.Target, step.Change.Revision, snapshot, err)
-	}
-	if err := runner.mark(start, step.Target, PhaseRecovered, ResultPassed, step.Change.Revision); err != nil {
-		return runner.failAndRollback(ctx, start, step.Target, step.Change.Revision, snapshot, err)
+	if err := runner.mark(start, faultID, step.Target, PhaseRecovered, ResultPassed, step.Change.Revision); err != nil {
+		return runner.failAndRollback(ctx, start, faultID, step.Target, step.Change.Revision, snapshot, err)
 	}
 	_, _ = fmt.Fprintf(
 		runner.config.Output,
@@ -212,32 +219,42 @@ func (runner *Runner) preflight(ctx context.Context, target Target) (Snapshot, e
 	return snapshot, nil
 }
 
-func (runner *Runner) waitSteady(ctx context.Context, start time.Time, target Target) error {
+func (runner *Runner) waitSteady(
+	ctx context.Context,
+	start time.Time,
+	target Target,
+	faultID string,
+	phase Phase,
+) error {
 	steadyCtx, cancel := context.WithTimeout(ctx, runner.config.SteadyTimeout)
 	defer cancel()
 	if err := runner.probe.WaitSteady(steadyCtx, target); err != nil {
 		return fmt.Errorf("rolling: waiting for probe steady state: %w", err)
 	}
 
-	return runner.mark(start, target, PhaseSteady, ResultPassed, "steady")
+	return runner.mark(start, faultID, target, phase, ResultPassed, "steady")
 }
 
 func (runner *Runner) failAndRollback(
 	ctx context.Context,
 	start time.Time,
+	faultID string,
 	target Target,
 	revision string,
 	snapshot Snapshot,
 	cause error,
 ) error {
-	markerErr := runner.mark(start, target, PhaseRollout, ResultFailed, revision)
+	var markerErr error
+	if cause != nil {
+		markerErr = runner.mark(start, faultID, target, PhaseRollout, ResultFailed, revision)
+	}
 	diagnosticCtx, cancelDiagnostics := context.WithTimeout(
 		context.WithoutCancel(ctx),
 		runner.config.DiagnosticsTimeout,
 	)
 	diagnosticErr := runner.kube.Diagnostics(diagnosticCtx, target)
 	cancelDiagnostics()
-	rollbackMarkerErr := runner.mark(start, target, PhaseRollback, ResultStarted, revision)
+	rollbackMarkerErr := runner.mark(start, faultID, target, PhaseRollback, ResultStarted, revision)
 	rollbackCtx, cancelRollback := context.WithTimeout(
 		context.WithoutCancel(ctx),
 		runner.config.RollbackTimeout,
@@ -250,13 +267,20 @@ func (runner *Runner) failAndRollback(
 	if rollbackErr != nil {
 		rollbackMarkerErr = errors.Join(
 			rollbackMarkerErr,
-			runner.mark(start, target, PhaseRollback, ResultFailed, revision),
+			runner.mark(start, faultID, target, PhaseRollback, ResultFailed, revision),
 		)
 		return errors.Join(cause, markerErr, diagnosticErr, rollbackMarkerErr, rollbackErr)
 	}
-	steadyErr := runner.waitSteady(context.WithoutCancel(ctx), start, target)
+	steadyErr := runner.waitSteady(
+		context.WithoutCancel(ctx),
+		start,
+		target,
+		faultID,
+		PhaseSteady,
+	)
 	recoveredMarkerErr := runner.mark(
 		start,
+		faultID,
 		target,
 		PhaseRecovered,
 		ResultPassed,
@@ -271,6 +295,7 @@ func (runner *Runner) failAndRollback(
 
 func (runner *Runner) mark(
 	start time.Time,
+	faultID string,
 	target Target,
 	phase Phase,
 	result Result,
@@ -278,6 +303,7 @@ func (runner *Runner) mark(
 ) error {
 	marker := Marker{
 		RunID:     runner.config.RunID,
+		FaultID:   faultID,
 		DC:        target.DC,
 		Zone:      target.Zone,
 		Component: target.Component,
