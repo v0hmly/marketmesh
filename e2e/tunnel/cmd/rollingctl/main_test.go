@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -114,5 +116,22 @@ func TestScenarioActionSelectsExactEmbeddedContract(t *testing.T) {
 	if scenario.ID != "rolling-rollback-mm34" || action == nil ||
 		len(scenario.Faults) != len(rolling.RollbackTargets()) {
 		t.Fatalf("rollback scenario = %#v", scenario)
+	}
+}
+
+func TestReadInventoryRejectsSymlink(t *testing.T) {
+	t.Parallel()
+
+	directory := t.TempDir()
+	target := filepath.Join(directory, "inventory.json")
+	if err := os.WriteFile(target, []byte("{}\n"), 0o600); err != nil {
+		t.Fatalf("os.WriteFile() error = %v", err)
+	}
+	link := filepath.Join(directory, "inventory-link.json")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatalf("os.Symlink() error = %v", err)
+	}
+	if _, err := readInventory(link); err == nil {
+		t.Fatal("readInventory() error = nil for symlink")
 	}
 }

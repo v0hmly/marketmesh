@@ -283,6 +283,10 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 }
 
 func readInventory(path string) ([]rolling.Cluster, error) {
+	pathInfo, err := os.Lstat(path)
+	if err != nil || !pathInfo.Mode().IsRegular() {
+		return nil, errors.New("rollingctl: topology inventory is not a regular file")
+	}
 	// #nosec G304 -- parseOptions requires a clean absolute operator-supplied
 	// path; DecodeTopologyInventory then validates MM-28 schema and ownership.
 	file, err := os.Open(path)
@@ -291,7 +295,7 @@ func readInventory(path string) ([]rolling.Cluster, error) {
 	}
 	defer func() { _ = file.Close() }()
 	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() {
+	if err != nil || !info.Mode().IsRegular() || !os.SameFile(pathInfo, info) {
 		return nil, errors.New("rollingctl: topology inventory is not a regular file")
 	}
 	clusters, err := rolling.DecodeTopologyInventory(file)

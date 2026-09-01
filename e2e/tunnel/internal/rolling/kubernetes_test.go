@@ -50,6 +50,17 @@ func TestNewKubernetesValidatesExplicitTargets(t *testing.T) {
 			},
 		},
 		{
+			name: "symlink kubeconfig",
+			mutate: func(input []Cluster) []Cluster {
+				link := filepath.Join(temporary, "kubeconfig-link")
+				if err := os.Symlink(input[0].Kubeconfig, link); err != nil {
+					t.Fatalf("os.Symlink() error = %v", err)
+				}
+				input[0].Kubeconfig = link
+				return input
+			},
+		},
+		{
 			name: "missing cluster",
 			mutate: func(input []Cluster) []Cluster {
 				return input[:3]

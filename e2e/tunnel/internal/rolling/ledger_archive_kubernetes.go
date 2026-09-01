@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -65,12 +64,8 @@ func newLedgerArchiveRuntime(
 		if err := validateContext(cluster.Context); err != nil {
 			return nil, nil, err
 		}
-		absolute, err := filepath.Abs(cluster.Kubeconfig)
+		absolute, err := regularAbsolutePath(cluster.Kubeconfig)
 		if err != nil {
-			return nil, nil, errors.New("rolling: resolving ledger kubeconfig")
-		}
-		info, err := os.Stat(absolute)
-		if err != nil || !info.Mode().IsRegular() {
 			return nil, nil, errors.New("rolling: ledger kubeconfig is not a regular file")
 		}
 		cluster.Kubeconfig = absolute

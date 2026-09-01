@@ -75,12 +75,8 @@ func NewKubernetes(config KubernetesConfig) (Kubernetes, error) {
 		if err := validateContext(cluster.Context); err != nil {
 			return nil, err
 		}
-		absolute, err := filepath.Abs(cluster.Kubeconfig)
+		absolute, err := regularAbsolutePath(cluster.Kubeconfig)
 		if err != nil {
-			return nil, errors.New("rolling: resolving kubeconfig path")
-		}
-		info, err := os.Stat(absolute)
-		if err != nil || !info.Mode().IsRegular() {
 			return nil, fmt.Errorf("rolling: kubeconfig for %s is not a regular file", key)
 		}
 		cluster.Kubeconfig = absolute
@@ -97,6 +93,19 @@ func NewKubernetes(config KubernetesConfig) (Kubernetes, error) {
 	}
 
 	return newKubernetes(config, clusters, kubectlRunner{path: path})
+}
+
+func regularAbsolutePath(path string) (string, error) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Lstat(absolute)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", errors.New("rolling: path is not a regular file")
+	}
+
+	return absolute, nil
 }
 
 func newKubernetes(
