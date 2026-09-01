@@ -215,16 +215,52 @@ func TestLedgerArchiveRejectsPartialInitialSnapshot(t *testing.T) {
 	}
 }
 
+func TestLedgerArchiveBoundsTotalArchivedRecords(t *testing.T) {
+	t.Parallel()
+
+	runtime := newArchiveRuntimeStub(replacementPodStates()[:1])
+	runtime.entries["fake-a-old-1"] = []*e2ev1.LedgerEntry{
+		ledgerEntry(1, e2ev1.Operation_OPERATION_READ, 1),
+		ledgerEntry(2, e2ev1.Operation_OPERATION_READ, 2),
+	}
+	archive := newTestLedgerArchiveWithCapacity(t, runtime, 100, 1)
+	done := make(chan error, 1)
+	go func() { done <- archive.Run(t.Context()) }()
+	readyCtx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if err := archive.WaitReady(readyCtx); err == nil {
+		t.Fatal("WaitReady() error = nil")
+	}
+	if err := <-done; err == nil {
+		t.Fatal("LedgerArchive.Run() error = nil")
+	}
+	if snapshot := archive.Snapshot(); !slices.Contains(
+		snapshot.IncompleteReasons,
+		"archive_record_capacity",
+	) {
+		t.Fatalf("snapshot = %#v", snapshot)
+	}
+}
+
 func newTestLedgerArchive(
 	t *testing.T,
 	runtime archiveRuntime,
 	limit uint32,
 ) *LedgerArchive {
+	return newTestLedgerArchiveWithCapacity(t, runtime, limit, 100)
+}
+
+func newTestLedgerArchiveWithCapacity(
+	t *testing.T,
+	runtime archiveRuntime,
+	limit uint32,
+	recordLimit int,
+) *LedgerArchive {
 	t.Helper()
 	archive, err := newLedgerArchive(LedgerArchiveConfig{
 		RunID: "mm34-run", Clusters: testInternalClusters(),
 		PollInterval: 10 * time.Millisecond, CallTimeout: 50 * time.Millisecond,
-		StopTimeout: 6 * time.Second, LedgerLimit: limit,
+		StopTimeout: 6 * time.Second, LedgerLimit: limit, RecordLimit: recordLimit,
 	}, runtime)
 	if err != nil {
 		t.Fatalf("newLedgerArchive() error = %v", err)

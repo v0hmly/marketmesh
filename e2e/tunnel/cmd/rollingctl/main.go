@@ -99,6 +99,7 @@ func run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		CallTimeout:  configuration.archiveCallTimeout,
 		StopTimeout:  configuration.stopTimeout,
 		LedgerLimit:  uint32(configuration.ledgerLimit), // #nosec G115 -- bounded by parseOptions
+		RecordLimit:  trafficConfig.RecordCapacity,
 	})
 	if err != nil {
 		return err

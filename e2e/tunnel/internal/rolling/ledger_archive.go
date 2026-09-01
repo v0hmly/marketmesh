@@ -24,6 +24,7 @@ type LedgerArchiveConfig struct {
 	CallTimeout  time.Duration
 	StopTimeout  time.Duration
 	LedgerLimit  uint32
+	RecordLimit  int
 }
 
 type archivePod struct {
@@ -415,6 +416,11 @@ func (archive *LedgerArchive) collect(
 			archive.mu.Unlock()
 			return false, errors.New("rolling: archived ledger record changed")
 		}
+		if !exists && len(archive.records) >= archive.config.RecordLimit {
+			archive.failLocked("archive_record_capacity")
+			archive.mu.Unlock()
+			return false, errors.New("rolling: archived ledger record capacity exceeded")
+		}
 		archive.records[key] = record
 		archive.mu.Unlock()
 	}
@@ -493,7 +499,8 @@ func validateLedgerArchiveConfig(config LedgerArchiveConfig) error {
 	if config.PollInterval < 10*time.Millisecond || config.PollInterval > time.Second ||
 		config.CallTimeout <= 0 || config.CallTimeout > 10*time.Second ||
 		config.StopTimeout <= portForwardShutdownTimeout || config.StopTimeout > time.Minute ||
-		config.LedgerLimit == 0 || config.LedgerLimit > 100_000 {
+		config.LedgerLimit == 0 || config.LedgerLimit > 100_000 ||
+		config.RecordLimit <= 0 || config.RecordLimit > 1_000_000 {
 		return errors.New("rolling: ledger archive bounds are invalid")
 	}
 
