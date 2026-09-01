@@ -3,6 +3,7 @@ module github.com/v0hmly/marketmesh/e2e/tunnel
 go 1.27.0
 
 require (
+	connectrpc.com/connect v1.20.0
 	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260901103419-49d09068cab5
 	github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260901104113-687c690f0f14
 	github.com/v0hmly/marketmesh/platform v0.0.0-20260901093410-3e264fbd0a7a
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	connectrpc.com/connect v1.20.0 // indirect
 	connectrpc.com/otelconnect v0.9.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
