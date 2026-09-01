@@ -27,6 +27,9 @@ func TestInventoryIsExplicitAndAbsolute(t *testing.T) {
 	if document.APIVersion != InventoryAPIVersion {
 		t.Errorf("api_version = %q, want %q", document.APIVersion, InventoryAPIVersion)
 	}
+	if document.TargetAPIVersion != TargetAPIVersion {
+		t.Errorf("target_api_version = %q, want %q", document.TargetAPIVersion, TargetAPIVersion)
+	}
 	if document.DockerContext != "orbstack" {
 		t.Errorf("docker_context = %q, want orbstack", document.DockerContext)
 	}
@@ -41,9 +44,12 @@ func TestInventoryIsExplicitAndAbsolute(t *testing.T) {
 		t.Errorf("inventory JSON does not contain the public tunnel_port contract: %s", encoded)
 	}
 	for name, command := range map[string]string{
-		"ready":   document.Commands.Ready,
-		"inspect": document.Commands.Inspect,
-		"down":    document.Commands.Down,
+		"ready":            document.Commands.Ready,
+		"inspect":          document.Commands.Inspect,
+		"down":             document.Commands.Down,
+		"targets rebind":   document.Commands.TargetsRebind,
+		"targets resolve":  document.Commands.TargetsResolve,
+		"targets validate": document.Commands.TargetsValidate,
 	} {
 		for _, expected := range []string{"--instance mm28", "--docker-context orbstack", name} {
 			if !strings.Contains(command, expected) {
