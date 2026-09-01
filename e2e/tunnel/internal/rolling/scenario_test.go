@@ -68,3 +68,23 @@ func TestValidateScenarioForPlanRejectsOtherOrder(t *testing.T) {
 		t.Fatal("ValidateScenarioForPlan() error = nil, want variant mismatch")
 	}
 }
+
+func TestMM34RollbackScenarioFixture(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join("testdata", "scenarios", "rolling-rollback-mm34.json")
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("os.Open(%q) error = %v", path, err)
+	}
+	t.Cleanup(func() { _ = file.Close() })
+	scenario, err := spec.DecodeScenario(file)
+	if err != nil {
+		t.Fatalf("spec.DecodeScenario() error = %v", err)
+	}
+	if err := ValidateScenarioForRollback(scenario); err != nil {
+		t.Fatalf("ValidateScenarioForRollback() error = %v", err)
+	}
+	if len(scenario.Faults) != 6 || len(RollbackTargets()) != 6 {
+		t.Fatalf("rollback matrix = %d faults / %d targets", len(scenario.Faults), len(RollbackTargets()))
+	}
+}

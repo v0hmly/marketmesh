@@ -110,6 +110,13 @@ tunnel до остановки gRPC transport. После drain процесс �
 fault с выбранным планом; общий пример MM-27 с тремя fault ID для полного
 прогона MM-34 не используется.
 
+Отрицательная матрица хранится в
+`testdata/scenarios/rolling-rollback-mm34.json`: шесть built-in readiness
+faults покрывают каждый workload в каждом DC и обязаны завершиться автоматическим
+rollback и marker `recovered/success` без `failure` для ожидаемого отказа
+readiness. Неожиданный сбой mutation, rollback или steady-state остаётся
+fail-closed.
+
 Для каждого target выполняются два перехода соседних revisions:
 
 1. предыдущая → новая с изменением зафиксированного image digest;
