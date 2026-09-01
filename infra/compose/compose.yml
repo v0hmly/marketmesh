@@ -59,34 +59,68 @@ x-seaweed-common: &seaweed-common
         cpus: "0.50"
         memory: 384M
 
-x-otel-common: &otel-common
-  image: otel/opentelemetry-collector-contrib:0.159.0
+x-observability-logging: &observability-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-alloy-common: &alloy-common
+  image: grafana/alloy:v1.19.2
   restart: unless-stopped
   command:
-    - --config=/etc/otelcol-contrib/config.yaml
+    - run
+    - --server.http.listen-addr=0.0.0.0:12345
+    - --storage.path=/var/lib/alloy
+    - /etc/alloy/config.alloy
   volumes:
-    - ./otel/collector.yml:/etc/otelcol-contrib/config.yaml:ro
+    - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
   read_only: true
   tmpfs:
     - /tmp:size=16m,mode=1777
+    - /var/lib/alloy:size=16m,mode=0755
   security_opt:
     - no-new-privileges:true
+  logging: *observability-logging
   healthcheck:
-    test:
-      - CMD
-      - /otelcol-contrib
-      - validate
-      - --config=/etc/otelcol-contrib/config.yaml
-    interval: 15s
+    test: ["CMD", "/bin/alloy", "validate", "/etc/alloy/config.alloy"]
+    interval: 30s
     timeout: 5s
-    retries: 6
+    retries: 12
+    start_period: 10s
   deploy:
     resources:
       limits:
         cpus: "0.25"
-        memory: 192M
+        memory: 160M
 
 services:
+  observability-init:
+    image: alpine:3.23.5
+    restart: "no"
+    user: "0:0"
+    command:
+      - /bin/sh
+      - -ceu
+      - chown 10001:10001 /var/tempo /var/loki
+    volumes:
+      - tempo-data:/var/tempo
+      - loki-data:/var/loki
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+    security_opt:
+      - no-new-privileges:true
+    logging: *observability-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: 32M
+
   postgres-primary:
     <<: *postgres-common
     environment:
@@ -259,19 +293,167 @@ services:
         aliases:
           - object-internal
 
-  otel-collector-dmz:
-    <<: *otel-common
+  alloy-dmz:
+    <<: *alloy-common
     networks:
       dmz:
         aliases:
           - otel-collector
+      observability:
 
-  otel-collector-internal:
-    <<: *otel-common
+  alloy-internal:
+    <<: *alloy-common
     networks:
       internal:
         aliases:
           - otel-collector
+      observability:
+
+  tempo:
+    image: grafana/tempo:2.10.5
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - observability
+    depends_on:
+      observability-init:
+        condition: service_completed_successfully
+    security_opt:
+      - no-new-privileges:true
+    logging: *observability-logging
+    healthcheck:
+      test: ["CMD", "/tempo", "-config.file=/etc/tempo/tempo.yml", "-config.verify=true"]
+      interval: 30s
+      timeout: 5s
+      retries: 18
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 384M
+
+  loki:
+    image: grafana/loki:3.7.7
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/var/loki
+    networks:
+      - observability
+    depends_on:
+      observability-init:
+        condition: service_completed_successfully
+    security_opt:
+      - no-new-privileges:true
+    logging: *observability-logging
+    healthcheck:
+      test: ["CMD", "/usr/bin/loki", "-config.file=/etc/loki/loki.yml", "-verify-config"]
+      interval: 30s
+      timeout: 5s
+      retries: 18
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 384M
+
+  grafana:
+    image: grafana/grafana:13.2.0
+    restart: unless-stopped
+    environment:
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Editor
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana-dashboards:ro
+    networks:
+      - observability
+    depends_on:
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    logging: *observability-logging
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --quiet --spider http://127.0.0.1:3000/api/health
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 320M
+
+  observability-gateway:
+    image: haproxy:3.2.23-alpine3.24
+    restart: unless-stopped
+    user: haproxy
+    command:
+      - haproxy
+      - -W
+      - -db
+      - -f
+      - /usr/local/etc/haproxy/haproxy.cfg
+    volumes:
+      - ./haproxy/observability.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "127.0.0.1:${OTLP_DMZ_GRPC_PORT:-14317}:14317"
+      - "127.0.0.1:${OTLP_DMZ_HTTP_PORT:-14318}:14318"
+      - "127.0.0.1:${OTLP_INTERNAL_GRPC_PORT:-4317}:4317"
+      - "127.0.0.1:${OTLP_INTERNAL_HTTP_PORT:-4318}:4318"
+      - "127.0.0.1:${TEMPO_HTTP_PORT:-3200}:3200"
+      - "127.0.0.1:${LOKI_HTTP_PORT:-3100}:3100"
+      - "127.0.0.1:${GRAFANA_HTTP_PORT:-3000}:3000"
+    networks:
+      - observability
+      - observability-access
+    depends_on:
+      alloy-dmz:
+        condition: service_healthy
+      alloy-internal:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /var/lib/haproxy:size=8m,mode=0755
+      - /var/run:size=4m,mode=0755
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *observability-logging
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 30s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.20"
+          memory: 96M
 
   postgres-check:
     image: postgres:18.6-bookworm
@@ -309,16 +491,21 @@ services:
         condition: service_healthy
       seaweed-public:
         condition: service_healthy
-      otel-collector-dmz:
+      alloy-dmz:
         condition: service_healthy
 
 networks:
   dmz:
-    name: marketmesh-dmz
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-dmz
     internal: true
   internal:
-    name: marketmesh-internal
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-internal
     internal: true
+  observability:
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-observability
+    internal: true
+  observability-access:
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-observability-access
 
 volumes:
   postgres-primary-data:
@@ -329,3 +516,9 @@ volumes:
   seaweed-quarantine-data:
   seaweed-public-data:
   seaweed-internal-data:
+  tempo-data:
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-tempo-data
+  loki-data:
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-loki-data
+  grafana-data:
+    name: ${COMPOSE_PROJECT_NAME:-marketmesh}-grafana-data

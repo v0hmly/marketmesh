@@ -199,6 +199,61 @@ tasks:
     cmds:
       - "{{.INFRA_TOOL}} clean"
 
+  observability:config:
+    desc: Проверить конфигурации Alloy, Tempo, Loki, HAProxy и Docker Compose
+    cmds:
+      - "{{.INFRA_TOOL}} observability-config"
+
+  observability:up:
+    desc: Запустить локальный observability-стек
+    cmds:
+      - "{{.INFRA_TOOL}} observability-up"
+
+  observability:ready:
+    desc: Проверить health checks локального observability-стека
+    cmds:
+      - "{{.INFRA_TOOL}} observability-ready"
+
+  observability:smoke:
+    desc: Проверить связанные trace и log через Alloy, Tempo, Loki и Grafana
+    cmds:
+      - "{{.INFRA_TOOL}} observability-smoke"
+
+  observability:outage:
+    desc: Проверить bounded queues Alloy при недоступных Tempo и Loki
+    cmds:
+      - "{{.INFRA_TOOL}} observability-outage"
+
+  observability:persistence:
+    desc: Проверить сохранность traces и logs после restart
+    cmds:
+      - "{{.INFRA_TOOL}} observability-persistence"
+
+  observability:verify:
+    desc: Запустить observability-стек и выполнить все его проверки
+    cmds:
+      - "{{.INFRA_TOOL}} observability-verify"
+
+  observability:status:
+    desc: Показать состояние контейнеров observability
+    cmds:
+      - "{{.INFRA_TOOL}} observability-status"
+
+  observability:logs:
+    desc: Следить за логами observability-стека
+    cmds:
+      - "{{.INFRA_TOOL}} observability-logs"
+
+  observability:down:
+    desc: Остановить observability-стек с сохранением данных
+    cmds:
+      - "{{.INFRA_TOOL}} observability-down"
+
+  observability:clean:
+    desc: Удалить только контейнеры и volumes observability
+    cmds:
+      - "{{.INFRA_TOOL}} observability-clean"
+
   frontend:build:
     desc: Собрать все frontend-пакеты
     cmds:
