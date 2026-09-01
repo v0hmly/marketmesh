@@ -9,4 +9,5 @@ use (
 	./services/gateway-in
 	./services/gateway-out
 	./services/user
+	./tools/e2e-topology
 )

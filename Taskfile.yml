@@ -6,6 +6,7 @@ vars:
   WORKSPACE_TOOL: ./tools/go-workspace.sh
   PROTOBUF_TOOL: ./tools/protobuf.sh
   INFRA_TOOL: ./infra/compose/scripts/local.sh
+  E2E_TOPOLOGY_TOOL: go run ./tools/e2e-topology
 
 tasks:
   default:
@@ -233,6 +234,46 @@ tasks:
     desc: Остановить окружение и полностью удалить его volumes
     cmds:
       - "{{.INFRA_TOOL}} clean"
+
+  e2e:topology:bootstrap:
+    desc: Установить проверенные kind и kubectl и собрать TCP-probe MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} bootstrap"
+
+  e2e:topology:versions:
+    desc: Показать зафиксированные версии topology toolchain
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} versions"
+
+  e2e:topology:inventory:
+    desc: Показать versioned inventory четырёх кластеров MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} inventory"
+
+  e2e:topology:up:
+    desc: Создать четыре disposable kind-кластера MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} up"
+
+  e2e:topology:ready:
+    desc: Проверить готовность и зональную изоляцию topology MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} ready"
+
+  e2e:topology:inspect:
+    desc: Собрать безопасные diagnostics topology MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} inspect"
+
+  e2e:topology:down:
+    desc: Собрать diagnostics и удалить только ресурсы topology MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} down"
+
+  e2e:topology:verify:
+    desc: Дважды проверить полный lifecycle и изоляцию topology MM-28
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} verify"
 
   observability:config:
     desc: Проверить конфигурации Alloy, Tempo, Loki, HAProxy и Docker Compose

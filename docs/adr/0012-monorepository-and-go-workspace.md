@@ -29,6 +29,7 @@ MarketMesh объединяет независимо развёртываемы�
 | `platform` | `github.com/v0hmly/marketmesh/platform` | Общие технические библиотеки, включая logger и telemetry |
 | `api/gen/go` | `github.com/v0hmly/marketmesh/api/gen/go` | Только сгенерированный Go-код контрактов |
 | `api/tunnel` | `github.com/v0hmly/marketmesh/api/tunnel` | Строгий общий декодер и структурная валидация туннельного контракта |
+| `tools/e2e-topology` | `github.com/v0hmly/marketmesh/tools/e2e-topology` | Изолированная автоматизация disposable Kubernetes topology и её проверок |
 
 `go.work` разрешает локальные зависимости без директив `replace` в `go.mod`. Директива `replace` на локальный путь в регистрируемом `go.mod` запрещена. Каждый модуль обязан собираться и тестироваться как в workspace, так и с `GOWORK=off` после появления межмодульных зависимостей и зафиксированных версий.
 
@@ -57,6 +58,7 @@ marketmesh/
 │   ├── gateway-in/
 │   └── gateway-out/
 ├── tools/
+│   └── e2e-topology/
 ├── docs/
 ├── go.work
 ├── pnpm-workspace.yaml
