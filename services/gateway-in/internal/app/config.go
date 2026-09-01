@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"time"
 
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
@@ -20,6 +21,7 @@ type config struct {
 	serviceVersion        string
 	environment           string
 	instanceID            string
+	dataCenter            string
 	httpAddress           string
 	grpcAddress           string
 	tlsCertificate        string
@@ -45,6 +47,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	if result.instanceID, err = env.RequiredString("SERVICE_INSTANCE_ID"); err != nil {
 		return config{}, err
+	}
+	if result.dataCenter, err = env.RequiredString("DATA_CENTER"); err != nil {
+		return config{}, err
+	}
+	if result.dataCenter != "dc-a" && result.dataCenter != "dc-b" {
+		return config{}, errors.New("DATA_CENTER must be dc-a or dc-b")
 	}
 	if result.httpAddress, err = env.String("HTTP_ADDRESS", defaultHTTPAddress); err != nil {
 		return config{}, err

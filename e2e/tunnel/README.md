@@ -35,6 +35,40 @@ SIGTERM hook `preStop` сначала закрывает readiness, ждёт п�
 общий runtime выполняет drain с отдельным 20-секундным budget и запасом в
 пределах `terminationGracePeriodSeconds: 30`.
 
+`gateway-in` получает фиксированный `DATA_CENTER` (`dc-a` или `dc-b`) из
+manifest соответствующего DMZ. Это значение локально связывается с точным
+аутентифицированным URI SAN `gateway-out`: tunnel peer не объявляет свой DC и
+не может влиять на route/metric labels.
+
+## Локальный front door двух DC
+
+MM-30 добавляет один локальный HTTP entry point для внешнего E2E traffic. Ему
+явно передаются два literal private/loopback IP с NodePort `30080`; DNS,
+ambient kubeconfig и service discovery не используются. Front door проверяет
+`/readyz` обоих `gateway-in`, сразу исключает неготовый DC после очередной
+bounded проверки и плавно возвращает восстановленный DC с весом от 10% до
+100%. При двух готовых DC smooth weighted round-robin распределяет traffic
+поровну. Выбранный backend не меняется до завершения request: после
+неопределённой транспортной ошибки запрос, включая `Mutate`, в другой DC не
+повторяется.
+
+```sh
+task tunnel-e2e:frontdoor -- \
+  --listen 127.0.0.1:18080 \
+  --dc-a-target http://<dc-a-dmz-node-ip>:30080 \
+  --dc-b-target http://<dc-b-dmz-node-ip>:30080 \
+  --health-interval 1s \
+  --health-timeout 250ms \
+  --failback-warmup 30s
+```
+
+Listen address обязан быть literal loopback IP с непривилегированным port, а
+backend targets — различными literal private/loopback HTTP endpoints. Наружу
+доступны только `GET /livez`, `GET /readyz` и два фиксированных Connect
+procedure `Read`/`Mutate`; произвольные URL, host и методы отклоняются. Метрики
+используют только конечные labels `data_center`, `route` и `status`, а логи
+health transition не содержат target, opaque instance ID или request data.
+
 ## Границы и PKI
 
 На каждый запуск и DC в памяти создаются два независимых временных CA:

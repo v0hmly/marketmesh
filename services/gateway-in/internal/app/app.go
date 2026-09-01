@@ -203,8 +203,13 @@ func tunnelConfig(
 
 	return tunnel.Config{
 		InstanceID: instanceID,
-		Peer:       tunnel.PeerPolicy{AllowedURIs: []string{cfg.expectedGatewayOutURI}},
-		Limits:     limits, Routes: routes,
+		Peer: tunnel.PeerPolicy{
+			AllowedURIs: []string{cfg.expectedGatewayOutURI},
+			DataCenterByURI: map[string]string{
+				cfg.expectedGatewayOutURI: cfg.dataCenter,
+			},
+		},
+		Limits: limits, Routes: routes,
 		Capabilities: []contractv1.Capability{contractv1.Capability_CAPABILITY_DRAIN},
 		Queues:       tunnel.QueueLimits{TunnelControl: 8, ControlAuth: 8, Regular: 64, Realtime: 8},
 		MaxTunnels:   32, MaxTunnelsPerInstance: 4, MaxInFlightPerInstance: 64,

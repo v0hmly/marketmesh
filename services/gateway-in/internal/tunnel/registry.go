@@ -144,16 +144,17 @@ func (r *Registry) Invoke(ctx context.Context, call Call) (response Response, re
 	defer span.End()
 	defer func() {
 		telemetryCtx := context.WithoutCancel(ctx)
+		requestAttributes := requestMetric{
+			dataCenter: selectedDataCenter,
+			route:      call.Route,
+			class:      policy.TrafficClass,
+		}
 		r.settings.instrumentation.finishRequest(
 			telemetryCtx,
 			requestResultMetric{
-				requestMetric: requestMetric{
-					dataCenter: selectedDataCenter,
-					route:      call.Route,
-					class:      policy.TrafficClass,
-				},
-				started: started,
-				err:     resultErr,
+				requestMetric: requestAttributes,
+				started:       started,
+				err:           resultErr,
 			},
 		)
 		result := "ok"

@@ -66,6 +66,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: DATA_CENTER
+              value: {{.DC}}
             - name: EXPECTED_GATEWAY_OUT_URI
               value: {{.GatewayOutURI}}
             - name: TLS_CERT_FILE

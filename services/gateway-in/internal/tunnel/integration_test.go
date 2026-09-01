@@ -3,6 +3,7 @@
 package tunnel_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -447,6 +448,7 @@ func newTunnelFixture(t *testing.T, options fixtureOptions) *tunnelFixture {
 		logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
 	config := tunnel.Config{
+		InstanceID: [16]byte{0x55},
 		Peer: tunnel.PeerPolicy{
 			AllowedURIs: []string{testPeerURI},
 			DataCenterByURI: map[string]string{
