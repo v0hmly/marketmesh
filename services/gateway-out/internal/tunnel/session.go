@@ -40,8 +40,17 @@ const (
 type requestKey [protocolv1.RequestIDBytes]byte
 
 type queuedFrame struct {
-	frame *contractv1.ConnectRequest
-	sent  chan error
+	frame     *contractv1.ConnectRequest
+	following []*contractv1.ConnectRequest
+	sent      chan error
+}
+
+type terminalRequest struct {
+	class            contractv1.TrafficClass
+	incomingSequence uint64
+	sendCredit       uint64
+	maximumCredit    uint64
+	canceled         bool
 }
 
 type requestState struct {
@@ -62,6 +71,7 @@ type requestState struct {
 	sendCredit       uint64
 	requestBytes     []byte
 	halfClosed       bool
+	peerCanceled     bool
 	creditChanged    chan struct{}
 }
 
@@ -89,6 +99,9 @@ type session struct {
 
 	requestsMu    sync.Mutex
 	requests      map[requestKey]*requestState
+	terminal      map[requestKey]*terminalRequest
+	terminalOrder []requestKey
+	terminalNext  int
 	activeByClass map[contractv1.TrafficClass]uint32
 	activeChanged chan struct{}
 }
@@ -124,6 +137,7 @@ func newSession(
 		realtimeQueue: make(chan queuedFrame, settings.classLimits[contractv1.TrafficClass_TRAFFIC_CLASS_REALTIME].SendQueueDepth),
 		pongs:         make(chan uint64, 1),
 		requests:      make(map[requestKey]*requestState),
+		terminal:      make(map[requestKey]*terminalRequest),
 		activeByClass: make(map[contractv1.TrafficClass]uint32, protocolv1.MaxTrafficClasses),
 		activeChanged: make(chan struct{}, 1),
 	}
@@ -281,7 +295,19 @@ func (session *session) sendLoop() error {
 		if err != nil {
 			return err
 		}
-		err = session.stream.Send(queued.frame)
+		frames := append([]*contractv1.ConnectRequest{queued.frame}, queued.following...)
+		for _, frame := range frames {
+			err = session.stream.Send(frame)
+			if err != nil {
+				break
+			}
+			session.observer.frame(
+				session.ctx,
+				"out",
+				gatewayOutFrameType(frame),
+				frame.GetHeader().GetTrafficClass(),
+			)
+		}
 		if queued.sent != nil {
 			queued.sent <- err
 			close(queued.sent)
@@ -289,12 +315,6 @@ func (session *session) sendLoop() error {
 		if err != nil {
 			return errSessionClosed
 		}
-		session.observer.frame(
-			session.ctx,
-			"out",
-			gatewayOutFrameType(queued.frame),
-			queued.frame.GetHeader().GetTrafficClass(),
-		)
 	}
 }
 
@@ -521,10 +541,20 @@ func (session *session) handleHalfClose(header *contractv1.FrameHeader) error {
 
 func (session *session) handleCancel(
 	header *contractv1.FrameHeader,
-	_ *contractv1.Cancel,
+	cancel *contractv1.Cancel,
 ) error {
-	request, err := session.requestForFrame(header)
+	request, err := session.updateRequestForFrame(header, func(request *requestState) error {
+		if request.peerCanceled {
+			return errProtocol
+		}
+		request.peerCanceled = true
+
+		return nil
+	})
 	if err != nil {
+		if handled, terminalErr := session.handleTerminalFrame(header, cancel); handled {
+			return terminalErr
+		}
 		return err
 	}
 	request.cancel()
@@ -537,20 +567,23 @@ func (session *session) handleCredit(
 	header *contractv1.FrameHeader,
 	credit *contractv1.Credit,
 ) error {
-	request, err := session.requestForFrame(header)
+	_, err := session.updateRequestForFrame(header, func(request *requestState) error {
+		maximum := min(uint64(request.route.MaxResponseBytes), uint64(session.limits.GetMaxMessageBytes()))
+		increment := uint64(credit.GetBytes())
+		if increment > maximum || request.sendCredit > maximum-increment {
+			return errProtocol
+		}
+		request.sendCredit += increment
+		notify(request.creditChanged)
+
+		return nil
+	})
 	if err != nil {
+		if handled, terminalErr := session.handleTerminalFrame(header, credit); handled {
+			return terminalErr
+		}
 		return err
 	}
-
-	request.mu.Lock()
-	defer request.mu.Unlock()
-	maximum := min(uint64(request.route.MaxResponseBytes), uint64(session.limits.GetMaxMessageBytes()))
-	increment := uint64(credit.GetBytes())
-	if increment > maximum || request.sendCredit > maximum-increment {
-		return errProtocol
-	}
-	request.sendCredit += increment
-	notify(request.creditChanged)
 
 	return nil
 }
@@ -580,8 +613,8 @@ func (session *session) requestForFrame(
 	copy(key[:], header.GetRequestId())
 	session.requestsMu.Lock()
 	request := session.requests[key]
-	session.requestsMu.Unlock()
 	if request == nil || header.GetTrafficClass() != request.route.TrafficClass {
+		session.requestsMu.Unlock()
 		return nil, errProtocol
 	}
 
@@ -589,12 +622,76 @@ func (session *session) requestForFrame(
 	expected := request.incomingSequence + 1
 	if header.GetSequence() != expected {
 		request.mu.Unlock()
+		session.requestsMu.Unlock()
 		return nil, errProtocol
 	}
 	request.incomingSequence = header.GetSequence()
 	request.mu.Unlock()
+	session.requestsMu.Unlock()
 
 	return request, nil
+}
+
+func (session *session) updateRequestForFrame(
+	header *contractv1.FrameHeader,
+	update func(*requestState) error,
+) (*requestState, error) {
+	var key requestKey
+	copy(key[:], header.GetRequestId())
+	session.requestsMu.Lock()
+	defer session.requestsMu.Unlock()
+	request := session.requests[key]
+	if request == nil || header.GetTrafficClass() != request.route.TrafficClass {
+		return nil, errProtocol
+	}
+
+	request.mu.Lock()
+	defer request.mu.Unlock()
+	if header.GetSequence() != request.incomingSequence+1 {
+		return nil, errProtocol
+	}
+	if err := update(request); err != nil {
+		return nil, err
+	}
+	request.incomingSequence = header.GetSequence()
+
+	return request, nil
+}
+
+func (session *session) handleTerminalFrame(
+	header *contractv1.FrameHeader,
+	payload any,
+) (bool, error) {
+	var key requestKey
+	copy(key[:], header.GetRequestId())
+	session.requestsMu.Lock()
+	defer session.requestsMu.Unlock()
+	terminal := session.terminal[key]
+	if terminal == nil {
+		return false, nil
+	}
+	if header.GetTrafficClass() != terminal.class ||
+		header.GetSequence() != terminal.incomingSequence+1 ||
+		terminal.canceled {
+		return true, errProtocol
+	}
+
+	switch typed := payload.(type) {
+	case *contractv1.Credit:
+		increment := uint64(typed.GetBytes())
+		if increment > terminal.maximumCredit ||
+			terminal.sendCredit > terminal.maximumCredit-increment {
+			return true, errProtocol
+		}
+		terminal.sendCredit += increment
+	case *contractv1.Cancel:
+		terminal.canceled = true
+	default:
+		return true, errProtocol
+	}
+	terminal.incomingSequence = header.GetSequence()
+
+	return true, nil
 }
 
 func (session *session) execute(request *requestState, payload []byte) {
@@ -638,9 +735,11 @@ func (session *session) completeRequest(
 			}
 		}
 	}
-	if err := session.enqueueRequestFrame(request, &contractv1.ConnectRequest_Result{
-		Result: &contractv1.Result{Code: code},
-	}); err != nil {
+	if err := session.enqueueRequestFrames(
+		request,
+		&contractv1.ConnectRequest_HalfClose{HalfClose: &contractv1.HalfClose{}},
+		&contractv1.ConnectRequest_Result{Result: &contractv1.Result{Code: code}},
+	); err != nil {
 		session.cancel()
 	}
 
@@ -705,6 +804,9 @@ func (session *session) reserve(request *requestState) bool {
 	if _, found := session.requests[request.key]; found {
 		return false
 	}
+	if _, found := session.terminal[request.key]; found {
+		return false
+	}
 	if uint32(len(session.requests)) >= session.limits.GetMaxInFlightRequests() {
 		return false
 	}
@@ -723,11 +825,42 @@ func (session *session) reserve(request *requestState) bool {
 func (session *session) release(request *requestState) {
 	session.requestsMu.Lock()
 	if current := session.requests[request.key]; current == request {
+		request.mu.Lock()
+		session.addTerminalLocked(request.key, &terminalRequest{
+			class:            request.route.TrafficClass,
+			incomingSequence: request.incomingSequence,
+			sendCredit:       request.sendCredit,
+			canceled:         request.peerCanceled,
+			maximumCredit: min(
+				uint64(request.route.MaxResponseBytes),
+				uint64(session.limits.GetMaxMessageBytes()),
+			),
+		})
+		request.mu.Unlock()
 		delete(session.requests, request.key)
 		session.activeByClass[request.route.TrafficClass]--
 	}
 	session.requestsMu.Unlock()
 	notify(session.activeChanged)
+}
+
+func (session *session) addTerminalLocked(key requestKey, terminal *terminalRequest) {
+	capacity := int(session.limits.GetMaxInFlightRequests())
+	if current := session.terminal[key]; current != nil {
+		session.terminal[key] = terminal
+		return
+	}
+	if len(session.terminalOrder) < capacity {
+		session.terminalOrder = append(session.terminalOrder, key)
+		session.terminal[key] = terminal
+		return
+	}
+
+	oldest := session.terminalOrder[session.terminalNext]
+	delete(session.terminal, oldest)
+	session.terminalOrder[session.terminalNext] = key
+	session.terminal[key] = terminal
+	session.terminalNext = (session.terminalNext + 1) % capacity
 }
 
 func (session *session) abortRequest(
@@ -768,7 +901,7 @@ func (session *session) rejectOpen(
 	header *contractv1.FrameHeader,
 	code contractv1.ResultCode,
 ) error {
-	frame := &contractv1.ConnectRequest{
+	halfClose := &contractv1.ConnectRequest{
 		Header: &contractv1.FrameHeader{
 			ProtocolVersion: protocolVersion,
 			TunnelId:        slices.Clone(session.tunnelID),
@@ -776,12 +909,42 @@ func (session *session) rejectOpen(
 			Sequence:        1,
 			TrafficClass:    header.GetTrafficClass(),
 		},
+		Payload: &contractv1.ConnectRequest_HalfClose{
+			HalfClose: &contractv1.HalfClose{},
+		},
+	}
+	result := &contractv1.ConnectRequest{
+		Header: &contractv1.FrameHeader{
+			ProtocolVersion: protocolVersion,
+			TunnelId:        slices.Clone(session.tunnelID),
+			RequestId:       slices.Clone(header.GetRequestId()),
+			Sequence:        2,
+			TrafficClass:    header.GetTrafficClass(),
+		},
 		Payload: &contractv1.ConnectRequest_Result{
 			Result: &contractv1.Result{Code: code},
 		},
 	}
 
-	return session.enqueue(session.ctx, header.GetTrafficClass(), queuedFrame{frame: frame})
+	if err := session.enqueue(
+		session.ctx,
+		header.GetTrafficClass(),
+		queuedFrame{frame: halfClose, following: []*contractv1.ConnectRequest{result}},
+	); err != nil {
+		return err
+	}
+
+	var key requestKey
+	copy(key[:], header.GetRequestId())
+	session.requestsMu.Lock()
+	session.addTerminalLocked(key, &terminalRequest{
+		class:            header.GetTrafficClass(),
+		incomingSequence: header.GetSequence(),
+		maximumCredit:    uint64(session.limits.GetMaxMessageBytes()),
+	})
+	session.requestsMu.Unlock()
+
+	return nil
 }
 
 func (session *session) enqueueRequestFrame(
@@ -795,6 +958,28 @@ func (session *session) enqueueRequestFrame(
 	frame := session.requestFrame(request, sequence, payload)
 
 	return session.enqueue(session.ctx, request.route.TrafficClass, queuedFrame{frame: frame})
+}
+
+func (session *session) enqueueRequestFrames(
+	request *requestState,
+	payloads ...any,
+) error {
+	request.mu.Lock()
+	defer request.mu.Unlock()
+	frames := make([]*contractv1.ConnectRequest, 0, len(payloads))
+	for _, payload := range payloads {
+		request.outgoingSequence++
+		frames = append(frames, session.requestFrame(request, request.outgoingSequence, payload))
+	}
+	if len(frames) == 0 {
+		return nil
+	}
+
+	return session.enqueue(
+		session.ctx,
+		request.route.TrafficClass,
+		queuedFrame{frame: frames[0], following: frames[1:]},
+	)
 }
 
 func (session *session) requestFrame(
@@ -860,11 +1045,13 @@ func (session *session) enqueue(
 	class contractv1.TrafficClass,
 	queued queuedFrame,
 ) error {
-	if err := protocolv1.ValidateGatewayOutFrame(queued.frame); err != nil {
-		return errProtocol
-	}
-	if session.limits != nil && !withinNegotiatedLimits(queued.frame, session.limits) {
-		return errProtocol
+	for _, frame := range append([]*contractv1.ConnectRequest{queued.frame}, queued.following...) {
+		if err := protocolv1.ValidateGatewayOutFrame(frame); err != nil {
+			return errProtocol
+		}
+		if session.limits != nil && !withinNegotiatedLimits(frame, session.limits) {
+			return errProtocol
+		}
 	}
 	queue := session.queue(class)
 	select {

@@ -44,7 +44,14 @@ func TestUnconfiguredRouteIsRejectedWithoutInternalCall(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if frame.GetResult() == nil {
+		if frame.GetHalfClose() == nil || frame.GetHeader().GetSequence() != 1 {
+			return errors.New("gateway-out did not half-close a rejected response")
+		}
+		frame, err = recvApplicationFrame(stream)
+		if err != nil {
+			return err
+		}
+		if frame.GetResult() == nil || frame.GetHeader().GetSequence() != 2 {
 			return errors.New("gateway-out did not return a safe result")
 		}
 		result <- frame.GetResult().GetCode()

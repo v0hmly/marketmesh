@@ -39,15 +39,18 @@ type logicalRequest struct {
 	creditReady chan struct{}
 	mu          sync.Mutex
 
-	outboundSequence uint64
-	inboundSequence  uint64
-	sendCredit       int
-	receiveCredit    int
-	responsePayload  []byte
-	isResponseClosed bool
-	isCompleted      bool
-	response         Response
-	err              error
+	outboundSequence   uint64
+	inboundSequence    uint64
+	sendCredit         int
+	receiveCredit      int
+	responsePayload    []byte
+	isResponseClosed   bool
+	isCompleted        bool
+	acceptResponseTail bool
+	tailTerminal       bool
+	tailResponseSize   int
+	response           Response
+	err                error
 }
 
 func newLogicalRequest(
@@ -94,16 +97,20 @@ func (r *logicalRequest) sendInitialResponseCredit(ctx context.Context) error {
 		int(r.session.limits.GetMaxCreditBytes()),
 	)
 	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.receiveCredit = credit
-	r.mu.Unlock()
-
-	return r.enqueuePayload(
+	err := r.enqueuePayloadLocked(
 		ctx,
 		&contractv1.ConnectResponse_Credit{
 			// #nosec G115 -- credit is bounded by the validated uint32 protocol limit.
 			Credit: &contractv1.Credit{Bytes: uint32(credit)},
 		},
 	)
+	if err != nil {
+		r.receiveCredit = 0
+	}
+
+	return err
 }
 
 func (r *logicalRequest) sendBody(ctx context.Context, payload []byte) error {
@@ -140,17 +147,31 @@ func (r *logicalRequest) wait(ctx context.Context) (Response, error) {
 }
 
 func (r *logicalRequest) cancel(err error) {
+	r.cancelWithBarrier(err, nil)
+}
+
+func (r *logicalRequest) cancelWithBarrier(err error, afterEnqueue func()) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.isCompleted {
+		return
+	}
 	reason := contractv1.CancelReason_CANCEL_REASON_CALLER
 	if errors.Is(err, context.DeadlineExceeded) {
 		reason = contractv1.CancelReason_CANCEL_REASON_DEADLINE
 	}
-	_ = r.enqueuePayload(
+	_ = r.enqueuePayloadLocked(
 		r.session.ctx,
 		&contractv1.ConnectResponse_Cancel{
 			Cancel: &contractv1.Cancel{Reason: reason},
 		},
 	)
-	r.complete(Response{}, err)
+	if afterEnqueue != nil {
+		afterEnqueue()
+	}
+	r.acceptResponseTail = true
+	r.tailResponseSize = len(r.responsePayload)
+	r.completeLocked(Response{}, err)
 }
 
 func (r *logicalRequest) takeSendCredit(ctx context.Context, remaining int) (int, error) {
@@ -190,8 +211,9 @@ func (r *logicalRequest) takeSendCredit(ctx context.Context, remaining int) (int
 func (r *logicalRequest) handleInbound(frame *contractv1.ConnectRequest) error {
 	r.mu.Lock()
 	if r.isCompleted {
+		err := r.handleCompletedInboundLocked(frame)
 		r.mu.Unlock()
-		return nil
+		return err
 	}
 	if frame.GetHeader().GetSequence() != r.inboundSequence+1 {
 		r.mu.Unlock()
@@ -273,22 +295,75 @@ func (r *logicalRequest) handleInbound(frame *contractv1.ConnectRequest) error {
 	}
 }
 
+func (r *logicalRequest) handleCompletedInboundLocked(
+	frame *contractv1.ConnectRequest,
+) error {
+	if !r.acceptResponseTail || r.tailTerminal ||
+		frame.GetHeader().GetSequence() != r.inboundSequence+1 {
+		return ErrProtocolViolation
+	}
+	r.inboundSequence++
+
+	switch payload := frame.GetPayload().(type) {
+	case *contractv1.ConnectRequest_Credit:
+		if r.isResponseClosed {
+			return ErrProtocolViolation
+		}
+		credit := int(payload.Credit.GetBytes())
+		maximumOutstanding := r.policy.MaxRequestBytes
+		if r.sendCredit > maximumOutstanding || credit > maximumOutstanding-r.sendCredit {
+			return ErrProtocolViolation
+		}
+		r.sendCredit += credit
+		return nil
+	case *contractv1.ConnectRequest_Data:
+		if r.isResponseClosed {
+			return ErrProtocolViolation
+		}
+		dataBytes := len(payload.Data.GetPayload())
+		if dataBytes > r.receiveCredit ||
+			r.tailResponseSize+dataBytes > r.policy.MaxResponseBytes {
+			return ErrProtocolViolation
+		}
+		r.receiveCredit -= dataBytes
+		r.tailResponseSize += dataBytes
+		return nil
+	case *contractv1.ConnectRequest_HalfClose:
+		if r.isResponseClosed {
+			return ErrProtocolViolation
+		}
+		r.isResponseClosed = true
+		return nil
+	case *contractv1.ConnectRequest_Result:
+		if !r.isResponseClosed {
+			return ErrProtocolViolation
+		}
+		r.tailTerminal = true
+		return nil
+	default:
+		return ErrProtocolViolation
+	}
+}
+
 func (r *logicalRequest) grantReceiveCredit(bytes int) error {
 	r.mu.Lock()
+	defer r.mu.Unlock()
 	if r.isCompleted {
-		r.mu.Unlock()
 		return nil
 	}
 	r.receiveCredit += bytes
-	r.mu.Unlock()
-
-	return r.enqueuePayload(
+	err := r.enqueuePayloadLocked(
 		r.session.ctx,
 		&contractv1.ConnectResponse_Credit{
 			// #nosec G115 -- bytes is bounded by validated message and credit limits.
 			Credit: &contractv1.Credit{Bytes: uint32(bytes)},
 		},
 	)
+	if err != nil {
+		r.receiveCredit -= bytes
+	}
+
+	return err
 }
 
 func (r *logicalRequest) enqueuePayload(
@@ -297,6 +372,14 @@ func (r *logicalRequest) enqueuePayload(
 ) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	return r.enqueuePayloadLocked(ctx, payload)
+}
+
+func (r *logicalRequest) enqueuePayloadLocked(
+	ctx context.Context,
+	payload any,
+) error {
 	if r.isCompleted {
 		if r.err != nil {
 			return r.err
@@ -339,6 +422,25 @@ func (r *logicalRequest) complete(response Response, err error) bool {
 	defer r.mu.Unlock()
 
 	return r.completeLocked(response, err)
+}
+
+func (r *logicalRequest) completeLocalAbort(err error) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.isCompleted {
+		return false
+	}
+	r.acceptResponseTail = true
+	r.tailResponseSize = len(r.responsePayload)
+
+	return r.completeLocked(Response{}, err)
+}
+
+func (r *logicalRequest) compactForTombstone() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.responsePayload = nil
+	r.response = Response{}
 }
 
 func (r *logicalRequest) completeLocked(response Response, err error) bool {

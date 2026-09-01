@@ -542,7 +542,7 @@ func registerSelectableSession(
 		terminal:    make(chan sessionFailure, 1),
 		requests:    map[[16]byte]*logicalRequest{},
 		routeActive: map[contractv1.RouteId]int{},
-		tombstones:  map[[16]byte]struct{}{},
+		tombstones:  map[[16]byte]*logicalRequest{},
 		tombstoneOrder: make(
 			[][16]byte,
 			0,

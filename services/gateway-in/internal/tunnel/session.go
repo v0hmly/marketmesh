@@ -70,7 +70,7 @@ type session struct {
 	lastActivity      time.Time
 	requests          map[[16]byte]*logicalRequest
 	routeActive       map[contractv1.RouteId]int
-	tombstones        map[[16]byte]struct{}
+	tombstones        map[[16]byte]*logicalRequest
 	tombstoneOrder    [][16]byte
 	tombstonePosition int
 	pendingPing       uint64
@@ -100,7 +100,7 @@ func newSession(params sessionParams) *session {
 		terminal:       make(chan sessionFailure, 1),
 		requests:       map[[16]byte]*logicalRequest{},
 		routeActive:    map[contractv1.RouteId]int{},
-		tombstones:     map[[16]byte]struct{}{},
+		tombstones:     map[[16]byte]*logicalRequest{},
 		tombstoneOrder: make([][16]byte, 0, params.negotiated.limits.GetMaxInFlightRequests()),
 		drainSent:      make(chan struct{}, 1),
 		pongReceived:   make(chan struct{}, 1),
@@ -279,11 +279,14 @@ func (s *session) removeRequest(request *logicalRequest, addTombstone bool) {
 		delete(s.routeActive, request.route)
 	}
 	if addTombstone {
-		s.addTombstoneLocked(request.id)
+		s.addTombstoneLocked(request)
 	}
 	shouldFinishDrain := s.isDraining && len(s.requests) == 0
 	isLocalDrain := s.localDrain
 	s.mu.Unlock()
+	if addTombstone {
+		request.compactForTombstone()
+	}
 
 	s.registry.releaseInstance(s.instanceID)
 	s.settings.instrumentation.requestDelta(
@@ -307,18 +310,19 @@ func (s *session) removeRequest(request *logicalRequest, addTombstone bool) {
 	}
 }
 
-func (s *session) addTombstoneLocked(requestID [16]byte) {
+func (s *session) addTombstoneLocked(request *logicalRequest) {
+	requestID := request.id
 	capacity := int(s.limits.GetMaxInFlightRequests())
 	if len(s.tombstoneOrder) < capacity {
 		s.tombstoneOrder = append(s.tombstoneOrder, requestID)
-		s.tombstones[requestID] = struct{}{}
+		s.tombstones[requestID] = request
 		return
 	}
 
 	oldest := s.tombstoneOrder[s.tombstonePosition]
 	delete(s.tombstones, oldest)
 	s.tombstoneOrder[s.tombstonePosition] = requestID
-	s.tombstones[requestID] = struct{}{}
+	s.tombstones[requestID] = request
 	s.tombstonePosition = (s.tombstonePosition + 1) % capacity
 }
 
@@ -582,12 +586,11 @@ func (s *session) handleInbound(frame *contractv1.ConnectRequest) error {
 	copy(requestID[:], frame.GetHeader().GetRequestId())
 	s.mu.Lock()
 	request, exists := s.requests[requestID]
-	_, isTombstone := s.tombstones[requestID]
-	s.mu.Unlock()
 	if !exists {
-		if isTombstone {
-			return nil
-		}
+		request = s.tombstones[requestID]
+	}
+	s.mu.Unlock()
+	if request == nil {
 		return ErrProtocolViolation
 	}
 	if frame.GetHeader().GetTrafficClass() != request.policy.TrafficClass {
@@ -596,7 +599,7 @@ func (s *session) handleInbound(frame *contractv1.ConnectRequest) error {
 
 	err := request.handleInbound(frame)
 	if errors.Is(err, ErrQueueFull) {
-		request.complete(Response{}, ErrQueueFull)
+		request.completeLocalAbort(ErrQueueFull)
 	}
 
 	return err
