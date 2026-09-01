@@ -4,18 +4,26 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
 )
 
-const maxRetryAttempts = 5
+const (
+	maxApplicationNameBytes = 63
+	maxRetryAttempts        = 5
+)
 
-// Config задаёт независимые RW/RO-пулы и необязательные повторы транзакций.
+// Config задаёт общую identity соединений, независимые RW/RO-пулы и
+// необязательные повторы транзакций.
 type Config struct {
-	RW    PoolConfig
-	RO    PoolConfig
-	Retry *RetryPolicy
+	// ApplicationName идентифицирует workload в PostgreSQL и применяется к
+	// обоим пулам после разбора DSN.
+	ApplicationName string
+	RW              PoolConfig
+	RO              PoolConfig
+	Retry           *RetryPolicy
 }
 
 // PoolConfig задаёт безопасные пределы одного pgxpool.Pool. DSN должен
@@ -50,6 +58,7 @@ type settings struct {
 }
 
 type poolSettings struct {
+	applicationName       string
 	dsn                   serviceruntime.Secret
 	maxConns              int32
 	minConns              int32
@@ -72,14 +81,21 @@ type retrySettings struct {
 }
 
 func normalizeConfig(config Config) (settings, error) {
+	applicationName, err := normalizeApplicationName(config.ApplicationName)
+	if err != nil {
+		return settings{}, err
+	}
+
 	rw, err := normalizePoolConfig(roleRW, config.RW)
 	if err != nil {
 		return settings{}, err
 	}
+	rw.applicationName = applicationName
 	ro, err := normalizePoolConfig(roleRO, config.RO)
 	if err != nil {
 		return settings{}, err
 	}
+	ro.applicationName = applicationName
 	retry, err := normalizeRetryPolicy(config.Retry)
 	if err != nil {
 		return settings{}, err
@@ -90,6 +106,27 @@ func normalizeConfig(config Config) (settings, error) {
 		ro:    ro,
 		retry: retry,
 	}, nil
+}
+
+func normalizeApplicationName(value string) (string, error) {
+	applicationName := strings.TrimSpace(value)
+	if applicationName == "" {
+		return "", invalidConfig("", "application name is required")
+	}
+	if len(applicationName) > maxApplicationNameBytes {
+		return "", invalidConfig("", "application name must not exceed 63 bytes")
+	}
+	for index := range len(applicationName) {
+		character := applicationName[index]
+		if character < 0x20 || character > 0x7e {
+			return "", invalidConfig(
+				"",
+				"application name must contain only printable ASCII characters",
+			)
+		}
+	}
+
+	return applicationName, nil
 }
 
 func normalizePoolConfig(role poolRole, config PoolConfig) (poolSettings, error) {

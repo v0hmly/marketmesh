@@ -3,6 +3,7 @@
 Пакет `postgres` предоставляет небольшую явную обвязку над `pgx/pgxpool` v5:
 
 - отдельные обязательные RW- и RO-пулы;
+- обязательную общую identity соединений через PostgreSQL `application_name`;
 - проверку, что RW endpoint ведёт на primary, а RO — на hot standby;
 - query timeout, действующий до закрытия `Rows` или вызова `Row.Scan`;
 - транзакции только на RW с `READ COMMITTED`, `REPEATABLE READ` или `SERIALIZABLE`;
@@ -43,9 +44,10 @@ poolConfig := func(dsn runtime.Secret) postgres.PoolConfig {
 }
 
 database, err := postgres.New(ctx, postgres.Config{
-	RW: poolConfig(rwDSN),
-	RO: poolConfig(roDSN),
-	Retry: &postgres.RetryPolicy{
+	ApplicationName: "user",
+	RW:              poolConfig(rwDSN),
+	RO:              poolConfig(roDSN),
+	Retry:           &postgres.RetryPolicy{
 		MaxAttempts:       3,
 		InitialBackoff:    10 * time.Millisecond,
 		MaxBackoff:        100 * time.Millisecond,
@@ -58,6 +60,52 @@ if err != nil {
 ```
 
 DSN передаётся только как `runtime.Secret`. `New` раскрывает значение непосредственно перед `pgxpool.ParseConfig`, но собственные errors, metrics и traces значение не содержат. Исходные ошибки PostgreSQL сохраняются для `errors.Is`/`errors.As`, а безопасная внешняя формулировка `operationError` не печатает driver details.
+
+## Идентификация соединений
+
+`ApplicationName` обязателен и одинаков для RW- и RO-пулов. Пакет применяет
+`strings.TrimSpace`, затем принимает только печатный ASCII длиной от 1 до 63
+байт. Слишком длинное имя отклоняется: молчаливое усечение запрещено, потому
+что оно сделало бы разные workload неразличимыми в PostgreSQL.
+
+В local composition root передаётся точное имя сервиса, например `user`:
+
+```go
+postgres.Config{
+	ApplicationName: serviceName,
+	// RW, RO и Retry опущены.
+}
+```
+
+В Kubernetes composition root собирает имя строго в формате
+`<pod>/<namespace>/<cluster>`. `pod` и `namespace` поступают через Downward API,
+а стабильное имя cluster задаётся deployment-конфигурацией отдельно. Компоненты
+не должны содержать `/`; полный budget с двумя разделителями:
+
+```text
+len(pod) + len(namespace) + len(cluster) + 2 <= 63 bytes
+```
+
+Если budget превышен, нужно сократить deployment names или имя cluster, а не
+обрезать итоговую строку. `platform/postgres` не читает process environment:
+composition root обязан получить компоненты, проверить их наличие, собрать имя
+и явно передать `ApplicationName`.
+
+После `pgxpool.ParseConfig` пакет всегда записывает каноническое значение в
+`ConnConfig.RuntimeParams["application_name"]`. Поэтому параметр
+`application_name` из DSN и ambient `PGAPPNAME` не могут подменить identity.
+Имя используется PostgreSQL для server-side диагностики, но не добавляется в
+metric labels или query spans как pod-level high-cardinality attribute.
+
+Активные подключения можно проверить безопасным server-side запросом без DSN и
+credentials:
+
+```sql
+SELECT application_name, state, count(*)
+FROM pg_stat_activity
+WHERE application_name = 'user'
+GROUP BY application_name, state;
+```
 
 ## Явный RW/RO
 
@@ -129,7 +177,7 @@ histogram_quantile(0.99, sum(rate(marketmesh_postgres_transaction_duration_secon
 
 ## Проверки
 
-Обычные unit-тесты герметичны и входят в `task verify`. Интеграционные тесты используют существующую таблицу `public.infra_smoke` из MM-9, не создают схему и проверяют primary, synchronous replica, commit, rollback, read-only mode и cancellation:
+Обычные unit-тесты герметичны и входят в `task verify`. Интеграционные тесты используют существующую таблицу `public.infra_smoke` из MM-9, не создают схему и проверяют primary, synchronous replica, одинаковый `application_name` для RW/RO, commit, rollback, read-only mode и cancellation:
 
 ```bash
 task postgres:integration

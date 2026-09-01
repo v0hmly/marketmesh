@@ -21,6 +21,9 @@ Go-сервисам MarketMesh нужен общий production-ready спосо
 В `platform/postgres` реализуется небольшая явная обвязка:
 
 - обязательные независимые RW- и RO-пулы с отдельным lifecycle;
+- обязательный общий `application_name`, явно переданный composition root,
+  нормализованный как печатный ASCII длиной не более 63 байт и принудительно
+  установленный после разбора DSN для обоих пулов;
 - `runtime.Secret` для DSN;
 - проверка primary/hot standby через `pg_is_in_recovery()` и `transaction_read_only`;
 - обязательные connect/query/ping timeout и pool lifetime/idle limits;
@@ -87,6 +90,12 @@ Savepoint меняет semantics отказа и может создать ло�
 - Minor update v5 проходит changelog review и полный CI; major update требует отдельной задачи и проверки ADR.
 - Не использовать `QueryExecModeSimpleProtocol` без отдельного обоснования и security review.
 - DSN создаётся только как `runtime.Secret`; SQL, arguments и driver error text не записываются в logs/metrics/traces.
+- Local `application_name` равен точному имени сервиса. Kubernetes использует
+  `<pod>/<namespace>/<cluster>`: pod и namespace поступают через Downward API,
+  cluster задаётся отдельно, а composition root соблюдает общий 63-byte budget.
+- `platform/postgres` не читает process environment. Канонический
+  `application_name` явно переопределяет значения DSN и `PGAPPNAME`, не
+  усекается и не используется как high-cardinality metric или trace attribute.
 - Все операции получают caller context; `Rows` обязательно закрываются.
 - RW/RO pool sizes согласуются с лимитом PostgreSQL на сумму replicas сервисов, а не на один process изолированно.
 - Readiness проверяет оба критичных endpoint. Сервис, которому RO не критичен, должен принять это отдельным application/deployment решением, а не молча скрывать ошибку.
@@ -94,14 +103,18 @@ Savepoint меняет semantics отказа и может создать ло�
 
 ## Проверяемые инварианты
 
-- Unit-тесты отклоняют небезопасные pool/retry настройки и не раскрывают DSN.
+- Unit-тесты отклоняют небезопасные pool/retry/application name настройки, не
+  раскрывают DSN и подтверждают precedence канонического имени над DSN и
+  `PGAPPNAME`.
 - Endpoint role mismatch отклоняется при `New`.
 - Транзакция всегда вызывает `BeginTx` только на RW backend.
 - Callback error, commit, rollback, panic и cancellation покрыты тестами.
 - SQLSTATE `40001` и `40P01` повторяются только при `Idempotent: true`; attempts/backoff ограничены.
 - `errors.As` извлекает исходный `*pgconn.PgError` после platform wrapping и exhaustion.
 - Traces/metrics tests не находят SQL, arguments, DSN и server error text.
-- Integration tests против MM-9 подтверждают commit/rollback, отказ write в read-only mode и видимость commit на synchronous RO replica.
+- Integration tests против MM-9 подтверждают одинаковый `application_name` для
+  RW/RO, commit/rollback, отказ write в read-only mode и видимость commit на
+  synchronous RO replica.
 - `gofmt`, `go vet`, `go test -race`, `govulncheck`, `go mod verify` и обязательный workspace verify успешны.
 
 ## Отложенные вопросы

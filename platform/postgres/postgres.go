@@ -238,27 +238,9 @@ func newManagedPool(
 	settings poolSettings,
 	tracer trace.Tracer,
 ) (*managedPool, error) {
-	config, err := pgxpool.ParseConfig(settings.dsn.Reveal())
+	config, err := buildPoolConfig(role, settings, tracer)
 	if err != nil {
-		return nil, wrapOperation(
-			"parse configuration for",
-			role,
-			errors.Join(ErrInvalidConfig, err),
-		)
-	}
-
-	config.MaxConns = settings.maxConns
-	config.MinConns = settings.minConns
-	config.MinIdleConns = settings.minIdleConns
-	config.MaxConnLifetime = settings.maxConnLifetime
-	config.MaxConnLifetimeJitter = settings.maxConnLifetimeJitter
-	config.MaxConnIdleTime = settings.maxConnIdleTime
-	config.HealthCheckPeriod = settings.healthCheckPeriod
-	config.PingTimeout = settings.pingTimeout
-	config.ConnConfig.ConnectTimeout = settings.connectTimeout
-	config.ConnConfig.Tracer = &queryTracer{
-		pool:   role,
-		tracer: tracer,
+		return nil, err
 	}
 
 	connectCtx, cancel := context.WithTimeout(ctx, settings.connectTimeout)
@@ -285,6 +267,41 @@ func newManagedPool(
 	}
 
 	return pool, nil
+}
+
+func buildPoolConfig(
+	role poolRole,
+	settings poolSettings,
+	tracer trace.Tracer,
+) (*pgxpool.Config, error) {
+	config, err := pgxpool.ParseConfig(settings.dsn.Reveal())
+	if err != nil {
+		return nil, wrapOperation(
+			"parse configuration for",
+			role,
+			errors.Join(ErrInvalidConfig, err),
+		)
+	}
+	if config.ConnConfig.RuntimeParams == nil {
+		config.ConnConfig.RuntimeParams = make(map[string]string, 1)
+	}
+	config.ConnConfig.RuntimeParams["application_name"] = settings.applicationName
+
+	config.MaxConns = settings.maxConns
+	config.MinConns = settings.minConns
+	config.MinIdleConns = settings.minIdleConns
+	config.MaxConnLifetime = settings.maxConnLifetime
+	config.MaxConnLifetimeJitter = settings.maxConnLifetimeJitter
+	config.MaxConnIdleTime = settings.maxConnIdleTime
+	config.HealthCheckPeriod = settings.healthCheckPeriod
+	config.PingTimeout = settings.pingTimeout
+	config.ConnConfig.ConnectTimeout = settings.connectTimeout
+	config.ConnConfig.Tracer = &queryTracer{
+		pool:   role,
+		tracer: tracer,
+	}
+
+	return config, nil
 }
 
 func verifyPoolRole(ctx context.Context, pool *managedPool) error {
