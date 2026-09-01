@@ -72,6 +72,7 @@ func TestLoadConfigRejectsInvalidTypedValuesWithoutLeakingSecrets(t *testing.T) 
 		{name: "read timeout", key: "HTTP_READ_TIMEOUT", value: "invalid"},
 		{name: "write timeout", key: "HTTP_WRITE_TIMEOUT", value: "-1s"},
 		{name: "idle timeout", key: "HTTP_IDLE_TIMEOUT", value: "0s"},
+		{name: "request timeout", key: "HTTP_REQUEST_TIMEOUT", value: "-1s"},
 		{name: "header limit", key: "HTTP_MAX_HEADER_BYTES", value: "0"},
 		{name: "body limit", key: "HTTP_MAX_BODY_BYTES", value: "not-a-number"},
 		{name: "health timeout", key: "HEALTH_CHECK_TIMEOUT", value: "0s"},
@@ -109,6 +110,7 @@ func TestLoadConfigAcceptsExplicitOverrides(t *testing.T) {
 	values["HTTP_READ_TIMEOUT"] = "2s"
 	values["HTTP_WRITE_TIMEOUT"] = "3s"
 	values["HTTP_IDLE_TIMEOUT"] = "4s"
+	values["HTTP_REQUEST_TIMEOUT"] = "5s"
 	values["HTTP_MAX_HEADER_BYTES"] = "2048"
 	values["HTTP_MAX_BODY_BYTES"] = "4096"
 	values["HEALTH_CHECK_TIMEOUT"] = "500ms"
@@ -129,6 +131,7 @@ func TestLoadConfigAcceptsExplicitOverrides(t *testing.T) {
 		loaded.httpReadTimeout != 2*time.Second ||
 		loaded.httpWriteTimeout != 3*time.Second ||
 		loaded.httpIdleTimeout != 4*time.Second ||
+		loaded.httpRequestTimeout != 5*time.Second ||
 		loaded.httpMaxHeaderBytes != 2048 ||
 		loaded.httpMaxBodyBytes != 4096 ||
 		loaded.healthCheckTimeout != 500*time.Millisecond ||

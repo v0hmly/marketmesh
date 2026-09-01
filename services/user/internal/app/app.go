@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/v0hmly/marketmesh/platform/httpserver"
 	"github.com/v0hmly/marketmesh/platform/logger"
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
 	"github.com/v0hmly/marketmesh/platform/telemetry"
@@ -115,7 +116,25 @@ func runService(
 		return fmt.Errorf("creating health checks: %w", err)
 	}
 
-	httpServer := newHTTPServer(config, log, newHealthHandler(health))
+	healthHandler, err := httpserver.NewHealthHandler(health)
+	if err != nil {
+		return fmt.Errorf("creating HTTP health handler: %w", err)
+	}
+	httpServer, err := httpserver.New(httpserver.Config{
+		Handler:           healthHandler,
+		ReadHeaderTimeout: config.httpReadHeaderTimeout,
+		ReadTimeout:       config.httpReadTimeout,
+		WriteTimeout:      config.httpWriteTimeout,
+		IdleTimeout:       config.httpIdleTimeout,
+		RequestTimeout:    config.httpRequestTimeout,
+		MaxHeaderBytes:    config.httpMaxHeaderBytes,
+		MaxBodyBytes:      config.httpMaxBodyBytes,
+		Logger:            log,
+		Telemetry:         pipeline,
+	})
+	if err != nil {
+		return fmt.Errorf("creating HTTP server: %w", err)
+	}
 
 	listener, err := listen("tcp", config.httpAddress)
 	if err != nil {
@@ -131,7 +150,10 @@ func runService(
 		}
 	}()
 
-	httpComponent := newHTTPComponent(httpServer, listener)
+	httpComponent, err := httpserver.Component("http", httpServer, listener)
+	if err != nil {
+		return fmt.Errorf("creating HTTP component: %w", err)
+	}
 	telemetryComponent := serviceruntime.Component{
 		Name: "telemetry",
 		Run: func(ctx context.Context) error {

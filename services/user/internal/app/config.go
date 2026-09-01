@@ -17,6 +17,7 @@ const (
 	defaultHTTPReadTimeout       = 15 * time.Second
 	defaultHTTPWriteTimeout      = 15 * time.Second
 	defaultHTTPIdleTimeout       = 60 * time.Second
+	defaultHTTPRequestTimeout    = 10 * time.Second
 	defaultHTTPMaxHeaderBytes    = 64 * 1024
 	defaultHTTPMaxBodyBytes      = int64(1024 * 1024)
 	defaultHealthCheckTimeout    = 2 * time.Second
@@ -38,6 +39,7 @@ type config struct {
 	httpReadTimeout       time.Duration
 	httpWriteTimeout      time.Duration
 	httpIdleTimeout       time.Duration
+	httpRequestTimeout    time.Duration
 	httpMaxHeaderBytes    int
 	httpMaxBodyBytes      int64
 
@@ -106,6 +108,13 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	result.httpIdleTimeout, err = env.PositiveDuration(
 		"HTTP_IDLE_TIMEOUT",
 		defaultHTTPIdleTimeout,
+	)
+	if err != nil {
+		return config{}, err
+	}
+	result.httpRequestTimeout, err = env.PositiveDuration(
+		"HTTP_REQUEST_TIMEOUT",
+		defaultHTTPRequestTimeout,
 	)
 	if err != nil {
 		return config{}, err

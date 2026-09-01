@@ -9,7 +9,7 @@
 Сервис содержит минимальный composition root без бизнес-логики:
 
 - `cmd/user` создаёт корневой context для `SIGINT` и `SIGTERM`, вызывает `internal/app.Run` и преобразует ошибку в exit code;
-- `internal/app` типизированно загружает environment, вручную создаёт logger, telemetry, health и HTTP server;
+- `internal/app` типизированно загружает environment, вручную создаёт logger, telemetry и health, а безопасный server и middleware получает из `platform/httpserver`;
 - `GET /livez` проверяет, что процесс жив, а `GET /readyz` отдельно отражает готовность принимать работу;
 - HTTP server и telemetry останавливаются в обратном порядке с общим `SHUTDOWN_TIMEOUT`.
 
@@ -29,6 +29,7 @@
 | `HTTP_READ_HEADER_TIMEOUT` | `5s` |
 | `HTTP_READ_TIMEOUT` / `HTTP_WRITE_TIMEOUT` | `15s` |
 | `HTTP_IDLE_TIMEOUT` | `60s` |
+| `HTTP_REQUEST_TIMEOUT` | `10s` |
 | `HTTP_MAX_HEADER_BYTES` | `65536` |
 | `HTTP_MAX_BODY_BYTES` | `1048576` |
 | `HEALTH_CHECK_TIMEOUT` | `2s` |

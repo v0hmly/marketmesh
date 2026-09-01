@@ -8,6 +8,7 @@
 - [`telemetry`](telemetry/README.md) — изолированный OpenTelemetry pipeline для traces и metrics, OTLP/gRPC exporters и адаптеры ConnectRPC/gRPC.
 - [`runtime`](runtime/README.md) — transport-agnostic env-конфигурация, безопасные секреты, readiness и ограниченный lifecycle.
 - [`grpc`](grpc/README.md) — безопасные gRPC server/client, TLS/mTLS, обязательные deadlines, interceptors, standard health, ограниченные retry и lifecycle поверх runtime.
+- [`httpserver`](httpserver/README.md) — безопасный net/http server, request middleware, HTTP health и bounded lifecycle поверх runtime.
 - [`postgres`](postgres/README.md) — явные RW/RO-пулы, транзакции, readiness и telemetry поверх pgx.
 
 Пакеты создаются соответствующими задачами и не добавляются пустыми заранее.
