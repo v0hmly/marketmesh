@@ -62,6 +62,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 `TraceSampleRatio == nil` означает `1.0`. Чтобы отключить новые корневые traces, передайте указатель на `0.0`. Sampler является `ParentBased`: на доверенных внутренних границах решение родительского span сохраняется.
 
+Для локального Docker Compose endpoint обслуживает Grafana Alloy. Процесс на
+host использует `127.0.0.1:4317` для internal или `127.0.0.1:14317` для DMZ и
+обязательно задаёт `Insecure: true`. Контейнер использует стабильное имя
+`otel-collector:4317` внутри своей зоны. Полная схема портов, logs ↔ traces
+корреляция и команды smoke-проверки описаны в
+[`infra/compose/README.md`](../../infra/compose/README.md).
+
 ## Транспортные границы
 
 ConnectRPC в `gateway-in`, принимающий запросы из DMZ, должен использовать `PublicConnectInterceptor`. Внешний `traceparent` становится link нового server span и не управляет его родительством или sampling. Для доверенного межсервисного ConnectRPC существует `TrustedConnectInterceptor`. Оба варианта отключают события на каждое сообщение: для streaming RPC, включая чат, это предотвращает неконтролируемый рост spans и накладных расходов.

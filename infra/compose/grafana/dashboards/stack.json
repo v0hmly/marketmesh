@@ -1,0 +1,74 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki"},
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=\"marketmesh-observability-smoke\"}[5m]))",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Smoke-события за 5 минут",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "tempo", "uid": "tempo"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 10, "w": 16, "x": 8, "y": 0},
+      "id": 2,
+      "options": {"cellHeight": "sm", "showHeader": true},
+      "targets": [
+        {
+          "datasource": {"type": "tempo", "uid": "tempo"},
+          "limit": 20,
+          "query": "{ resource.service.name = \"marketmesh-observability-smoke\" }",
+          "queryType": "traceql",
+          "refId": "A",
+          "tableType": "traces"
+        }
+      ],
+      "title": "Последние проверочные traces",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 10},
+      "id": 3,
+      "options": {"dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": true, "showCommonLabels": false, "showLabels": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true},
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "loki"},
+          "editorMode": "code",
+          "expr": "{service_name=\"marketmesh-observability-smoke\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "История smoke-проверок Alloy → Loki",
+      "type": "logs"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["marketmesh", "observability", "stack"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "MarketMesh: observability stack",
+  "uid": "marketmesh-observability",
+  "version": 1
+}

@@ -43,7 +43,10 @@ task arch       # проверить модульные пути и запрещ
 task api:verify # проверить protobuf workflow и контракты
 task verify     # выполнить обязательный локальный набор проверок workspace
 task infra:up   # запустить локальную инфраструктуру
-task infra:smoke # проверить репликацию PostgreSQL и изоляцию DMZ
+task infra:smoke # проверить PostgreSQL, DMZ и observability pipeline
+task observability:up # запустить только observability-стек
+task observability:smoke # проверить связанный trace и log
+task observability:outage # проверить bounded queues при недоступных backends
 ```
 
 Taskfile вызывает `tools/go-workspace.sh` для Go-команд и `tools/protobuf.sh` для protobuf-команд.
@@ -61,7 +64,8 @@ pnpm typecheck
 
 Пока frontend-пакеты не созданы, эти команды завершаются без выполнения вложенных скриптов.
 
-Локальная инфраструктура PostgreSQL, Redis, SeaweedFS и OpenTelemetry описана в
+Локальная инфраструктура PostgreSQL, Redis, SeaweedFS, Alloy, Tempo, Loki и
+Grafana описана в
 [руководстве Docker Compose](infra/compose/README.md). Команда
 `task infra:verify` запускает окружение и выполняет полный smoke test, включая
 проверку persistent volumes после restart.
