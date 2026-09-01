@@ -67,11 +67,19 @@ required gate, `ValidateQuarantine` требует явные `@owner`, прич
 expiry не дальше 30 дней; quarantine остаётся метаданными и не переписывает
 фактический результат попытки.
 
+`HTTPCapacitySource` подключает публичный readiness-контракт MM-30 без импорта
+его internal package. Adapter принимает ровно два разных literal
+private/loopback HTTP URL с явным непривилегированным port и точным `/readyz`,
+проверяет оба DC одновременно и считает только ответ `200 OK`. Redirect,
+ambient proxy, compression и DNS запрещены; timeout и тело ответа ограничены,
+а transport/read error останавливает gate вместо молчаливого уменьшения
+capacity.
+
 ## Отложенная интеграция
 
 - workloads/PKI MM-29 уже доступны; фактический Docker topology contract и
   destructive проверка adapter ожидают MM-28;
-- health-aware capacity и continuous probe — после MM-30 и MM-31;
+- health-aware capacity MM-30 подключена; continuous probe ожидает MM-31;
 - pod/service/rolling/DC churn — композиция adapters после MM-32–MM-35;
 - SLO availability/recovery/error-budget gate и JSON/JUnit — после MM-27;
 - permanent PR/scheduled GitHub Actions gate — после MM-6. До этого действует
