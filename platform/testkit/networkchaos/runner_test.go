@@ -196,6 +196,8 @@ func TestRunnerRefusesFaultThatCanExhaustCapacity(t *testing.T) {
 		&fakeDiagnostics{},
 		fakeWaiter{},
 	)
+	secondFault := validPartitionFault("partition-b", 1)
+	secondFault.Interface = "eth2"
 
 	err := runner.Run(context.Background(), Plan{
 		Steps: []Step{
@@ -204,7 +206,7 @@ func TestRunnerRefusesFaultThatCanExhaustCapacity(t *testing.T) {
 				Hold: time.Second,
 				Faults: []Fault{
 					validPartitionFault("partition-a", 1),
-					validPartitionFault("partition-b", 1),
+					secondFault,
 				},
 			},
 		},
@@ -454,7 +456,7 @@ func TestValidateFault(t *testing.T) {
 			mutate: func(fault *Fault) {
 				fault.PeerNetworks = nil
 			},
-			wantErr: "at least one peer network",
+			wantErr: "between 1 and",
 		},
 		{
 			name: "broad interface",
@@ -540,6 +542,31 @@ func TestValidateDegradation(t *testing.T) {
 	fault.BandwidthKbit = maxBandwidthKbit + 1
 	if err := validateFault(fault); err == nil || !strings.Contains(err.Error(), "bandwidth") {
 		t.Fatalf("validateFault() error = %v, want bandwidth rejection", err)
+	}
+
+	fault.BandwidthKbit = 1024
+	fault.Delay = maxNetworkDelay + time.Microsecond
+	if err := validateFault(fault); err == nil || !strings.Contains(err.Error(), "must not exceed") {
+		t.Fatalf("validateFault() error = %v, want delay rejection", err)
+	}
+
+	fault.Delay = time.Nanosecond
+	fault.Jitter = 0
+	if err := validateFault(fault); err == nil || !strings.Contains(err.Error(), "whole microseconds") {
+		t.Fatalf("validateFault() error = %v, want precision rejection", err)
+	}
+}
+
+func TestValidatePlanRejectsMultipleMutationsOfOneInterface(t *testing.T) {
+	t.Parallel()
+
+	secondFault := validPartitionFault("partition-second", 0)
+	plan := singleStepPlan()
+	plan.Steps[0].Faults = append(plan.Steps[0].Faults, secondFault)
+
+	err := validatePlan(testConfig(), plan)
+	if err == nil || !strings.Contains(err.Error(), "more than once") {
+		t.Fatalf("validatePlan() error = %v, want duplicate interface rejection", err)
 	}
 }
 

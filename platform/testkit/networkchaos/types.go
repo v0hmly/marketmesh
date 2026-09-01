@@ -22,8 +22,11 @@ const (
 
 	maxPlanSteps       = 256
 	maxFaultsPerStep   = 16
+	maxPeerNetworks    = 16
 	maxBoundedDuration = 24 * time.Hour
-	maxBandwidthKbit   = 100_000_000
+	maxNetworkDelay    = 60 * time.Second
+	minBandwidthKbit   = 8
+	maxBandwidthKbit   = 10_000_000
 )
 
 var (
@@ -256,6 +259,7 @@ func validatePlan(config Config, plan Plan) error {
 		}
 
 		faultNames := make(map[string]struct{}, len(step.Faults))
+		mutationTargets := make(map[string]struct{}, len(step.Faults))
 		for faultIndex, fault := range step.Faults {
 			if err := validateFault(fault); err != nil {
 				return fmt.Errorf(
@@ -273,6 +277,16 @@ func validatePlan(config Config, plan Plan) error {
 				)
 			}
 			faultNames[fault.Name] = struct{}{}
+
+			mutationTarget := fault.Container.ID + ":" + fault.Interface
+			if _, found := mutationTargets[mutationTarget]; found {
+				return fmt.Errorf(
+					"networkchaos: step %q mutates container interface %q more than once",
+					step.Name,
+					fault.Container.Name+":"+fault.Interface,
+				)
+			}
+			mutationTargets[mutationTarget] = struct{}{}
 		}
 	}
 
@@ -295,8 +309,11 @@ func validateFault(fault Fault) error {
 
 	switch fault.Kind {
 	case KindPartition:
-		if len(fault.PeerNetworks) == 0 {
-			return errors.New("partition must contain at least one peer network")
+		if len(fault.PeerNetworks) == 0 || len(fault.PeerNetworks) > maxPeerNetworks {
+			return fmt.Errorf(
+				"partition must contain between 1 and %d peer networks",
+				maxPeerNetworks,
+			)
 		}
 		if fault.Delay != 0 || fault.Jitter != 0 || fault.LossPercent != 0 || fault.BandwidthKbit != 0 {
 			return errors.New("partition must not contain degradation parameters")
@@ -321,11 +338,14 @@ func validateFault(fault Fault) error {
 		if fault.Delay < 0 || fault.Jitter < 0 {
 			return errors.New("delay and jitter must not be negative")
 		}
-		if fault.Delay > maxBoundedDuration || fault.Jitter > maxBoundedDuration {
-			return fmt.Errorf("delay and jitter must not exceed %s", maxBoundedDuration)
+		if fault.Delay > maxNetworkDelay || fault.Jitter > maxNetworkDelay {
+			return fmt.Errorf("delay and jitter must not exceed %s", maxNetworkDelay)
 		}
 		if fault.Jitter > fault.Delay {
 			return errors.New("jitter must not exceed delay")
+		}
+		if fault.Delay%time.Microsecond != 0 || fault.Jitter%time.Microsecond != 0 {
+			return errors.New("delay and jitter must use whole microseconds")
 		}
 		isInvalidLoss := math.IsNaN(fault.LossPercent) || math.IsInf(fault.LossPercent, 0)
 		if isInvalidLoss || fault.LossPercent < 0 || fault.LossPercent >= 100 {
@@ -333,6 +353,9 @@ func validateFault(fault Fault) error {
 		}
 		if fault.BandwidthKbit > maxBandwidthKbit {
 			return fmt.Errorf("bandwidth must not exceed %d kbit", maxBandwidthKbit)
+		}
+		if fault.BandwidthKbit > 0 && fault.BandwidthKbit < minBandwidthKbit {
+			return fmt.Errorf("bandwidth must be at least %d kbit when configured", minBandwidthKbit)
 		}
 		if fault.Delay == 0 && fault.Jitter == 0 && fault.LossPercent == 0 && fault.BandwidthKbit == 0 {
 			return errors.New("degradation must configure delay, jitter, loss or bandwidth")

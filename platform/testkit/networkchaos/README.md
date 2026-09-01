@@ -1,10 +1,9 @@
 # Network chaos testkit
 
 Пакет задаёт общий безопасный lifecycle сетевых fault-сценариев MM-36. Он
-намеренно не знает устройство будущего multi-DC стенда, формат availability
-report и команды конкретного container runtime. Эти части должны подключаться
-через небольшие adapters после слияния MM-27–MM-35 в `dev`, а не копироваться из
-их task-веток.
+намеренно не знает формат availability report и устройство multi-DC front
+door/probe. Эти части подключаются через небольшие adapters после слияния
+соответствующих MM-27–MM-35 в `dev`, а не копируются из их task-веток.
 
 ## Контракт ресурсов
 
@@ -24,9 +23,15 @@ report и команды конкретного container runtime. Эти час
 Adapter не должен читать или менять текущий пользовательский kube context,
 host network, существующий cluster или ресурс без этих labels. Partition
 задаётся peer network references, а не произвольным CIDR или shell fragment.
-Docker adapter MM-36 должен строить `tc`/filter команды только из проверенного
-snapshot и применять их к указанному interface внутри disposable container
-network namespace.
+
+`DockerDriver` запрашивает у Docker только ID, имя, три обязательных label,
+network endpoints и IPAM, не читая `Config.Env`. Он повторно связывает `ethN`
+с private subnet перед mutation и запускает фиксированный `docker` binary без
+shell. Degradation
+использует один root `netem` и отказывается перетирать любой qdisc, кроме
+исходного `noqueue`. Partition использует точные IPv4/IPv6 prefixes из snapshot
+и run-scoped comments firewall. Частичное применение возвращает cleanup для уже
+добавленных правил.
 
 ## Lifecycle
 
@@ -48,14 +53,25 @@ token, certificate, request ID, PII и высококардинальные labe
 не входят. Adapter сохраняет Kubernetes events, безопасные logs и resource
 snapshots в каталог конкретного run до удаления ресурсов.
 
+`EvaluateResources` проверяет ordered ledger goroutine, heap и трёх
+фиксированных queue classes: `control`, `auth`, `realtime`. Любое промежуточное
+превышение остаётся failure, даже если следующий sample вернулся в норму. Это
+запрещает скрывать нестабильность повторным «flaky pass».
+`WriteReplayManifest` сохраняет версионированный JSON с seed и фактической
+последовательностью faults, но без Docker IDs: новый запуск обязан заново
+разрешить disposable resources.
+
 ## Отложенная интеграция
 
-- topology/runtime adapter — после MM-28 и MM-29;
+- workloads/PKI MM-29 уже доступны; фактический Docker topology contract и
+  destructive проверка adapter ожидают MM-28;
 - health-aware capacity и continuous probe — после MM-30 и MM-31;
 - pod/service/rolling/DC churn — композиция adapters после MM-32–MM-35;
 - SLO availability/recovery/error-budget gate и JSON/JUnit — после MM-27;
-- permanent PR/scheduled GitHub Actions gate — только после отдельного
-  подтверждения и слияния MM-6.
+- permanent PR/scheduled GitHub Actions gate — после MM-6. До этого действует
+  зафиксированное в проекте MarketMesh процессное исключение: PR/merge разрешены
+  только после полного эквивалентного набора локальных проверок, независимого
+  review и фиксации результатов в PR.
 
 До появления этих зависимостей пакет можно проверить независимо:
 
