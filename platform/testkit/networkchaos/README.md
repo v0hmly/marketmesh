@@ -72,6 +72,13 @@ token, certificate, request ID, PII и высококардинальные labe
 не входят. Adapter сохраняет Kubernetes events, безопасные logs и resource
 snapshots в каталог конкретного run до удаления ресурсов.
 
+`ResourceSampler` строит ordered ledger параллельно soak traffic через явный
+`ResourceSource`. Baseline читается немедленно, каждое последующее чтение имеет
+собственный timeout, а общий Run context обязан иметь deadline не дальше 24
+часов. Только отдельный закрытый stop-канал считается штатным завершением;
+deadline, source error, менее двух samples и достижение `MaxSamples` до stop
+дают failure с сохранением уже собранного ledger.
+
 `EvaluateResources` проверяет ordered ledger goroutine, heap и трёх
 фиксированных queue classes: `control`, `auth`, `realtime`. Любое промежуточное
 превышение остаётся failure, даже если следующий sample вернулся в норму. Это

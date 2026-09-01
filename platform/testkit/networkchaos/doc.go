@@ -8,7 +8,8 @@
 // валидируют original binding перед каждой mutation и cleanup. Runner проверяет
 // scope непосредственно перед mutation, ограничивает каждую операцию deadline,
 // публикует bounded observer lifecycle, собирает diagnostics до cleanup и
-// восстанавливает faults в обратном порядке. Resource gate сохраняет любое
-// превышение goroutine, heap или bounded queues, а replay manifest фиксирует seed
-// и ordered sequence без runtime Docker IDs.
+// восстанавливает faults в обратном порядке. ResourceSampler строит bounded
+// ledger до явного stop, resource gate сохраняет любое превышение goroutine,
+// heap или bounded queues, а replay manifest фиксирует seed и ordered sequence
+// без runtime Docker IDs.
 package networkchaos
