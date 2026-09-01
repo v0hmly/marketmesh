@@ -189,6 +189,11 @@ tasks:
     cmds:
       - "{{.INFRA_TOOL}} psql-ro"
 
+  postgres:integration:
+    desc: Выполнить интеграционные тесты PostgreSQL против primary и synchronous replica
+    cmds:
+      - bash platform/postgres/testdata/integration.sh
+
   infra:down:
     desc: Остановить окружение с сохранением данных
     cmds:

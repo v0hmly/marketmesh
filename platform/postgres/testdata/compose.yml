@@ -1,0 +1,17 @@
+services:
+  postgres-integration:
+    build:
+      context: ../..
+      dockerfile: platform/postgres/testdata/Dockerfile
+    environment:
+      MARKETMESH_POSTGRES_RW_DSN: >-
+        postgres://app_rw:${POSTGRES_APP_RW_PASSWORD}@postgres-rw:5432/marketmesh?sslmode=disable
+      MARKETMESH_POSTGRES_RO_DSN: >-
+        postgres://app_ro:${POSTGRES_APP_RO_PASSWORD}@postgres-ro:5432/marketmesh?sslmode=disable
+    networks:
+      - internal
+    profiles: ["checks"]
+
+networks:
+  internal:
+    name: ${MM18_POSTGRES_TEST_NETWORK:?missing MM18_POSTGRES_TEST_NETWORK}

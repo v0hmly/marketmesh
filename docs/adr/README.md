@@ -28,6 +28,7 @@ ADR фиксирует одно значимое архитектурное ре
 | 0010 | [Композиция и поставка микрофронтендов](0010-microfrontend-composition-and-deployment.md) | Отложено | 2026-08-31 |
 | 0011 | [Гексагональная архитектура Go-микросервисов](0011-go-service-hexagonal-architecture.md) | Принято | 2026-08-31 |
 | 0012 | [Структура монорепозитория и Go workspace](0012-monorepository-and-go-workspace.md) | Принято | 2026-08-31 |
+| 0013 | [Доступ к PostgreSQL и границы транзакций](0013-postgresql-access-and-transactions.md) | Принято | 2026-09-01 |
 
 ## Как добавить решение
 
