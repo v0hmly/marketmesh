@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1";
+
+// AuthService registers and verifies user-controlled credentials.
+service AuthService {
+  // RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
+  rpc RegisterCredentials(RegisterCredentialsRequest) returns (RegisterCredentialsResponse);
+  // Login verifies a credential and returns an opaque subject identifier on success.
+  rpc Login(LoginRequest) returns (LoginResponse);
+}
+
+// RegisterCredentialsRequest carries the secret material needed for credential registration.
+message RegisterCredentialsRequest {
+  // Identifier is the case-insensitive credential name and must not be logged or traced.
+  string identifier = 1;
+  // Password is the raw secret and must not be persisted, logged, or traced.
+  bytes password = 2;
+}
+
+// RegisterCredentialsResponse deliberately contains no existence signal.
+message RegisterCredentialsResponse {}
+
+// LoginRequest carries the secret material needed for credential verification.
+message LoginRequest {
+  // Identifier is the case-insensitive credential name and must not be logged or traced.
+  string identifier = 1;
+  // Password is the raw secret and must not be persisted, logged, or traced.
+  bytes password = 2;
+}
+
+// LoginResponse contains the opaque identity established by successful verification.
+message LoginResponse {
+  // SubjectId is an opaque 16-byte identifier and is never an authentication secret.
+  bytes subject_id = 1;
+}
