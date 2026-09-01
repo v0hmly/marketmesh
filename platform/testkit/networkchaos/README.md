@@ -20,9 +20,14 @@ door/probe. Эти части подключаются через небольш
 - interface имеет явное имя `ethN`;
 - все primary и peer networks имеют только private test subnets.
 
-Adapter не должен читать или менять текущий пользовательский kube context,
-host network, существующий cluster или ресурс без этих labels. Partition
-задаётся peer network references, а не произвольным CIDR или shell fragment.
+Это правило относится к обычному `DockerDriver`. `TopologyDriver` не ослабляет
+его через публичные параметры: пакетный непубличный scope-validator принимает
+только исходный `targets/v1` snapshot MM-38, точное совпадение topology labels и
+успешный свежий `targets validate --expected-state running`. Внешний Driver не
+может подменить этот validator. Adapter не должен читать или менять текущий
+пользовательский kube context, host network, существующий cluster или ресурс
+вне этих двух закрытых ownership-контрактов. Partition задаётся peer network
+references, а не произвольным CIDR или shell fragment.
 
 `DockerDriver` запрашивает у Docker только ID, имя, три обязательных label,
 network endpoints и IPAM, не читая `Config.Env`. Он повторно связывает `ethN`
@@ -32,6 +37,14 @@ shell. Degradation
 исходного `noqueue`. Partition использует точные IPv4/IPv6 prefixes из snapshot
 и run-scoped comments firewall. Частичное применение возвращает cleanup для уже
 добавленных правил.
+
+`TopologyTargetClient` один раз разрешает все четыре targets для конкретного
+`mm36-*` run и сохраняет original token. Fresh resolve и rebind внутри network
+run запрещены. Перед resolve/validate и сразу после них клиент сверяет имя
+Docker context с заранее закреплённым локальным `unix://` endpoint; сами
+destructive Docker-команды используют `--host` с этим endpoint, а не изменяемое
+ambient context. Любое расхождение token, container/network/interface binding,
+ownership, schema/digest или context endpoint останавливает mutation и cleanup.
 
 ## Lifecycle
 
@@ -47,6 +60,12 @@ degradation и все durations ограничены сверху. В одном
 ошибкой. Runner сначала вызывает `Diagnostics.Capture`, затем восстанавливает
 faults в обратном порядке и ждёт steady state. Cleanup использует
 `context.WithoutCancel`, но остаётся bounded собственными deadlines.
+
+Опциональный `Observer` получает bounded `before`, `active` и `recovered`
+события каждого fault, включая индекс и число faults в Step. Это позволяет
+test-only E2E harness записать markers MM-31 для всех одновременных mutations,
+но ждать steady sample только после последнего active/recovered marker. Ошибка
+observer не отменяет обязательную попытку restore.
 
 Diagnostics получает только seed, порядковый номер/имя Step и фазу. Payload,
 token, certificate, request ID, PII и высококардинальные labels в этот контракт
@@ -76,13 +95,14 @@ ambient proxy, compression и DNS запрещены; timeout и тело отв
 а transport/read error останавливает gate вместо молчаливого уменьшения
 capacity.
 
-## Отложенная интеграция
+## Интеграция и оставшиеся зависимости
 
-- workloads/PKI MM-29 и versioned topology inventory MM-28 доступны; публичный
-  immutable fault-target snapshot/validator ожидается из MM-38, поэтому
-  destructive suite не запускается;
-- health-aware capacity MM-30 подключена; continuous probe MM-31 не интегрируется
-  до исправления integrity-проверки reconcile ledger;
+- workloads/PKI MM-29, topology MM-28 и independently reviewed исправления
+  публичного MM-38 `targets/v1` уже объединены; thin immutable target consumer
+  реализован без копирования topology lifecycle;
+- health-aware capacity MM-30 подключена; continuous probe MM-31 с
+  исправлениями integrity/bounded artifacts MM-39/MM-40 доступен для test-only
+  marker/steady adapter;
 - service churn MM-33 доступен; pod/rolling/DC churn ожидает MM-32/MM-34/MM-35;
 - SLO availability/recovery/error-budget gate и JSON/JUnit берутся напрямую из
   merged MM-27 без локальной копии;
@@ -91,7 +111,8 @@ capacity.
   только после полного эквивалентного набора локальных проверок, независимого
   review и фиксации результатов в PR.
 
-До появления этих зависимостей пакет можно проверить независимо:
+До объединения остальных scenario adapters destructive suite не запускается.
+Сам пакет проверяется независимо:
 
 ```bash
 cd platform

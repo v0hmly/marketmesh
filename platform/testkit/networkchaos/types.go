@@ -61,6 +61,15 @@ const (
 	PhaseRecovered Phase = "recovered"
 )
 
+// ObservationPhase связывает fault lifecycle с внешним continuous observer.
+type ObservationPhase string
+
+const (
+	ObservationPhaseBefore    ObservationPhase = "before"
+	ObservationPhaseActive    ObservationPhase = "active"
+	ObservationPhaseRecovered ObservationPhase = "recovered"
+)
+
 // ResourceRef задаёт точную ссылку на Docker resource. И имя, и immutable ID
 // обязательны, чтобы adapter не мог молча выбрать ресурс по текущему context.
 type ResourceRef struct {
@@ -162,6 +171,33 @@ type DiagnosticPoint struct {
 // Diagnostics собирает logs, events и resource snapshots до cleanup.
 type Diagnostics interface {
 	Capture(ctx context.Context, point DiagnosticPoint) error
+}
+
+// Observation содержит только bounded scenario metadata, без Docker identity,
+// request data или high-cardinality runtime labels.
+type Observation struct {
+	Seed       int64
+	StepIndex  int
+	StepName   string
+	FaultIndex int
+	FaultCount int
+	FaultName  string
+	FaultKind  Kind
+	Phase      ObservationPhase
+}
+
+// Observer соединяет lifecycle MM-36 с continuous probe. Observe может ждать
+// bounded steady-state sample и обязан уважать deadline ctx.
+type Observer interface {
+	Observe(ctx context.Context, observation Observation) error
+}
+
+// ObserverFunc адаптирует функцию к Observer.
+type ObserverFunc func(context.Context, Observation) error
+
+// Observe вызывает function.
+func (function ObserverFunc) Observe(ctx context.Context, observation Observation) error {
+	return function(ctx, observation)
 }
 
 // waiter предоставляет cancellable bounded ожидание и позволяет тестам не
@@ -374,6 +410,5 @@ func validateRef(kind string, ref ResourceRef) error {
 	if !resourceNamePattern.MatchString(ref.Name) {
 		return fmt.Errorf("%s name %q is invalid", kind, ref.Name)
 	}
-
 	return nil
 }

@@ -715,6 +715,7 @@ type dockerCommandRunner interface {
 
 type execDockerCommandRunner struct {
 	maxOutputBytes int
+	dockerHost     string
 }
 
 func (runner execDockerCommandRunner) Run(
@@ -730,9 +731,16 @@ func (runner execDockerCommandRunner) Run(
 
 	stdout := newBoundedCommandBuffer(runner.maxOutputBytes)
 	stderr := newBoundedCommandBuffer(runner.maxOutputBytes)
+	commandArguments := arguments
+	if runner.dockerHost != "" {
+		commandArguments = append(
+			[]string{"--host", runner.dockerHost},
+			arguments...,
+		)
+	}
 	// #nosec G204 -- binary is fixed; every argument is either a package
 	// constant or validated structured fault data, and no shell is involved.
-	command := exec.CommandContext(ctx, "docker", arguments...)
+	command := exec.CommandContext(ctx, "docker", commandArguments...)
 	command.Stdout = stdout
 	command.Stderr = stderr
 	err := command.Run()

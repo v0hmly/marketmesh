@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"net/netip"
+	"reflect"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -22,8 +23,16 @@ type Runner struct {
 	driver      Driver
 	capacity    CapacitySource
 	diagnostics Diagnostics
+	observer    Observer
 	waiter      waiter
 	used        atomic.Bool
+}
+
+// snapshotScopeValidator is deliberately private: only package-owned drivers
+// may replace the fixed MM-36 resource-label gate with an equally strict
+// versioned ownership contract.
+type snapshotScopeValidator interface {
+	validateSnapshotScope(runID string, fault Fault, snapshot Snapshot) error
 }
 
 // New создаёт Runner с real-time cancellable waiter.
@@ -38,6 +47,28 @@ func New(
 		driver,
 		capacity,
 		diagnostics,
+		nil,
+		timerWaiter{},
+	)
+}
+
+// NewObserved создаёт Runner с bounded lifecycle observer для continuous probe.
+func NewObserved(
+	config Config,
+	driver Driver,
+	capacity CapacitySource,
+	diagnostics Diagnostics,
+	observer Observer,
+) (*Runner, error) {
+	if isNilDependency(observer) {
+		return nil, errors.New("networkchaos: observer must not be nil")
+	}
+	return newWithWaiter(
+		config,
+		driver,
+		capacity,
+		diagnostics,
+		observer,
 		timerWaiter{},
 	)
 }
@@ -47,21 +78,22 @@ func newWithWaiter(
 	driver Driver,
 	capacity CapacitySource,
 	diagnostics Diagnostics,
+	observer Observer,
 	waiter waiter,
 ) (*Runner, error) {
 	if err := validateConfig(config); err != nil {
 		return nil, err
 	}
-	if driver == nil {
+	if isNilDependency(driver) {
 		return nil, errors.New("networkchaos: driver must not be nil")
 	}
-	if capacity == nil {
+	if isNilDependency(capacity) {
 		return nil, errors.New("networkchaos: capacity source must not be nil")
 	}
-	if diagnostics == nil {
+	if isNilDependency(diagnostics) {
 		return nil, errors.New("networkchaos: diagnostics must not be nil")
 	}
-	if waiter == nil {
+	if isNilDependency(waiter) {
 		return nil, errors.New("networkchaos: waiter must not be nil")
 	}
 
@@ -70,8 +102,22 @@ func newWithWaiter(
 		driver:      driver,
 		capacity:    capacity,
 		diagnostics: diagnostics,
+		observer:    observer,
 		waiter:      waiter,
 	}, nil
+}
+
+func isNilDependency(value any) bool {
+	if value == nil {
+		return true
+	}
+	kind := reflect.ValueOf(value).Kind()
+	switch kind {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return reflect.ValueOf(value).IsNil()
+	default:
+		return false
+	}
 }
 
 // Run проверяет и выполняет Plan. Ошибки diagnostics и cleanup сохраняются
@@ -110,22 +156,39 @@ func (runner *Runner) runStep(
 		return err
 	}
 
-	restores := make([]RestoreFunc, 0, len(step.Faults))
+	type appliedFault struct {
+		fault   Fault
+		restore RestoreFunc
+	}
+	applied := make([]appliedFault, 0, len(step.Faults))
 	var runErr error
-	for _, fault := range step.Faults {
+	for faultIndex, fault := range step.Faults {
+		if observeErr := runner.observe(ctx, Observation{
+			Seed:       seed,
+			StepIndex:  stepIndex,
+			StepName:   step.Name,
+			FaultIndex: faultIndex,
+			FaultCount: len(step.Faults),
+			FaultName:  fault.Name,
+			FaultKind:  fault.Kind,
+			Phase:      ObservationPhaseBefore,
+		}); observeErr != nil {
+			runErr = observeErr
+			break
+		}
 		snapshot, inspectErr := runner.inspect(ctx, fault)
 		if inspectErr != nil {
 			runErr = inspectErr
 			break
 		}
-		if scopeErr := validateSnapshot(runner.config.RunID, fault, snapshot); scopeErr != nil {
+		if scopeErr := runner.validateSnapshotScope(fault, snapshot); scopeErr != nil {
 			runErr = scopeErr
 			break
 		}
 
 		restore, applyErr := runner.apply(ctx, snapshot, fault)
 		if restore != nil {
-			restores = append(restores, restore)
+			applied = append(applied, appliedFault{fault: fault, restore: restore})
 		}
 		if applyErr != nil {
 			runErr = fmt.Errorf("applying fault %q: %w", fault.Name, applyErr)
@@ -133,6 +196,19 @@ func (runner *Runner) runStep(
 		}
 		if restore == nil {
 			runErr = fmt.Errorf("applying fault %q: driver returned nil restore", fault.Name)
+			break
+		}
+		if observeErr := runner.observe(ctx, Observation{
+			Seed:       seed,
+			StepIndex:  stepIndex,
+			StepName:   step.Name,
+			FaultIndex: faultIndex,
+			FaultCount: len(step.Faults),
+			FaultName:  fault.Name,
+			FaultKind:  fault.Kind,
+			Phase:      ObservationPhaseActive,
+		}); observeErr != nil {
+			runErr = observeErr
 			break
 		}
 	}
@@ -167,11 +243,33 @@ func (runner *Runner) runStep(
 	diagnosticsErr := runner.capture(context.WithoutCancel(ctx), point)
 	var restoreErr error
 	var recoveryErr error
-	if len(restores) > 0 {
+	var observerErr error
+	if len(applied) > 0 {
+		restores := make([]RestoreFunc, 0, len(applied))
+		for _, item := range applied {
+			restores = append(restores, item.restore)
+		}
 		restoreErr = runner.restore(context.WithoutCancel(ctx), restores)
 		recoveryErr = runner.waitForRecovery(context.WithoutCancel(ctx))
+		if restoreErr == nil && recoveryErr == nil {
+			for faultIndex, item := range applied {
+				observerErr = errors.Join(observerErr, runner.observe(
+					context.WithoutCancel(ctx),
+					Observation{
+						Seed:       seed,
+						StepIndex:  stepIndex,
+						StepName:   step.Name,
+						FaultIndex: faultIndex,
+						FaultCount: len(applied),
+						FaultName:  item.fault.Name,
+						FaultKind:  item.fault.Kind,
+						Phase:      ObservationPhaseRecovered,
+					},
+				))
+			}
+		}
 	}
-	if len(restores) > 0 && recoveryErr == nil {
+	if len(applied) > 0 && recoveryErr == nil && observerErr == nil {
 		recoveredPoint := point
 		recoveredPoint.Phase = PhaseRecovered
 		diagnosticsErr = errors.Join(
@@ -180,7 +278,7 @@ func (runner *Runner) runStep(
 		)
 	}
 
-	return errors.Join(runErr, diagnosticsErr, restoreErr, recoveryErr)
+	return errors.Join(runErr, diagnosticsErr, restoreErr, recoveryErr, observerErr)
 }
 
 func (runner *Runner) validateCapacity(step Step, ready uint) error {
@@ -252,6 +350,32 @@ func (runner *Runner) capture(ctx context.Context, point DiagnosticPoint) error 
 	}
 
 	return nil
+}
+
+func (runner *Runner) observe(ctx context.Context, observation Observation) error {
+	if runner.observer == nil {
+		return nil
+	}
+	observerCtx, cancel := context.WithTimeout(ctx, runner.config.RecoveryTimeout)
+	defer cancel()
+
+	if err := runner.observer.Observe(observerCtx, observation); err != nil {
+		return fmt.Errorf(
+			"observing %s phase for fault %q: %w",
+			observation.Phase,
+			observation.FaultName,
+			err,
+		)
+	}
+	return nil
+}
+
+func (runner *Runner) validateSnapshotScope(fault Fault, snapshot Snapshot) error {
+	validator, ok := runner.driver.(snapshotScopeValidator)
+	if !ok {
+		return validateSnapshot(runner.config.RunID, fault, snapshot)
+	}
+	return validator.validateSnapshotScope(runner.config.RunID, fault, snapshot)
 }
 
 func (runner *Runner) restore(ctx context.Context, restores []RestoreFunc) error {

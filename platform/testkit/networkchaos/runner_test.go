@@ -137,6 +137,39 @@ func (waiter fakeWaiter) Wait(context.Context, time.Duration) error {
 	return waiter.err
 }
 
+type fakeObserver struct {
+	driver  *fakeDriver
+	mu      sync.Mutex
+	points  []Observation
+	failOn  ObservationPhase
+	waitFor bool
+}
+
+func (observer *fakeObserver) Observe(ctx context.Context, observation Observation) error {
+	if observer.driver != nil {
+		observer.driver.record("observer:" + string(observation.Phase) + ":" + observation.FaultName)
+	}
+	observer.mu.Lock()
+	observer.points = append(observer.points, observation)
+	failOn := observer.failOn
+	waitFor := observer.waitFor
+	observer.mu.Unlock()
+	if waitFor {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	if observation.Phase == failOn {
+		return errors.New("probe observation failed")
+	}
+	return nil
+}
+
+func (observer *fakeObserver) observations() []Observation {
+	observer.mu.Lock()
+	defer observer.mu.Unlock()
+	return append([]Observation{}, observer.points...)
+}
+
 func TestRunnerRestoresFaultsAfterDiagnosticsAndRecovers(t *testing.T) {
 	t.Parallel()
 
@@ -182,6 +215,102 @@ func TestRunnerRestoresFaultsAfterDiagnosticsAndRecovers(t *testing.T) {
 	}
 	if !errors.Is(runner.Run(context.Background(), singleStepPlan()), ErrRunnerUsed) {
 		t.Fatal("second Run() did not return ErrRunnerUsed")
+	}
+}
+
+func TestObservedRunnerPublishesBoundedFaultLifecycle(t *testing.T) {
+	t.Parallel()
+
+	driver := &fakeDriver{snapshot: validSnapshot()}
+	observer := &fakeObserver{driver: driver}
+	diagnostics := &fakeDiagnostics{driver: driver}
+	runner, err := newWithWaiter(
+		testConfig(),
+		driver,
+		&fakeCapacity{values: []uint{3, 2, 3}},
+		diagnostics,
+		observer,
+		fakeWaiter{},
+	)
+	if err != nil {
+		t.Fatalf("newWithWaiter() error = %v", err)
+	}
+
+	if err := runner.Run(t.Context(), singleStepPlan()); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	wantEvents := []string{
+		"observer:before:partition",
+		"inspect",
+		"apply",
+		"observer:active:partition",
+		"diagnostics:faulted",
+		"restore",
+		"observer:recovered:partition",
+		"diagnostics:recovered",
+	}
+	assertStrings(t, driver.recordedEvents(), wantEvents)
+	points := observer.observations()
+	if len(points) != 3 || points[0].Phase != ObservationPhaseBefore ||
+		points[1].Phase != ObservationPhaseActive || points[2].Phase != ObservationPhaseRecovered {
+		t.Fatalf("observations = %+v, want before/active/recovered", points)
+	}
+	for _, point := range points {
+		if point.StepName != "partition-dc-a" || point.FaultIndex != 0 || point.FaultCount != 1 ||
+			point.FaultName != "partition" ||
+			point.FaultKind != KindPartition {
+			t.Fatalf("observation = %+v, want bounded plan metadata", point)
+		}
+	}
+}
+
+func TestObservedRunnerRestoresAfterActiveObservationFailure(t *testing.T) {
+	t.Parallel()
+
+	driver := &fakeDriver{snapshot: validSnapshot()}
+	observer := &fakeObserver{driver: driver, failOn: ObservationPhaseActive}
+	runner, err := newWithWaiter(
+		testConfig(),
+		driver,
+		&fakeCapacity{values: []uint{3, 3}},
+		&fakeDiagnostics{driver: driver},
+		observer,
+		fakeWaiter{},
+	)
+	if err != nil {
+		t.Fatalf("newWithWaiter() error = %v", err)
+	}
+
+	err = runner.Run(t.Context(), singleStepPlan())
+	if err == nil || !strings.Contains(err.Error(), "probe observation failed") {
+		t.Fatalf("Run() error = %v, want observer failure", err)
+	}
+	wantEvents := []string{
+		"observer:before:partition",
+		"inspect",
+		"apply",
+		"observer:active:partition",
+		"diagnostics:failed",
+		"restore",
+		"observer:recovered:partition",
+		"diagnostics:recovered",
+	}
+	assertStrings(t, driver.recordedEvents(), wantEvents)
+}
+
+func TestNewObservedRequiresObserver(t *testing.T) {
+	t.Parallel()
+
+	var typedNilObserver *fakeObserver
+	_, err := NewObserved(
+		testConfig(),
+		&fakeDriver{snapshot: validSnapshot()},
+		&fakeCapacity{values: []uint{3}},
+		&fakeDiagnostics{},
+		typedNilObserver,
+	)
+	if err == nil || !strings.Contains(err.Error(), "observer") {
+		t.Fatalf("NewObserved() error = %v, want observer rejection", err)
 	}
 }
 
@@ -614,6 +743,7 @@ func newTestRunner(
 		driver,
 		capacity,
 		diagnostics,
+		nil,
 		waiter,
 	)
 	if err != nil {
