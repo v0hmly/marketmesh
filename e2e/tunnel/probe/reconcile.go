@@ -238,6 +238,9 @@ func Reconcile(client Snapshot, internal InternalSnapshot) Reconciliation {
 			})
 		}
 		for _, internalRecord := range internalRecords {
+			if !recordsSemanticallyMatch(record, internalRecord) {
+				result.Invalid = append(result.Invalid, requestID)
+			}
 			if record.Class == TrafficClassMutating &&
 				internalRecord.IdempotencyKeySHA256 != digestString(record.IdempotencyKey) {
 				result.Invalid = append(result.Invalid, requestID)
@@ -294,9 +297,22 @@ func Reconcile(client Snapshot, internal InternalSnapshot) Reconciliation {
 		len(result.Late) > 0 ||
 		len(result.Reordered) > 0 ||
 		len(result.Invalid) > 0
-	result.IsComplete = len(result.IncompleteReasons) == 0 && len(result.Invalid) == 0
+	result.IsComplete = len(result.IncompleteReasons) == 0 &&
+		len(result.Missing) == 0 &&
+		len(result.Unexpected) == 0 &&
+		len(result.Duplicate) == 0 &&
+		len(result.Invalid) == 0
 
 	return result
+}
+
+func recordsSemanticallyMatch(client ClientRecord, internal InternalRecord) bool {
+	return client.RequestID == internal.RequestID &&
+		client.Class == internal.Class &&
+		client.RouteID == internal.RouteID &&
+		client.DataCenter == internal.DataCenter &&
+		client.Source == internal.Source &&
+		client.InternalSequence == internal.Sequence
 }
 
 func digestString(value string) string {
@@ -345,7 +361,7 @@ func validClientRecord(record ClientRecord) bool {
 	}
 	if !validateDimension(record.RouteID, record.Outcome != OutcomeSuccess) ||
 		!validateDataCenter(record.DataCenter, record.Outcome != OutcomeSuccess) ||
-		!validateDimension(record.Source, true) {
+		!validateDimension(record.Source, record.Outcome != OutcomeSuccess) {
 		return false
 	}
 	if record.Dispatched {
@@ -391,7 +407,7 @@ func validInternalRecord(record InternalRecord) bool {
 	}
 	if !validateDimension(record.RouteID, record.Outcome != OutcomeSuccess) ||
 		!validateDataCenter(record.DataCenter, record.Outcome != OutcomeSuccess) ||
-		!validateDimension(record.Source, true) {
+		!validateDimension(record.Source, record.Outcome != OutcomeSuccess) {
 		return false
 	}
 

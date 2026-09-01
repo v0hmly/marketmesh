@@ -14,7 +14,8 @@ import (
 
 const (
 	maxScenarioJSONBytes = 1 << 20
-	maxRunJSONBytes      = 64 << 20
+	// MaxRunJSONBytes is the shared writer/decoder capacity for one run ledger.
+	MaxRunJSONBytes = int64(64 << 20)
 )
 
 // MarshalJSON encodes a duration as a string such as "250ms" or "30s".
@@ -60,13 +61,39 @@ func DecodeScenario(reader io.Reader) (Scenario, error) {
 // Semantic completeness is evaluated fail-closed by Evaluate.
 func DecodeRun(reader io.Reader) (Run, error) {
 	var run Run
-	if err := decodeStrictJSON(reader, maxRunJSONBytes, &run); err != nil {
+	if err := decodeStrictJSON(reader, MaxRunJSONBytes, &run); err != nil {
 		return Run{}, fmt.Errorf("spec: decode run: %w", err)
 	}
 	if run.SchemaVersion != RunSchemaVersion {
 		return Run{}, fmt.Errorf("spec: unsupported run schema version %q", run.SchemaVersion)
 	}
 	return run, nil
+}
+
+// WriteRun writes one canonical ledger only when the complete encoded document
+// fits [MaxRunJSONBytes] and can be read back by [DecodeRun]. Validation happens
+// before the destination is touched, so capacity errors cannot publish a
+// truncated document.
+func WriteRun(writer io.Writer, run Run) error {
+	if writer == nil {
+		return errors.New("spec: run writer must not be nil")
+	}
+
+	data, err := json.MarshalIndent(run, "", "  ")
+	if err != nil {
+		return fmt.Errorf("spec: encode run: %w", err)
+	}
+	data = append(data, '\n')
+	if int64(len(data)) > MaxRunJSONBytes {
+		return fmt.Errorf("spec: run json exceeds %d bytes", MaxRunJSONBytes)
+	}
+	if _, err := DecodeRun(bytes.NewReader(data)); err != nil {
+		return fmt.Errorf("spec: encoded run does not satisfy decoder contract: %w", err)
+	}
+	if _, err := io.Copy(writer, bytes.NewReader(data)); err != nil {
+		return fmt.Errorf("spec: write run: %w", err)
+	}
+	return nil
 }
 
 // WriteJSONReport writes one indented JSON report followed by a newline.

@@ -186,6 +186,121 @@ func TestReconcileDetectsClientResponseReordering(t *testing.T) {
 	}
 }
 
+func TestReconcileFailsClosedForSemanticMismatchMissingAndDuplicate(t *testing.T) {
+	t.Parallel()
+
+	matchingClient := clientSuccess(requestID1, 1, 10*time.Millisecond)
+	matchingClient.Source = "internal-a-1"
+	matchingClient.InternalSequence = 1
+	matchingInternal := internalSuccess(requestID1, 1, 2*time.Millisecond)
+	matchingInternal.Source = "internal-a-1"
+
+	tests := []struct {
+		name     string
+		client   []ClientRecord
+		internal []InternalRecord
+	}{
+		{
+			name:   "request id",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.RequestID = requestID2
+				return record
+			}()},
+		},
+		{
+			name:   "class",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.Class = TrafficClassMutating
+				record.IdempotencyKeySHA256 = digestString(requestID1)
+				return record
+			}()},
+		},
+		{
+			name:   "route id",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.RouteID = "route-b"
+				return record
+			}()},
+		},
+		{
+			name:   "data center",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.DataCenter = DataCenterB
+				return record
+			}()},
+		},
+		{
+			name:   "source",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.Source = "internal-a-2"
+				return record
+			}()},
+		},
+		{
+			name: "source missing from both ledgers",
+			client: []ClientRecord{func() ClientRecord {
+				record := matchingClient
+				record.Source = ""
+				return record
+			}()},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.Source = ""
+				return record
+			}()},
+		},
+		{
+			name:   "internal sequence",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{func() InternalRecord {
+				record := matchingInternal
+				record.Sequence = 2
+				return record
+			}()},
+		},
+		{
+			name:     "missing",
+			client:   []ClientRecord{matchingClient},
+			internal: []InternalRecord{},
+		},
+		{
+			name:   "duplicate",
+			client: []ClientRecord{matchingClient},
+			internal: []InternalRecord{
+				matchingInternal,
+				matchingInternal,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := Reconcile(
+				Snapshot{Records: test.client, IsComplete: true},
+				InternalSnapshot{Records: test.internal, IsComplete: true},
+			)
+			if result.IsComplete {
+				t.Fatal("Reconciliation.IsComplete = true for integrity fault")
+			}
+			if !result.HasIntegrityFault {
+				t.Fatal("Reconciliation.HasIntegrityFault = false")
+			}
+		})
+	}
+}
+
 func FuzzReconcileNeverPassesInvalidRequestID(f *testing.F) {
 	f.Add(requestID1)
 	f.Add("bad\nvalue")
@@ -220,6 +335,8 @@ func clientSuccess(requestID string, sequence uint64, deadline time.Duration) Cl
 		Outcome:            OutcomeSuccess,
 		RouteID:            "route-a",
 		DataCenter:         "dc-a",
+		Source:             "internal-a-1",
+		InternalSequence:   sequence,
 		Dispatched:         true,
 	}
 }
@@ -235,6 +352,7 @@ func internalSuccess(requestID string, sequence uint64, completed time.Duration)
 		Outcome:         OutcomeSuccess,
 		RouteID:         "route-a",
 		DataCenter:      "dc-a",
+		Source:          "internal-a-1",
 	}
 }
 
