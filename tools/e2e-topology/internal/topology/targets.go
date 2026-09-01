@@ -1129,7 +1129,7 @@ func (t *Topology) validateTargetRuntime(
 		if node.UID != target.KubernetesNode.UID || !exactLabels(node.Labels, target.KubernetesNode.Labels) {
 			return observedTargetState{}, errors.New("topology: kubernetes node identity changed")
 		}
-	} else if container.NetworkSettings.SandboxID != "" {
+	} else if container.NetworkSettings.SandboxID != "" || container.NetworkSettings.SandboxKey != "" {
 		return observedTargetState{}, errors.New("topology: stopped container retains a live sandbox")
 	}
 	return observedTargetState{
