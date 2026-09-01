@@ -5,13 +5,17 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
 	contractv1 "github.com/v0hmly/marketmesh/api/gen/go/tunnel/v1"
+	protocolv1 "github.com/v0hmly/marketmesh/api/tunnel/v1"
 	"github.com/v0hmly/marketmesh/services/gateway-in/internal/tunnel"
 	"google.golang.org/protobuf/proto"
 )
+
+const idempotencyKeyHeader = "Idempotency-Key"
 
 // Invoker is the smallest tunnel contract consumed by the Connect adapter.
 type Invoker interface {
@@ -22,10 +26,11 @@ type Invoker interface {
 // Config fixes one public Connect procedure to one finite RouteId. Request
 // headers, URLs, and method names are never forwarded through the tunnel.
 type Config struct {
-	Procedure string
-	Route     contractv1.RouteId
-	Invoker   Invoker
-	Options   []connect.HandlerOption
+	Procedure             string
+	Route                 contractv1.RouteId
+	RequireIdempotencyKey bool
+	Invoker               Invoker
+	Options               []connect.HandlerOption
 }
 
 // NewUnaryHandler constructs a typed ConnectRPC handler whose route cannot be
@@ -56,6 +61,13 @@ func NewUnaryHandler[Request any, Response any](config Config) (http.Handler, er
 			ctx context.Context,
 			request *connect.Request[Request],
 		) (*connect.Response[Response], error) {
+			idempotencyKey, err := requestIdempotencyKey(
+				request.Header(),
+				config.RequireIdempotencyKey,
+			)
+			if err != nil {
+				return nil, publicError(connect.CodeInvalidArgument)
+			}
 			requestMessage, valid := any(request.Msg).(proto.Message)
 			if !valid {
 				return nil, publicError(connect.CodeInternal)
@@ -66,8 +78,9 @@ func NewUnaryHandler[Request any, Response any](config Config) (http.Handler, er
 			}
 
 			result, err := config.Invoker.Invoke(ctx, tunnel.Call{
-				Route:   config.Route,
-				Payload: payload,
+				Route:          config.Route,
+				Payload:        payload,
+				IdempotencyKey: idempotencyKey,
 			})
 			if err != nil {
 				return nil, mapTunnelError(err)
@@ -90,6 +103,32 @@ func NewUnaryHandler[Request any, Response any](config Config) (http.Handler, er
 	)
 
 	return handler, nil
+}
+
+func requestIdempotencyKey(header http.Header, required bool) ([]byte, error) {
+	values := header.Values(idempotencyKeyHeader)
+	if len(values) == 0 {
+		if required {
+			return nil, errors.New("connect bridge: idempotency key is required")
+		}
+
+		return []byte{}, nil
+	}
+	if !required || len(values) != 1 {
+		return nil, errors.New("connect bridge: idempotency key is not allowed")
+	}
+
+	value := []byte(values[0])
+	if len(value) == 0 || len(value) > protocolv1.MaxIdempotencyKeyBytes {
+		return nil, errors.New("connect bridge: idempotency key is outside bounds")
+	}
+	for _, character := range value {
+		if character < '!' || character > '~' {
+			return nil, errors.New("connect bridge: idempotency key is invalid")
+		}
+	}
+
+	return slices.Clone(value), nil
 }
 
 func isNilInvoker(invoker Invoker) bool {

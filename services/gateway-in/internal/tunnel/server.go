@@ -105,7 +105,7 @@ func (s *Server) Connect(
 	if err != nil {
 		return status.Error(codes.ResourceExhausted, "tunnel capacity exhausted")
 	}
-	hello := negotiated.hello(tunnelID)
+	hello := negotiated.hello(tunnelID, s.settings.instanceID)
 	if err := stream.Send(hello); err != nil {
 		activeSession.abortBeforeRun()
 		return status.Error(codes.Unavailable, "tunnel unavailable")
@@ -205,7 +205,10 @@ func negotiate(settings *settings, hello *contractv1.GatewayOutHello) (negotiati
 	}, nil
 }
 
-func (n negotiation) hello(tunnelID [16]byte) *contractv1.ConnectResponse {
+func (n negotiation) hello(
+	tunnelID [protocolv1.TunnelIDBytes]byte,
+	instanceID [protocolv1.InstanceIDBytes]byte,
+) *contractv1.ConnectResponse {
 	routes := make([]contractv1.RouteId, 0, len(n.routes))
 	for route := range n.routes {
 		routes = append(routes, route)
@@ -228,6 +231,7 @@ func (n negotiation) hello(tunnelID [16]byte) *contractv1.ConnectResponse {
 		},
 		Payload: &contractv1.ConnectResponse_Hello{
 			Hello: &contractv1.GatewayInHello{
+				InstanceId:              slices.Clone(instanceID[:]),
 				SelectedProtocolVersion: protocolVersion,
 				Capabilities:            capabilities,
 				TrafficClasses:          classes,

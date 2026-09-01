@@ -28,7 +28,11 @@ type Client struct {
 	registry *Registry
 	observer observer
 
-	used atomic.Bool
+	used             atomic.Bool
+	isReady          atomic.Bool
+	serverMu         sync.RWMutex
+	serverInstanceID [protocolv1.InstanceIDBytes]byte
+	reconnect        chan struct{}
 
 	stopCtx      context.Context
 	stop         context.CancelFunc
@@ -61,12 +65,13 @@ func NewClient(config Config, registry *Registry) (*Client, error) {
 	stopCtx, stop := context.WithCancel(context.Background())
 
 	return &Client{
-		settings: settings,
-		registry: registry,
-		observer: observer,
-		stopCtx:  stopCtx,
-		stop:     stop,
-		done:     make(chan struct{}),
+		settings:  settings,
+		registry:  registry,
+		observer:  observer,
+		stopCtx:   stopCtx,
+		stop:      stop,
+		done:      make(chan struct{}),
+		reconnect: make(chan struct{}, 1),
 	}, nil
 }
 
@@ -79,6 +84,43 @@ func (client *Client) Component(name string) platformruntime.Component {
 	}
 }
 
+// IsReady reports whether a negotiated tunnel session currently accepts
+// statically configured routes. It becomes false before reconnect and drain.
+func (client *Client) IsReady() bool {
+	if client == nil {
+		return false
+	}
+
+	return client.isReady.Load()
+}
+
+// ServerInstanceID returns the opaque gateway-in process identifier for the
+// current negotiated session. The identifier grants no authority.
+func (client *Client) ServerInstanceID() ([protocolv1.InstanceIDBytes]byte, bool) {
+	if client == nil || !client.isReady.Load() {
+		return [protocolv1.InstanceIDBytes]byte{}, false
+	}
+	client.serverMu.RLock()
+	defer client.serverMu.RUnlock()
+	if !client.isReady.Load() {
+		return [protocolv1.InstanceIDBytes]byte{}, false
+	}
+
+	return client.serverInstanceID, true
+}
+
+// RequestReconnect asks the running client to drain its current session and
+// reconnect. Signals are coalesced and never create a parallel session.
+func (client *Client) RequestReconnect() {
+	if client == nil {
+		return
+	}
+	select {
+	case client.reconnect <- struct{}{}:
+	default:
+	}
+}
+
 // Run последовательно подключается и никогда не запускает параллельные reconnect sessions.
 func (client *Client) Run(ctx context.Context) error {
 	if ctx == nil {
@@ -87,6 +129,8 @@ func (client *Client) Run(ctx context.Context) error {
 	if !client.used.CompareAndSwap(false, true) {
 		return ErrClientUsed
 	}
+	client.isReady.Store(false)
+	defer client.markNotReady()
 	defer close(client.done)
 
 	failures := 0
@@ -129,6 +173,7 @@ func (client *Client) Run(ctx context.Context) error {
 
 		client.observer.connection(ctx, 1)
 		client.observer.reconnect(ctx, "ready")
+		client.markReady(session.serverInstanceID)
 		client.settings.logger.InfoContext(ctx, "reverse tunnel готов")
 		started := client.settings.now()
 
@@ -139,6 +184,7 @@ func (client *Client) Run(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
+			client.markNotReady()
 			drainCtx, cancelDrain := context.WithTimeout(
 				context.WithoutCancel(ctx),
 				client.settings.drainTimeout,
@@ -148,12 +194,25 @@ func (client *Client) Run(ctx context.Context) error {
 			<-sessionResult
 			return nil
 		case <-client.stopCtx.Done():
+			client.markNotReady()
 			drainCtx, cancelDrain := client.drainContext()
 			client.stopSession(drainCtx, session, connection)
 			cancelDrain()
 			<-sessionResult
 			return nil
+		case <-client.reconnect:
+			client.markNotReady()
+			drainCtx, cancelDrain := context.WithTimeout(
+				context.WithoutCancel(ctx),
+				client.settings.drainTimeout,
+			)
+			client.stopSession(drainCtx, session, connection)
+			cancelDrain()
+			<-sessionResult
+			cancelAttempt()
+			client.settings.logger.InfoContext(ctx, "reverse tunnel перераспределён")
 		case <-sessionResult:
+			client.markNotReady()
 			client.observer.connection(ctx, -1)
 			cancelAttempt()
 			_ = connection.Close()
@@ -168,6 +227,20 @@ func (client *Client) Run(ctx context.Context) error {
 			return ErrReconnectExhausted
 		}
 	}
+}
+
+func (client *Client) markReady(instanceID [protocolv1.InstanceIDBytes]byte) {
+	client.serverMu.Lock()
+	client.serverInstanceID = instanceID
+	client.serverMu.Unlock()
+	client.isReady.Store(true)
+}
+
+func (client *Client) markNotReady() {
+	client.isReady.Store(false)
+	client.serverMu.Lock()
+	client.serverInstanceID = [protocolv1.InstanceIDBytes]byte{}
+	client.serverMu.Unlock()
 }
 
 // Shutdown инициирует Drain и ждёт завершения Run в пределах ctx.

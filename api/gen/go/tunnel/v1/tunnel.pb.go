@@ -1099,7 +1099,10 @@ type GatewayInHello struct {
 	// RouteIds contains only routes enabled by both sides.
 	RouteIds []RouteId `protobuf:"varint,4,rep,packed,name=route_ids,json=routeIds,proto3,enum=tunnel.v1.RouteId" json:"route_ids,omitempty"`
 	// Limits contains the effective receive-side ceilings for the tunnel.
-	Limits        *Limits `protobuf:"bytes,5,opt,name=limits,proto3" json:"limits,omitempty"`
+	Limits *Limits `protobuf:"bytes,5,opt,name=limits,proto3" json:"limits,omitempty"`
+	// InstanceId is the opaque 16-byte gateway-in process identifier used only
+	// to distribute redundant E2E tunnel sessions across distinct replicas.
+	InstanceId    []byte `protobuf:"bytes,6,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1165,6 +1168,13 @@ func (x *GatewayInHello) GetRouteIds() []RouteId {
 func (x *GatewayInHello) GetLimits() *Limits {
 	if x != nil {
 		return x.Limits
+	}
+	return nil
+}
+
+func (x *GatewayInHello) GetInstanceId() []byte {
+	if x != nil {
+		return x.InstanceId
 	}
 	return nil
 }
@@ -1877,13 +1887,15 @@ const file_tunnel_v1_tunnel_proto_rawDesc = "" +
 	"\fcapabilities\x18\x03 \x03(\x0e2\x15.tunnel.v1.CapabilityR\fcapabilities\x12@\n" +
 	"\x0ftraffic_classes\x18\x04 \x03(\x0e2\x17.tunnel.v1.TrafficClassR\x0etrafficClasses\x12/\n" +
 	"\troute_ids\x18\x05 \x03(\x0e2\x12.tunnel.v1.RouteIdR\brouteIds\x12)\n" +
-	"\x06limits\x18\x06 \x01(\v2\x11.tunnel.v1.LimitsR\x06limits\"\xa5\x02\n" +
+	"\x06limits\x18\x06 \x01(\v2\x11.tunnel.v1.LimitsR\x06limits\"\xc6\x02\n" +
 	"\x0eGatewayInHello\x12:\n" +
 	"\x19selected_protocol_version\x18\x01 \x01(\rR\x17selectedProtocolVersion\x129\n" +
 	"\fcapabilities\x18\x02 \x03(\x0e2\x15.tunnel.v1.CapabilityR\fcapabilities\x12@\n" +
 	"\x0ftraffic_classes\x18\x03 \x03(\x0e2\x17.tunnel.v1.TrafficClassR\x0etrafficClasses\x12/\n" +
 	"\troute_ids\x18\x04 \x03(\x0e2\x12.tunnel.v1.RouteIdR\brouteIds\x12)\n" +
-	"\x06limits\x18\x05 \x01(\v2\x11.tunnel.v1.LimitsR\x06limits\"\xcc\x02\n" +
+	"\x06limits\x18\x05 \x01(\v2\x11.tunnel.v1.LimitsR\x06limits\x12\x1f\n" +
+	"\vinstance_id\x18\x06 \x01(\fR\n" +
+	"instanceId\"\xcc\x02\n" +
 	"\x06Limits\x12&\n" +
 	"\x0fmax_frame_bytes\x18\x01 \x01(\rR\rmaxFrameBytes\x12$\n" +
 	"\x0emax_data_bytes\x18\x02 \x01(\rR\fmaxDataBytes\x12*\n" +
