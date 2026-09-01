@@ -8,6 +8,7 @@ readonly GO_VERSION="1.27.0"
 readonly MODULES=(
   "api/gen/go|${REPOSITORY_MODULE_PREFIX}/api/gen/go"
   "api/tunnel|${REPOSITORY_MODULE_PREFIX}/api/tunnel"
+  "e2e/tunnel|${REPOSITORY_MODULE_PREFIX}/e2e/tunnel"
   "platform|${REPOSITORY_MODULE_PREFIX}/platform"
   "services/auth|${REPOSITORY_MODULE_PREFIX}/services/auth"
   "services/gateway-in|${REPOSITORY_MODULE_PREFIX}/services/gateway-in"

@@ -156,6 +156,10 @@ func TestClientRelaysAllowlistedUnaryRPC(t *testing.T) {
 		values[0] != testSensitiveToken {
 		t.Fatalf("internal session assertion metadata = %v", values)
 	}
+	if values := incomingMetadata.Get(protocolv1.InternalIdempotencyKeyMetadata); len(values) != 1 ||
+		values[0] != "idempotency-key" {
+		t.Fatalf("internal idempotency metadata = %v", values)
+	}
 	if values := incomingMetadata.Get("authorization"); len(values) != 0 {
 		t.Fatalf("internal authorization metadata = %v, want dropped", values)
 	}
@@ -164,6 +168,16 @@ func TestClientRelaysAllowlistedUnaryRPC(t *testing.T) {
 	}
 	if internalDeadline.IsZero() || time.Until(internalDeadline) > time.Second {
 		t.Fatalf("internal deadline = %v, want propagated bounded deadline", internalDeadline)
+	}
+	if !client.IsReady() {
+		t.Fatal("client IsReady() = false after negotiated tunnel")
+	}
+	serverInstanceID, found := client.ServerInstanceID()
+	if !found || serverInstanceID != [protocolv1.InstanceIDBytes]byte{
+		0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24,
+		0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24, 0x24,
+	} {
+		t.Fatalf("ServerInstanceID() = (%x, %t)", serverInstanceID, found)
 	}
 
 	cancelRun()
@@ -175,15 +189,77 @@ func TestClientRelaysAllowlistedUnaryRPC(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("Run() did not stop after cancellation")
 	}
+	if client.IsReady() {
+		t.Fatal("client IsReady() = true after shutdown")
+	}
 
 	for _, sensitive := range []string{
 		testSensitiveBody,
 		testSensitiveToken,
+		"idempotency-key",
 		"private-dsn-and-stack-must-not-leak",
 	} {
 		if strings.Contains(logs.String(), sensitive) {
 			t.Fatalf("gateway-out logs contain sensitive value %q: %s", sensitive, logs.String())
 		}
+	}
+}
+
+func TestRequestReconnectReplacesOnlyCurrentSession(t *testing.T) {
+	t.Parallel()
+
+	pki := newTestPKI(t)
+	internal := newFakeHealth()
+	clients, _ := startInternalHealth(t, internal)
+	registry := newTestRegistry(t, clients, contractv1.RouteId_ROUTE_ID_USER_GET_ME)
+	connected := make(chan int64, 2)
+	var connections atomic.Int64
+	gateway := &fakeGatewayIn{connect: func(
+		stream grpcgo.BidiStreamingServer[contractv1.ConnectRequest, contractv1.ConnectResponse],
+	) error {
+		if _, err := acceptTestHello(stream); err != nil {
+			return err
+		}
+		connected <- connections.Add(1)
+		<-stream.Context().Done()
+		return nil
+	}}
+	dialer := startGatewayIn(t, pki, gateway)
+	config := newTestConfig(t, pki, dialer, &bytes.Buffer{})
+	client, err := NewClient(config, registry)
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	runCtx, cancelRun := context.WithCancel(t.Context())
+	runResult := make(chan error, 1)
+	go func() { runResult <- client.Run(runCtx) }()
+
+	select {
+	case attempt := <-connected:
+		if attempt != 1 {
+			t.Fatalf("first connection = %d", attempt)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("first connection was not ready")
+	}
+	client.RequestReconnect()
+	select {
+	case attempt := <-connected:
+		if attempt != 2 {
+			t.Fatalf("replacement connection = %d", attempt)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("replacement connection was not ready")
+	}
+
+	cancelRun()
+	select {
+	case err := <-runResult:
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Run() did not stop")
 	}
 }
 

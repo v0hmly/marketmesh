@@ -20,7 +20,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const internalSessionAssertionMetadata = "marketmesh-session-assertion-bin"
+const (
+	internalSessionAssertionMetadata = "marketmesh-session-assertion-bin"
+)
 
 var (
 	errSessionClosed    = errors.New("gateway-out tunnel session closed")
@@ -64,16 +66,17 @@ type requestState struct {
 }
 
 type session struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	settings settings
-	registry *Registry
-	observer observer
-	stream   grpcgo.BidiStreamingClient[contractv1.ConnectRequest, contractv1.ConnectResponse]
-	tunnelID []byte
-	limits   *contractv1.Limits
-	routes   map[contractv1.RouteId]struct{}
-	classes  map[contractv1.TrafficClass]struct{}
+	ctx              context.Context
+	cancel           context.CancelFunc
+	settings         settings
+	registry         *Registry
+	observer         observer
+	stream           grpcgo.BidiStreamingClient[contractv1.ConnectRequest, contractv1.ConnectResponse]
+	tunnelID         []byte
+	serverInstanceID [protocolv1.InstanceIDBytes]byte
+	limits           *contractv1.Limits
+	routes           map[contractv1.RouteId]struct{}
+	classes          map[contractv1.TrafficClass]struct{}
 
 	controlQueue  chan queuedFrame
 	regularQueue  chan queuedFrame
@@ -208,6 +211,7 @@ func (session *session) acceptHello(
 	if len(hello.GetTrafficClasses()) == 0 || len(hello.GetRouteIds()) == 0 {
 		return errProtocol
 	}
+	copy(session.serverInstanceID[:], hello.GetInstanceId())
 
 	classes := make(map[contractv1.TrafficClass]struct{}, len(hello.GetTrafficClasses()))
 	for _, class := range hello.GetTrafficClasses() {
@@ -404,7 +408,12 @@ func (session *session) handleOpen(
 		return session.rejectOpen(header, contractv1.ResultCode_RESULT_CODE_INVALID_ARGUMENT)
 	}
 
-	requestContext := session.metadataContext(session.ctx, open.GetMetadata())
+	requestContext := session.metadataContext(
+		session.ctx,
+		open.GetMetadata(),
+		open.GetIdempotencyKey(),
+		route.Mutating,
+	)
 	requestContext, cancel := context.WithDeadline(requestContext, deadline)
 	request := &requestState{
 		requestID:        slices.Clone(header.GetRequestId()),
@@ -1002,6 +1011,8 @@ func (session *session) drain(ctx context.Context, source drainSource) error {
 func (session *session) metadataContext(
 	ctx context.Context,
 	entries []*contractv1.Metadata,
+	idempotencyKey []byte,
+	isMutating bool,
 ) context.Context {
 	carrier := propagation.MapCarrier{}
 	outgoing := metadata.MD{}
@@ -1019,6 +1030,9 @@ func (session *session) metadataContext(
 		case contractv1.MetadataKey_METADATA_KEY_CONTENT_TYPE:
 			// gRPC transport owns content-type; it is validated but not copied.
 		}
+	}
+	if isMutating && len(idempotencyKey) > 0 {
+		outgoing.Set(protocolv1.InternalIdempotencyKeyMetadata, string(idempotencyKey))
 	}
 	ctx = session.settings.telemetry.Propagator().Extract(ctx, carrier)
 

@@ -1,0 +1,130 @@
+# Tunnel E2E workloads
+
+Каталог содержит минимальный workload stack задачи MM-29. Он разворачивается
+поверх четырёх одноразовых кластеров MM-28 и не создаёт topology, global front
+door, traffic probe или fault scenarios.
+
+## Публичный контракт ресурсов
+
+Во всех четырёх кластерах используется namespace
+`marketmesh-e2e-tunnel`. Имена workload стабильны:
+
+| Зона | Deployment | Service | Порты |
+| --- | --- | --- | --- |
+| DMZ | `mm29-gateway-in` | `mm29-gateway-in` | NodePort `30080` для Connect и `30443` для reverse tunnel |
+| internal | `mm29-gateway-out` | нет | только pod-local health `8080` |
+| internal | `mm29-fake-internal` | `mm29-fake-internal` | cluster-local mTLS gRPC `9443` |
+
+Каждый Deployment и его Pod template содержит метки
+`marketmesh.io/run-id`, `marketmesh.io/dc`, `marketmesh.io/zone`,
+`marketmesh.io/task=MM-29` и
+`app.kubernetes.io/managed-by=marketmesh-e2e-tunnel`. Поэтому ReplicaSet и Pod
+наследуют тот же `run-id`. Компоненты имеют две реплики, PDB с
+`minAvailable: 1`, rolling strategy `maxUnavailable: 0`, `maxSurge: 1`,
+`progressDeadlineSeconds: 120` и ограниченные CPU/memory.
+
+`gateway-in` становится ready только после появления обоих статических route
+ID через согласованный tunnel. Каждый Pod `gateway-out` держит ровно две
+bounded session и до initial readiness требует два разных opaque instance ID
+`gateway-in`, полученных после mTLS и handshake tunnel v1. Если NodePort сначала
+направил обе session в одну реплику, duplicate session выполняет drain и
+reconnect до покрытия обеих реплик. После первоначального покрытия один живой
+путь сохраняет readiness, пока второй восстанавливается в фоне. `fake-internal`
+становится ready после создания handler и bounded in-memory ledger. Перед
+SIGTERM hook `preStop` сначала закрывает readiness, ждёт пять секунд, а затем
+общий runtime выполняет drain с отдельным 20-секундным budget и запасом в
+пределах `terminationGracePeriodSeconds: 30`.
+
+## Границы и PKI
+
+На каждый запуск и DC в памяти создаются два независимых временных CA:
+
+- tunnel CA подписывает server certificate `gateway-in` и отдельный client
+  certificate `gateway-out`;
+- internal CA подписывает server certificate `fake-internal` и второй client
+  certificate `gateway-out`.
+
+Закрытые ключи передаются в Kubernetes Secret через stdin `kubectl`, не
+записываются в репозиторий или diagnostics и удаляются автоматически вместе с
+точными ресурсами запуска. Сертификаты действуют четыре часа, используют
+TLS 1.3, отдельные server/client EKU, DNS SAN и единственный URI SAN вида
+`spiffe://marketmesh.test/e2e/<run-id>/<dc>/<workload>`. Клиенты дополнительно
+проверяют точный DNS и URI, серверы — CA, client EKU и ожидаемый URI identity.
+
+NetworkPolicy запрещает произвольный ingress в internal. `fake-internal:9443`
+доступен только Pod с метками текущего `gateway-out`; `gateway-out` может
+исходяще обратиться только к DNS, `fake-internal:9443` и фиксированному tunnel
+port `30443`. Топологический запрет DMZ → internal обеспечивает MM-28.
+
+Внешние Connect methods статически связаны с двумя существующими route ID:
+
+- `FakeInternalService.Read` → `ROUTE_ID_USER_GET_ME`;
+- `FakeInternalService.Mutate` → `ROUTE_ID_USER_UPDATE_ME`.
+
+URL, host, port и полное имя внутреннего gRPC method не принимаются от
+вызывающей стороны. Mutate требует единственный printable ASCII header
+`Idempotency-Key` длиной не более protocol limit; gateway-out пересылает только
+его бинарное значение под фиксированным internal metadata name. Raw key и
+payload не сохраняются и не логируются; ledger хранит request ID, operation,
+SHA-256 idempotency key и bounded attempt count.
+
+Opaque instance ID `gateway-in` равен первым 16 байтам SHA-256 Pod name. Два
+instance ID `gateway-out` на Pod равны первым 16 байтам SHA-256 от Pod name с
+добавленным байтом slot `0` или `1`. Значения используются только для проверки
+принадлежности и разнообразия путей, не дают полномочий и не становятся
+metric labels.
+
+## Сборка образов
+
+```sh
+task tunnel-e2e:images
+```
+
+Команда собирает три локальных образа и ничего не публикует. Builder и runtime
+base images закреплены multi-arch digest, сборка использует `-trimpath`,
+`buildvcs=false`, commit timestamp как `SOURCE_DATE_EPOCH`, отключённую локальную
+provenance attestation, non-root distroless runtime и source revision в OCI labels.
+Полученные имена печатаются в stdout и затем явно загружаются в кластеры
+средствами MM-28.
+
+## Deploy и cleanup
+
+Lifecycle не читает ambient `KUBECONFIG`: все четыре kubeconfig и context
+передаются явно. Internal target каждого DC обязан использовать фиксированный
+NodePort `30443`.
+
+```sh
+task tunnel-e2e:deploy -- \
+  --run-id run-29 \
+  --version <commit> \
+  --gateway-in-image <image> \
+  --gateway-out-image <image> \
+  --fake-internal-image <image> \
+  --dc-a-dmz-kubeconfig <path> \
+  --dc-a-internal-kubeconfig <path> \
+  --dc-a-gateway-in-target passthrough:///<dc-a-dmz-node>:30443 \
+  --dc-b-dmz-kubeconfig <path> \
+  --dc-b-internal-kubeconfig <path> \
+  --dc-b-gateway-in-target passthrough:///<dc-b-dmz-node>:30443 \
+  --timeout 3m
+```
+
+Повторный deploy с тем же `run-id` идемпотентен. Если owner ConfigMap содержит
+другой `run-id` или любое точное имя ресурса уже занято чужим объектом, команда
+завершается до первой мутации. При ошибке
+сначала сохраняются bounded metadata, events и последние безопасные логи, затем
+автоматически удаляются только известные Deployment, Service, PDB,
+NetworkPolicy, Secret и owner ConfigMap с совпадающим `run-id`. Namespace не
+удаляется, потому что его жизненным циклом владеет одноразовая topology.
+
+Отдельные команды диагностики и штатного удаления используют тот же набор
+явных topology flags:
+
+```sh
+task tunnel-e2e:inspect -- --run-id run-29 <topology-flags>
+task tunnel-e2e:undeploy -- --run-id run-29 <topology-flags>
+```
+
+Полный deploy/undeploy и внешний проход через оба DC выполняются только после
+объединения MM-28. Локальные unit/integration проверки PKI, mTLS, route
+allowlist, idempotency, manifests и точного cleanup от topology не зависят.

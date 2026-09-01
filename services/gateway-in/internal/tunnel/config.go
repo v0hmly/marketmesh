@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -40,6 +41,7 @@ type PeerPolicy struct {
 
 // Config contains all resource and authorization limits for a tunnel server.
 type Config struct {
+	InstanceID             [protocolv1.InstanceIDBytes]byte
 	Peer                   PeerPolicy
 	Limits                 *contractv1.Limits
 	Routes                 map[contractv1.RouteId]RoutePolicy
@@ -58,6 +60,7 @@ type Config struct {
 }
 
 type settings struct {
+	instanceID             [protocolv1.InstanceIDBytes]byte
 	peer                   peerAuthorizer
 	limits                 *contractv1.Limits
 	routes                 map[contractv1.RouteId]RoutePolicy
@@ -127,7 +130,15 @@ func newSettings(config Config) (*settings, error) {
 		return nil, err
 	}
 
+	instanceID := config.InstanceID
+	if instanceID == [protocolv1.InstanceIDBytes]byte{} {
+		if _, err := rand.Read(instanceID[:]); err != nil {
+			return nil, errors.New("tunnel: generating instance id")
+		}
+	}
+
 	return &settings{
+		instanceID:             instanceID,
 		peer:                   peer,
 		limits:                 limits,
 		routes:                 routes,
@@ -257,6 +268,7 @@ func validateLocalHello(
 		},
 		Payload: &contractv1.ConnectResponse_Hello{
 			Hello: &contractv1.GatewayInHello{
+				InstanceId:              make([]byte, protocolv1.InstanceIDBytes),
 				SelectedProtocolVersion: protocolVersion,
 				Capabilities:            capabilityValues,
 				TrafficClasses:          trafficClasses,

@@ -31,8 +31,8 @@ github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260901103419-49d09068cab5 h1:ds
 github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260901103419-49d09068cab5/go.mod h1:y8sJfeXFcd4hvTSFbQlXVZFdu5+06qi58+RNn3QLBdI=
 github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260901104113-687c690f0f14 h1:RUZ+W5CEYVnWpnxmq2Wxiv3MSc3ljOdST61j7TVK7zc=
 github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260901104113-687c690f0f14/go.mod h1:FwyqMDx2E9sbORizO1Lk78kPmksd/tq86oc+haa5zhg=
-github.com/v0hmly/marketmesh/platform v0.0.0-20260901082211-0511bbc88b77 h1:8631h13ZEHmp3CVBG5HCXxICoB/h3qHrwzJqNzB2iNE=
-github.com/v0hmly/marketmesh/platform v0.0.0-20260901082211-0511bbc88b77/go.mod h1:STRqki7DTLh1ojeEO9gQcdg3yIR/HERWFQiEtDT/BJY=
+github.com/v0hmly/marketmesh/platform v0.0.0-20260901093410-3e264fbd0a7a h1:eS4gnvZmPV4Y5Kd7dC8AHWFW7MmVsGCoFb2nvheJsho=
+github.com/v0hmly/marketmesh/platform v0.0.0-20260901093410-3e264fbd0a7a/go.mod h1:STRqki7DTLh1ojeEO9gQcdg3yIR/HERWFQiEtDT/BJY=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 h1:oECp5f+hN7nkwjU/8BxQ/q23bGPb8FIrD839owX222E=
