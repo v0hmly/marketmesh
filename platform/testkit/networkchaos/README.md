@@ -77,7 +77,9 @@ snapshots в каталог конкретного run до удаления р�
 собственный timeout, а общий Run context обязан иметь deadline не дальше 24
 часов. Только отдельный закрытый stop-канал считается штатным завершением;
 deadline, source error, менее двух samples и достижение `MaxSamples` до stop
-дают failure с сохранением уже собранного ledger.
+дают failure с сохранением уже собранного ledger. `Ready()` закрывается только
+после принятого baseline: E2E orchestrator обязан дождаться его до первой fault
+mutation и выбрать ошибку `Run`, если baseline получить не удалось.
 
 `EvaluateResources` проверяет ordered ledger goroutine, heap и трёх
 фиксированных queue classes: `control`, `auth`, `realtime`. Любое промежуточное

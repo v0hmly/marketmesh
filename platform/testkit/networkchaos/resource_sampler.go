@@ -38,6 +38,7 @@ type ResourceSampler struct {
 	config ResourceSamplerConfig
 	source ResourceSource
 	clock  resourceSamplerClock
+	ready  chan struct{}
 	used   atomic.Bool
 }
 
@@ -104,7 +105,19 @@ func newResourceSampler(
 	if isNilDependency(clock) {
 		return nil, errors.New("networkchaos: resource sampler clock must not be nil")
 	}
-	return &ResourceSampler{config: config, source: source, clock: clock}, nil
+	return &ResourceSampler{
+		config: config,
+		source: source,
+		clock:  clock,
+		ready:  make(chan struct{}),
+	}, nil
+}
+
+// Ready закрывается ровно после успешного baseline sample. Если Run завершился
+// ошибкой раньше baseline, канал остаётся открытым, а caller обязан выбрать
+// результат Run и не начинать fault mutation.
+func (sampler *ResourceSampler) Ready() <-chan struct{} {
+	return sampler.ready
 }
 
 // Run читает baseline немедленно, затем PollInterval samples до закрытия stop.
@@ -138,6 +151,7 @@ func (sampler *ResourceSampler) Run(
 		return nil, err
 	}
 	samples := []ResourceSample{sampleFromObservation(startedAt, startedAt, baseline)}
+	close(sampler.ready)
 	ticker := sampler.clock.NewTicker(sampler.config.PollInterval)
 	defer ticker.Stop()
 

@@ -94,6 +94,11 @@ func TestResourceSamplerBuildsOrderedDefensiveLedgerUntilExplicitStop(t *testing
 	source := &fakeResourceSource{calls: make(chan int, 4)}
 	clock := newFakeResourceSamplerClock()
 	sampler := testResourceSampler(t, source, clock, 4)
+	select {
+	case <-sampler.Ready():
+		t.Fatal("Ready() closed before Run baseline")
+	default:
+	}
 	stop := make(chan struct{})
 	resultChannel := make(chan resourceSamplerResult, 1)
 	runCtx := boundedResourceTestContext(t)
@@ -104,6 +109,11 @@ func TestResourceSamplerBuildsOrderedDefensiveLedgerUntilExplicitStop(t *testing
 
 	waitResourceRead(t, source.calls)
 	waitResourceTicker(t, clock.created)
+	select {
+	case <-sampler.Ready():
+	default:
+		t.Fatal("Ready() remains open after accepted baseline")
+	}
 	clock.Advance(time.Second)
 	waitResourceRead(t, source.calls)
 	close(stop)
@@ -129,6 +139,32 @@ func TestResourceSamplerBuildsOrderedDefensiveLedgerUntilExplicitStop(t *testing
 
 func TestResourceSamplerFailsClosedOnReadErrorAndSampleLimit(t *testing.T) {
 	t.Parallel()
+
+	t.Run("baseline error", func(t *testing.T) {
+		t.Parallel()
+		source := &fakeResourceSource{errAt: 1, calls: make(chan int, 1)}
+		clock := newFakeResourceSamplerClock()
+		sampler := testResourceSampler(t, source, clock, 2)
+		resultChannel := make(chan resourceSamplerResult, 1)
+		runCtx := boundedResourceTestContext(t)
+		go func() {
+			samples, err := sampler.Run(runCtx, make(chan struct{}))
+			resultChannel <- resourceSamplerResult{samples: samples, err: err}
+		}()
+		waitResourceRead(t, source.calls)
+		result := waitResourceSamplerResult(t, resultChannel)
+		if result.err == nil || !strings.Contains(result.err.Error(), "metrics unavailable") {
+			t.Fatalf("Run() error = %v, want baseline source failure", result.err)
+		}
+		if len(result.samples) != 0 {
+			t.Fatalf("samples = %v, want no accepted baseline", result.samples)
+		}
+		select {
+		case <-sampler.Ready():
+			t.Fatal("Ready() closed after rejected baseline")
+		default:
+		}
+	})
 
 	t.Run("read error", func(t *testing.T) {
 		t.Parallel()

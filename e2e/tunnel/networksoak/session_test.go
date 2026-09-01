@@ -59,9 +59,6 @@ func runSession(
 		samples, err := resourceSampler.Run(sessionCtx, resourceStop)
 		resourceResults <- resourceRunResult{samples: samples, err: err}
 	}()
-	go func() {
-		chaosResults <- runChaos(sessionCtx)
-	}()
 
 	var (
 		probeResult    probeRunResult
@@ -71,6 +68,33 @@ func runSession(
 		probeDone      bool
 		resourceDone   bool
 	)
+	select {
+	case <-resourceSampler.Ready():
+	case probeResult = <-probeResults:
+		probeDone = true
+		prematureErr = errors.New("network soak: continuous probe stopped before resource baseline")
+	case resourceResult = <-resourceResults:
+		resourceDone = true
+		prematureErr = errors.New("network soak: resource sampler stopped before baseline")
+	}
+	if prematureErr != nil {
+		cancelSession()
+		close(resourceStop)
+		if !resourceDone {
+			resourceResult = <-resourceResults
+		}
+		if !probeDone {
+			probeResult = <-probeResults
+		}
+		return sessionResult{
+			client:    probeResult.snapshot,
+			resources: resourceResult.samples,
+		}, errors.Join(prematureErr, resourceResult.err, probeResult.err)
+	}
+
+	go func() {
+		chaosResults <- runChaos(sessionCtx)
+	}()
 	select {
 	case probeResult = <-probeResults:
 		probeDone = true
@@ -205,12 +229,15 @@ func TestRunSessionKeepsProbeActiveAcrossFaultLifecycleAndJoinsIt(t *testing.T) 
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 	result, err := runSession(ctx, continuousProbe, resourceSampler, func(runCtx context.Context) error {
-		for range 2 {
-			select {
-			case <-resourceReads:
-			case <-runCtx.Done():
-				return runCtx.Err()
-			}
+		select {
+		case <-resourceReads:
+		default:
+			return errors.New("chaos started before resource baseline")
+		}
+		select {
+		case <-resourceReads:
+		case <-runCtx.Done():
+			return runCtx.Err()
 		}
 		observer, observerErr := newProbeObserver(
 			continuousProbe,
@@ -320,13 +347,20 @@ func TestRunSessionFailsClosedWhenResourceSamplerStopsBeforeChaos(t *testing.T) 
 
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
+	chaosStarted := make(chan struct{}, 1)
 	result, err := runSession(ctx, continuousProbe, resourceSampler, func(runCtx context.Context) error {
+		chaosStarted <- struct{}{}
 		<-runCtx.Done()
 		return runCtx.Err()
 	})
-	if err == nil || !strings.Contains(err.Error(), "resource sampler stopped before chaos") ||
+	if err == nil || !strings.Contains(err.Error(), "resource sampler stopped before baseline") ||
 		!strings.Contains(err.Error(), "metrics unavailable") {
 		t.Fatalf("runSession() error = %v, want premature resource failure", err)
+	}
+	select {
+	case <-chaosStarted:
+		t.Fatal("runSession() started chaos without a resource baseline")
+	default:
 	}
 	if len(result.resources) != 0 {
 		t.Fatalf("resource samples = %v, want no accepted baseline", result.resources)
