@@ -46,6 +46,14 @@ internal ledger возвращает только его SHA-256 digest.
 делают snapshot неполным. Front door никогда не используется для чтения
 ledger, а topology addresses и TLS credentials не попадают в типы artifacts.
 
+Опубликованный MM-30 front door подключается через `NewFrontDoorInvoker`. Его
+endpoint принимается только как literal loopback HTTP URL без path/query/userinfo
+на непривилегированном port; environment proxy, compression и redirects
+отключены. Adapter использует только `Read`/`Mutate`, поэтому generated метод
+`Ledger` не становится частью внешней поверхности probe. После остановки
+runner вызывающий код обязан вызвать `FrontDoorInvoker.Close`, чтобы закрыть
+idle connections.
+
 Формат SLO/JSON/JUnit принадлежит MM-27 (`e2e/tunnel/spec`). Report adapter MM-31
 будет добавлен после появления этого prerequisite в `dev`; пакет не создаёт
 параллельную схему отчёта.
