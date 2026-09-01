@@ -15,7 +15,6 @@ const (
 	// EnvironmentLocalE2E is the only environment authorized for destructive scenarios.
 	EnvironmentLocalE2E = "local-e2e"
 	maxPhaseTimeout     = 30 * time.Minute
-	maxFailbackLimit    = 100
 )
 
 // DC is one bounded failure domain in the disposable topology.
@@ -96,19 +95,11 @@ type Marker struct {
 	Phase      MarkerPhase
 }
 
-// FailbackPolicy bounds reconnection pressure when a restored DC returns.
-type FailbackPolicy struct {
-	MaxConcurrentReconnects int
-	StepInterval            time.Duration
-	StabilizationWindow     time.Duration
-}
-
 // Config contains all orchestration limits and the unique run identity.
 type Config struct {
 	RunID           string
 	PhaseTimeout    time.Duration
 	FinalizeTimeout time.Duration
-	Failback        FailbackPolicy
 }
 
 // Topology owns exact disposable cluster, container, and network lifecycle.
@@ -120,19 +111,24 @@ type Topology interface {
 	Cleanup(ctx context.Context, snapshot Snapshot) error
 }
 
-// FrontDoor owns health-aware drain, exclusion, and controlled failback.
-type FrontDoor interface {
-	Drain(ctx context.Context, dc DC) error
-	WaitExcluded(ctx context.Context, dc DC) error
-	Failback(ctx context.Context, dc DC, policy FailbackPolicy) error
-	WaitEligible(ctx context.Context, dc DC) error
+// Drainer owns the managed pre-outage drain supplied by rolling lifecycle.
+type Drainer interface {
+	DrainDC(ctx context.Context, dc DC) error
 }
 
-// Readiness verifies surviving capacity and full restored-DC readiness.
+// FrontDoor is the public MM-30 health refresh contract. The concrete
+// frontdoor.FrontDoor satisfies it without a local routing implementation.
+type FrontDoor interface {
+	Check(ctx context.Context)
+}
+
+// Readiness verifies capacity, routing exclusion, and full restored readiness.
 type Readiness interface {
 	WaitBaseline(ctx context.Context) error
 	WaitSurvivor(ctx context.Context, dc DC) error
+	WaitExcluded(ctx context.Context, dc DC) error
 	WaitRestored(ctx context.Context, dc DC) error
+	WaitEligible(ctx context.Context, dc DC) error
 }
 
 // Probe owns bounded read and mutating request streams and ledger validation.
@@ -152,19 +148,6 @@ func validateConfig(config Config) error {
 		return err
 	}
 	if err := validateTimeout("finalize", config.FinalizeTimeout); err != nil {
-		return err
-	}
-	if config.Failback.MaxConcurrentReconnects <= 0 ||
-		config.Failback.MaxConcurrentReconnects > maxFailbackLimit {
-		return errors.New("dcfailover: failback reconnect limit is outside bounds")
-	}
-	if err := validateTimeout("failback step", config.Failback.StepInterval); err != nil {
-		return err
-	}
-	if err := validateTimeout(
-		"failback stabilization",
-		config.Failback.StabilizationWindow,
-	); err != nil {
 		return err
 	}
 

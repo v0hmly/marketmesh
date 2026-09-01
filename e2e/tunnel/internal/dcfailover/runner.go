@@ -14,33 +14,40 @@ import (
 type Runner struct {
 	config    Config
 	topology  Topology
+	drainer   Drainer
 	frontDoor FrontDoor
 	readiness Readiness
 	probe     Probe
 	started   atomic.Bool
 }
 
+// Dependencies are the narrow prerequisite contracts consumed by Runner.
+type Dependencies struct {
+	Topology  Topology
+	Drainer   Drainer
+	FrontDoor FrontDoor
+	Readiness Readiness
+	Probe     Probe
+}
+
 // New creates a single-use failover runner.
-func New(
-	config Config,
-	topology Topology,
-	frontDoor FrontDoor,
-	readiness Readiness,
-	probe Probe,
-) (*Runner, error) {
+func New(config Config, dependencies Dependencies) (*Runner, error) {
 	if err := validateConfig(config); err != nil {
 		return nil, err
 	}
-	if topology == nil || frontDoor == nil || readiness == nil || probe == nil {
+	if dependencies.Topology == nil || dependencies.Drainer == nil ||
+		dependencies.FrontDoor == nil || dependencies.Readiness == nil ||
+		dependencies.Probe == nil {
 		return nil, errors.New("dcfailover: all adapters are required")
 	}
 
 	return &Runner{
 		config:    config,
-		topology:  topology,
-		frontDoor: frontDoor,
-		readiness: readiness,
-		probe:     probe,
+		topology:  dependencies.Topology,
+		drainer:   dependencies.Drainer,
+		frontDoor: dependencies.FrontDoor,
+		readiness: dependencies.Readiness,
+		probe:     dependencies.Probe,
 	}, nil
 }
 
@@ -120,8 +127,11 @@ func (runner *Runner) runOutage(
 
 	if kind == OutageManaged {
 		if err := runner.phase(ctx, "draining dc", func(phaseCtx context.Context) error {
-			return runner.frontDoor.Drain(phaseCtx, dc)
+			return runner.drainer.DrainDC(phaseCtx, dc)
 		}); err != nil {
+			return err
+		}
+		if err := runner.refreshFrontDoor(ctx); err != nil {
 			return err
 		}
 		if err := runner.waitExcluded(ctx, dc); err != nil {
@@ -138,6 +148,9 @@ func (runner *Runner) runOutage(
 		return err
 	}
 	if kind == OutageSudden {
+		if err := runner.refreshFrontDoor(ctx); err != nil {
+			return err
+		}
 		if err := runner.waitExcluded(ctx, dc); err != nil {
 			return err
 		}
@@ -159,13 +172,11 @@ func (runner *Runner) runOutage(
 	}); err != nil {
 		return err
 	}
-	if err := runner.phase(ctx, "starting controlled failback", func(phaseCtx context.Context) error {
-		return runner.frontDoor.Failback(phaseCtx, dc, runner.config.Failback)
-	}); err != nil {
+	if err := runner.refreshFrontDoor(ctx); err != nil {
 		return err
 	}
 	if err := runner.phase(ctx, "waiting for dc eligibility", func(phaseCtx context.Context) error {
-		return runner.frontDoor.WaitEligible(phaseCtx, dc)
+		return runner.readiness.WaitEligible(phaseCtx, dc)
 	}); err != nil {
 		return err
 	}
@@ -178,7 +189,15 @@ func (runner *Runner) runOutage(
 
 func (runner *Runner) waitExcluded(ctx context.Context, dc DC) error {
 	return runner.phase(ctx, "waiting for dc exclusion", func(phaseCtx context.Context) error {
-		return runner.frontDoor.WaitExcluded(phaseCtx, dc)
+		return runner.readiness.WaitExcluded(phaseCtx, dc)
+	})
+}
+
+func (runner *Runner) refreshFrontDoor(ctx context.Context) error {
+	return runner.phase(ctx, "refreshing front door health", func(phaseCtx context.Context) error {
+		runner.frontDoor.Check(phaseCtx)
+
+		return phaseCtx.Err()
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 
 var (
 	_ Topology  = (*fakeAdapters)(nil)
+	_ Drainer   = (*fakeAdapters)(nil)
 	_ FrontDoor = (*fakeAdapters)(nil)
 	_ Readiness = (*fakeAdapters)(nil)
 	_ Probe     = (*fakeAdapters)(nil)
@@ -36,19 +37,13 @@ func TestRunExecutesSymmetricManagedAndSuddenOutages(t *testing.T) {
 		t.Fatalf("stop events = %v, want %v", got, wantStops)
 	}
 
-	wantDrains := []string{"frontdoor.drain:dc-a", "frontdoor.drain:dc-b"}
-	if got := eventsWithPrefix(adapters.events, "frontdoor.drain:"); !slices.Equal(got, wantDrains) {
+	wantDrains := []string{"drainer.drain:dc-a", "drainer.drain:dc-b"}
+	if got := eventsWithPrefix(adapters.events, "drainer.drain:"); !slices.Equal(got, wantDrains) {
 		t.Fatalf("drain events = %v, want %v", got, wantDrains)
 	}
 
-	wantFailbacks := []string{
-		"frontdoor.failback:dc-a",
-		"frontdoor.failback:dc-a",
-		"frontdoor.failback:dc-b",
-		"frontdoor.failback:dc-b",
-	}
-	if got := eventsWithPrefix(adapters.events, "frontdoor.failback:"); !slices.Equal(got, wantFailbacks) {
-		t.Fatalf("failback events = %v, want %v", got, wantFailbacks)
+	if got := countEvent(adapters.events, "frontdoor.check"); got != 8 {
+		t.Fatalf("front door check count = %d, want 8", got)
 	}
 
 	if got := countEvent(adapters.events, "readiness.baseline"); got != 5 {
@@ -131,7 +126,7 @@ func TestRunWaitsForReadinessBeforeFailback(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "pki is not ready") {
 		t.Fatalf("Run() error = %v, want readiness error", err)
 	}
-	if slices.Contains(adapters.events, "frontdoor.failback:dc-a") {
+	if got := countEvent(adapters.events, "frontdoor.check"); got != 1 {
 		t.Fatalf("failback started before readiness: %v", adapters.events)
 	}
 	assertFinalizationOrder(t, adapters.events)
@@ -165,6 +160,9 @@ func TestRunUsesBoundedContextsAndIsSingleUse(t *testing.T) {
 	runner := newTestRunner(t, adapters)
 	if err := runner.Run(t.Context()); err != nil {
 		t.Fatalf("first Run() error = %v", err)
+	}
+	if adapters.checkWithoutDeadline {
+		t.Fatal("front door Check() received a context without a deadline")
 	}
 	err := runner.Run(t.Context())
 	if err == nil || !strings.Contains(err.Error(), "single-use") {
@@ -226,18 +224,6 @@ func TestNewRejectsUnboundedConfiguration(t *testing.T) {
 				config.FinalizeTimeout = 31 * time.Minute
 			},
 		},
-		{
-			name: "zero reconnect limit",
-			mutate: func(config *Config) {
-				config.Failback.MaxConcurrentReconnects = 0
-			},
-		},
-		{
-			name: "zero step interval",
-			mutate: func(config *Config) {
-				config.Failback.StepInterval = 0
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -247,13 +233,7 @@ func TestNewRejectsUnboundedConfiguration(t *testing.T) {
 			config := valid
 			tt.mutate(&config)
 			adapters := newFakeAdapters()
-			if _, err := New(
-				config,
-				adapters,
-				adapters,
-				adapters,
-				adapters,
-			); err == nil {
+			if _, err := New(config, testDependencies(adapters)); err == nil {
 				t.Fatal("New() error = nil, want validation error")
 			}
 		})
@@ -264,13 +244,9 @@ func TestNewRequiresEveryAdapter(t *testing.T) {
 	t.Parallel()
 
 	adapters := newFakeAdapters()
-	if _, err := New(
-		testConfig(),
-		nil,
-		adapters,
-		adapters,
-		adapters,
-	); err == nil {
+	dependencies := testDependencies(adapters)
+	dependencies.Topology = nil
+	if _, err := New(testConfig(), dependencies); err == nil {
 		t.Fatal("New() error = nil, want missing adapter rejection")
 	}
 }
@@ -297,13 +273,7 @@ func TestRunDefensivelyCopiesExactTargets(t *testing.T) {
 func newTestRunner(t *testing.T, adapters *fakeAdapters) *Runner {
 	t.Helper()
 
-	runner, err := New(
-		testConfig(),
-		adapters,
-		adapters,
-		adapters,
-		adapters,
-	)
+	runner, err := New(testConfig(), testDependencies(adapters))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -316,11 +286,16 @@ func testConfig() Config {
 		RunID:           "mm35-run",
 		PhaseTimeout:    time.Minute,
 		FinalizeTimeout: time.Minute,
-		Failback: FailbackPolicy{
-			MaxConcurrentReconnects: 2,
-			StepInterval:            time.Second,
-			StabilizationWindow:     5 * time.Second,
-		},
+	}
+}
+
+func testDependencies(adapters *fakeAdapters) Dependencies {
+	return Dependencies{
+		Topology:  adapters,
+		Drainer:   adapters,
+		FrontDoor: adapters,
+		Readiness: adapters,
+		Probe:     adapters,
 	}
 }
 
@@ -351,13 +326,14 @@ func safeSnapshot() Snapshot {
 }
 
 type fakeAdapters struct {
-	snapshot         Snapshot
-	events           []string
-	failures         map[string]error
-	targets          []DCTarget
-	restoreTargets   []DCTarget
-	requireDeadline  bool
-	mutateStopTarget bool
+	snapshot             Snapshot
+	events               []string
+	failures             map[string]error
+	targets              []DCTarget
+	restoreTargets       []DCTarget
+	requireDeadline      bool
+	checkWithoutDeadline bool
+	mutateStopTarget     bool
 }
 
 func newFakeAdapters() *fakeAdapters {
@@ -407,24 +383,23 @@ func (adapters *fakeAdapters) Cleanup(ctx context.Context, _ Snapshot) error {
 	return adapters.record(ctx, "topology.cleanup")
 }
 
-func (adapters *fakeAdapters) Drain(ctx context.Context, dc DC) error {
-	return adapters.record(ctx, "frontdoor.drain:"+string(dc))
+func (adapters *fakeAdapters) DrainDC(ctx context.Context, dc DC) error {
+	return adapters.record(ctx, "drainer.drain:"+string(dc))
+}
+
+func (adapters *fakeAdapters) Check(ctx context.Context) {
+	if _, found := ctx.Deadline(); !found {
+		adapters.checkWithoutDeadline = true
+	}
+	_ = adapters.record(ctx, "frontdoor.check")
 }
 
 func (adapters *fakeAdapters) WaitExcluded(ctx context.Context, dc DC) error {
-	return adapters.record(ctx, "frontdoor.excluded:"+string(dc))
-}
-
-func (adapters *fakeAdapters) Failback(
-	ctx context.Context,
-	dc DC,
-	_ FailbackPolicy,
-) error {
-	return adapters.record(ctx, "frontdoor.failback:"+string(dc))
+	return adapters.record(ctx, "readiness.excluded:"+string(dc))
 }
 
 func (adapters *fakeAdapters) WaitEligible(ctx context.Context, dc DC) error {
-	return adapters.record(ctx, "frontdoor.eligible:"+string(dc))
+	return adapters.record(ctx, "readiness.eligible:"+string(dc))
 }
 
 func (adapters *fakeAdapters) WaitBaseline(ctx context.Context) error {

@@ -32,8 +32,10 @@ dev, preprod или production окружения. Все ожидания, по
 - **Topology** возвращает неизменяемый снимок точных cluster, container,
   network и kube context identifiers текущего run; выполняет preflight,
   остановку и восстановление только переданного набора идентификаторов;
-- **Front door** переводит один DC в draining, исключает unhealthy DC из
-  health pool и возвращает низкокардинальный снимок состояния по DC;
+- **Drainer** выполняет управляемый drain выбранного DC до остановки кластеров;
+- **Front door** использует публичный MM-30 метод `Check(context.Context)` для
+  немедленной проверки двух фиксированных backend; исключение unhealthy DC и
+  постепенный failback выполняются самой реализацией MM-30;
 - **Probe** запускает bounded read и mutating потоки, ставит fault markers и
   завершает ledger reconciliation без повторов mutating-запроса после
   неопределённого результата;
@@ -48,8 +50,11 @@ dev, preprod или production окружения. Все ожидания, по
 процессов является runner: он обязан отменить их и дождаться завершения.
 
 Consumer-side границы находятся в пакете
-`e2e/tunnel/internal/dcfailover`: `Topology`, `FrontDoor`, `Readiness` и
-`Probe`. `Topology.Preflight` возвращает полный `Snapshot`, после чего runner
+`e2e/tunnel/internal/dcfailover`: `Topology`, `Drainer`, `FrontDoor`,
+`Readiness` и `Probe`. Интерфейс `FrontDoor` структурно совпадает с публичным
+контрактом MM-30 и проверяется compile-time и network contract-тестом; локальная
+реализация routing или failback policy отсутствует. `Topology.Preflight`
+возвращает полный `Snapshot`, после чего runner
 повторно fail-closed проверяет `run-id`, признак disposable local E2E, четыре
 уникальные пары DC/zone и точные имена kube context, cluster, container и
 network без glob. До успешной проверки снимка cleanup не запускается, потому
