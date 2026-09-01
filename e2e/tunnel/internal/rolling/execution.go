@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -59,6 +61,9 @@ func Execute(
 	}
 	if isNilDependency(traffic) || isNilDependency(archive) || closeTraffic == nil || action == nil {
 		return probe.ReportResult{}, errors.New("rolling: execution dependencies are required")
+	}
+	if err := validateArtifactTarget(config.ArtifactDirectory); err != nil {
+		return probe.ReportResult{}, err
 	}
 
 	runCtx, cancelRun := context.WithTimeout(ctx, config.TotalTimeout)
@@ -130,6 +135,21 @@ func Execute(
 	}
 
 	return report, errors.Join(actionErr, trafficErr, archiveErr, artifactErr, statusErr)
+}
+
+func validateArtifactTarget(path string) error {
+	parent := filepath.Dir(path)
+	parentInfo, err := os.Lstat(parent)
+	if err != nil || !parentInfo.IsDir() {
+		return errors.New("rolling: artifact parent must be an existing directory")
+	}
+	if _, err := os.Lstat(path); err == nil {
+		return fmt.Errorf("rolling: artifact target must not exist: %w", fs.ErrExist)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return errors.New("rolling: cannot inspect artifact target")
+	}
+
+	return nil
 }
 
 func validateExecutionConfig(config ExecutionConfig) error {

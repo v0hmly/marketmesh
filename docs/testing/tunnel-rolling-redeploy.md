@@ -174,7 +174,7 @@ rollback или неполная capacity немедленно завершае�
 MM-34 не управляет внутренними очередями probe и не повторяет mutating calls.
 Он только передаёт bounded lifecycle и fault markers через интерфейс MM-31:
 
-- `run_id` и детерминированный seed;
+- точный `run_id` и одноразовый bounded lifecycle probe;
 - фаза `before`, `steady`, `rollout`, `rollback` или `recovered`;
 - конечные значения `dc`, `zone`, `component` и `result`;
 - monotonic offset относительно начала запуска;

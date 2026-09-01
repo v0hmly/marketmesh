@@ -100,6 +100,36 @@ func TestExecuteFailsBeforeTrafficWhenArchiveIsNotReady(t *testing.T) {
 	}
 }
 
+func TestExecuteRejectsExistingArtifactTargetBeforeStartingDependencies(t *testing.T) {
+	t.Parallel()
+
+	_, internal, scenario := passingExecutionEvidence()
+	artifactDirectory := filepath.Join(t.TempDir(), "existing-artifacts")
+	if err := os.Mkdir(artifactDirectory, 0o700); err != nil {
+		t.Fatalf("os.Mkdir() error = %v", err)
+	}
+	traffic := &trafficRunnerStub{}
+	archive := newLedgerArchiveStub(internal)
+	actionCalled := false
+	_, err := Execute(
+		t.Context(),
+		validExecutionConfig(scenario, artifactDirectory),
+		traffic,
+		archive,
+		func() {},
+		func(context.Context) error {
+			actionCalled = true
+			return nil
+		},
+	)
+	if !errors.Is(err, os.ErrExist) {
+		t.Fatalf("Execute() error = %v, want existing target", err)
+	}
+	if traffic.called || actionCalled {
+		t.Fatal("execution dependencies started for an existing artifact target")
+	}
+}
+
 func validExecutionConfig(
 	scenario spec.Scenario,
 	artifactDirectory string,
