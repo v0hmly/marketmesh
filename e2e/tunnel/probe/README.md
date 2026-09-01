@@ -66,8 +66,16 @@ Fault interval начинается единственным marker `started` и
 marker, если `recovered` отсутствует. Неизвестный fault ID, повторный start/end,
 неверный порядок, failed marker или открытый interval делают report failed.
 
-`WriteArtifacts` создаёт новый каталог с правами `0700` и без перезаписи пишет
-`run.json`, `report.json`, `report.junit.xml` и `report.txt` с правами `0600`.
+`WriteArtifacts` полностью записывает `run.json`, `report.json`,
+`report.junit.xml` и `report.txt` с правами `0600` в соседний приватный staging-
+каталог `0700`, закрывает все файлы и атомарно публикует готовый bundle одним
+rename без перезаписи существующего пути. При любой ошибке staging удаляется, а
+финальный путь остаётся отсутствующим. Это контракт atomic visibility, а не
+crash durability: `fsync` файлов и каталогов намеренно не выполняется.
+Публикация поддерживается на Linux и Darwin. На остальных платформах функция
+fail-closed возвращает `errors.ErrUnsupported` до создания staging и записи
+данных, поскольку там не доказаны одновременно private permissions и atomic
+no-replace rename.
 Полный `run.json` содержит opaque request/idempotency IDs, необходимые для
 reconciliation; три итоговых report их не содержат. Scenario process обязан
 использовать `signal.NotifyContext` для SIGTERM. Integration-тест отправляет
