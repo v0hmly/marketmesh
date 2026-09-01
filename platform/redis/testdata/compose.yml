@@ -1,0 +1,24 @@
+services:
+  redis-edge-integration:
+    build:
+      context: ../..
+      dockerfile: platform/redis/testdata/Dockerfile
+    environment:
+      MARKETMESH_REDIS_ROLE: edge
+      MARKETMESH_REDIS_ADDRESS: edge-state:6379
+      MARKETMESH_REDIS_PASSWORD: ${REDIS_EDGE_PASSWORD}
+    networks:
+      - dmz
+    profiles: ["checks"]
+
+  redis-auth-integration:
+    build:
+      context: ../..
+      dockerfile: platform/redis/testdata/Dockerfile
+    environment:
+      MARKETMESH_REDIS_ROLE: auth
+      MARKETMESH_REDIS_ADDRESS: auth-state:6379
+      MARKETMESH_REDIS_PASSWORD: ${REDIS_AUTH_PASSWORD}
+    networks:
+      - internal
+    profiles: ["checks"]

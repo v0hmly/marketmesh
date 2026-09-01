@@ -194,6 +194,11 @@ tasks:
     cmds:
       - bash platform/postgres/testdata/integration.sh
 
+  redis:integration:
+    desc: Выполнить интеграционные тесты независимых edge и auth Redis
+    cmds:
+      - bash platform/redis/testdata/integration.sh
+
   infra:down:
     desc: Остановить окружение с сохранением данных
     cmds:
