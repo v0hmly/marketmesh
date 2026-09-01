@@ -130,8 +130,7 @@ func (archive *LedgerArchive) Run(ctx context.Context) error {
 	archive.signalReady(initialErr)
 	if initialErr != nil {
 		archive.markIncomplete("archive_initial_discovery_failed")
-		archive.closeAll()
-		return initialErr
+		return errors.Join(initialErr, archive.closeAll())
 	}
 
 	ticker := time.NewTicker(archive.config.PollInterval)

@@ -77,6 +77,11 @@ func TestProbeConfigBoundsCompleteArtifactCapacity(t *testing.T) {
 	if _, err := probeConfig(configuration); err == nil {
 		t.Fatal("probeConfig() error = nil for missing steady streak")
 	}
+	configuration.steadyMutating = 10
+	configuration.totalTimeout = -time.Second
+	if _, err := probeConfig(configuration); err == nil {
+		t.Fatal("probeConfig() error = nil for negative timeout")
+	}
 }
 
 func TestScenarioActionSelectsExactEmbeddedContract(t *testing.T) {

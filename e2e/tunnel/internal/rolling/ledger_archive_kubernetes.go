@@ -549,6 +549,8 @@ func portForwardCommand(
 	podName string,
 	output io.Writer,
 ) *exec.Cmd {
+	// #nosec G204 -- kubectlPath comes from exec.LookPath; kubeconfig/context,
+	// Pod name/UID and the complete ownership chain are validated before use.
 	command := exec.CommandContext(
 		ctx,
 		kubectlPath,

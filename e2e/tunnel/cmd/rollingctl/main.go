@@ -98,7 +98,7 @@ func run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		PollInterval: configuration.archivePoll,
 		CallTimeout:  configuration.archiveCallTimeout,
 		StopTimeout:  configuration.stopTimeout,
-		LedgerLimit:  uint32(configuration.ledgerLimit),
+		LedgerLimit:  uint32(configuration.ledgerLimit), // #nosec G115 -- bounded by parseOptions
 	})
 	if err != nil {
 		return err
@@ -117,8 +117,8 @@ func run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	}
 	continuous, err := rolling.NewContinuousProbe(rolling.ContinuousProbeConfig{
 		RunID:             configuration.runID,
-		ReadSuccesses:     uint32(configuration.steadyRead),
-		MutatingSuccesses: uint32(configuration.steadyMutating),
+		ReadSuccesses:     uint32(configuration.steadyRead),     // #nosec G115 -- bounded by probeConfig
+		MutatingSuccesses: uint32(configuration.steadyMutating), // #nosec G115 -- bounded by probeConfig
 	}, traffic)
 	if err != nil {
 		return err
@@ -282,6 +282,8 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 }
 
 func readInventory(path string) ([]rolling.Cluster, error) {
+	// #nosec G304 -- parseOptions requires a clean absolute operator-supplied
+	// path; DecodeTopologyInventory then validates MM-28 schema and ownership.
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, errors.New("rollingctl: opening topology inventory")
@@ -300,6 +302,9 @@ func readInventory(path string) ([]rolling.Cluster, error) {
 }
 
 func probeConfig(configuration options) (probe.Config, error) {
+	if configuration.totalTimeout <= 0 || configuration.totalTimeout > 2*time.Hour {
+		return probe.Config{}, errors.New("rollingctl: total timeout is outside bounds")
+	}
 	if configuration.readRPS == 0 || configuration.mutatingRPS == 0 ||
 		configuration.readRPS > 100_000 || configuration.mutatingRPS > 100_000 {
 		return probe.Config{}, errors.New("rollingctl: both bounded traffic streams are required")
@@ -312,12 +317,14 @@ func probeConfig(configuration options) (probe.Config, error) {
 	if configuration.steadyRead == 0 || configuration.steadyMutating == 0 {
 		return probe.Config{}, errors.New("rollingctl: both steady success streaks are required")
 	}
+	// #nosec G115 -- totalTimeout is positive and bounded to two hours above.
 	seconds := uint64((configuration.totalTimeout + time.Second - 1) / time.Second)
-	rps := uint64(configuration.readRPS + configuration.mutatingRPS)
+	rps := uint64(configuration.readRPS) + uint64(configuration.mutatingRPS)
 	if seconds == 0 || rps > maximumCLIProbeRecords ||
 		seconds > maximumCLIProbeRecords/rps {
 		return probe.Config{}, errors.New("rollingctl: probe plan exceeds artifact-safe record capacity")
 	}
+	// #nosec G115 -- the preceding division proves seconds*rps <= 25_000.
 	recordCapacity := int(seconds*rps) + configuration.readConcurrency +
 		configuration.mutatingConcurrency + 2
 	if recordCapacity <= 0 || recordCapacity > maximumCLIProbeRecords {

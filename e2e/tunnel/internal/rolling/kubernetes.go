@@ -811,6 +811,8 @@ func (runner kubectlRunner) Run(
 	stdin []byte,
 	arguments ...string,
 ) ([]byte, error) {
+	// #nosec G204 -- path comes from exec.LookPath and every caller supplies a
+	// finite command plus validated kubeconfig, context, namespace and target.
 	command := exec.CommandContext(ctx, runner.path, arguments...)
 	command.Stdin = bytes.NewReader(stdin)
 	output := &limitBuffer{remaining: maximumCommandOutputBytes}
