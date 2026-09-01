@@ -61,6 +61,12 @@ snapshots в каталог конкретного run до удаления р�
 последовательностью faults, но без Docker IDs: новый запуск обязан заново
 разрешить disposable resources.
 
+`GateAttempts` сохраняет failure при любом неуспешном attempt и не позволяет
+последующему retry превратить flaky scenario в pass. Если scenario вынесен из
+required gate, `ValidateQuarantine` требует явные `@owner`, причину и будущий
+expiry не дальше 30 дней; quarantine остаётся метаданными и не переписывает
+фактический результат попытки.
+
 ## Отложенная интеграция
 
 - workloads/PKI MM-29 уже доступны; фактический Docker topology contract и
