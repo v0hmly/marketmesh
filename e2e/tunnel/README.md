@@ -175,3 +175,8 @@ DC → undeploy → `e2e:topology:down`. Rolling redeploy описан в вет
 Полный deploy/undeploy и внешний проход через оба DC выполняются только после
 объединения MM-44. Локальные unit/integration проверки PKI, mTLS, route
 allowlist, idempotency, manifests и точного cleanup от topology не зависят.
+
+Контракт и независимая state machine планового rolling redeploy MM-34 описаны
+в [`docs/testing/tunnel-rolling-redeploy.md`](../../docs/testing/tunnel-rolling-redeploy.md).
+Командный сценарий намеренно не использует no-op probe и подключается только к
+опубликованному continuous probe MM-31.
