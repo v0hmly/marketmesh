@@ -54,6 +54,21 @@ endpoint принимается только как literal loopback HTTP URL б
 runner вызывающий код обязан вызвать `FrontDoorInvoker.Close`, чтобы закрыть
 idle connections.
 
-Формат SLO/JSON/JUnit принадлежит MM-27 (`e2e/tunnel/spec`). Report adapter MM-31
-будет добавлен после появления этого prerequisite в `dev`; пакет не создаёт
-параллельную схему отчёта.
+Формат SLO/JSON/JUnit принадлежит MM-27 (`e2e/tunnel/spec`). `BuildReport`
+преобразует финальные client/internal snapshots и переданные владельцем
+сценария capacity/exclusion evidence в `spec.Run`, после чего все формулы
+availability, downtime и recovery вычисляет только `spec.Evaluate`. MM-31
+добавляет отдельные fail-closed checks для reconciliation, marker lifecycle и
+cleanup, не меняя SLO-формулы.
+
+Fault interval начинается единственным marker `started` и завершается
+единственным успешным `recovered`; успешный `after` используется как terminal
+marker, если `recovered` отсутствует. Неизвестный fault ID, повторный start/end,
+неверный порядок, failed marker или открытый interval делают report failed.
+
+`WriteArtifacts` создаёт новый каталог с правами `0700` и без перезаписи пишет
+`run.json`, `report.json`, `report.junit.xml` и `report.txt` с правами `0600`.
+Полный `run.json` содержит opaque request/idempotency IDs, необходимые для
+reconciliation; три итоговых report их не содержат. Scenario process обязан
+использовать `signal.NotifyContext` для SIGTERM. Integration-тест отправляет
+реальный SIGTERM helper-процессу с Runner и проверяет bounded завершение.
