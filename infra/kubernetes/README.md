@@ -1,6 +1,17 @@
 # Kubernetes
 
-Здесь будут находиться базовые и окруженческие Kubernetes-манифесты. Сетевые политики должны запрещать инициирование соединений из DMZ во внутреннюю зону.
+Здесь находятся локальная disposable topology и будущие базовые и
+окруженческие Kubernetes-манифесты. Сетевые политики должны запрещать
+инициирование соединений из DMZ во внутреннюю зону.
+
+## Двух-DC E2E topology
+
+Инструмент MM-28 описан в
+[`tools/e2e-topology/README.md`](../../tools/e2e-topology/README.md). Он создаёт
+четыре одноузловых kind-кластера в отдельных Docker-сетях и не добавляет
+application workloads или fault scenarios. Все kube-команды используют только
+явные `--kubeconfig` и `--context`; пользовательский current context не читается
+и не изменяется.
 
 ## PostgreSQL client identity
 

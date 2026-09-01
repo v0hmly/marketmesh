@@ -14,6 +14,7 @@ readonly MODULES=(
   "services/gateway-in|${REPOSITORY_MODULE_PREFIX}/services/gateway-in"
   "services/gateway-out|${REPOSITORY_MODULE_PREFIX}/services/gateway-out"
   "services/user|${REPOSITORY_MODULE_PREFIX}/services/user"
+  "tools/e2e-topology|${REPOSITORY_MODULE_PREFIX}/tools/e2e-topology"
 )
 
 usage() {
