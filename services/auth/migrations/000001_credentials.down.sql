@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS auth.credentials;
+DROP SCHEMA IF EXISTS auth;

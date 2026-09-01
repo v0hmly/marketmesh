@@ -199,6 +199,11 @@ tasks:
     cmds:
       - bash platform/redis/testdata/integration.sh
 
+  auth:integration:
+    desc: Выполнить интеграционные тесты PostgreSQL-адаптера Auth
+    cmds:
+      - bash services/auth/internal/adapter/out/postgres/testdata/integration.sh
+
   infra:down:
     desc: Остановить окружение с сохранением данных
     cmds:
