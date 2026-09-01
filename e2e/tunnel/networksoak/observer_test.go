@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -38,7 +39,7 @@ func newProbeObserver(
 	targets map[string]markerTarget,
 	steady probe.SteadyRequirement,
 ) (*probeObserver, error) {
-	if continuousProbe == nil {
+	if isNilProbeLifecycle(continuousProbe) {
 		return nil, errors.New("network soak: continuous probe is required")
 	}
 	if len(targets) == 0 {
@@ -52,6 +53,20 @@ func newProbeObserver(
 		targets: maps.Clone(targets),
 		steady:  steady,
 	}, nil
+}
+
+func isNilProbeLifecycle(lifecycle probeLifecycle) bool {
+	if lifecycle == nil {
+		return true
+	}
+	value := reflect.ValueOf(lifecycle)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map,
+		reflect.Pointer, reflect.Slice:
+		return value.IsNil()
+	default:
+		return false
+	}
 }
 
 func (observer *probeObserver) Observe(
@@ -133,6 +148,25 @@ type fakeProbeLifecycle struct {
 	events  []string
 	markers []probe.Marker
 	waitErr error
+}
+
+func TestProbeObserversRejectTypedNilLifecycle(t *testing.T) {
+	t.Parallel()
+
+	var lifecycle *fakeProbeLifecycle
+	if _, err := newProbeObserver(
+		lifecycle,
+		map[string]markerTarget{"partition-a": {}},
+		probe.SteadyRequirement{ReadSuccesses: 1},
+	); err == nil {
+		t.Fatal("newProbeObserver() error = nil for typed nil lifecycle")
+	}
+	if _, err := newServiceProbeObserver(
+		lifecycle,
+		probe.SteadyRequirement{ReadSuccesses: 1, MutatingSuccesses: 1},
+	); err == nil {
+		t.Fatal("newServiceProbeObserver() error = nil for typed nil lifecycle")
+	}
 }
 
 func (lifecycle *fakeProbeLifecycle) Mark(marker probe.Marker) error {
