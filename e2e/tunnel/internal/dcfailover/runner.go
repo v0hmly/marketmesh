@@ -79,17 +79,19 @@ func (runner *Runner) Run(ctx context.Context) error {
 }
 
 func (runner *Runner) runValidated(ctx context.Context, snapshot Snapshot) (resultErr error) {
+	probeAttempted := false
 	probeStarted := false
 	defer func() {
 		resultErr = errors.Join(
 			resultErr,
-			runner.finalize(ctx, snapshot, probeStarted),
+			runner.finalize(ctx, snapshot, probeAttempted, probeStarted),
 		)
 	}()
 
 	if err := runner.phase(ctx, "waiting for initial baseline", runner.readiness.WaitBaseline); err != nil {
 		return err
 	}
+	probeAttempted = true
 	if err := runner.phase(ctx, "starting probe", runner.probe.Start); err != nil {
 		return err
 	}
@@ -238,19 +240,31 @@ func (runner *Runner) phase(
 func (runner *Runner) finalize(
 	ctx context.Context,
 	snapshot Snapshot,
+	probeAttempted bool,
 	probeStarted bool,
 ) error {
 	errs := []error{}
-	if probeStarted {
-		errs = append(errs, runner.finalizeStep(ctx, "stopping probe", runner.probe.Stop))
-		errs = append(errs, runner.finalizeStep(ctx, "verifying probe", runner.probe.Verify))
+	probeQuiescent := !probeAttempted
+	if probeAttempted {
+		stopErr := runner.finalizeStep(ctx, "stopping probe", runner.probe.Stop)
+		errs = append(errs, stopErr)
+		probeQuiescent = stopErr == nil
+		if probeQuiescent && probeStarted {
+			errs = append(errs, runner.finalizeStep(ctx, "verifying probe", runner.probe.Verify))
+		}
 	}
 	errs = append(errs, runner.finalizeStep(ctx, "collecting diagnostics", func(finalizeCtx context.Context) error {
 		return runner.topology.Inspect(finalizeCtx, cloneSnapshot(snapshot))
 	}))
-	errs = append(errs, runner.finalizeStep(ctx, "cleaning exact resources", func(finalizeCtx context.Context) error {
-		return runner.topology.Cleanup(finalizeCtx, cloneSnapshot(snapshot))
-	}))
+	if probeQuiescent {
+		errs = append(errs, runner.finalizeStep(ctx, "cleaning exact resources", func(finalizeCtx context.Context) error {
+			return runner.topology.Cleanup(finalizeCtx, cloneSnapshot(snapshot))
+		}))
+	} else {
+		errs = append(errs, errors.New(
+			"dcfailover: cleanup skipped because probe quiescence was not proven",
+		))
+	}
 
 	return errors.Join(errs...)
 }

@@ -170,7 +170,7 @@ func TestRunUsesBoundedContextsAndIsSingleUse(t *testing.T) {
 	}
 }
 
-func TestRunFinalizesValidatedResourcesWhenProbeStartFails(t *testing.T) {
+func TestRunStopsPartialProbeAndFinalizesValidatedResourcesWhenStartFails(t *testing.T) {
 	t.Parallel()
 
 	adapters := newFakeAdapters()
@@ -181,12 +181,32 @@ func TestRunFinalizesValidatedResourcesWhenProbeStartFails(t *testing.T) {
 		t.Fatalf("Run() error = %v, want probe start error", err)
 	}
 
-	wantFinalization := []string{"topology.inspect", "topology.cleanup"}
+	wantFinalization := []string{"probe.stop", "topology.inspect", "topology.cleanup"}
 	if got := adapters.events[len(adapters.events)-len(wantFinalization):]; !slices.Equal(got, wantFinalization) {
 		t.Fatalf("finalization events = %v, want %v", got, wantFinalization)
 	}
-	if slices.Contains(adapters.events, "probe.stop") || slices.Contains(adapters.events, "probe.verify") {
-		t.Fatalf("probe that did not start was finalized: %v", adapters.events)
+	if slices.Contains(adapters.events, "probe.verify") {
+		t.Fatalf("probe with failed startup was verified: %v", adapters.events)
+	}
+}
+
+func TestRunSkipsDestructiveCleanupWhenProbeStopDoesNotProveQuiescence(t *testing.T) {
+	t.Parallel()
+
+	adapters := newFakeAdapters()
+	adapters.failures["probe.stop"] = errors.New("probe stream did not join")
+	runner := newTestRunner(t, adapters)
+	err := runner.Run(t.Context())
+	if err == nil || !strings.Contains(err.Error(), "cleanup skipped") ||
+		!strings.Contains(err.Error(), "probe stream did not join") {
+		t.Fatalf("Run() error = %v, want stop and skipped cleanup errors", err)
+	}
+	if !slices.Contains(adapters.events, "topology.inspect") {
+		t.Fatalf("diagnostics were not collected: %v", adapters.events)
+	}
+	if slices.Contains(adapters.events, "probe.verify") ||
+		slices.Contains(adapters.events, "topology.cleanup") {
+		t.Fatalf("unsafe finalization after failed probe stop: %v", adapters.events)
 	}
 }
 

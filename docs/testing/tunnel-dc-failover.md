@@ -29,13 +29,25 @@ ownership labels, четыре записи в фиксированном пор
 точные kube context, container и network. Затем он запускает публичную проверку
 `ready` MM-28, которая подтверждает Kubernetes identity, readiness, firewall и
 изоляцию зон. Никакая строка command из inventory не исполняется через shell:
-CLI вызывается статическим набором аргументов.
+CLI вызывается статическим набором аргументов в отдельной process group. При
+deadline уничтожается вся process group и выполняется bounded wait, поэтому
+дочерний процесс `go run` не может продолжить lifecycle после возврата ошибки.
+До вызова MM-28 и любого
+соединения с Docker endpoint сам context проверяется локальной командой
+`docker context inspect <exact-name>`: разрешён только endpoint на локальном
+абсолютном Unix socket, а имена с сегментами `dev`, `preprod`, `prod`,
+`production` или `staging` отклоняются до runtime-проверок и любых
+state-changing команд. Исходный Unix endpoint закрепляется на весь run и
+повторно сравнивается перед каждым Docker/MM-28 вызовом; прямые inspect,
+stop/start используют pinned `--host`, поэтому переназначение имени context не
+может перенаправить mutation.
 
 Непосредственно перед отказом адаптер повторно выполняет `docker container
 inspect` и `docker network inspect` в заданном context для обеих половин DC.
 Первая state-changing команда не запускается, пока не подтверждены оба точных
-control-plane container, их kind cluster label, attachment к ожидаемой сети, а
-также task и instance labels сети. Outage останавливает ровно два container;
+control-plane container, их kind cluster label и primary network mode,
+attachment к ожидаемой сети, а также task и instance labels сети. Outage
+останавливает ровно два container;
 restore запускает только тот же авторизованный набор. Если сценарий прерван во
 время outage, cleanup сначала пытается вернуть остановленные принадлежащие run
 container, после чего вызывает fail-closed `down` MM-28. `down` повторно
@@ -60,7 +72,10 @@ dev, preprod или production окружения. Все ожидания, по
   постепенный failback выполняются самой реализацией MM-30;
 - **Probe** запускает bounded read и mutating потоки, ставит fault markers и
   завершает ledger reconciliation без повторов mutating-запроса после
-  неопределённого результата;
+  неопределённого результата. После каждой попытки start, включая частично
+  неуспешную, runner вызывает идемпотентный stop и требует join всех stream;
+  если quiescence не доказана, diagnostics сохраняются, но destructive cleanup
+  запрещён;
 - **Readiness** подтверждает PKI, workloads, tunnel и front door eligibility
   восстановленного DC до разрешения failback;
 - **Timeline** сохраняет только тип события, monotonic offset, DC, zone,

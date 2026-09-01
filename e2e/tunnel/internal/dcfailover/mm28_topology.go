@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -52,6 +54,7 @@ type MM28Topology struct {
 	mu         sync.RWMutex
 	authorized *Snapshot
 	cleaned    bool
+	dockerHost string
 }
 
 type topologyCommand struct {
@@ -110,6 +113,15 @@ func validateMM28TopologyConfig(config MM28TopologyConfig) error {
 	if !mm28DockerContextPattern.MatchString(config.DockerContext) {
 		return errors.New("dcfailover: topology docker context contains unsupported characters")
 	}
+	for _, segment := range strings.FieldsFunc(
+		strings.ToLower(config.DockerContext),
+		func(character rune) bool { return character == '-' || character == '_' || character == '.' },
+	) {
+		switch segment {
+		case "dev", "preprod", "prod", "production", "staging":
+			return errors.New("dcfailover: topology docker context names a forbidden environment")
+		}
+	}
 	if err := validateTimeout("topology command", config.CommandTimeout); err != nil {
 		return err
 	}
@@ -141,7 +153,9 @@ func (topology *MM28Topology) Preflight(ctx context.Context, runID string) (Snap
 	if runID != topology.config.Instance {
 		return Snapshot{}, errors.New("dcfailover: topology run id does not match configured instance")
 	}
-
+	if err := topology.validateLocalDockerContext(ctx); err != nil {
+		return Snapshot{}, err
+	}
 	result, err := topology.runMM28(ctx, "inventory")
 	if err != nil {
 		return Snapshot{}, fmt.Errorf("dcfailover: reading MM-28 inventory: %w", err)
@@ -198,6 +212,13 @@ func (topology *MM28Topology) StopDC(
 
 	for _, cluster := range authorized.Clusters {
 		container := cluster.ContainerNames[0]
+		running, err := topology.validateRuntimeCluster(ctx, cluster)
+		if err != nil {
+			return fmt.Errorf("dcfailover: revalidating exact container %s before stop: %w", container, err)
+		}
+		if !running {
+			return fmt.Errorf("dcfailover: exact container %s stopped before authorized mutation", container)
+		}
 		if _, err := topology.runDocker(ctx, "container", "stop", "--time", "30", container); err != nil {
 			return fmt.Errorf("dcfailover: stopping exact container %s: %w", container, err)
 		}
@@ -293,6 +314,13 @@ func (topology *MM28Topology) restoreClusters(ctx context.Context, clusters []Cl
 			continue
 		}
 		container := cluster.ContainerNames[0]
+		running, err := topology.validateRuntimeCluster(ctx, cluster)
+		if err != nil {
+			return fmt.Errorf("revalidating exact container %s before start: %w", container, err)
+		}
+		if running {
+			continue
+		}
 		if _, err := topology.runDocker(ctx, "container", "start", container); err != nil {
 			return fmt.Errorf("starting exact container %s: %w", container, err)
 		}
@@ -387,7 +415,8 @@ func (topology *MM28Topology) validateRuntimeCluster(
 		return false, fmt.Errorf("decoding exact container %s: %w", containerName, err)
 	}
 	if strings.TrimPrefix(container.Name, "/") != containerName ||
-		container.Config.Labels[mm28ClusterLabel] != cluster.Name {
+		container.Config.Labels[mm28ClusterLabel] != cluster.Name ||
+		container.HostConfig.NetworkMode != networkName {
 		return false, fmt.Errorf("refusing unowned container %s", containerName)
 	}
 	if _, attached := container.NetworkSettings.Networks[networkName]; !attached {
@@ -407,11 +436,46 @@ func (topology *MM28Topology) validateRuntimeCluster(
 		network.Labels[mm28InstanceLabel] != topology.config.Instance {
 		return false, fmt.Errorf("refusing unowned network %s", networkName)
 	}
-	if !networkContainsExactContainer(network, containerName) {
+	if container.State.Running && !networkContainsExactContainer(network, containerName) {
 		return false, fmt.Errorf("network %s does not contain exact container", networkName)
 	}
 
 	return container.State.Running, nil
+}
+
+func (topology *MM28Topology) validateLocalDockerContext(ctx context.Context) error {
+	result, err := topology.runCommand(ctx, topologyCommand{
+		program: "docker",
+		args:    []string{"context", "inspect", topology.config.DockerContext},
+	})
+	if err != nil {
+		return fmt.Errorf("dcfailover: inspecting explicit Docker context: %w", err)
+	}
+	contextInspection, err := decodeDockerContext(result.stdout)
+	if err != nil {
+		return fmt.Errorf("dcfailover: decoding explicit Docker context: %w", err)
+	}
+	endpoint, found := contextInspection.Endpoints["docker"]
+	if contextInspection.Name != topology.config.DockerContext || !found {
+		return errors.New("dcfailover: explicit Docker context does not match")
+	}
+	endpointURL, err := url.Parse(endpoint.Host)
+	if err != nil || endpointURL.Scheme != "unix" || endpointURL.Host != "" ||
+		!filepath.IsAbs(endpointURL.Path) || endpointURL.RawQuery != "" || endpointURL.Fragment != "" {
+		return errors.New("dcfailover: Docker context must use a local absolute unix socket")
+	}
+	pinnedHost := endpointURL.String()
+	topology.mu.Lock()
+	defer topology.mu.Unlock()
+	if topology.dockerHost == "" {
+		topology.dockerHost = pinnedHost
+		return nil
+	}
+	if topology.dockerHost != pinnedHost {
+		return errors.New("dcfailover: Docker context endpoint changed after preflight")
+	}
+
+	return nil
 }
 
 func (topology *MM28Topology) snapshotFromInventory(inventory mm28Inventory) (Snapshot, error) {
@@ -488,6 +552,9 @@ func (topology *MM28Topology) runMM28(
 	default:
 		return topologyCommandResult{}, errors.New("unsupported MM-28 action")
 	}
+	if err := topology.validateLocalDockerContext(ctx); err != nil {
+		return topologyCommandResult{}, err
+	}
 
 	return topology.runCommand(ctx, topologyCommand{
 		program: "go",
@@ -508,7 +575,16 @@ func (topology *MM28Topology) runDocker(
 	ctx context.Context,
 	args ...string,
 ) (topologyCommandResult, error) {
-	commandArgs := []string{"--context", topology.config.DockerContext}
+	if err := topology.validateLocalDockerContext(ctx); err != nil {
+		return topologyCommandResult{}, err
+	}
+	topology.mu.RLock()
+	dockerHost := topology.dockerHost
+	topology.mu.RUnlock()
+	if dockerHost == "" {
+		return topologyCommandResult{}, errors.New("dcfailover: Docker endpoint is not pinned")
+	}
+	commandArgs := []string{"--host", dockerHost}
 	commandArgs = append(commandArgs, args...)
 
 	return topology.runCommand(ctx, topologyCommand{program: "docker", args: commandArgs})
@@ -539,6 +615,20 @@ func (execTopologyCommandRunner) Run(
 	process.Env = sanitizedTopologyEnvironment()
 	process.Stdout = stdout
 	process.Stderr = stderr
+	process.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	process.Cancel = func() error {
+		if process.Process == nil {
+			return os.ErrProcessDone
+		}
+		if err := syscall.Kill(-process.Process.Pid, syscall.SIGKILL); err != nil {
+			if errors.Is(err, syscall.ESRCH) {
+				return os.ErrProcessDone
+			}
+			return err
+		}
+		return nil
+	}
+	process.WaitDelay = 5 * time.Second
 	err := process.Run()
 	if errors.Is(stdout.err, errCommandOutputLimit) || errors.Is(stderr.err, errCommandOutputLimit) {
 		return topologyCommandResult{}, errCommandOutputLimit
@@ -717,9 +807,19 @@ type dockerContainerInspection struct {
 	State struct {
 		Running bool `json:"Running"`
 	} `json:"State"`
+	HostConfig struct {
+		NetworkMode string `json:"NetworkMode"`
+	} `json:"HostConfig"`
 	NetworkSettings struct {
 		Networks map[string]json.RawMessage `json:"Networks"`
 	} `json:"NetworkSettings"`
+}
+
+type dockerContextInspection struct {
+	Name      string `json:"Name"`
+	Endpoints map[string]struct {
+		Host string `json:"Host"`
+	} `json:"Endpoints"`
 }
 
 type dockerNetworkInspection struct {
@@ -752,6 +852,20 @@ func decodeDockerContainer(data []byte) (dockerContainerInspection, error) {
 	}
 
 	return containers[0], nil
+}
+
+func decodeDockerContext(data []byte) (dockerContextInspection, error) {
+	var contexts []dockerContextInspection
+	if err := decodeSingleJSON(data, &contexts); err != nil || len(contexts) != 1 {
+		return dockerContextInspection{}, errors.New("invalid Docker context inspection")
+	}
+	if contexts[0].Endpoints == nil {
+		contexts[0].Endpoints = map[string]struct {
+			Host string `json:"Host"`
+		}{}
+	}
+
+	return contexts[0], nil
 }
 
 func decodeDockerNetwork(data []byte) (dockerNetworkInspection, error) {

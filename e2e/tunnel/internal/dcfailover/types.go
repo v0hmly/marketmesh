@@ -132,7 +132,10 @@ type Readiness interface {
 }
 
 // Probe owns bounded read and mutating request streams and ledger validation.
-// Start's context bounds startup; the stream remains owned until Stop returns.
+// Start's context bounds startup. Stop is called after every Start attempt,
+// including a failed or partial attempt, and must be idempotent and join every
+// stream before returning nil. Any Stop error means quiescence was not proven
+// and destructive topology cleanup is forbidden.
 type Probe interface {
 	Start(ctx context.Context) error
 	Mark(ctx context.Context, marker Marker) error

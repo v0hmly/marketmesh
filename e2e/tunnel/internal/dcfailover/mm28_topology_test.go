@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -66,9 +67,14 @@ func TestMM28TopologyRunsExactSymmetricContainerLifecycle(t *testing.T) {
 		if command.program != "docker" {
 			continue
 		}
-		if len(command.args) < 2 || command.args[0] != "--context" ||
-			command.args[1] != config.DockerContext {
-			t.Fatalf("Docker command uses an ambient context: %v", command.args)
+		if slices.Equal(command.args, []string{
+			"context", "inspect", config.DockerContext,
+		}) {
+			continue
+		}
+		if len(command.args) < 2 || command.args[0] != "--host" ||
+			command.args[1] != commands.expectedDockerHost {
+			t.Fatalf("Docker command does not use the pinned endpoint: %v", command.args)
 		}
 	}
 }
@@ -136,7 +142,7 @@ func TestMM28TopologyRejectsUntrustedInventoryBeforeRuntimeCommands(t *testing.T
 			if got := commands.dockerMutations(); len(got) != 0 {
 				t.Fatalf("Docker mutations = %v, want none", got)
 			}
-			if commands.hasDockerInspection() {
+			if commands.hasRuntimeDockerInspection() {
 				t.Fatal("untrusted inventory reached runtime inspection")
 			}
 		})
@@ -162,6 +168,53 @@ func TestMM28TopologyRejectsForeignRuntimeOwnershipBeforeAuthorization(t *testin
 	}
 }
 
+func TestMM28TopologyRejectsRemoteDockerContextBeforeRuntimeInspection(t *testing.T) {
+	t.Parallel()
+
+	config := testMM28TopologyConfig()
+	commands := newFakeMM28Commands(config)
+	commands.dockerContextHost = "ssh://operator@production.example"
+	topology := newTestMM28Topology(t, config, commands)
+	_, err := topology.Preflight(t.Context(), config.Instance)
+	if err == nil || !strings.Contains(err.Error(), "local absolute unix socket") {
+		t.Fatalf("Preflight() error = %v, want remote context rejection", err)
+	}
+	if got := commands.dockerMutations(); len(got) != 0 {
+		t.Fatalf("Docker mutations = %v, want none", got)
+	}
+	if got := commands.mm28Actions(); len(got) != 0 {
+		t.Fatalf("MM-28 actions = %v, want none", got)
+	}
+	if slices.Contains(commands.mm28Actions(), "ready") {
+		t.Fatal("ready ran after remote Docker context rejection")
+	}
+}
+
+func TestMM28TopologyRejectsRetargetedDockerContextBeforeMutation(t *testing.T) {
+	t.Parallel()
+
+	config := testMM28TopologyConfig()
+	commands := newFakeMM28Commands(config)
+	topology := newTestMM28Topology(t, config, commands)
+	snapshot, err := topology.Preflight(t.Context(), config.Instance)
+	if err != nil {
+		t.Fatalf("Preflight() error = %v", err)
+	}
+	target, err := targetForDC(snapshot, DCA)
+	if err != nil {
+		t.Fatalf("targetForDC() error = %v", err)
+	}
+	commands.dockerContextHost = "unix:///tmp/retargeted-docker.sock"
+
+	err = topology.StopDC(t.Context(), target, OutageSudden)
+	if err == nil || !strings.Contains(err.Error(), "endpoint changed") {
+		t.Fatalf("StopDC() error = %v, want retargeted context rejection", err)
+	}
+	if got := commands.dockerMutations(); len(got) != 0 {
+		t.Fatalf("Docker mutations = %v, want none", got)
+	}
+}
+
 func TestMM28TopologyRevalidatesWholeDCBeforeFirstStop(t *testing.T) {
 	t.Parallel()
 
@@ -181,6 +234,31 @@ func TestMM28TopologyRevalidatesWholeDCBeforeFirstStop(t *testing.T) {
 	err = topology.StopDC(t.Context(), target, OutageManaged)
 	if err == nil || !strings.Contains(err.Error(), "refusing unowned network") {
 		t.Fatalf("StopDC() error = %v, want revalidation error", err)
+	}
+	if got := commands.dockerMutations(); len(got) != 0 {
+		t.Fatalf("Docker mutations = %v, want none", got)
+	}
+}
+
+func TestMM28TopologyRevalidatesImmediatelyBeforeContainerStop(t *testing.T) {
+	t.Parallel()
+
+	config := testMM28TopologyConfig()
+	commands := newFakeMM28Commands(config)
+	topology := newTestMM28Topology(t, config, commands)
+	snapshot, err := topology.Preflight(t.Context(), config.Instance)
+	if err != nil {
+		t.Fatalf("Preflight() error = %v", err)
+	}
+	target, err := targetForDC(snapshot, DCA)
+	if err != nil {
+		t.Fatalf("targetForDC() error = %v", err)
+	}
+	commands.foreignNetworkAtInspection[config.Instance+"-dc-a-dmz"] = 3
+
+	err = topology.StopDC(t.Context(), target, OutageSudden)
+	if err == nil || !strings.Contains(err.Error(), "revalidating exact container") {
+		t.Fatalf("StopDC() error = %v, want immediate revalidation error", err)
 	}
 	if got := commands.dockerMutations(); len(got) != 0 {
 		t.Fatalf("Docker mutations = %v, want none", got)
@@ -285,6 +363,12 @@ func TestNewMM28TopologyRejectsUnsafeConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name: "production docker context",
+			mutate: func(config *MM28TopologyConfig) {
+				config.DockerContext = "marketmesh-production"
+			},
+		},
+		{
 			name: "unbounded command timeout",
 			mutate: func(config *MM28TopologyConfig) {
 				config.CommandTimeout = 31 * time.Minute
@@ -340,6 +424,135 @@ func TestDecodeMM28InventoryRejectsTrailingDocument(t *testing.T) {
 	}
 }
 
+func TestExecTopologyCommandRunnerKillsDescendantsOnTimeout(t *testing.T) {
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable() error = %v", err)
+	}
+	directory := t.TempDir()
+	goPath := filepath.Join(directory, "go")
+	if err := os.Symlink(executable, goPath); err != nil {
+		t.Fatalf("Symlink() error = %v", err)
+	}
+	marker := filepath.Join(directory, "descendant-finished")
+	readyMarker := filepath.Join(directory, "descendant-started")
+	t.Setenv("PATH", directory+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("MM35_PROCESS_HELPER", "parent")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		_, runErr := (execTopologyCommandRunner{}).Run(ctx, topologyCommand{
+			program: "go",
+			args: []string{
+				"-test.run=^TestMM35ProcessGroupHelper$",
+				"--",
+				marker,
+				readyMarker,
+			},
+		})
+		result <- runErr
+	}()
+
+	waitForFile(t, readyMarker, 5*time.Second)
+	cancel()
+	select {
+	case err = <-result:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Run() error = %v, want context canceled", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run() did not return after process-group cancellation")
+	}
+
+	timer := time.NewTimer(750 * time.Millisecond)
+	defer timer.Stop()
+	select {
+	case <-t.Context().Done():
+		t.Fatalf("test context ended while checking descendant: %v", context.Cause(t.Context()))
+	case <-timer.C:
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("descendant survived command timeout: stat error = %v", err)
+	}
+}
+
+func TestMM35ProcessGroupHelper(t *testing.T) {
+	mode := os.Getenv("MM35_PROCESS_HELPER")
+	if mode == "" {
+		return
+	}
+	arguments := argumentsAfterDoubleDash(os.Args)
+	if len(arguments) != 2 {
+		os.Exit(2)
+	}
+	marker := arguments[0]
+	readyMarker := arguments[1]
+	if mode == "child" {
+		if err := os.WriteFile(readyMarker, []byte("started\n"), 0o600); err != nil {
+			os.Exit(3)
+		}
+		time.Sleep(500 * time.Millisecond)
+		if err := os.WriteFile(marker, []byte("survived\n"), 0o600); err != nil {
+			os.Exit(4)
+		}
+		os.Exit(0)
+	}
+
+	process := exec.Command(
+		os.Args[0],
+		"-test.run=^TestMM35ProcessGroupHelper$",
+		"--",
+		marker,
+		readyMarker,
+	)
+	for _, value := range os.Environ() {
+		if !strings.HasPrefix(value, "MM35_PROCESS_HELPER=") {
+			process.Env = append(process.Env, value)
+		}
+	}
+	process.Env = append(process.Env, "MM35_PROCESS_HELPER=child")
+	if err := process.Start(); err != nil {
+		os.Exit(5)
+	}
+	time.Sleep(30 * time.Second)
+	os.Exit(0)
+}
+
+func argumentsAfterDoubleDash(arguments []string) []string {
+	for index, argument := range arguments {
+		if argument == "--" && index+1 < len(arguments) {
+			return arguments[index+1:]
+		}
+	}
+
+	return nil
+}
+
+func waitForFile(t *testing.T, path string, timeout time.Duration) {
+	t.Helper()
+
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	for {
+		if _, err := os.Stat(path); err == nil {
+			return
+		} else if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("Stat() error = %v", err)
+		}
+		select {
+		case <-ticker.C:
+		case <-timer.C:
+			t.Fatalf("timed out waiting for helper marker %s", filepath.Base(path))
+		case <-t.Context().Done():
+			t.Fatalf("test context ended waiting for helper: %v", context.Cause(t.Context()))
+		}
+	}
+}
+
 func newTestMM28Topology(
 	t *testing.T,
 	config MM28TopologyConfig,
@@ -365,21 +578,29 @@ func testMM28TopologyConfig() MM28TopologyConfig {
 }
 
 type fakeMM28Commands struct {
-	config                 MM28TopologyConfig
-	inventory              mm28Inventory
-	running                map[string]bool
-	networkOwned           map[string]bool
-	calls                  []topologyCommand
-	readyCallIndex         int
-	contextWithoutDeadline bool
+	config                     MM28TopologyConfig
+	inventory                  mm28Inventory
+	running                    map[string]bool
+	networkOwned               map[string]bool
+	networkInspections         map[string]int
+	foreignNetworkAtInspection map[string]int
+	dockerContextHost          string
+	expectedDockerHost         string
+	calls                      []topologyCommand
+	readyCallIndex             int
+	contextWithoutDeadline     bool
 }
 
 func newFakeMM28Commands(config MM28TopologyConfig) *fakeMM28Commands {
 	commands := &fakeMM28Commands{
-		config:         config,
-		running:        map[string]bool{},
-		networkOwned:   map[string]bool{},
-		readyCallIndex: -1,
+		config:                     config,
+		running:                    map[string]bool{},
+		networkOwned:               map[string]bool{},
+		networkInspections:         map[string]int{},
+		foreignNetworkAtInspection: map[string]int{},
+		dockerContextHost:          "unix:///Users/test/.orbstack/run/docker.sock",
+		expectedDockerHost:         "unix:///Users/test/.orbstack/run/docker.sock",
+		readyCallIndex:             -1,
 	}
 	commands.inventory = testMM28Inventory(config)
 	for _, cluster := range mm28ExpectedClusters(config) {
@@ -443,8 +664,12 @@ func (commands *fakeMM28Commands) runGo(command topologyCommand) (topologyComman
 func (commands *fakeMM28Commands) runDocker(
 	command topologyCommand,
 ) (topologyCommandResult, error) {
-	if len(command.args) < 4 || command.args[0] != "--context" ||
-		command.args[1] != commands.config.DockerContext {
+	if len(command.args) == 3 && command.args[0] == "context" &&
+		command.args[1] == "inspect" {
+		return commands.inspectContext(command.args[2])
+	}
+	if len(command.args) < 4 || command.args[0] != "--host" ||
+		command.args[1] != commands.expectedDockerHost {
 		return topologyCommandResult{}, fmt.Errorf("unexpected Docker command: %v", command.args)
 	}
 	args := command.args[2:]
@@ -471,6 +696,26 @@ func (commands *fakeMM28Commands) runDocker(
 	}
 }
 
+func (commands *fakeMM28Commands) inspectContext(
+	name string,
+) (topologyCommandResult, error) {
+	if name != commands.config.DockerContext {
+		return topologyCommandResult{}, errors.New("unknown Docker context")
+	}
+	inspection := dockerContextInspection{Name: name}
+	inspection.Endpoints = map[string]struct {
+		Host string `json:"Host"`
+	}{
+		"docker": {Host: commands.dockerContextHost},
+	}
+	content, err := json.Marshal([]dockerContextInspection{inspection})
+	if err != nil {
+		return topologyCommandResult{}, err
+	}
+
+	return topologyCommandResult{stdout: content}, nil
+}
+
 func (commands *fakeMM28Commands) inspectContainer(
 	name string,
 ) (topologyCommandResult, error) {
@@ -481,6 +726,7 @@ func (commands *fakeMM28Commands) inspectContainer(
 	inspection := dockerContainerInspection{Name: "/" + name}
 	inspection.Config.Labels = map[string]string{mm28ClusterLabel: cluster.resourceName}
 	inspection.State.Running = commands.running[name]
+	inspection.HostConfig.NetworkMode = cluster.networkName
 	inspection.NetworkSettings.Networks = map[string]json.RawMessage{
 		cluster.networkName: json.RawMessage(`{}`),
 	}
@@ -507,11 +753,16 @@ func (commands *fakeMM28Commands) inspectNetwork(
 		},
 		Containers: map[string]struct {
 			Name string `json:"Name"`
-		}{
-			"container-id": {Name: cluster.containerName},
-		},
+		}{},
 	}
-	if !commands.networkOwned[name] {
+	if commands.running[cluster.containerName] {
+		inspection.Containers["container-id"] = struct {
+			Name string `json:"Name"`
+		}{Name: cluster.containerName}
+	}
+	commands.networkInspections[name]++
+	if !commands.networkOwned[name] ||
+		commands.foreignNetworkAtInspection[name] == commands.networkInspections[name] {
 		inspection.Labels[mm28InstanceLabel] = "mm35-foreign"
 	}
 	content, err := json.Marshal([]dockerNetworkInspection{inspection})
@@ -572,9 +823,9 @@ func (commands *fakeMM28Commands) dockerMutations() []string {
 	return mutations
 }
 
-func (commands *fakeMM28Commands) hasDockerInspection() bool {
+func (commands *fakeMM28Commands) hasRuntimeDockerInspection() bool {
 	for _, command := range commands.calls {
-		if command.program == "docker" {
+		if command.program == "docker" && command.args[0] != "context" {
 			return true
 		}
 	}
