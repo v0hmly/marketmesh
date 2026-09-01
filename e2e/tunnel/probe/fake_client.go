@@ -58,6 +58,14 @@ type InstanceDirectory struct {
 	dataCenters map[string]DataCenter
 }
 
+// InstanceResolver maps a bounded workload instance identity to its logical
+// data center. InstanceDirectory is the immutable implementation used by
+// static scenarios; rolling scenarios may provide a concurrency-safe resolver
+// that discovers replacement Pods before they receive traffic.
+type InstanceResolver interface {
+	Resolve(source string) (DataCenter, bool)
+}
+
 // NewInstanceDirectory валидирует и копирует discovery result.
 func NewInstanceDirectory(instances []Instance) (InstanceDirectory, error) {
 	dataCenters := make(map[string]DataCenter, len(instances))
@@ -89,8 +97,8 @@ func (directory InstanceDirectory) Resolve(source string) (DataCenter, bool) {
 // FakeInvoker преобразует MM-29 ConnectRPC contract в безопасный probe
 // Invoker. Он выполняет ровно один вызов и не повторяет mutation.
 type FakeInvoker struct {
-	client    FakeTrafficClient
-	directory InstanceDirectory
+	client   FakeTrafficClient
+	resolver InstanceResolver
 }
 
 // NewFakeInvoker создаёт adapter к уже сконфигурированному front-door client.
@@ -98,14 +106,28 @@ func NewFakeInvoker(
 	client FakeTrafficClient,
 	directory InstanceDirectory,
 ) (*FakeInvoker, error) {
-	if isNilDependency(client) {
-		return nil, errors.New("probe: fake traffic client must not be nil")
-	}
 	if len(directory.dataCenters) == 0 {
 		return nil, errors.New("probe: instance directory must not be empty")
 	}
 
-	return &FakeInvoker{client: client, directory: directory}, nil
+	return NewFakeInvokerWithResolver(client, directory)
+}
+
+// NewFakeInvokerWithResolver creates an adapter backed by an explicitly
+// supplied instance resolver. The resolver is consulted once per successful
+// response and must not perform I/O or block.
+func NewFakeInvokerWithResolver(
+	client FakeTrafficClient,
+	resolver InstanceResolver,
+) (*FakeInvoker, error) {
+	if isNilDependency(client) {
+		return nil, errors.New("probe: fake traffic client must not be nil")
+	}
+	if isNilDependency(resolver) {
+		return nil, errors.New("probe: instance resolver must not be nil")
+	}
+
+	return &FakeInvoker{client: client, resolver: resolver}, nil
 }
 
 // Invoke реализует один read или mutating request без raw error в результате.
@@ -166,7 +188,7 @@ func (invoker *FakeInvoker) response(
 	duplicate bool,
 	route string,
 ) Response {
-	dataCenter, found := invoker.directory.Resolve(source)
+	dataCenter, found := invoker.resolver.Resolve(source)
 	if !found || sequence == 0 {
 		return Response{Outcome: OutcomeInvalidMetadata}
 	}

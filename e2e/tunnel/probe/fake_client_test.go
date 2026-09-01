@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"slices"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -168,6 +169,40 @@ func TestFakeInvokerRejectsNilSuccessfulResponse(t *testing.T) {
 		Class: TrafficClassMutating, Sequence: 1,
 	}); response != (Response{Outcome: OutcomeInvalidMetadata}) {
 		t.Fatalf("mutating response = %#v", response)
+	}
+}
+
+func TestFakeInvokerUsesDynamicInstanceResolver(t *testing.T) {
+	t.Parallel()
+
+	resolver := &mutableInstanceResolver{instances: map[string]DataCenter{
+		"fake-a-old": DataCenterA,
+	}}
+	client := fakeTrafficClient{
+		read: func(
+			context.Context,
+			*connect.Request[e2ev1.ReadRequest],
+		) (*connect.Response[e2ev1.ReadResponse], error) {
+			return connect.NewResponse(&e2ev1.ReadResponse{
+				InstanceId: "fake-a-new",
+				Sequence:   7,
+			}), nil
+		},
+	}
+	invoker, err := NewFakeInvokerWithResolver(client, resolver)
+	if err != nil {
+		t.Fatalf("NewFakeInvokerWithResolver() error = %v", err)
+	}
+
+	request := Request{ID: requestID1, Class: TrafficClassRead, Sequence: 1}
+	if response := invoker.Invoke(t.Context(), request); response.Outcome != OutcomeInvalidMetadata {
+		t.Fatalf("Invoke() before discovery = %#v", response)
+	}
+	resolver.add("fake-a-new", DataCenterA)
+	response := invoker.Invoke(t.Context(), request)
+	if response.Outcome != OutcomeSuccess || response.DataCenter != DataCenterA ||
+		response.Source != "fake-a-new" || response.InternalSequence != 7 {
+		t.Fatalf("Invoke() after discovery = %#v", response)
 	}
 }
 
@@ -457,6 +492,26 @@ type fakeTrafficClient struct {
 		context.Context,
 		*connect.Request[e2ev1.MutateRequest],
 	) (*connect.Response[e2ev1.MutateResponse], error)
+}
+
+type mutableInstanceResolver struct {
+	mu        sync.RWMutex
+	instances map[string]DataCenter
+}
+
+func (resolver *mutableInstanceResolver) Resolve(source string) (DataCenter, bool) {
+	resolver.mu.RLock()
+	defer resolver.mu.RUnlock()
+
+	dataCenter, found := resolver.instances[source]
+	return dataCenter, found
+}
+
+func (resolver *mutableInstanceResolver) add(source string, dataCenter DataCenter) {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+
+	resolver.instances[source] = dataCenter
 }
 
 func (client fakeTrafficClient) Read(

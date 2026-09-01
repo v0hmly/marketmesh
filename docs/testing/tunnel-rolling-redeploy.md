@@ -21,8 +21,19 @@ MM-28/MM-29 и MM-31. Реализация MM-34 должна использов
 - отрицательный сценарий использует встроенную fail-closed конфигурацию каждого
   workload, а не произвольный внешний image.
 
-CLI и тонкий adapter к MM-31 добавляются только после публикации его API в
-`dev`: внутренний код MM-31 не копируется и временный no-op probe не допускается.
+`cmd/rollingctl` и тонкий adapter используют опубликованный API MM-31 без
+копирования его внутренних очередей. CLI запускает read и mutating traffic до
+первого precondition, останавливает его только после последнего steady-state и
+атомарно публикует полный `run.json`, `report.json`, `report.junit.xml` и
+`report.txt`. Временный no-op probe не допускается.
+
+Fake internal ledger хранится в памяти конкретной Pod, поэтому во время её
+замены MM-34 ведёт динамический read-only архив. До старта traffic архив требует
+ровно две ready Pod в каждом internal-кластере. Новая Pod должна быть обнаружена
+и опрошена до перехода в ready; для завершающейся Pod обязателен последний
+успешный snapshot после закрытия readiness и до её исчезновения. Пропущенный,
+частичный, неоднозначный или изменившийся snapshot делает resolver нездоровым и
+весь SLO-run неуспешным.
 
 ## Граница безопасности
 
@@ -41,6 +52,14 @@ E2E-запуска. Каждый вызов Kubernetes API обязан явно
 - namespace и labels, однозначно связывающие workload с тем же `run_id`;
 - точные имена Deployment и Container, полученные из контракта MM-29;
 - отсутствие любого target за пределами allowlist этого запуска.
+
+Для прямого чтения ledger дополнительно проверяется неизменная цепочка
+Pod UID → ReplicaSet UID → Deployment UID. `kubectl port-forward` запускается
+без shell и ambient `KUBECONFIG`, только на случайном порту `127.0.0.1`, а после
+его ready-handshake та же ownership-цепочка проверяется повторно. TLS Secret
+читается только в память, client/server SPIFFE URI и server DNS сверяются
+точно, transport retry отключён. Сертификаты, ключи, адреса Pod и opaque
+идентификаторы не попадают в argv, логи и итоговые отчёты.
 
 Несовпадение хотя бы одного значения завершает сценарий до мутации. Снимки
 Deployment, ReplicaSet, Pod, EndpointSlice, events и безопасные логи собираются
@@ -156,7 +175,7 @@ MM-34 не управляет внутренними очередями probe и
 Он только передаёт bounded lifecycle и fault markers через интерфейс MM-31:
 
 - `run_id` и детерминированный seed;
-- фаза `steady`, `rollout`, `drain`, `rollback` или `recovered`;
+- фаза `before`, `steady`, `rollout`, `rollback` или `recovered`;
 - конечные значения `dc`, `zone`, `component` и `result`;
 - monotonic offset относительно начала запуска;
 - старый и новый безопасные revision identifiers без image registry credentials.
@@ -171,6 +190,45 @@ mutations.
 Нулевое число eligible requests, пропущенный интервал, неизвестный результат,
 потерянный marker, незавершённый cleanup или превышение любого deadline означают
 fail. Метрики и labels используют только конечные категории из этого документа.
+
+## Запуск CLI и артефакты
+
+Каждый вариант A/B и rollback-матрица запускаются с отдельной свежей baseline
+и новым абсолютным каталогом артефактов. Front door MM-30 должен уже быть готов,
+а inventory MM-28 сохранён в обычный файл. Для положительного варианта нужны
+три соседних image reference вида `repository@sha256:<64 hex>`; repository
+обязан точно совпадать с текущим image соответствующего Deployment.
+
+```sh
+task tunnel-e2e:rolling -- \
+  --run-id mm34-a-1 \
+  --mode a \
+  --inventory /absolute/path/mm34-a-1-inventory.json \
+  --frontdoor http://127.0.0.1:18080 \
+  --artifacts /absolute/path/mm34-a-1-artifacts \
+  --gateway-in-image marketmesh/gateway-in@sha256:<digest> \
+  --gateway-out-image marketmesh/gateway-out@sha256:<digest> \
+  --fake-internal-image marketmesh/fake-internal@sha256:<digest>
+```
+
+Вариант B отличается только `--mode b` и новым baseline/run ID. Отрицательная
+матрица использует встроенные безопасные readiness faults и не принимает новый
+image:
+
+```sh
+task tunnel-e2e:rolling -- \
+  --run-id mm34-rollback-1 \
+  --mode rollback \
+  --inventory /absolute/path/mm34-rollback-1-inventory.json \
+  --frontdoor http://127.0.0.1:18080 \
+  --artifacts /absolute/path/mm34-rollback-1-artifacts
+```
+
+Каталог артефактов должен отсутствовать до запуска: публикация использует
+no-replace rename и не перезаписывает доказательства предыдущего прогона.
+Даже при валидном провале SLO CLI пытается сохранить полный fail-report;
+неполный архив ledger, незавершённый traffic runner или cleanup запрещают
+создание искусственного capacity interval и потому не могут дать pass.
 
 ## Bounded execution и cleanup
 
