@@ -38,6 +38,11 @@ func TestRenderProducesBoundedOwnedWorkloads(t *testing.T) {
 		"command: [/gateway-in, prestop]",
 		"command: [/gateway-out, prestop]",
 		"command: [/fake-internal, prestop]",
+		"name: DATA_CENTER",
+		"name: E2E_ROUTING_SNAPSHOT_ENABLED",
+		"name: MAX_LEDGER_ENTRIES",
+		"value: \"50000\"",
+		"value: dc-a",
 		"value: passthrough:///dc-a-dmz-control-plane:30443",
 		"port: 30443",
 	} {

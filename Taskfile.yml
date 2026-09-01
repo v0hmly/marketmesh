@@ -242,6 +242,11 @@ tasks:
     cmds:
       - go run ./e2e/tunnel/cmd/workloadctl undeploy {{.CLI_ARGS}}
 
+  tunnel-e2e:pod-chaos:
+    desc: Выполнить последовательный pod kill/redeploy MM-32 под continuous load
+    cmds:
+      - go run ./e2e/tunnel/cmd/podchaos {{.CLI_ARGS}}
+
   infra:down:
     desc: Остановить окружение с сохранением данных
     cmds:

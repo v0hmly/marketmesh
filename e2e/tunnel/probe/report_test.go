@@ -68,6 +68,32 @@ func TestBuildReportFailsClosedForOpenFaultMarker(t *testing.T) {
 	assertReportViolation(t, result.Report, "integrity", "unknown_fault_interval")
 }
 
+func TestReconciliationViolationsOnlyFailForInternalLedgerReordering(t *testing.T) {
+	t.Parallel()
+
+	clientOnly := reconciliationViolations(Reconciliation{
+		IsComplete: true,
+		Reordered: []ReorderedResult{{
+			RequestID: requestID1, Stage: "client_response",
+			PreviousSequence: 2, Sequence: 1,
+		}},
+	})
+	if len(clientOnly) != 0 {
+		t.Fatalf("client response violations = %#v", clientOnly)
+	}
+
+	internal := reconciliationViolations(Reconciliation{
+		IsComplete: true,
+		Reordered: []ReorderedResult{{
+			RequestID: requestID1, Stage: "internal_ledger",
+			PreviousSequence: 2, Sequence: 1,
+		}},
+	})
+	if len(internal) != 1 || internal[0].Code != "reordered_results" {
+		t.Fatalf("internal ledger violations = %#v", internal)
+	}
+}
+
 func TestWriteTextReportOmitsRequestAndIdempotencyIDs(t *testing.T) {
 	t.Parallel()
 

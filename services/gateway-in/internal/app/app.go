@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"github.com/v0hmly/marketmesh/platform/logger"
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
 	"github.com/v0hmly/marketmesh/platform/telemetry"
+	"github.com/v0hmly/marketmesh/services/gateway-in/e2esnapshot"
 	"github.com/v0hmly/marketmesh/services/gateway-in/internal/connectbridge"
 	"github.com/v0hmly/marketmesh/services/gateway-in/internal/tunnel"
 )
@@ -112,7 +114,7 @@ func runService(
 	if err != nil {
 		return err
 	}
-	handler, err := publicHandler(health, tunnelServer.Registry())
+	handler, err := publicHandler(cfg, health, tunnelServer.Registry())
 	if err != nil {
 		return err
 	}
@@ -238,6 +240,7 @@ func newHealth(cfg config, registry *tunnel.Registry) (*serviceruntime.Health, e
 }
 
 func publicHandler(
+	cfg config,
 	health *serviceruntime.Health,
 	registry *tunnel.Registry,
 ) (http.Handler, error) {
@@ -271,6 +274,9 @@ func publicHandler(
 	mux.Handle("/", healthHandler)
 	mux.Handle(e2ev1connect.FakeInternalServiceReadProcedure, readHandler)
 	mux.Handle(e2ev1connect.FakeInternalServiceMutateProcedure, mutateHandler)
+	if err := registerE2ERoutingSnapshot(mux, cfg, registry); err != nil {
+		return nil, err
+	}
 	mux.HandleFunc("POST /drainz", func(response http.ResponseWriter, request *http.Request) {
 		if host, _, splitErr := net.SplitHostPort(request.RemoteAddr); splitErr != nil ||
 			(host != "127.0.0.1" && host != "::1") {
@@ -282,6 +288,104 @@ func publicHandler(
 	})
 
 	return mux, nil
+}
+
+func registerE2ERoutingSnapshot(
+	mux *http.ServeMux,
+	cfg config,
+	registry *tunnel.Registry,
+) error {
+	if !cfg.e2eRoutingSnapshot {
+		return nil
+	}
+	snapshotHandler, err := e2esnapshot.NewHandler(func(
+		ctx context.Context,
+	) (e2esnapshot.Snapshot, error) {
+		return routingSnapshot(ctx, cfg, registry)
+	})
+	if err != nil {
+		return fmt.Errorf("creating e2e routing snapshot handler: %w", err)
+	}
+	mux.Handle(e2esnapshot.Path, snapshotHandler)
+
+	return nil
+}
+
+func routingSnapshot(
+	ctx context.Context,
+	cfg config,
+	registry *tunnel.Registry,
+) (e2esnapshot.Snapshot, error) {
+	if err := ctx.Err(); err != nil {
+		return e2esnapshot.Snapshot{}, err
+	}
+	routes := []tunnel.RoutingSnapshot{
+		registry.RoutingSnapshot(contractv1.RouteId_ROUTE_ID_USER_GET_ME),
+		registry.RoutingSnapshot(contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME),
+	}
+	result, err := convertRoutingSnapshot(cfg, routes)
+	if err != nil {
+		return e2esnapshot.Snapshot{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return e2esnapshot.Snapshot{}, err
+	}
+
+	return result, nil
+}
+
+func convertRoutingSnapshot(
+	cfg config,
+	routes []tunnel.RoutingSnapshot,
+) (e2esnapshot.Snapshot, error) {
+	result := e2esnapshot.Snapshot{
+		SchemaVersion:     e2esnapshot.SchemaVersion,
+		GatewayInInstance: cfg.instanceID,
+		Routes:            make([]e2esnapshot.RouteSnapshot, 0, len(routes)),
+	}
+	for _, route := range routes {
+		current := e2esnapshot.RouteSnapshot{
+			Route:            e2esnapshot.Route(route.Route.String()),
+			RouteAllowed:     route.RouteAllowed,
+			RegistryDraining: route.RegistryDraining,
+			Tunnels:          make([]e2esnapshot.TunnelSnapshot, 0, len(route.Tunnels)),
+		}
+		for _, activeTunnel := range route.Tunnels {
+			state, err := e2eTunnelState(activeTunnel.State)
+			if err != nil {
+				return e2esnapshot.Snapshot{}, err
+			}
+			current.Tunnels = append(current.Tunnels, e2esnapshot.TunnelSnapshot{
+				InstanceID:     hex.EncodeToString(activeTunnel.InstanceID[:]),
+				DataCenter:     activeTunnel.DataCenter,
+				State:          state,
+				ActiveRequests: activeTunnel.ActiveRequests,
+			})
+		}
+		result.Routes = append(result.Routes, current)
+	}
+	if err := result.Validate(); err != nil {
+		return e2esnapshot.Snapshot{}, err
+	}
+
+	return result, nil
+}
+
+func e2eTunnelState(state tunnel.TunnelState) (e2esnapshot.TunnelState, error) {
+	switch state {
+	case tunnel.TunnelStateHandshaking:
+		return e2esnapshot.TunnelStateHandshaking, nil
+	case tunnel.TunnelStateReady:
+		return e2esnapshot.TunnelStateReady, nil
+	case tunnel.TunnelStateDraining:
+		return e2esnapshot.TunnelStateDraining, nil
+	case tunnel.TunnelStateStale:
+		return e2esnapshot.TunnelStateStale, nil
+	case tunnel.TunnelStateClosed:
+		return e2esnapshot.TunnelStateClosed, nil
+	default:
+		return "", errors.New("gateway-in: unsupported e2e tunnel state")
+	}
 }
 
 func tunnelDrainComponent(registry *tunnel.Registry) serviceruntime.Component {

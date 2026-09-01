@@ -23,8 +23,8 @@ type LateResult struct {
 }
 
 // ReorderedResult фиксирует уменьшение request sequence в порядке наблюдения
-// internal ledger. Само наличие reorder измеряется, а решение о допустимости
-// остаётся за SLO contract.
+// клиентского ответа или internal ledger. Клиентское завершение может менять
+// порядок при конкурентности; отчёт считает нарушением только reorder ledger.
 type ReorderedResult struct {
 	RequestID        string
 	Stage            string

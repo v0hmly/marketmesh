@@ -33,6 +33,7 @@ type config struct {
 	shutdownTimeout       time.Duration
 	healthTimeout         time.Duration
 	logLevel              string
+	e2eRoutingSnapshot    bool
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -88,6 +89,9 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 		return config{}, err
 	}
 	if result.logLevel, err = env.String("LOG_LEVEL", "info"); err != nil {
+		return config{}, err
+	}
+	if result.e2eRoutingSnapshot, err = env.Bool("E2E_ROUTING_SNAPSHOT_ENABLED", false); err != nil {
 		return config{}, err
 	}
 
