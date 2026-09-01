@@ -181,6 +181,16 @@ func TestValidateTargetsStoppedDoesNotInspectLiveEndpoint(t *testing.T) {
 		t.Fatal("ValidateTargets(stopped) error = nil, want live endpoint rejection")
 	}
 	runtime.retainEndpoint = false
+	runtime.retainSandboxKey = true
+	if _, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
+		ExpectedState: ExpectedStateStopped,
+	}); err == nil {
+		t.Fatal("ValidateTargets(stopped) error = nil, want live sandbox key rejection")
+	}
+	if readOnlyErr := runtime.assertReadOnly(); readOnlyErr != nil {
+		t.Fatal(readOnlyErr)
+	}
+	runtime.retainSandboxKey = false
 	runtime.containerID = strings.Repeat("7", 64)
 	if _, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
 		ExpectedState: ExpectedStateStopped,
@@ -575,6 +585,7 @@ type fakeTargetRuntime struct {
 	duplicateInterface bool
 	extraNetwork       bool
 	retainEndpoint     bool
+	retainSandboxKey   bool
 	rejectExec         bool
 	kubernetesErr      error
 	execCalls          int
@@ -624,6 +635,7 @@ func (r *fakeTargetRuntime) containerResult(selector string) (Result, error) {
 		},
 	}
 	sandboxID := ""
+	sandboxKey := ""
 	if r.running || r.retainEndpoint {
 		sandboxID = r.sandboxID
 		networks[r.cluster.NetworkName] = map[string]any{
@@ -634,6 +646,9 @@ func (r *fakeTargetRuntime) containerResult(selector string) (Result, error) {
 			"IPPrefixLen": 24,
 			"MacAddress":  r.mac,
 		}
+	}
+	if r.running || r.retainSandboxKey {
+		sandboxKey = "/var/run/docker/netns/" + r.sandboxID[:12]
 	}
 	if r.extraNetwork {
 		networks["foreign-network"] = map[string]any{
@@ -658,8 +673,9 @@ func (r *fakeTargetRuntime) containerResult(selector string) (Result, error) {
 			"FinishedAt": r.finishedAt,
 		},
 		"NetworkSettings": map[string]any{
-			"SandboxID": sandboxID,
-			"Networks":  networks,
+			"SandboxID":  sandboxID,
+			"SandboxKey": sandboxKey,
+			"Networks":   networks,
 		},
 	}}
 	return marshalResult(payload)
