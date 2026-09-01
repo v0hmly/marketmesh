@@ -116,6 +116,305 @@ func TestRealtimeQueueOverflowDoesNotBlockControl(t *testing.T) {
 	}
 }
 
+func TestTerminalResponseBatchFitsSingleQueueSlot(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	tunnelID := bytes.Repeat([]byte{0x42}, protocolv1.TunnelIDBytes)
+	requestID := bytes.Repeat([]byte{0x53}, protocolv1.RequestIDBytes)
+	limits := testProtocolLimits()
+	activeSession := &session{
+		ctx:           ctx,
+		tunnelID:      tunnelID,
+		limits:        limits,
+		controlQueue:  make(chan queuedFrame, 1),
+		regularQueue:  make(chan queuedFrame, 1),
+		realtimeQueue: make(chan queuedFrame, 1),
+	}
+	request := &requestState{
+		requestID: requestID,
+		route: route{RouteSpec: RouteSpec{
+			TrafficClass:     contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+			MaxResponseBytes: limits.GetMaxMessageBytes(),
+		}},
+	}
+
+	err := activeSession.enqueueRequestFrames(
+		request,
+		&contractv1.ConnectRequest_HalfClose{HalfClose: &contractv1.HalfClose{}},
+		&contractv1.ConnectRequest_Result{
+			Result: &contractv1.Result{Code: contractv1.ResultCode_RESULT_CODE_OK},
+		},
+	)
+	if err != nil {
+		t.Fatalf("enqueueRequestFrames() error = %v", err)
+	}
+	if len(activeSession.regularQueue) != 1 {
+		t.Fatalf("regular queue items = %d, want one atomic terminal batch", len(activeSession.regularQueue))
+	}
+	queued := <-activeSession.regularQueue
+	if queued.frame.GetHalfClose() == nil || queued.frame.GetHeader().GetSequence() != 1 {
+		t.Fatal("terminal batch does not start with sequence 1 HalfClose")
+	}
+	if len(queued.following) != 1 || queued.following[0].GetResult() == nil ||
+		queued.following[0].GetHeader().GetSequence() != 2 {
+		t.Fatal("terminal batch does not end with sequence 2 Result")
+	}
+}
+
+func TestRejectedOpenBatchFitsSingleQueueSlot(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	requestID := bytes.Repeat([]byte{0x55}, protocolv1.RequestIDBytes)
+	activeSession := &session{
+		ctx:           ctx,
+		tunnelID:      bytes.Repeat([]byte{0x42}, protocolv1.TunnelIDBytes),
+		limits:        testProtocolLimits(),
+		controlQueue:  make(chan queuedFrame, 1),
+		regularQueue:  make(chan queuedFrame, 1),
+		realtimeQueue: make(chan queuedFrame, 1),
+		terminal:      map[requestKey]*terminalRequest{},
+	}
+	header := &contractv1.FrameHeader{
+		ProtocolVersion: protocolVersion,
+		TunnelId:        bytes.Clone(activeSession.tunnelID),
+		RequestId:       requestID,
+		Sequence:        1,
+		TrafficClass:    contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+	}
+	if err := activeSession.rejectOpen(
+		header,
+		contractv1.ResultCode_RESULT_CODE_PERMISSION_DENIED,
+	); err != nil {
+		t.Fatalf("rejectOpen() error = %v", err)
+	}
+	if len(activeSession.regularQueue) != 1 {
+		t.Fatalf("regular queue items = %d, want one atomic rejection batch", len(activeSession.regularQueue))
+	}
+	queued := <-activeSession.regularQueue
+	if queued.frame.GetHalfClose() == nil || len(queued.following) != 1 ||
+		queued.following[0].GetResult().GetCode() != contractv1.ResultCode_RESULT_CODE_PERMISSION_DENIED {
+		t.Fatal("rejected Open batch is not HalfClose followed by safe Result")
+	}
+}
+
+func TestTerminalRequestAcceptsBoundedLateCreditAndCancel(t *testing.T) {
+	t.Parallel()
+
+	requestID := bytes.Repeat([]byte{0x54}, protocolv1.RequestIDBytes)
+	key := requestKey{}
+	copy(key[:], requestID)
+	activeSession := &session{
+		tunnelID: bytes.Repeat([]byte{0x42}, protocolv1.TunnelIDBytes),
+		limits:   testProtocolLimits(),
+		terminal: map[requestKey]*terminalRequest{
+			key: {
+				class:            contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+				incomingSequence: 3,
+				maximumCredit:    64,
+			},
+		},
+		requests: map[requestKey]*requestState{},
+	}
+	frames := []*contractv1.ConnectResponse{
+		testGatewayInFrame(
+			requestID,
+			contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+			4,
+			&contractv1.ConnectResponse_Credit{Credit: &contractv1.Credit{Bytes: 32}},
+		),
+		testGatewayInFrame(
+			requestID,
+			contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+			5,
+			&contractv1.ConnectResponse_Cancel{
+				Cancel: &contractv1.Cancel{Reason: contractv1.CancelReason_CANCEL_REASON_CALLER},
+			},
+		),
+	}
+	for _, frame := range frames {
+		if err := activeSession.handleFrame(frame); err != nil {
+			t.Fatalf("handleFrame(late %T) error = %v", frame.GetPayload(), err)
+		}
+	}
+	duplicateCancel := testGatewayInFrame(
+		requestID,
+		contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+		6,
+		&contractv1.ConnectResponse_Cancel{
+			Cancel: &contractv1.Cancel{Reason: contractv1.CancelReason_CANCEL_REASON_CALLER},
+		},
+	)
+	if err := activeSession.handleFrame(duplicateCancel); !errors.Is(err, errProtocol) {
+		t.Fatalf("handleFrame(duplicate late Cancel) error = %v, want errProtocol", err)
+	}
+}
+
+func TestActiveTerminalTransitionKeepsFrameAccountingAtomic(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		update     func(*requestState)
+		assertLate func(*testing.T, *session, []byte)
+	}{
+		{
+			name: "Credit",
+			update: func(request *requestState) {
+				request.sendCredit += 32
+			},
+			assertLate: func(t *testing.T, activeSession *session, requestID []byte) {
+				t.Helper()
+				lateCredit := testGatewayInFrame(
+					requestID,
+					contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+					5,
+					&contractv1.ConnectResponse_Credit{
+						Credit: &contractv1.Credit{Bytes: 17},
+					},
+				)
+				if err := activeSession.handleFrame(lateCredit); !errors.Is(err, errProtocol) {
+					t.Fatalf("handleFrame(over-limit late Credit) error = %v, want errProtocol", err)
+				}
+			},
+		},
+		{
+			name: "Cancel",
+			update: func(request *requestState) {
+				request.peerCanceled = true
+			},
+			assertLate: func(t *testing.T, activeSession *session, requestID []byte) {
+				t.Helper()
+				duplicateCancel := testGatewayInFrame(
+					requestID,
+					contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+					5,
+					&contractv1.ConnectResponse_Cancel{
+						Cancel: &contractv1.Cancel{Reason: contractv1.CancelReason_CANCEL_REASON_CALLER},
+					},
+				)
+				if err := activeSession.handleFrame(duplicateCancel); !errors.Is(err, errProtocol) {
+					t.Fatalf("handleFrame(duplicate late Cancel) error = %v, want errProtocol", err)
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			activeSession, request, requestID := testTransitionSession(t)
+			entered := make(chan struct{})
+			continueUpdate := make(chan struct{})
+			updateResult := make(chan error, 1)
+			go func() {
+				_, err := activeSession.updateRequestForFrame(
+					testGatewayInFrame(
+						requestID,
+						contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+						4,
+						&contractv1.ConnectResponse_Credit{
+							Credit: &contractv1.Credit{Bytes: 1},
+						},
+					).GetHeader(),
+					func(request *requestState) error {
+						close(entered)
+						<-continueUpdate
+						test.update(request)
+						return nil
+					},
+				)
+				updateResult <- err
+			}()
+			select {
+			case <-entered:
+			case <-time.After(time.Second):
+				t.Fatal("frame update did not reach transition barrier")
+			}
+			releaseStarted := make(chan struct{})
+			releaseDone := make(chan struct{})
+			go func() {
+				close(releaseStarted)
+				activeSession.release(request)
+				close(releaseDone)
+			}()
+			<-releaseStarted
+			select {
+			case <-releaseDone:
+				close(continueUpdate)
+				<-updateResult
+				t.Fatal("release() crossed an in-progress frame update")
+			case <-time.After(20 * time.Millisecond):
+			}
+			close(continueUpdate)
+			select {
+			case err := <-updateResult:
+				if err != nil {
+					t.Fatalf("updateRequestForFrame() error = %v", err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("frame update did not complete after barrier release")
+			}
+			select {
+			case <-releaseDone:
+			case <-time.After(time.Second):
+				t.Fatal("release() remained blocked after frame update")
+			}
+
+			test.assertLate(t, activeSession, requestID)
+		})
+	}
+}
+
+func testTransitionSession(t *testing.T) (*session, *requestState, []byte) {
+	t.Helper()
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
+	requestID := bytes.Repeat([]byte{0x56}, protocolv1.RequestIDBytes)
+	key := requestKey{}
+	copy(key[:], requestID)
+	limits := testProtocolLimits()
+	request := &requestState{
+		key:              key,
+		requestID:        requestID,
+		ctx:              ctx,
+		cancel:           cancel,
+		done:             make(chan struct{}),
+		incomingSequence: 3,
+		sendCredit:       16,
+		creditChanged:    make(chan struct{}, 1),
+		route: route{RouteSpec: RouteSpec{
+			TrafficClass:     contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+			MaxResponseBytes: limits.GetMaxMessageBytes(),
+		}},
+	}
+	activeSession := &session{
+		ctx:           ctx,
+		tunnelID:      bytes.Repeat([]byte{0x42}, protocolv1.TunnelIDBytes),
+		limits:        limits,
+		requests:      map[requestKey]*requestState{key: request},
+		terminal:      map[requestKey]*terminalRequest{},
+		activeByClass: map[contractv1.TrafficClass]uint32{request.route.TrafficClass: 1},
+		activeChanged: make(chan struct{}, 1),
+	}
+
+	return activeSession, request, requestID
+}
+
+func testProtocolLimits() *contractv1.Limits {
+	return &contractv1.Limits{
+		MaxFrameBytes:         512,
+		MaxDataBytes:          64,
+		MaxMessageBytes:       64,
+		MaxInFlightRequests:   1,
+		MaxMetadataEntries:    1,
+		MaxMetadataValueBytes: 64,
+		MaxCreditBytes:        64,
+	}
+}
+
 func TestNegotiatedLimitsAreEnforcedAfterHandshake(t *testing.T) {
 	t.Parallel()
 

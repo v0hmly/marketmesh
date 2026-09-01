@@ -201,14 +201,14 @@ func (r *Registry) Invoke(ctx context.Context, call Call) (response Response, re
 	// Open is already queued. Any failure from this point is returned without
 	// replay so an uncertain mutation cannot run on a second tunnel.
 	if err := request.sendInitialResponseCredit(callCtx); err != nil {
-		request.complete(Response{}, err)
+		request.completeLocalAbort(err)
 		return Response{}, err
 	}
 	if err := request.sendBody(callCtx, slices.Clone(call.Payload)); err != nil {
 		if contextErr := callCtx.Err(); contextErr != nil {
 			request.cancel(contextErr)
 		} else {
-			request.complete(Response{}, err)
+			request.completeLocalAbort(err)
 		}
 		return Response{}, err
 	}

@@ -97,20 +97,37 @@ func TestClientRelaysAllowlistedUnaryRPC(t *testing.T) {
 		}
 
 		var response []byte
+		responseHalfClosed := false
+		framing := make([]string, 0, 3)
 		for {
 			frame, err := recvApplicationFrame(stream)
 			if err != nil {
 				return err
 			}
 			if data := frame.GetData(); data != nil {
+				if responseHalfClosed {
+					return errors.New("gateway-out sent Data after response HalfClose")
+				}
+				framing = append(framing, "data")
 				response = append(response, data.GetPayload()...)
 				continue
 			}
+			if frame.GetHalfClose() != nil {
+				if responseHalfClosed {
+					return errors.New("gateway-out sent duplicate response HalfClose")
+				}
+				responseHalfClosed = true
+				framing = append(framing, "half_close")
+				continue
+			}
 			if tunnelResult := frame.GetResult(); tunnelResult != nil {
+				framing = append(framing, "result")
 				result <- relayResult{
-					code:     tunnelResult.GetCode(),
-					metadata: tunnelResult.GetMetadata(),
-					payload:  response,
+					code:      tunnelResult.GetCode(),
+					metadata:  tunnelResult.GetMetadata(),
+					payload:   response,
+					framing:   framing,
+					violation: !responseHalfClosed,
 				}
 				<-stream.Context().Done()
 				return nil
@@ -136,6 +153,12 @@ func TestClientRelaysAllowlistedUnaryRPC(t *testing.T) {
 		}
 		if len(received.metadata) != 0 {
 			t.Fatalf("Result metadata = %v, want internal metadata dropped", received.metadata)
+		}
+		if received.violation {
+			t.Fatal("gateway-out sent terminal Result before response HalfClose")
+		}
+		if got, want := strings.Join(received.framing, " -> "), "data -> half_close -> result"; got != want {
+			t.Fatalf("response framing = %q, want %q", got, want)
 		}
 		response := &grpc_health_v1.HealthCheckResponse{}
 		if err := proto.Unmarshal(received.payload, response); err != nil {
@@ -611,9 +634,11 @@ func TestServerIdentityMismatchFailsBeforeConnectRPC(t *testing.T) {
 }
 
 type relayResult struct {
-	code     contractv1.ResultCode
-	metadata []*contractv1.Metadata
-	payload  []byte
+	code      contractv1.ResultCode
+	metadata  []*contractv1.Metadata
+	payload   []byte
+	framing   []string
+	violation bool
 }
 
 func statusUnavailable() error {
