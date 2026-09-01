@@ -9,27 +9,16 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"github.com/v0hmly/marketmesh/platform/testkit"
 )
 
 func TestOperationHookDoesNotRecordCommandsKeysValuesAddressesOrErrors(t *testing.T) {
 	t.Parallel()
 
-	spanExporter := tracetest.NewInMemoryExporter()
-	provider := sdktrace.NewTracerProvider(sdktrace.WithSyncer(spanExporter))
-	t.Cleanup(func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		if err := provider.Shutdown(shutdownCtx); err != nil {
-			t.Errorf("trace provider shutdown: %v", err)
-		}
-	})
+	observability := testkit.NewTelemetry(t)
 	hook := &operationHook{
 		role:        RoleAuth,
-		tracer:      provider.Tracer(instrumentationName),
+		tracer:      observability.Tracer(instrumentationName),
 		instruments: &instruments{},
 	}
 	sensitiveKey := "private:auth:session:key"
@@ -44,7 +33,7 @@ func TestOperationHookDoesNotRecordCommandsKeysValuesAddressesOrErrors(t *testin
 		t.Fatalf("ProcessHook() error = %v", err)
 	}
 
-	spans := spanExporter.GetSpans()
+	spans := observability.Spans(t)
 	if len(spans) != 1 {
 		t.Fatalf("exported spans = %d, want 1", len(spans))
 	}
@@ -64,15 +53,7 @@ func TestOperationHookDoesNotRecordCommandsKeysValuesAddressesOrErrors(t *testin
 func TestMetricsUseOnlyBoundedAttributes(t *testing.T) {
 	t.Parallel()
 
-	reader := sdkmetric.NewManualReader()
-	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	t.Cleanup(func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		if err := provider.Shutdown(shutdownCtx); err != nil {
-			t.Errorf("meter provider shutdown: %v", err)
-		}
-	})
+	observability := testkit.NewTelemetry(t)
 	backend := &fakeBackend{stats: &goredis.PoolStats{
 		Hits:            11,
 		Misses:          7,
@@ -86,7 +67,7 @@ func TestMetricsUseOnlyBoundedAttributes(t *testing.T) {
 		PendingRequests: 1,
 	}}
 	instruments, err := newInstruments(
-		provider.Meter(instrumentationName),
+		observability.Meter(instrumentationName),
 		RoleAuth,
 		backend,
 		8,
@@ -102,10 +83,7 @@ func TestMetricsUseOnlyBoundedAttributes(t *testing.T) {
 	instruments.recordOperation(t.Context(), "command", "ok", 25*time.Millisecond)
 	instruments.recordRetry(t.Context(), "pool")
 
-	var resourceMetrics metricdata.ResourceMetrics
-	if err := reader.Collect(t.Context(), &resourceMetrics); err != nil {
-		t.Fatalf("collect metrics: %v", err)
-	}
+	resourceMetrics := observability.Metrics(t)
 	names := map[string]struct{}{}
 	for _, scopeMetrics := range resourceMetrics.ScopeMetrics {
 		for _, measurement := range scopeMetrics.Metrics {

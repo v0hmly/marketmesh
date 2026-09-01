@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v0hmly/marketmesh/platform/telemetry"
+	platformlogger "github.com/v0hmly/marketmesh/platform/logger"
+	"github.com/v0hmly/marketmesh/platform/testkit"
 	grpcgo "google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -15,8 +16,8 @@ import (
 func TestServerComponentRejectsTypedNilListener(t *testing.T) {
 	t.Parallel()
 
-	log, _ := newIntegrationLogger(t)
-	server, err := NewServer(validIntegrationServerConfig(log, telemetry.NewNoop()))
+	log, _ := testkit.NewLogger(t)
+	server, err := NewServer(validServerTestConfig(t, log))
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -30,8 +31,8 @@ func TestServerComponentRejectsTypedNilListener(t *testing.T) {
 func TestNewServerRequiresLimits(t *testing.T) {
 	t.Parallel()
 
-	log, _ := newIntegrationLogger(t)
-	valid := validIntegrationServerConfig(log, telemetry.NewNoop())
+	log, _ := testkit.NewLogger(t)
+	valid := validServerTestConfig(t, log)
 	tests := []struct {
 		name   string
 		mutate func(*ServerConfig)
@@ -66,6 +67,25 @@ func TestNewServerRequiresLimits(t *testing.T) {
 				t.Fatal("NewServer() error = nil, want validation error")
 			}
 		})
+	}
+}
+
+func validServerTestConfig(t *testing.T, log *platformlogger.Logger) ServerConfig {
+	t.Helper()
+
+	return ServerConfig{
+		Environment:            "test",
+		ConnectionTimeout:      time.Second,
+		RequestTimeout:         time.Second,
+		KeepaliveTime:          time.Second,
+		KeepaliveTimeout:       time.Second,
+		MaxReceiveMessageBytes: 1024 * 1024,
+		MaxSendMessageBytes:    1024 * 1024,
+		Security: ServerSecurity{
+			Plaintext: PlaintextLocal,
+		},
+		Logger:    log,
+		Telemetry: testkit.NoopTelemetry(t),
 	}
 }
 

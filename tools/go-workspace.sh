@@ -212,6 +212,33 @@ verify_forbidden_imports() {
   done
 }
 
+verify_no_production_testkit_imports() {
+  local module
+  local module_directory
+  local importer
+  local imported
+  local testkit_path="${REPOSITORY_MODULE_PREFIX}/platform/testkit"
+
+  for module in "${MODULES[@]}"; do
+    module_directory="${module%%|*}"
+    if [[ -z "$(module_packages "${module_directory}")" ]]; then
+      continue
+    fi
+
+    while IFS='|' read -r importer imported; do
+      if [[ "${imported}" == "${testkit_path}" || "${imported}" == "${testkit_path}/"* ]]; then
+        if [[ "${importer}" != "${testkit_path}" && "${importer}" != "${testkit_path}/"* ]]; then
+          echo "Forbidden production testkit import: ${importer} -> ${imported}" >&2
+          return 1
+        fi
+      fi
+    done < <(
+      cd "${REPOSITORY_ROOT}/${module_directory}"
+      go list -f '{{ $package := .ImportPath }}{{ range .Imports }}{{ $package }}|{{ . }}{{ "\n" }}{{ end }}' ./...
+    )
+  done
+}
+
 verify_no_local_replaces() {
   local module
   local module_directory
@@ -230,6 +257,7 @@ verify_architecture() {
   verify_go_versions
   verify_workspace_modules
   verify_forbidden_imports
+  verify_no_production_testkit_imports
   verify_no_local_replaces
   echo "Architecture checks passed"
 }

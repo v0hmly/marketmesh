@@ -5,20 +5,26 @@ package redis
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
-	"github.com/v0hmly/marketmesh/platform/telemetry"
+	"github.com/v0hmly/marketmesh/platform/testkit"
+	integrationtest "github.com/v0hmly/marketmesh/platform/testkit/integration"
 )
 
 func TestIntegrationIndependentRedisClient(t *testing.T) {
-	role := Role(os.Getenv("MARKETMESH_REDIS_ROLE"))
+	values := integrationtest.EnvOrSkip(
+		t,
+		"MARKETMESH_REDIS_ROLE",
+		"MARKETMESH_REDIS_ADDRESS",
+		"MARKETMESH_REDIS_PASSWORD",
+	)
+	role := Role(values["MARKETMESH_REDIS_ROLE"])
 	environment := serviceruntime.MapEnv(map[string]string{
-		"ADDRESS":  os.Getenv("MARKETMESH_REDIS_ADDRESS"),
-		"PASSWORD": os.Getenv("MARKETMESH_REDIS_PASSWORD"),
+		"ADDRESS":  values["MARKETMESH_REDIS_ADDRESS"],
+		"PASSWORD": values["MARKETMESH_REDIS_PASSWORD"],
 	})
 	address, err := environment.Secret("ADDRESS", true)
 	if err != nil {
@@ -29,7 +35,7 @@ func TestIntegrationIndependentRedisClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	config := integrationConfig(role, address, password)
-	client, err := New(t.Context(), config, telemetry.NewNoop())
+	client, err := New(t.Context(), config, testkit.NoopTelemetry(t))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -84,9 +90,11 @@ func TestIntegrationIndependentRedisClient(t *testing.T) {
 			return commands.BLPop(ctx, 0, key+":pool").Err()
 		})
 	}()
-	time.Sleep(100 * time.Millisecond)
-	err = client.Execute(t.Context(), func(ctx context.Context, commands goredis.Cmdable) error {
-		return commands.Get(ctx, key).Err()
+	testkit.Eventually(t, time.Second, 10*time.Millisecond, func() bool {
+		err = client.Execute(t.Context(), func(ctx context.Context, commands goredis.Cmdable) error {
+			return commands.Get(ctx, key).Err()
+		})
+		return errors.Is(err, goredis.ErrPoolTimeout) || errors.Is(err, goredis.ErrPoolExhausted)
 	})
 	if !errors.Is(err, goredis.ErrPoolTimeout) && !errors.Is(err, goredis.ErrPoolExhausted) {
 		t.Fatalf("pool exhaustion error = %v", err)
@@ -100,19 +108,10 @@ func TestIntegrationIndependentRedisClient(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("blocked command did not observe cancellation")
 	}
-	poolReleaseCtx, cancelPoolRelease := context.WithTimeout(t.Context(), 3*time.Second)
-	defer cancelPoolRelease()
-	for {
-		err = client.ReadinessDependencies()[0].Check(poolReleaseCtx)
-		if err == nil {
-			break
-		}
-		select {
-		case <-poolReleaseCtx.Done():
-			t.Fatalf("pool did not recover after cancellation: %v", err)
-		case <-time.After(25 * time.Millisecond):
-		}
-	}
+	testkit.Eventually(t, 3*time.Second, 25*time.Millisecond, func() bool {
+		err = client.ReadinessDependencies()[0].Check(t.Context())
+		return err == nil
+	})
 
 	if err := client.Execute(t.Context(), func(ctx context.Context, commands goredis.Cmdable) error {
 		return commands.Del(ctx, key).Err()

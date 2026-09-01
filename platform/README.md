@@ -11,5 +11,6 @@
 - [`httpserver`](httpserver/README.md) — безопасный net/http server, request middleware, HTTP health и bounded lifecycle поверх runtime.
 - [`postgres`](postgres/README.md) — явные RW/RO-пулы, транзакции, readiness и telemetry поверх pgx.
 - [`redis`](redis/README.md) — независимые edge/auth clients, bounded pool/retry, readiness и безопасная telemetry поверх go-redis.
+- [`testkit`](testkit/README.md) — повторно используемые lifecycle-safe helpers для logger/telemetry, TLS/mTLS, bufconn, fake time, bounded wait и безопасных временных путей; production imports запрещены архитектурной проверкой.
 
 Пакеты создаются соответствующими задачами и не добавляются пустыми заранее.
