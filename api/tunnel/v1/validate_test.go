@@ -193,6 +193,19 @@ func TestValidateGatewayInFrame(t *testing.T) {
 		wantErr error
 	}{
 		{
+			name:  "valid Hello",
+			frame: validGatewayInHello,
+		},
+		{
+			name: "missing gateway-in instance id",
+			frame: func() *contractv1.ConnectResponse {
+				frame := validGatewayInHello()
+				frame.GetHello().InstanceId = nil
+				return frame
+			},
+			wantErr: codec.ErrInvalidFrame,
+		},
+		{
 			name:  "valid Open",
 			frame: validOpenFrame,
 		},
@@ -365,6 +378,30 @@ func validGatewayOutHello() *contractv1.ConnectRequest {
 				},
 				RouteIds: []contractv1.RouteId{
 					contractv1.RouteId_ROUTE_ID_AUTH_LOGIN,
+					contractv1.RouteId_ROUTE_ID_USER_GET_ME,
+				},
+				Limits: validLimits(),
+			},
+		},
+	}
+}
+
+func validGatewayInHello() *contractv1.ConnectResponse {
+	return &contractv1.ConnectResponse{
+		Header: &contractv1.FrameHeader{
+			TunnelId: repeatedByte(0x22, codec.TunnelIDBytes),
+		},
+		Payload: &contractv1.ConnectResponse_Hello{
+			Hello: &contractv1.GatewayInHello{
+				InstanceId:              repeatedByte(0x44, codec.InstanceIDBytes),
+				SelectedProtocolVersion: 1,
+				Capabilities: []contractv1.Capability{
+					contractv1.Capability_CAPABILITY_DRAIN,
+				},
+				TrafficClasses: []contractv1.TrafficClass{
+					contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
+				},
+				RouteIds: []contractv1.RouteId{
 					contractv1.RouteId_ROUTE_ID_USER_GET_ME,
 				},
 				Limits: validLimits(),

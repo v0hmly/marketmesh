@@ -94,6 +94,9 @@ message GatewayInHello {
   repeated RouteId route_ids = 4;
   // Limits contains the effective receive-side ceilings for the tunnel.
   Limits limits = 5;
+  // InstanceId is the opaque 16-byte gateway-in process identifier used only
+  // to distribute redundant E2E tunnel sessions across distinct replicas.
+  bytes instance_id = 6;
 }
 
 // Limits bounds memory, logical concurrency, and flow-control grants.

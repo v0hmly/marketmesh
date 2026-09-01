@@ -12,7 +12,8 @@ const testPeerURI = "spiffe://marketmesh.test/gateway-out/instance-1"
 
 func testConfig() Config {
 	return Config{
-		Peer: PeerPolicy{AllowedURIs: []string{testPeerURI}},
+		InstanceID: [16]byte{0x55},
+		Peer:       PeerPolicy{AllowedURIs: []string{testPeerURI}},
 		Limits: &contractv1.Limits{
 			MaxFrameBytes:         4096,
 			MaxDataBytes:          512,

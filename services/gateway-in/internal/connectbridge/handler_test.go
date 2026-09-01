@@ -113,6 +113,83 @@ func TestUnaryHandler_ReturnsFinitePublicError(t *testing.T) {
 	}
 }
 
+func TestUnaryHandler_RequiresFiniteIdempotencyKey(t *testing.T) {
+	t.Parallel()
+
+	responsePayload, err := proto.Marshal(&authv1.LoginResponse{})
+	if err != nil {
+		t.Fatalf("proto.Marshal() error = %v", err)
+	}
+	tests := []struct {
+		name       string
+		values     []string
+		wantKey    string
+		wantInvoke bool
+	}{
+		{name: "missing"},
+		{
+			name:       "valid printable key",
+			values:     []string{"mm29-mutation-1"},
+			wantKey:    "mm29-mutation-1",
+			wantInvoke: true,
+		},
+		{
+			name:   "duplicate header",
+			values: []string{"mm29-mutation-1", "mm29-mutation-2"},
+		},
+		{
+			name:   "control character",
+			values: []string{"mm29\tmutation"},
+		},
+		{
+			name:   "oversized",
+			values: []string{strings.Repeat("k", 129)},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			invoker := &fakeInvoker{response: tunnel.Response{Payload: responsePayload}}
+			handler, handlerErr := NewUnaryHandler[authv1.LoginRequest, authv1.LoginResponse](Config{
+				Procedure:             authv1connect.AuthServiceLoginProcedure,
+				Route:                 contractv1.RouteId_ROUTE_ID_AUTH_LOGIN,
+				RequireIdempotencyKey: true,
+				Invoker:               invoker,
+			})
+			if handlerErr != nil {
+				t.Fatalf("NewUnaryHandler() error = %v", handlerErr)
+			}
+
+			server := httptest.NewServer(handler)
+			t.Cleanup(server.Close)
+			client := connect.NewClient[authv1.LoginRequest, authv1.LoginResponse](
+				server.Client(),
+				server.URL+authv1connect.AuthServiceLoginProcedure,
+			)
+			request := connect.NewRequest(&authv1.LoginRequest{})
+			for _, value := range test.values {
+				request.Header().Add(idempotencyKeyHeader, value)
+			}
+			_, callErr := client.CallUnary(t.Context(), request)
+
+			if test.wantInvoke {
+				if callErr != nil {
+					t.Fatalf("CallUnary() error = %v", callErr)
+				}
+				if key := string(invoker.lastCall().IdempotencyKey); key != test.wantKey {
+					t.Fatalf("idempotency key = %q, want %q", key, test.wantKey)
+				}
+				return
+			}
+
+			if code := connect.CodeOf(callErr); code != connect.CodeInvalidArgument {
+				t.Fatalf("CallUnary() code = %s, want invalid_argument (error %v)", code, callErr)
+			}
+		})
+	}
+}
+
 func TestNewUnaryHandler_RejectsUnsafeConfiguration(t *testing.T) {
 	t.Parallel()
 
