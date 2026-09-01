@@ -7,6 +7,7 @@ readonly REPOSITORY_MODULE_PREFIX="github.com/v0hmly/marketmesh"
 readonly GO_VERSION="1.27.0"
 readonly MODULES=(
   "api/gen/go|${REPOSITORY_MODULE_PREFIX}/api/gen/go"
+  "api/tunnel|${REPOSITORY_MODULE_PREFIX}/api/tunnel"
   "platform|${REPOSITORY_MODULE_PREFIX}/platform"
   "services/auth|${REPOSITORY_MODULE_PREFIX}/services/auth"
   "services/gateway-in|${REPOSITORY_MODULE_PREFIX}/services/gateway-in"
@@ -194,6 +195,12 @@ verify_forbidden_imports() {
         "${REPOSITORY_MODULE_PREFIX}/api/gen/go")
           if [[ "${imported_path}" == "${REPOSITORY_MODULE_PREFIX}/services/"* || "${imported_path}" == "${REPOSITORY_MODULE_PREFIX}/platform"* ]]; then
             echo "Forbidden generated contract import: ${module_path} -> ${imported_path}" >&2
+            return 1
+          fi
+          ;;
+        "${REPOSITORY_MODULE_PREFIX}/api/tunnel")
+          if [[ "${imported_path}" == "${REPOSITORY_MODULE_PREFIX}/services/"* || "${imported_path}" == "${REPOSITORY_MODULE_PREFIX}/platform"* ]]; then
+            echo "Forbidden tunnel contract import: ${module_path} -> ${imported_path}" >&2
             return 1
           fi
           ;;

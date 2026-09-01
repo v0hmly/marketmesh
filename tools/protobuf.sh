@@ -298,6 +298,29 @@ clean_generated() {
   find "${ts_out}" -type f -name '*_pb.ts' -delete
 }
 
+normalize_generated_text() {
+  local root="$1"
+  local generated_file
+  local temporary_file
+
+  while IFS= read -r -d '' generated_file; do
+    temporary_file="$(mktemp "${generated_file}.XXXXXX")"
+    awk '
+      { lines[NR] = $0 }
+      END {
+        last = NR
+        while (last > 0 && lines[last] == "") {
+          last--
+        }
+        for (line = 1; line <= last; line++) {
+          print lines[line]
+        }
+      }
+    ' "${generated_file}" >"${temporary_file}"
+    mv "${temporary_file}" "${generated_file}"
+  done < <(find "${root}" -type f -name '*_pb.ts' -print0)
+}
+
 generate_to() {
   local go_out="$1"
   local ts_out="$2"
@@ -312,6 +335,7 @@ generate_to() {
       PROTO_TS_OUT="${ts_out}" \
       "${EASYP_BIN}" --cfg "${REPO_ROOT}/easyp.yaml" generate
   )
+  normalize_generated_text "${REPO_ROOT}/${ts_out}"
 }
 
 copy_generated() {
