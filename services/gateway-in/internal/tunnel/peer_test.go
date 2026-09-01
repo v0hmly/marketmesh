@@ -12,6 +12,18 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
+func TestPeerAuthorizerUsesLocalDataCenterByDefault(t *testing.T) {
+	t.Parallel()
+
+	authorizer, err := newPeerAuthorizer(PeerPolicy{AllowedURIs: []string{testPeerURI}})
+	if err != nil {
+		t.Fatalf("newPeerAuthorizer() error = %v", err)
+	}
+	if dataCenter := authorizer.dataCenterByURI[testPeerURI]; dataCenter != defaultDataCenter {
+		t.Fatalf("default data center = %q, want %q", dataCenter, defaultDataCenter)
+	}
+}
+
 func TestPeerAuthorizer(t *testing.T) {
 	t.Parallel()
 
@@ -96,7 +108,12 @@ func TestPeerAuthorizer(t *testing.T) {
 		},
 	}
 
-	authorizer, err := newPeerAuthorizer(PeerPolicy{AllowedURIs: []string{testPeerURI}})
+	authorizer, err := newPeerAuthorizer(PeerPolicy{
+		AllowedURIs: []string{testPeerURI},
+		DataCenterByURI: map[string]string{
+			testPeerURI: "dc-a",
+		},
+	})
 	if err != nil {
 		t.Fatalf("newPeerAuthorizer() error = %v", err)
 	}
@@ -112,12 +129,15 @@ func TestPeerAuthorizer(t *testing.T) {
 					}},
 				})
 			}
-			err := authorizer.authorize(ctx)
+			dataCenter, err := authorizer.authorize(ctx)
 			if test.wantError && err == nil {
 				t.Fatal("authorize() error = nil, want rejection")
 			}
 			if !test.wantError && err != nil {
 				t.Fatalf("authorize() error = %v", err)
+			}
+			if !test.wantError && dataCenter != "dc-a" {
+				t.Fatalf("authorize() data center = %q, want dc-a", dataCenter)
 			}
 		})
 	}

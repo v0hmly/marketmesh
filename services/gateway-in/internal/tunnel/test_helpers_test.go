@@ -61,8 +61,9 @@ func testConfig() Config {
 		MaxInFlightPerInstance: 8,
 		InitialResponseCredit:  1024,
 		HandshakeTimeout:       time.Second,
-		PingInterval:           time.Hour,
-		PongTimeout:            time.Minute,
+		PingInterval:           time.Minute,
+		PongTimeout:            10 * time.Second,
+		FailbackWarmup:         30 * time.Second,
 		Logger: slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})),

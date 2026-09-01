@@ -219,6 +219,11 @@ tasks:
     cmds:
       - go run ./e2e/tunnel/cmd/workloadctl inspect {{.CLI_ARGS}}
 
+  tunnel-e2e:frontdoor:
+    desc: Запустить локальный health-aware front door MM-30 для двух DC
+    cmds:
+      - go run ./e2e/tunnel/cmd/frontdoor {{.CLI_ARGS}}
+
   tunnel-e2e:undeploy:
     desc: Собрать diagnostics и удалить точные workloads MM-29
     cmds:

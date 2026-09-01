@@ -41,8 +41,8 @@ type logicalRequest struct {
 
 	outboundSequence uint64
 	inboundSequence  uint64
-	sendCredit       uint64
-	receiveCredit    uint64
+	sendCredit       int
+	receiveCredit    int
 	responsePayload  []byte
 	isResponseClosed bool
 	isCompleted      bool
@@ -74,7 +74,7 @@ func newLogicalRequest(
 	}
 }
 
-func (r *logicalRequest) sendOpen(ctx context.Context, call Call) error {
+func (r *logicalRequest) enqueueOpen(ctx context.Context, call Call) error {
 	open := &contractv1.Open{
 		RouteId:        call.Route,
 		Deadline:       timestamppb.New(r.deadline),
@@ -84,19 +84,25 @@ func (r *logicalRequest) sendOpen(ctx context.Context, call Call) error {
 	if err := r.enqueuePayload(ctx, &contractv1.ConnectResponse_Open{Open: open}); err != nil {
 		return err
 	}
+	return nil
+}
 
+func (r *logicalRequest) sendInitialResponseCredit(ctx context.Context) error {
 	credit := min(
-		r.session.settings.initialResponseCredit,
-		uint32(r.policy.MaxResponseBytes),
-		r.session.limits.GetMaxCreditBytes(),
+		int(r.session.settings.initialResponseCredit),
+		r.policy.MaxResponseBytes,
+		int(r.session.limits.GetMaxCreditBytes()),
 	)
 	r.mu.Lock()
-	r.receiveCredit = uint64(credit)
+	r.receiveCredit = credit
 	r.mu.Unlock()
 
 	return r.enqueuePayload(
 		ctx,
-		&contractv1.ConnectResponse_Credit{Credit: &contractv1.Credit{Bytes: credit}},
+		&contractv1.ConnectResponse_Credit{
+			// #nosec G115 -- credit is bounded by the validated uint32 protocol limit.
+			Credit: &contractv1.Credit{Bytes: uint32(credit)},
+		},
 	)
 }
 
@@ -160,14 +166,14 @@ func (r *logicalRequest) takeSendCredit(ctx context.Context, remaining int) (int
 		}
 		if r.sendCredit > 0 {
 			chunkBytes := min(
-				uint64(remaining),
+				remaining,
 				r.sendCredit,
-				uint64(r.session.limits.GetMaxDataBytes()),
-				uint64(r.policy.MaxRequestBytes),
+				int(r.session.limits.GetMaxDataBytes()),
+				r.policy.MaxRequestBytes,
 			)
 			r.sendCredit -= chunkBytes
 			r.mu.Unlock()
-			return int(chunkBytes), nil
+			return chunkBytes, nil
 		}
 		r.mu.Unlock()
 
@@ -195,9 +201,9 @@ func (r *logicalRequest) handleInbound(frame *contractv1.ConnectRequest) error {
 
 	switch payload := frame.GetPayload().(type) {
 	case *contractv1.ConnectRequest_Credit:
-		credit := uint64(payload.Credit.GetBytes())
-		maximumOutstanding := uint64(r.policy.MaxRequestBytes)
-		if credit > math.MaxUint64-r.sendCredit || r.sendCredit+credit > maximumOutstanding {
+		credit := int(payload.Credit.GetBytes())
+		maximumOutstanding := r.policy.MaxRequestBytes
+		if r.sendCredit > maximumOutstanding || credit > maximumOutstanding-r.sendCredit {
 			r.mu.Unlock()
 			return ErrProtocolViolation
 		}
@@ -213,22 +219,22 @@ func (r *logicalRequest) handleInbound(frame *contractv1.ConnectRequest) error {
 			r.mu.Unlock()
 			return ErrProtocolViolation
 		}
-		dataBytes := uint64(len(payload.Data.GetPayload()))
+		dataBytes := len(payload.Data.GetPayload())
 		if dataBytes > r.receiveCredit ||
-			len(r.responsePayload)+int(dataBytes) > r.policy.MaxResponseBytes {
+			len(r.responsePayload)+dataBytes > r.policy.MaxResponseBytes {
 			r.mu.Unlock()
 			return ErrProtocolViolation
 		}
 		r.receiveCredit -= dataBytes
 		r.responsePayload = append(r.responsePayload, payload.Data.GetPayload()...)
-		remainingCapacity := uint64(r.policy.MaxResponseBytes - len(r.responsePayload))
+		remainingCapacity := r.policy.MaxResponseBytes - len(r.responsePayload)
 		grant := min(dataBytes, remainingCapacity-r.receiveCredit)
 		r.mu.Unlock()
 		if grant == 0 {
 			return nil
 		}
 
-		return r.grantReceiveCredit(uint32(grant))
+		return r.grantReceiveCredit(grant)
 	case *contractv1.ConnectRequest_HalfClose:
 		if r.isResponseClosed {
 			r.mu.Unlock()
@@ -267,18 +273,21 @@ func (r *logicalRequest) handleInbound(frame *contractv1.ConnectRequest) error {
 	}
 }
 
-func (r *logicalRequest) grantReceiveCredit(bytes uint32) error {
+func (r *logicalRequest) grantReceiveCredit(bytes int) error {
 	r.mu.Lock()
 	if r.isCompleted {
 		r.mu.Unlock()
 		return nil
 	}
-	r.receiveCredit += uint64(bytes)
+	r.receiveCredit += bytes
 	r.mu.Unlock()
 
 	return r.enqueuePayload(
 		r.session.ctx,
-		&contractv1.ConnectResponse_Credit{Credit: &contractv1.Credit{Bytes: bytes}},
+		&contractv1.ConnectResponse_Credit{
+			// #nosec G115 -- bytes is bounded by validated message and credit limits.
+			Credit: &contractv1.Credit{Bytes: uint32(bytes)},
+		},
 	)
 }
 

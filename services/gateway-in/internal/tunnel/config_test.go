@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -24,6 +25,34 @@ func TestNew_RejectsUnsafeConfiguration(t *testing.T) {
 			name: "unknown peer uri",
 			mutate: func(config *Config) {
 				config.Peer.AllowedURIs = []string{"relative-identity"}
+			},
+		},
+		{
+			name: "peer uri without data center mapping",
+			mutate: func(config *Config) {
+				config.Peer.DataCenterByURI = map[string]string{
+					"spiffe://marketmesh.test/gateway-out/other": "dc-a",
+				}
+			},
+		},
+		{
+			name: "invalid data center label",
+			mutate: func(config *Config) {
+				config.Peer.DataCenterByURI = map[string]string{
+					testPeerURI: "DC_A",
+				}
+			},
+		},
+		{
+			name: "data center label cardinality above bound",
+			mutate: func(config *Config) {
+				config.Peer.AllowedURIs = make([]string, 0, maxDataCenters+1)
+				config.Peer.DataCenterByURI = make(map[string]string, maxDataCenters+1)
+				for index := range maxDataCenters + 1 {
+					identity := fmt.Sprintf("spiffe://marketmesh.test/gateway-out/%d", index)
+					config.Peer.AllowedURIs = append(config.Peer.AllowedURIs, identity)
+					config.Peer.DataCenterByURI[identity] = fmt.Sprintf("dc-%d", index)
+				}
 			},
 		},
 		{
@@ -64,6 +93,19 @@ func TestNew_RejectsUnsafeConfiguration(t *testing.T) {
 			name: "unbounded handshake timeout",
 			mutate: func(config *Config) {
 				config.HandshakeTimeout = 31 * time.Second
+			},
+		},
+		{
+			name: "unbounded failback warmup",
+			mutate: func(config *Config) {
+				config.FailbackWarmup = maxFailbackWarmup + time.Nanosecond
+			},
+		},
+		{
+			name: "unbounded stale timeout",
+			mutate: func(config *Config) {
+				config.PingInterval = maxStaleAfter
+				config.PongTimeout = time.Second
 			},
 		},
 	}

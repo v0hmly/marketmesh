@@ -3,6 +3,7 @@
 package tunnel_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -272,6 +273,34 @@ func TestReverseTunnel_DisconnectFailsActiveCall(t *testing.T) {
 	}
 }
 
+func TestReverseTunnel_DoesNotReplayMutationAfterUncertainDisconnect(t *testing.T) {
+	fixture := newTunnelFixture(t, fixtureOptions{
+		clientURI:      testPeerURI,
+		clientPurposes: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	})
+	firstPeer := newScriptedPeer(fixture.client, peerOptions{disconnectAfterOpen: true})
+	secondPeer := newScriptedPeer(fixture.client, peerOptions{disconnectAfterOpen: true})
+	firstPeer.start(t)
+	secondPeer.start(t)
+	waitSignal(t, firstPeer.pongSeen, "first peer Pong")
+	waitSignal(t, secondPeer.pongSeen, "second peer Pong")
+
+	ctx, cancel := context.WithTimeout(context.Background(), integrationWait)
+	defer cancel()
+	_, err := fixture.server.Registry().Invoke(ctx, tunnel.Call{
+		Route:          contractv1.RouteId_ROUTE_ID_AUTH_LOGIN,
+		Payload:        []byte("mutating request with uncertain result"),
+		IdempotencyKey: []byte("mutation-MM-30-0001"),
+	})
+	if !errors.Is(err, tunnel.ErrTunnelClosed) {
+		t.Fatalf("Invoke() error = %v, want ErrTunnelClosed", err)
+	}
+
+	if opens := firstPeer.openCount.Load() + secondPeer.openCount.Load(); opens != 1 {
+		t.Fatalf("peers observed %d Open frames, want exactly one", opens)
+	}
+}
+
 func TestReverseTunnel_CallerCancellationPropagatesCancel(t *testing.T) {
 	fixture := newTunnelFixture(t, fixtureOptions{
 		clientURI:      testPeerURI,
@@ -419,7 +448,13 @@ func newTunnelFixture(t *testing.T, options fixtureOptions) *tunnelFixture {
 		logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
 	config := tunnel.Config{
-		Peer: tunnel.PeerPolicy{AllowedURIs: []string{testPeerURI}},
+		InstanceID: [16]byte{0x55},
+		Peer: tunnel.PeerPolicy{
+			AllowedURIs: []string{testPeerURI},
+			DataCenterByURI: map[string]string{
+				testPeerURI: "dc-a",
+			},
+		},
 		Limits: &contractv1.Limits{
 			MaxFrameBytes:         4096,
 			MaxDataBytes:          512,
@@ -452,6 +487,7 @@ func newTunnelFixture(t *testing.T, options fixtureOptions) *tunnelFixture {
 		HandshakeTimeout:       500 * time.Millisecond,
 		PingInterval:           time.Second,
 		PongTimeout:            250 * time.Millisecond,
+		FailbackWarmup:         30 * time.Second,
 		Logger:                 logger,
 		MeterProvider:          options.meterProvider,
 		TracerProvider:         options.tracerProvider,
@@ -497,9 +533,10 @@ func newTunnelFixture(t *testing.T, options fixtureOptions) *tunnelFixture {
 }
 
 type peerOptions struct {
-	response      *authv1.LoginResponse
-	requestCredit uint32
-	resultCode    contractv1.ResultCode
+	response            *authv1.LoginResponse
+	requestCredit       uint32
+	resultCode          contractv1.ResultCode
+	disconnectAfterOpen bool
 }
 
 type scriptedPeer struct {
@@ -616,6 +653,10 @@ func (p *scriptedPeer) run() {
 			if payload.Open.GetRouteId() != contractv1.RouteId_ROUTE_ID_AUTH_LOGIN ||
 				!payload.Open.GetDeadline().IsValid() {
 				p.report(errors.New("Open violated fixed route or deadline policy"))
+				return
+			}
+			if p.option.disconnectAfterOpen {
+				p.cancel()
 				return
 			}
 			key := string(frame.GetHeader().GetRequestId())
@@ -933,6 +974,7 @@ func assertSafeSpans(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 		t.Fatal("no spans were exported")
 	}
 	allowedKeys := map[attribute.Key]struct{}{
+		"tunnel.data_center":   {},
 		"tunnel.route":         {},
 		"tunnel.traffic_class": {},
 		"tunnel.result":        {},
@@ -954,6 +996,7 @@ func assertSafeMetrics(t *testing.T, reader *sdkmetric.ManualReader) {
 		t.Fatalf("Collect() error = %v", err)
 	}
 	metricCount := 0
+	sawSelection := false
 	for _, scope := range metrics.ScopeMetrics {
 		for _, metric := range scope.Metrics {
 			metricCount++
@@ -964,11 +1007,25 @@ func assertSafeMetrics(t *testing.T, reader *sdkmetric.ManualReader) {
 					}
 					assertSafeAttributeValue(t, item.Value)
 				}
+				if metric.Name == "marketmesh.gateway_in.tunnel.selections" {
+					dataCenter, hasDataCenter := set.Value("tunnel.data_center")
+					route, hasRoute := set.Value("tunnel.route")
+					status, hasStatus := set.Value("tunnel.selection.status")
+					if hasDataCenter && hasRoute && hasStatus &&
+						dataCenter.AsString() == "dc-a" &&
+						route.AsString() == "auth_login" &&
+						status.AsString() == "selected" {
+						sawSelection = true
+					}
+				}
 			}
 		}
 	}
 	if metricCount == 0 {
 		t.Fatal("no metrics were exported")
+	}
+	if !sawSelection {
+		t.Fatal("selection metric is missing bounded dc/route/status attributes")
 	}
 }
 

@@ -23,14 +23,42 @@ import (
 type Registry struct {
 	settings *settings
 
+	selectionMu     sync.Mutex
 	mu              sync.Mutex
 	sessions        map[[16]byte]*session
 	instanceTunnels map[[16]byte]int
 	instanceActive  map[[16]byte]int
+	selection       map[selectionKey]*selectionState
 	handshakes      int
-	next            uint64
 	isDraining      bool
 }
+
+type selectionKey struct {
+	route      contractv1.RouteId
+	dataCenter string
+}
+
+type selectionState struct {
+	readySince    time.Time
+	currentWeight int64
+	nextSession   int
+	isReady       bool
+}
+
+type requestSelection struct {
+	route        contractv1.RouteId
+	policy       RoutePolicy
+	deadline     time.Time
+	requestBytes int
+}
+
+type reservationResult uint8
+
+const (
+	reservationAccepted reservationResult = iota
+	reservationDraining
+	reservationSaturated
+)
 
 func newRegistry(settings *settings) *Registry {
 	return &Registry{
@@ -38,6 +66,7 @@ func newRegistry(settings *settings) *Registry {
 		sessions:        map[[16]byte]*session{},
 		instanceTunnels: map[[16]byte]int{},
 		instanceActive:  map[[16]byte]int{},
+		selection:       map[selectionKey]*selectionState{},
 	}
 }
 
@@ -102,7 +131,8 @@ func (r *Registry) Invoke(ctx context.Context, call Call) (response Response, re
 		)
 	}
 
-	started := time.Now()
+	started := r.settings.now()
+	selectedDataCenter := "none"
 	ctx, span := r.settings.instrumentation.tracer.Start(
 		ctx,
 		"gateway_in.tunnel.invoke",
@@ -114,12 +144,18 @@ func (r *Registry) Invoke(ctx context.Context, call Call) (response Response, re
 	defer span.End()
 	defer func() {
 		telemetryCtx := context.WithoutCancel(ctx)
+		requestAttributes := requestMetric{
+			dataCenter: selectedDataCenter,
+			route:      call.Route,
+			class:      policy.TrafficClass,
+		}
 		r.settings.instrumentation.finishRequest(
 			telemetryCtx,
-			call.Route,
-			policy.TrafficClass,
-			started,
-			resultErr,
+			requestResultMetric{
+				requestMetric: requestAttributes,
+				started:       started,
+				err:           resultErr,
+			},
 		)
 		result := "ok"
 		if resultErr != nil {
@@ -130,6 +166,7 @@ func (r *Registry) Invoke(ctx context.Context, call Call) (response Response, re
 		r.settings.log.DebugContext(
 			telemetryCtx,
 			"логический запрос туннеля завершён",
+			slog.String("data_center", selectedDataCenter),
 			slog.String("route", routeLabel(call.Route)),
 			slog.String("traffic_class", classLabel(policy.TrafficClass)),
 			slog.String("result", result),
@@ -148,13 +185,22 @@ func (r *Registry) Invoke(ctx context.Context, call Call) (response Response, re
 		return Response{}, err
 	}
 
-	request, err := r.selectRequest(callCtx, call.Route, policy, deadline, len(call.Payload))
+	request, err := r.selectAndOpenRequest(callCtx, call, requestSelection{
+		route:        call.Route,
+		policy:       policy,
+		deadline:     deadline,
+		requestBytes: len(call.Payload),
+	})
 	if err != nil {
 		return Response{}, err
 	}
+	selectedDataCenter = request.session.dataCenter
+	span.SetAttributes(attribute.String("tunnel.data_center", selectedDataCenter))
 	defer request.session.finishRequest(request)
 
-	if err := request.sendOpen(callCtx, call); err != nil {
+	// Open is already queued. Any failure from this point is returned without
+	// replay so an uncertain mutation cannot run on a second tunnel.
+	if err := request.sendInitialResponseCredit(callCtx); err != nil {
 		request.complete(Response{}, err)
 		return Response{}, err
 	}
@@ -183,7 +229,7 @@ func (r *Registry) Drain(
 	if ctx == nil {
 		return errors.New("tunnel: context must not be nil")
 	}
-	if !deadline.After(time.Now()) {
+	if !deadline.After(r.settings.now()) {
 		return context.DeadlineExceeded
 	}
 	if reason == contractv1.DrainReason_DRAIN_REASON_UNSPECIFIED {
@@ -279,66 +325,335 @@ func (r *Registry) unregister(activeSession *session) {
 	if r.instanceActive[activeSession.instanceID] == 0 {
 		delete(r.instanceActive, activeSession.instanceID)
 	}
+	r.resetDataCenterIfUnavailableLocked(activeSession.dataCenter)
 }
 
-func (r *Registry) selectRequest(
-	ctx context.Context,
-	route contractv1.RouteId,
-	policy RoutePolicy,
-	deadline time.Time,
-	requestBytes int,
-) (*logicalRequest, error) {
+func (r *Registry) markSessionReady(activeSession *session) {
+	now := r.settings.now()
 	r.mu.Lock()
-	if r.isDraining {
-		r.mu.Unlock()
-		return nil, ErrDraining
-	}
-	ordered := make([]*session, 0, len(r.sessions))
-	for _, activeSession := range r.sessions {
-		if activeSession.accepts(route) {
-			ordered = append(ordered, activeSession)
+	defer r.mu.Unlock()
+	for route := range activeSession.routes {
+		key := selectionKey{route: route, dataCenter: activeSession.dataCenter}
+		state := r.selection[key]
+		if state == nil {
+			state = &selectionState{}
+			r.selection[key] = state
 		}
+		hadReadyPeer := false
+		for _, peerSession := range r.sessions {
+			if peerSession != activeSession &&
+				peerSession.dataCenter == activeSession.dataCenter &&
+				peerSession.isReadyForRoute(route) {
+				hadReadyPeer = true
+				break
+			}
+		}
+		if !state.isReady || !hadReadyPeer {
+			state.readySince = now
+			state.currentWeight = 0
+		}
+		state.isReady = true
 	}
-	slices.SortFunc(ordered, func(left *session, right *session) int {
-		return bytes.Compare(left.id[:], right.id[:])
-	})
-	start := 0
-	if len(ordered) > 0 {
-		start = int(r.next % uint64(len(ordered)))
-		r.next++
-	}
-	r.mu.Unlock()
+}
 
-	var selectionErr error
-	for offset := range len(ordered) {
-		activeSession := ordered[(start+offset)%len(ordered)]
-		if !r.reserveInstance(activeSession.instanceID) {
+func (r *Registry) resetDataCenterIfUnavailableLocked(dataCenter string) {
+	for key, state := range r.selection {
+		if key.dataCenter != dataCenter {
 			continue
 		}
-		request, err := activeSession.startRequest(route, policy, deadline, requestBytes)
-		if err == nil {
-			return request, nil
+		isReady := false
+		for _, activeSession := range r.sessions {
+			if activeSession.dataCenter == dataCenter && activeSession.isReadyForRoute(key.route) {
+				isReady = true
+				break
+			}
 		}
-		selectionErr = errors.Join(selectionErr, err)
-		r.releaseInstance(activeSession.instanceID)
+		if !isReady {
+			state.isReady = false
+			state.currentWeight = 0
+		}
+	}
+}
+
+func (r *Registry) selectAndOpenRequest(
+	ctx context.Context,
+	call Call,
+	selection requestSelection,
+) (*logicalRequest, error) {
+	r.selectionMu.Lock()
+	defer r.selectionMu.Unlock()
+
+	ordered, isDraining := r.selectionOrder(selection.route)
+	if isDraining {
+		r.settings.instrumentation.selection(ctx, "none", selection.route, "draining")
+		return nil, ErrDraining
+	}
+
+	var selectionErr error
+	for _, activeSession := range ordered {
+		switch r.reserveInstance(activeSession.instanceID) {
+		case reservationDraining:
+			r.settings.instrumentation.selection(ctx, "none", selection.route, "draining")
+			return nil, ErrDraining
+		case reservationSaturated:
+			selectionErr = errors.Join(selectionErr, ErrQueueFull)
+			continue
+		}
+		request, err := activeSession.startRequest(
+			selection.route,
+			selection.policy,
+			selection.deadline,
+			selection.requestBytes,
+		)
+		if err != nil {
+			selectionErr = errors.Join(selectionErr, err)
+			r.releaseInstance(activeSession.instanceID)
+			continue
+		}
+		if err := request.enqueueOpen(ctx, call); err != nil {
+			// enqueueOpen returning an error proves that Open was not accepted by
+			// the bounded queue, so trying another ready tunnel cannot replay it.
+			request.complete(Response{}, err)
+			activeSession.rollbackRequestBeforeOpen(request)
+			selectionErr = errors.Join(selectionErr, err)
+			if ctx.Err() != nil {
+				return nil, selectionErr
+			}
+			continue
+		}
+
+		r.commitSessionSelection(selection.route, activeSession)
+		r.settings.instrumentation.selection(
+			ctx,
+			activeSession.dataCenter,
+			selection.route,
+			"selected",
+		)
+		return request, nil
 	}
 
 	if selectionErr != nil {
+		status := "unavailable"
+		if errors.Is(selectionErr, ErrQueueFull) {
+			status = "saturated"
+		}
+		r.settings.instrumentation.selection(ctx, "none", selection.route, status)
 		return nil, selectionErr
 	}
 	r.settings.instrumentation.refusal(ctx, "no_ready_tunnel")
+	r.settings.instrumentation.selection(ctx, "none", selection.route, "no_ready")
 	return nil, ErrNoTunnel
 }
 
-func (r *Registry) reserveInstance(instanceID [16]byte) bool {
+func (r *Registry) selectionOrder(route contractv1.RouteId) ([]*session, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.isDraining || r.instanceActive[instanceID] >= r.settings.maxInFlightPerInstance {
-		return false
+	if r.isDraining {
+		return []*session{}, true
+	}
+
+	byDataCenter := r.eligibleSessionsByDataCenterLocked(route)
+	r.resetUnavailableDataCentersLocked(route, byDataCenter)
+	if len(byDataCenter) == 0 {
+		return []*session{}, false
+	}
+
+	dataCenters := sortedDataCenters(byDataCenter)
+	selectedDataCenter := r.selectDataCenterLocked(route, dataCenters, r.settings.now())
+	r.orderDataCentersLocked(route, dataCenters, selectedDataCenter)
+
+	return r.orderSessionsLocked(route, byDataCenter, dataCenters), false
+}
+
+func (r *Registry) eligibleSessionsByDataCenterLocked(
+	route contractv1.RouteId,
+) map[string][]*session {
+	byDataCenter := map[string][]*session{}
+	for _, activeSession := range r.sessions {
+		if activeSession.accepts(route) {
+			byDataCenter[activeSession.dataCenter] = append(
+				byDataCenter[activeSession.dataCenter],
+				activeSession,
+			)
+		}
+	}
+
+	return byDataCenter
+}
+
+func (r *Registry) resetUnavailableDataCentersLocked(
+	route contractv1.RouteId,
+	byDataCenter map[string][]*session,
+) {
+	for key, state := range r.selection {
+		if key.route != route {
+			continue
+		}
+		if _, ready := byDataCenter[key.dataCenter]; ready {
+			continue
+		}
+		state.isReady = false
+		state.currentWeight = 0
+	}
+}
+
+func sortedDataCenters(byDataCenter map[string][]*session) []string {
+	dataCenters := make([]string, 0, len(byDataCenter))
+	for dataCenter, sessions := range byDataCenter {
+		slices.SortFunc(sessions, func(left *session, right *session) int {
+			return bytes.Compare(left.id[:], right.id[:])
+		})
+		byDataCenter[dataCenter] = sessions
+		dataCenters = append(dataCenters, dataCenter)
+	}
+	slices.Sort(dataCenters)
+
+	return dataCenters
+}
+
+func (r *Registry) selectDataCenterLocked(
+	route contractv1.RouteId,
+	dataCenters []string,
+	now time.Time,
+) string {
+	totalWeight := int64(0)
+	selectedDataCenter := dataCenters[0]
+	selectedWeight := int64(0)
+	for index, dataCenter := range dataCenters {
+		key := selectionKey{route: route, dataCenter: dataCenter}
+		state := r.selection[key]
+		if state == nil {
+			state = &selectionState{}
+			r.selection[key] = state
+		}
+		if !state.isReady {
+			state.isReady = true
+			state.readySince = now
+			state.currentWeight = 0
+		}
+		weight := failbackWeight(now.Sub(state.readySince), r.settings.failbackWarmup)
+		state.currentWeight += weight
+		totalWeight += weight
+		if index == 0 || state.currentWeight > selectedWeight {
+			selectedDataCenter = dataCenter
+			selectedWeight = state.currentWeight
+		}
+	}
+	selectedState := r.selection[selectionKey{route: route, dataCenter: selectedDataCenter}]
+	selectedState.currentWeight -= totalWeight
+	if len(dataCenters) == 1 {
+		selectedState.currentWeight = 0
+	}
+
+	return selectedDataCenter
+}
+
+func (r *Registry) orderDataCentersLocked(
+	route contractv1.RouteId,
+	dataCenters []string,
+	selectedDataCenter string,
+) {
+	slices.SortStableFunc(dataCenters, func(left string, right string) int {
+		if left == right {
+			return 0
+		}
+		if left == selectedDataCenter {
+			return -1
+		}
+		if right == selectedDataCenter {
+			return 1
+		}
+		leftWeight := r.selection[selectionKey{route: route, dataCenter: left}].currentWeight
+		rightWeight := r.selection[selectionKey{route: route, dataCenter: right}].currentWeight
+		switch {
+		case leftWeight > rightWeight:
+			return -1
+		case leftWeight < rightWeight:
+			return 1
+		case left < right:
+			return -1
+		case left > right:
+			return 1
+		default:
+			return 0
+		}
+	})
+}
+
+func (r *Registry) orderSessionsLocked(
+	route contractv1.RouteId,
+	byDataCenter map[string][]*session,
+	dataCenters []string,
+) []*session {
+	ordered := make([]*session, 0, len(r.sessions))
+	for _, dataCenter := range dataCenters {
+		key := selectionKey{route: route, dataCenter: dataCenter}
+		state := r.selection[key]
+		sessions := byDataCenter[dataCenter]
+		start := state.nextSession % len(sessions)
+		for offset := range len(sessions) {
+			ordered = append(ordered, sessions[(start+offset)%len(sessions)])
+		}
+	}
+
+	return ordered
+}
+
+func (r *Registry) commitSessionSelection(
+	route contractv1.RouteId,
+	selectedSession *session,
+) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	state := r.selection[selectionKey{route: route, dataCenter: selectedSession.dataCenter}]
+	if state == nil {
+		return
+	}
+	sessions := make([]*session, 0, len(r.sessions))
+	for _, activeSession := range r.sessions {
+		if activeSession.dataCenter == selectedSession.dataCenter &&
+			activeSession.isReadyForRoute(route) {
+			sessions = append(sessions, activeSession)
+		}
+	}
+	slices.SortFunc(sessions, func(left *session, right *session) int {
+		return bytes.Compare(left.id[:], right.id[:])
+	})
+	for index, activeSession := range sessions {
+		if activeSession == selectedSession {
+			state.nextSession = index + 1
+			return
+		}
+	}
+}
+
+func failbackWeight(elapsed time.Duration, warmup time.Duration) int64 {
+	const (
+		minimumWeight int64 = 100
+		fullWeight    int64 = 1000
+	)
+	if warmup <= 0 || elapsed >= warmup {
+		return fullWeight
+	}
+	if elapsed <= 0 {
+		return minimumWeight
+	}
+
+	return minimumWeight + int64(elapsed)*(fullWeight-minimumWeight)/int64(warmup)
+}
+
+func (r *Registry) reserveInstance(instanceID [16]byte) reservationResult {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.isDraining {
+		return reservationDraining
+	}
+	if r.instanceActive[instanceID] >= r.settings.maxInFlightPerInstance {
+		return reservationSaturated
 	}
 	r.instanceActive[instanceID]++
 
-	return true
+	return reservationAccepted
 }
 
 func (r *Registry) releaseInstance(instanceID [16]byte) {

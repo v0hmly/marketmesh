@@ -31,12 +31,23 @@ type sessionFailure struct {
 	reason     string
 }
 
+type sessionParams struct {
+	settings   *settings
+	registry   *Registry
+	stream     tunnelStream
+	id         [16]byte
+	instanceID [16]byte
+	dataCenter string
+	negotiated negotiation
+}
+
 type session struct {
 	settings     *settings
 	registry     *Registry
 	stream       tunnelStream
 	id           [16]byte
 	instanceID   [16]byte
+	dataCenter   string
 	limits       *contractv1.Limits
 	routes       map[contractv1.RouteId]struct{}
 	classes      map[contractv1.TrafficClass]struct{}
@@ -55,6 +66,8 @@ type session struct {
 	isReady           bool
 	isDraining        bool
 	isClosed          bool
+	failureReason     string
+	lastActivity      time.Time
 	requests          map[[16]byte]*logicalRequest
 	routeActive       map[contractv1.RouteId]int
 	tombstones        map[[16]byte]struct{}
@@ -67,34 +80,28 @@ type session struct {
 	pongReceived      chan struct{}
 }
 
-func newSession(
-	settings *settings,
-	registry *Registry,
-	stream tunnelStream,
-	id [16]byte,
-	instanceID [16]byte,
-	negotiated negotiation,
-) *session {
-	ctx, cancel := context.WithCancel(stream.Context())
+func newSession(params sessionParams) *session {
+	ctx, cancel := context.WithCancel(params.stream.Context())
 	return &session{
-		settings:       settings,
-		registry:       registry,
-		stream:         stream,
-		id:             id,
-		instanceID:     instanceID,
-		limits:         negotiated.limits,
-		routes:         negotiated.routes,
-		classes:        negotiated.classes,
-		capabilities:   negotiated.capabilities,
+		settings:       params.settings,
+		registry:       params.registry,
+		stream:         params.stream,
+		id:             params.id,
+		instanceID:     params.instanceID,
+		dataCenter:     params.dataCenter,
+		limits:         params.negotiated.limits,
+		routes:         params.negotiated.routes,
+		classes:        params.negotiated.classes,
+		capabilities:   params.negotiated.capabilities,
 		ctx:            ctx,
 		cancel:         cancel,
-		outbound:       newOutboundQueue(settings.queues, settings.instrumentation),
+		outbound:       newOutboundQueue(params.settings.queues, params.settings.instrumentation),
 		done:           make(chan struct{}),
 		terminal:       make(chan sessionFailure, 1),
 		requests:       map[[16]byte]*logicalRequest{},
 		routeActive:    map[contractv1.RouteId]int{},
 		tombstones:     map[[16]byte]struct{}{},
-		tombstoneOrder: make([][16]byte, 0, negotiated.limits.GetMaxInFlightRequests()),
+		tombstoneOrder: make([][16]byte, 0, params.negotiated.limits.GetMaxInFlightRequests()),
 		drainSent:      make(chan struct{}, 1),
 		pongReceived:   make(chan struct{}, 1),
 	}
@@ -103,11 +110,14 @@ func newSession(
 func (s *session) run() error {
 	s.mu.Lock()
 	s.isReady = true
+	s.lastActivity = s.settings.now()
 	s.mu.Unlock()
-	s.settings.instrumentation.tunnelDelta(s.ctx, 1)
+	s.registry.markSessionReady(s)
+	s.settings.instrumentation.tunnelDelta(s.ctx, s.dataCenter, 1)
 	s.settings.log.InfoContext(
 		s.ctx,
 		"обратный туннель принят",
+		slog.String("data_center", s.dataCenter),
 		slog.Int("routes", len(s.routes)),
 	)
 
@@ -119,12 +129,17 @@ func (s *session) run() error {
 	s.cancel()
 	s.registry.unregister(s)
 	s.outbound.discard(context.WithoutCancel(s.ctx))
-	s.settings.instrumentation.tunnelDelta(context.WithoutCancel(s.ctx), -1)
-	s.settings.instrumentation.failure(context.WithoutCancel(s.ctx), failure.reason)
+	s.settings.instrumentation.tunnelDelta(context.WithoutCancel(s.ctx), s.dataCenter, -1)
+	s.settings.instrumentation.failure(
+		context.WithoutCancel(s.ctx),
+		s.dataCenter,
+		failure.reason,
+	)
 	s.doneOnce.Do(func() { close(s.done) })
 	s.settings.log.InfoContext(
 		context.WithoutCancel(s.ctx),
 		"обратный туннель завершён",
+		slog.String("data_center", s.dataCenter),
 		slog.String("reason", failure.reason),
 	)
 
@@ -139,13 +154,37 @@ func (s *session) abortBeforeRun() {
 
 func (s *session) accepts(route contractv1.RouteId) bool {
 	s.mu.Lock()
+	if !s.isReady || s.isDraining || s.isClosed {
+		s.mu.Unlock()
+		return false
+	}
+	_, supported := s.routes[route]
+	isStale := s.settings.now().Sub(s.lastActivity) >= s.settings.staleAfter
+	if isStale {
+		s.isReady = false
+	}
+	s.mu.Unlock()
+	if isStale {
+		s.fail(sessionFailure{
+			requestErr: ErrTunnelClosed,
+			rpcErr:     status.Error(codes.Unavailable, "tunnel unavailable"),
+			reason:     "stale",
+		})
+		return false
+	}
+
+	return supported
+}
+
+func (s *session) isReadyForRoute(route contractv1.RouteId) bool {
+	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.isReady || s.isDraining || s.isClosed {
 		return false
 	}
 	_, supported := s.routes[route]
 
-	return supported
+	return supported && s.settings.now().Sub(s.lastActivity) < s.settings.staleAfter
 }
 
 func (s *session) startRequest(
@@ -204,7 +243,15 @@ func (s *session) startRequest(
 		s.requests[requestID] = request
 		s.routeActive[route]++
 		s.mu.Unlock()
-		s.settings.instrumentation.requestDelta(s.ctx, policy.TrafficClass, 1)
+		s.settings.instrumentation.requestDelta(
+			s.ctx,
+			requestMetric{
+				dataCenter: s.dataCenter,
+				route:      route,
+				class:      policy.TrafficClass,
+			},
+			1,
+		)
 		return request, nil
 	}
 
@@ -212,6 +259,14 @@ func (s *session) startRequest(
 }
 
 func (s *session) finishRequest(request *logicalRequest) {
+	s.removeRequest(request, true)
+}
+
+func (s *session) rollbackRequestBeforeOpen(request *logicalRequest) {
+	s.removeRequest(request, false)
+}
+
+func (s *session) removeRequest(request *logicalRequest, addTombstone bool) {
 	s.mu.Lock()
 	current, exists := s.requests[request.id]
 	if !exists || current != request {
@@ -223,7 +278,9 @@ func (s *session) finishRequest(request *logicalRequest) {
 	if s.routeActive[request.route] == 0 {
 		delete(s.routeActive, request.route)
 	}
-	s.addTombstoneLocked(request.id)
+	if addTombstone {
+		s.addTombstoneLocked(request.id)
+	}
 	shouldFinishDrain := s.isDraining && len(s.requests) == 0
 	isLocalDrain := s.localDrain
 	s.mu.Unlock()
@@ -231,7 +288,11 @@ func (s *session) finishRequest(request *logicalRequest) {
 	s.registry.releaseInstance(s.instanceID)
 	s.settings.instrumentation.requestDelta(
 		context.WithoutCancel(s.ctx),
-		request.policy.TrafficClass,
+		requestMetric{
+			dataCenter: s.dataCenter,
+			route:      request.route,
+			class:      request.policy.TrafficClass,
+		},
 		-1,
 	)
 	if shouldFinishDrain {
@@ -325,6 +386,9 @@ func (s *session) readLoop() {
 			})
 			return
 		}
+		s.mu.Lock()
+		s.lastActivity = s.settings.now()
+		s.mu.Unlock()
 		s.settings.instrumentation.recordFrame(
 			s.ctx,
 			"gateway_out_to_gateway_in",
@@ -625,6 +689,7 @@ func (s *session) fail(failure sessionFailure) {
 		s.mu.Lock()
 		s.isClosed = true
 		s.isReady = false
+		s.failureReason = failure.reason
 		if s.drainTimer != nil {
 			s.drainTimer.Stop()
 		}

@@ -26,7 +26,20 @@ type instrumentation struct {
 	frames         metric.Int64Counter
 	policyRefusals metric.Int64Counter
 	tunnelFailures metric.Int64Counter
+	selections     metric.Int64Counter
 	requestLatency metric.Float64Histogram
+}
+
+type requestMetric struct {
+	dataCenter string
+	route      contractv1.RouteId
+	class      contractv1.TrafficClass
+}
+
+type requestResultMetric struct {
+	requestMetric
+	started time.Time
+	err     error
 }
 
 func newInstrumentation(
@@ -51,7 +64,7 @@ func newInstrumentation(
 	}
 	activeRequests, err := meter.Int64UpDownCounter(
 		"marketmesh.gateway_in.tunnel.requests.active",
-		metric.WithDescription("Current logical requests by bounded traffic class."),
+		metric.WithDescription("Current logical requests by bounded data center, route, and class."),
 		metric.WithUnit("{request}"),
 	)
 	if err != nil {
@@ -89,6 +102,14 @@ func newInstrumentation(
 	if err != nil {
 		return nil, fmt.Errorf("tunnel: create failure metric: %w", err)
 	}
+	selections, err := meter.Int64Counter(
+		"marketmesh.gateway_in.tunnel.selections",
+		metric.WithDescription("Total route selections by bounded data center and status."),
+		metric.WithUnit("{selection}"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("tunnel: create selection metric: %w", err)
+	}
 	requestLatency, err := meter.Float64Histogram(
 		"marketmesh.gateway_in.tunnel.request.duration",
 		metric.WithDescription("Logical request duration through the reverse tunnel."),
@@ -106,6 +127,7 @@ func newInstrumentation(
 		frames:         frames,
 		policyRefusals: policyRefusals,
 		tunnelFailures: tunnelFailures,
+		selections:     selections,
 		requestLatency: requestLatency,
 	}, nil
 }
@@ -118,19 +140,27 @@ func isNilProvider(provider any) bool {
 	return value.Kind() == reflect.Pointer && value.IsNil()
 }
 
-func (i *instrumentation) tunnelDelta(ctx context.Context, delta int64) {
-	i.activeTunnels.Add(ctx, delta)
+func (i *instrumentation) tunnelDelta(ctx context.Context, dataCenter string, delta int64) {
+	i.activeTunnels.Add(
+		ctx,
+		delta,
+		metric.WithAttributes(attribute.String("tunnel.data_center", dataCenter)),
+	)
 }
 
 func (i *instrumentation) requestDelta(
 	ctx context.Context,
-	class contractv1.TrafficClass,
+	request requestMetric,
 	delta int64,
 ) {
 	i.activeRequests.Add(
 		ctx,
 		delta,
-		metric.WithAttributes(attribute.String("tunnel.traffic_class", classLabel(class))),
+		metric.WithAttributes(
+			attribute.String("tunnel.data_center", request.dataCenter),
+			attribute.String("tunnel.route", routeLabel(request.route)),
+			attribute.String("tunnel.traffic_class", classLabel(request.class)),
+		),
 	)
 }
 
@@ -171,34 +201,52 @@ func (i *instrumentation) refusal(ctx context.Context, reason string) {
 	)
 }
 
-func (i *instrumentation) failure(ctx context.Context, reason string) {
+func (i *instrumentation) failure(ctx context.Context, dataCenter string, reason string) {
 	i.tunnelFailures.Add(
 		ctx,
 		1,
-		metric.WithAttributes(attribute.String("tunnel.failure.reason", reason)),
+		metric.WithAttributes(
+			attribute.String("tunnel.data_center", dataCenter),
+			attribute.String("tunnel.failure.reason", reason),
+		),
+	)
+}
+
+func (i *instrumentation) selection(
+	ctx context.Context,
+	dataCenter string,
+	route contractv1.RouteId,
+	status string,
+) {
+	i.selections.Add(
+		ctx,
+		1,
+		metric.WithAttributes(
+			attribute.String("tunnel.data_center", dataCenter),
+			attribute.String("tunnel.route", routeLabel(route)),
+			attribute.String("tunnel.selection.status", status),
+		),
 	)
 }
 
 func (i *instrumentation) finishRequest(
 	ctx context.Context,
-	route contractv1.RouteId,
-	class contractv1.TrafficClass,
-	started time.Time,
-	err error,
+	request requestResultMetric,
 ) {
 	result := "ok"
 	var resultErr *ResultError
 	switch {
-	case err == nil:
-	case errors.As(err, &resultErr):
+	case request.err == nil:
+	case errors.As(request.err, &resultErr):
 		result = resultLabel(resultErr.Code())
-	case errors.Is(err, context.Canceled):
+	case errors.Is(request.err, context.Canceled):
 		result = "canceled"
-	case errors.Is(err, context.DeadlineExceeded):
+	case errors.Is(request.err, context.DeadlineExceeded):
 		result = "deadline_exceeded"
-	case errors.Is(err, ErrQueueFull):
+	case errors.Is(request.err, ErrQueueFull):
 		result = "resource_exhausted"
-	case errors.Is(err, ErrNoTunnel), errors.Is(err, ErrTunnelClosed):
+	case errors.Is(request.err, ErrNoTunnel), errors.Is(request.err, ErrTunnelClosed),
+		errors.Is(request.err, ErrDraining):
 		result = "unavailable"
 	default:
 		result = "internal"
@@ -206,10 +254,11 @@ func (i *instrumentation) finishRequest(
 
 	i.requestLatency.Record(
 		ctx,
-		time.Since(started).Seconds(),
+		time.Since(request.started).Seconds(),
 		metric.WithAttributes(
-			attribute.String("tunnel.route", routeLabel(route)),
-			attribute.String("tunnel.traffic_class", classLabel(class)),
+			attribute.String("tunnel.data_center", request.dataCenter),
+			attribute.String("tunnel.route", routeLabel(request.route)),
+			attribute.String("tunnel.traffic_class", classLabel(request.class)),
 			attribute.String("tunnel.result", result),
 		),
 	)

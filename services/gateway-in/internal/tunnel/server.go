@@ -50,7 +50,8 @@ func (s *Server) Connect(
 	if s == nil || s.settings == nil || s.registry == nil {
 		return status.Error(codes.Internal, "internal error")
 	}
-	if err := s.settings.peer.authorize(stream.Context()); err != nil {
+	dataCenter, err := s.settings.peer.authorize(stream.Context())
+	if err != nil {
 		s.settings.instrumentation.refusal(stream.Context(), "peer_unauthorized")
 		return status.Error(codes.PermissionDenied, "peer is not authorized")
 	}
@@ -92,14 +93,15 @@ func (s *Server) Connect(
 	instanceID := [16]byte{}
 	copy(instanceID[:], helloPayload.Hello.GetInstanceId())
 
-	activeSession := newSession(
-		s.settings,
-		s.registry,
-		stream,
-		tunnelID,
-		instanceID,
-		negotiated,
-	)
+	activeSession := newSession(sessionParams{
+		settings:   s.settings,
+		registry:   s.registry,
+		stream:     stream,
+		id:         tunnelID,
+		instanceID: instanceID,
+		dataCenter: dataCenter,
+		negotiated: negotiated,
+	})
 	err = s.registry.registerFromHandshake(activeSession)
 	handshakeHeld = false
 	if err != nil {

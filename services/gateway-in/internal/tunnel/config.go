@@ -16,6 +16,15 @@ import (
 
 const protocolVersion uint32 = 1
 
+const (
+	defaultDataCenter     = "local"
+	defaultFailbackWarmup = 30 * time.Second
+	maxFailbackWarmup     = 10 * time.Minute
+	maxStaleAfter         = 5 * time.Minute
+	maxPeerIdentities     = 256
+	maxDataCenters        = 16
+)
+
 // QueueLimits bounds every independent outbound traffic lane.
 type QueueLimits struct {
 	TunnelControl int
@@ -35,8 +44,11 @@ type RoutePolicy struct {
 
 // PeerPolicy identifies the only gateway-out workloads allowed to open a
 // tunnel. URIs are exact certificate URI SAN values; CommonName is ignored.
+// DataCenterByURI assigns each allowed identity to one bounded telemetry and
+// routing label. An empty map assigns every allowed URI to "local".
 type PeerPolicy struct {
-	AllowedURIs []string
+	AllowedURIs     []string
+	DataCenterByURI map[string]string
 }
 
 // Config contains all resource and authorization limits for a tunnel server.
@@ -54,9 +66,12 @@ type Config struct {
 	HandshakeTimeout       time.Duration
 	PingInterval           time.Duration
 	PongTimeout            time.Duration
-	Logger                 *slog.Logger
-	MeterProvider          metric.MeterProvider
-	TracerProvider         trace.TracerProvider
+	// FailbackWarmup bounds gradual traffic return to a recovered data center.
+	// Zero uses a safe 30-second default.
+	FailbackWarmup time.Duration
+	Logger         *slog.Logger
+	MeterProvider  metric.MeterProvider
+	TracerProvider trace.TracerProvider
 }
 
 type settings struct {
@@ -73,6 +88,9 @@ type settings struct {
 	handshakeTimeout       time.Duration
 	pingInterval           time.Duration
 	pongTimeout            time.Duration
+	failbackWarmup         time.Duration
+	staleAfter             time.Duration
+	now                    func() time.Time
 	log                    *slog.Logger
 	instrumentation        *instrumentation
 }
@@ -103,6 +121,17 @@ func newSettings(config Config) (*settings, error) {
 	}
 	if config.PingInterval <= 0 || config.PongTimeout <= 0 || config.PongTimeout >= config.PingInterval {
 		return nil, errors.New("tunnel: ping and pong intervals are invalid")
+	}
+	staleAfter := config.PingInterval + config.PongTimeout
+	if staleAfter <= config.PingInterval || staleAfter > maxStaleAfter {
+		return nil, errors.New("tunnel: stale timeout is outside bounds")
+	}
+	failbackWarmup := config.FailbackWarmup
+	if failbackWarmup == 0 {
+		failbackWarmup = defaultFailbackWarmup
+	}
+	if failbackWarmup < 0 || failbackWarmup > maxFailbackWarmup {
+		return nil, errors.New("tunnel: failback warmup is outside bounds")
 	}
 	if err := validateQueueLimits(config.Queues); err != nil {
 		return nil, err
@@ -151,6 +180,9 @@ func newSettings(config Config) (*settings, error) {
 		handshakeTimeout:       config.HandshakeTimeout,
 		pingInterval:           config.PingInterval,
 		pongTimeout:            config.PongTimeout,
+		failbackWarmup:         failbackWarmup,
+		staleAfter:             staleAfter,
+		now:                    time.Now,
 		log:                    config.Logger,
 		instrumentation:        instrumentation,
 	}, nil
