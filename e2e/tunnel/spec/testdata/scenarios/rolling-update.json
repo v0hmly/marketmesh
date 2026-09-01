@@ -1,0 +1,37 @@
+{
+  "schema_version": "marketmesh.tunnel.slo.scenario/v1",
+  "id": "rolling-update",
+  "kind": "planned_rolling_update",
+  "warm_up": "10s",
+  "targets": [
+    {
+      "class": "read_idempotent",
+      "min_eligible": 100,
+      "max_error_rate_ppm": 0,
+      "max_downtime": "0s"
+    },
+    {
+      "class": "mutating",
+      "min_eligible": 100,
+      "max_error_rate_ppm": 0,
+      "max_downtime": "0s"
+    }
+  ],
+  "faults": [
+    {
+      "id": "rolling-gateway-in",
+      "target": "gateway_in",
+      "mode": "rolling_update"
+    },
+    {
+      "id": "rolling-gateway-out",
+      "target": "gateway_out",
+      "mode": "rolling_update"
+    },
+    {
+      "id": "rolling-internal-service",
+      "target": "internal_service",
+      "mode": "rolling_update"
+    }
+  ]
+}

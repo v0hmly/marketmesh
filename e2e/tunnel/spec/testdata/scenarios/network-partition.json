@@ -1,0 +1,18 @@
+{
+  "schema_version": "marketmesh.tunnel.slo.scenario/v1",
+  "id": "network-partition",
+  "kind": "emergency_outage",
+  "warm_up": "10s",
+  "targets": [
+    {"class": "read_idempotent", "min_eligible": 100, "max_error_rate_ppm": 100000, "max_downtime": "20s"},
+    {"class": "mutating", "min_eligible": 100, "max_error_rate_ppm": 100000, "max_downtime": "20s"}
+  ],
+  "faults": [
+    {
+      "id": "inter-dc-network",
+      "target": "network",
+      "mode": "network_partition",
+      "recovery": {"anchor": "fault_started", "max_duration": "20s", "success_streak": 5, "classes": ["read_idempotent", "mutating"]}
+    }
+  ]
+}
