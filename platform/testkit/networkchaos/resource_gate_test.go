@@ -55,6 +55,50 @@ func TestEvaluateResourcesPreservesEveryObservedViolation(t *testing.T) {
 	}
 }
 
+func TestEvaluateResourcesBoundsViolationDetails(t *testing.T) {
+	t.Parallel()
+
+	samples := make([]ResourceSample, 0, 100)
+	samples = append(samples, resourceSample(0, 100, 1_000, 1, 1, 1))
+	for sampleIndex := 1; sampleIndex < 100; sampleIndex++ {
+		samples = append(
+			samples,
+			resourceSample(
+				time.Duration(sampleIndex)*time.Second,
+				1_000,
+				10_000,
+				100,
+				100,
+				100,
+			),
+		)
+	}
+
+	result, err := EvaluateResources(resourceLimits(), samples)
+	if err != nil {
+		t.Fatalf("EvaluateResources() error = %v", err)
+	}
+	if result.Passed || len(result.Violations) != maxResourceViolations {
+		t.Fatalf(
+			"EvaluateResources() passed = %t, violations = %d, want bounded failure",
+			result.Passed,
+			len(result.Violations),
+		)
+	}
+	if err := result.Gate(); err == nil {
+		t.Fatal("Gate() error = nil after bounded violations")
+	}
+}
+
+func TestResourceGateZeroValueFailsClosed(t *testing.T) {
+	t.Parallel()
+
+	err := (ResourceGateResult{}).Gate()
+	if err == nil || !strings.Contains(err.Error(), "without violation details") {
+		t.Fatalf("Gate() error = %v, want fail-closed zero value", err)
+	}
+}
+
 func TestEvaluateResourcesRejectsUnknownIntervalsAndClasses(t *testing.T) {
 	t.Parallel()
 
@@ -75,6 +119,19 @@ func TestEvaluateResourcesRejectsUnknownIntervalsAndClasses(t *testing.T) {
 				resourceSample(time.Minute, 100, 1_000, 1, 1, 4),
 			},
 			wantErr: "exactly control, auth and realtime",
+		},
+		{
+			name: "zero queue limit",
+			limits: ResourceLimits{MaxQueueDepth: map[TrafficClass]uint64{
+				TrafficClassControl:  8,
+				TrafficClassAuth:     0,
+				TrafficClassRealtime: 16,
+			}},
+			samples: []ResourceSample{
+				resourceSample(0, 100, 1_000, 1, 1, 4),
+				resourceSample(time.Minute, 100, 1_000, 1, 1, 4),
+			},
+			wantErr: "must be positive",
 		},
 		{
 			name:   "non-zero baseline time",
@@ -110,6 +167,33 @@ func TestEvaluateResourcesRejectsUnknownIntervalsAndClasses(t *testing.T) {
 				},
 			},
 			wantErr: "exactly three queue classes",
+		},
+		{
+			name:   "sample exceeds bounded duration",
+			limits: resourceLimits(),
+			samples: []ResourceSample{
+				resourceSample(0, 100, 1_000, 1, 1, 4),
+				resourceSample(maxBoundedDuration+time.Second, 100, 1_000, 1, 1, 4),
+			},
+			wantErr: "exceeds maximum duration",
+		},
+		{
+			name:   "missing goroutine measurement",
+			limits: resourceLimits(),
+			samples: []ResourceSample{
+				resourceSample(0, 100, 1_000, 1, 1, 4),
+				resourceSample(time.Minute, 0, 1_000, 1, 1, 4),
+			},
+			wantErr: "has no goroutines",
+		},
+		{
+			name:   "missing heap measurement",
+			limits: resourceLimits(),
+			samples: []ResourceSample{
+				resourceSample(0, 100, 1_000, 1, 1, 4),
+				resourceSample(time.Minute, 100, 0, 1, 1, 4),
+			},
+			wantErr: "has no heap measurement",
 		},
 	}
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -41,6 +42,13 @@ func TestWriteReplayManifestPreservesSeedAndSequenceWithoutImmutableIDs(t *testi
 	var output bytes.Buffer
 	if err := WriteReplayManifest(&output, testConfig(), plan); err != nil {
 		t.Fatalf("WriteReplayManifest() error = %v", err)
+	}
+	want, err := os.ReadFile("testdata/replay-v1.golden.json")
+	if err != nil {
+		t.Fatalf("reading replay fixture: %v", err)
+	}
+	if !bytes.Equal(output.Bytes(), want) {
+		t.Fatalf("replay manifest differs from versioned fixture\ngot:\n%s\nwant:\n%s", output.Bytes(), want)
 	}
 	var manifest replayManifest
 	if err := json.Unmarshal(output.Bytes(), &manifest); err != nil {

@@ -1,0 +1,51 @@
+{
+  "schema_version": "marketmesh.network-chaos-replay/v1",
+  "run_id": "mm36-20260901-a1b2c3d4",
+  "seed": 8675309,
+  "steps": [
+    {
+      "index": 0,
+      "name": "partition-dc-a",
+      "hold_nanoseconds": 30000000000,
+      "faults": [
+        {
+          "index": 0,
+          "name": "partition-a",
+          "kind": "partition",
+          "container": "mm36-20260901-a1b2c3d4-gateway-out",
+          "network": "mm36-20260901-a1b2c3d4-dc-a-internal",
+          "peer_networks": [
+            "mm36-20260901-a1b2c3d4-dc-a-dmz"
+          ],
+          "interface": "eth1",
+          "delay_microseconds": 0,
+          "jitter_microseconds": 0,
+          "loss_percent": 0,
+          "bandwidth_kbit": 0,
+          "capacity_loss": 1
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "degrade-dc-b",
+      "hold_nanoseconds": 60000000000,
+      "faults": [
+        {
+          "index": 0,
+          "name": "degrade-dc-b",
+          "kind": "degradation",
+          "container": "mm36-20260901-a1b2c3d4-gateway-in-b",
+          "network": "mm36-20260901-a1b2c3d4-dc-b-dmz",
+          "peer_networks": [],
+          "interface": "eth1",
+          "delay_microseconds": 100000,
+          "jitter_microseconds": 20000,
+          "loss_percent": 2.5,
+          "bandwidth_kbit": 1024,
+          "capacity_loss": 0
+        }
+      ]
+    }
+  ]
+}

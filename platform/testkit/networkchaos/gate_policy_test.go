@@ -19,6 +19,10 @@ func TestValidateQuarantineRequiresOwnerReasonAndExpiry(t *testing.T) {
 	if err := ValidateQuarantine(now, valid); err != nil {
 		t.Fatalf("ValidateQuarantine() error = %v", err)
 	}
+	if err := ValidateQuarantine(time.Time{}, valid); err == nil ||
+		!strings.Contains(err.Error(), "validation time") {
+		t.Fatalf("ValidateQuarantine() zero-time error = %v", err)
+	}
 
 	tests := []struct {
 		name    string
@@ -26,11 +30,32 @@ func TestValidateQuarantineRequiresOwnerReasonAndExpiry(t *testing.T) {
 		wantErr string
 	}{
 		{
+			name: "invalid scenario",
+			mutate: func(quarantine *Quarantine) {
+				quarantine.Scenario = "DC A partition"
+			},
+			wantErr: "bounded lowercase slug",
+		},
+		{
 			name: "missing owner",
 			mutate: func(quarantine *Quarantine) {
 				quarantine.Owner = ""
 			},
 			wantErr: "explicit @owner",
+		},
+		{
+			name: "missing reason",
+			mutate: func(quarantine *Quarantine) {
+				quarantine.Reason = ""
+			},
+			wantErr: "between 1 and",
+		},
+		{
+			name: "unbounded reason",
+			mutate: func(quarantine *Quarantine) {
+				quarantine.Reason = strings.Repeat("a", maxQuarantineReasonRunes+1)
+			},
+			wantErr: "between 1 and",
 		},
 		{
 			name: "expired",
@@ -83,5 +108,9 @@ func TestGateAttemptsDoesNotHideFailureWithRetry(t *testing.T) {
 	}
 	if err := GateAttempts(nil); err == nil || !strings.Contains(err.Error(), "between 1 and") {
 		t.Fatalf("GateAttempts(nil) error = %v", err)
+	}
+	tooMany := make([]bool, maxAttempts+1)
+	if err := GateAttempts(tooMany); err == nil || !strings.Contains(err.Error(), "between 1 and") {
+		t.Fatalf("GateAttempts(tooMany) error = %v", err)
 	}
 }
