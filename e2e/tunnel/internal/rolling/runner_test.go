@@ -95,6 +95,32 @@ func TestRunnerRejectsUnexpectedFaultFailure(t *testing.T) {
 	}
 }
 
+func TestNewRunnerRejectsTypedNilDependencies(t *testing.T) {
+	t.Parallel()
+	var nilKubernetes *fakeKubernetes
+	var nilProbe *fakeProbe
+	config := Config{
+		RunID: "run-34", TotalTimeout: time.Minute, StepTimeout: time.Second,
+		SteadyTimeout: time.Second, DiagnosticsTimeout: time.Second, RollbackTimeout: time.Second,
+	}
+	tests := []struct {
+		name  string
+		kube  Kubernetes
+		probe Probe
+	}{
+		{name: "typed nil kubernetes", kube: nilKubernetes, probe: &fakeProbe{}},
+		{name: "typed nil probe", kube: &fakeKubernetes{}, probe: nilProbe},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if _, err := NewRunner(config, test.kube, test.probe); err == nil {
+				t.Fatal("NewRunner() error = nil, want typed nil rejection")
+			}
+		})
+	}
+}
+
 func newTestRunner(t *testing.T, kube Kubernetes, probe Probe) *Runner {
 	t.Helper()
 	current := time.Unix(1_700_000_000, 0)

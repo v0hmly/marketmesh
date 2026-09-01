@@ -22,10 +22,10 @@ func NewRunner(config Config, kube Kubernetes, probe Probe) (*Runner, error) {
 	if err := validateRunID(config.RunID); err != nil {
 		return nil, err
 	}
-	if kube == nil {
+	if isNilDependency(kube) {
 		return nil, errors.New("rolling: kubernetes adapter is required")
 	}
-	if probe == nil {
+	if isNilDependency(probe) {
 		return nil, errors.New("rolling: continuous probe is required")
 	}
 	if config.TotalTimeout <= 0 || config.TotalTimeout > 2*time.Hour {

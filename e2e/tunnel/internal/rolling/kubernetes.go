@@ -106,7 +106,7 @@ func newKubernetes(
 	clusters []Cluster,
 	runner commandRunner,
 ) (*kubernetes, error) {
-	if runner == nil {
+	if isNilDependency(runner) {
 		return nil, errors.New("rolling: command runner is required")
 	}
 	clusterByKey := make(map[string]Cluster, len(clusters))

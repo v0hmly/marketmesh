@@ -5,11 +5,97 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestNewKubernetesValidatesExplicitTargets(t *testing.T) {
+	t.Parallel()
+	temporary := t.TempDir()
+	clusters := []Cluster{
+		{DC: "dc-a", Zone: "dmz", Kubeconfig: filepath.Join(temporary, "dc-a-dmz"), Context: "dc-a-dmz"},
+		{DC: "dc-a", Zone: "internal", Kubeconfig: filepath.Join(temporary, "dc-a-internal"), Context: "dc-a-internal"},
+		{DC: "dc-b", Zone: "dmz", Kubeconfig: filepath.Join(temporary, "dc-b-dmz"), Context: "dc-b-dmz"},
+		{DC: "dc-b", Zone: "internal", Kubeconfig: filepath.Join(temporary, "dc-b-internal"), Context: "dc-b-internal"},
+	}
+	for _, cluster := range clusters {
+		if err := os.WriteFile(cluster.Kubeconfig, []byte("apiVersion: v1\n"), 0o600); err != nil {
+			t.Fatalf("os.WriteFile() error = %v", err)
+		}
+	}
+	tests := []struct {
+		name   string
+		mutate func([]Cluster) []Cluster
+	}{
+		{name: "valid"},
+		{
+			name: "unsafe context",
+			mutate: func(input []Cluster) []Cluster {
+				input[0].Context = "$(unsafe)"
+				return input
+			},
+		},
+		{
+			name: "duplicate target",
+			mutate: func(input []Cluster) []Cluster {
+				input[1].Kubeconfig = input[0].Kubeconfig
+				input[1].Context = input[0].Context
+				return input
+			},
+		},
+		{
+			name: "missing kubeconfig",
+			mutate: func(input []Cluster) []Cluster {
+				input[0].Kubeconfig = filepath.Join(temporary, "missing")
+				return input
+			},
+		},
+		{
+			name: "missing cluster",
+			mutate: func(input []Cluster) []Cluster {
+				return input[:3]
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			input := slices.Clone(clusters)
+			if test.mutate != nil {
+				input = test.mutate(input)
+			}
+			_, err := NewKubernetes(KubernetesConfig{RunID: "run-34", Clusters: input})
+			if test.name == "valid" && err != nil {
+				t.Fatalf("NewKubernetes() error = %v", err)
+			}
+			if test.name != "valid" && err == nil {
+				t.Fatal("NewKubernetes() error = nil, want unsafe target rejection")
+			}
+		})
+	}
+}
+
+func TestNewKubernetesRejectsTypedNilRunner(t *testing.T) {
+	t.Parallel()
+	var runner *recordingCommandRunner
+	clusters := []Cluster{
+		{DC: "dc-a", Zone: "dmz"},
+		{DC: "dc-a", Zone: "internal"},
+		{DC: "dc-b", Zone: "dmz"},
+		{DC: "dc-b", Zone: "internal"},
+	}
+	if _, err := newKubernetes(
+		KubernetesConfig{RunID: "run-34"},
+		clusters,
+		runner,
+	); err == nil {
+		t.Fatal("newKubernetes() error = nil, want typed nil rejection")
+	}
+}
 
 func TestKubernetesPrepareValidatesFourOwnedClusters(t *testing.T) {
 	t.Parallel()
