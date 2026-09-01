@@ -24,6 +24,18 @@ func TestDecodeTopologyInventory(t *testing.T) {
 			},
 		},
 		{
+			name: "missing target schema",
+			mutate: func(value *topologyInventory) {
+				value.TargetAPIVersion = ""
+			},
+		},
+		{
+			name: "wrong target schema",
+			mutate: func(value *topologyInventory) {
+				value.TargetAPIVersion = "marketmesh.dev/e2e-topology/targets/v2"
+			},
+		},
+		{
 			name: "wrong owner",
 			mutate: func(value *topologyInventory) {
 				value.Ownership.KubernetesLabels["marketmesh.dev/owner-task"] = "MM-999"
@@ -115,8 +127,8 @@ func validTopologyInventory(directory string) topologyInventory {
 	}
 
 	return topologyInventory{
-		APIVersion: topologyInventoryAPIVersion, Task: topologyTaskKey,
-		Instance: "mm34topo", DockerContext: "orbstack",
+		APIVersion: topologyInventoryAPIVersion, TargetAPIVersion: topologyTargetAPIVersion,
+		Task: topologyTaskKey, Instance: "mm34topo", DockerContext: "orbstack",
 		Namespace: topologyNamespace, TunnelPort: topologyTunnelPort,
 		Ownership: inventoryOwnership{
 			DockerLabels: map[string]string{
@@ -127,7 +139,11 @@ func validTopologyInventory(directory string) topologyInventory {
 				"marketmesh.dev/topology-instance": "mm34topo",
 			},
 		},
-		Commands: inventoryCommands{Ready: "ready", Inspect: "inspect", Down: "down"},
+		Commands: inventoryCommands{
+			Ready: "ready", Inspect: "inspect", Down: "down",
+			TargetsResolve: "targets resolve", TargetsValidate: "targets validate",
+			TargetsRebind: "targets rebind",
+		},
 		Clusters: clusters,
 	}
 }

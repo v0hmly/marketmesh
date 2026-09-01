@@ -13,6 +13,7 @@ import (
 
 const (
 	topologyInventoryAPIVersion = "marketmesh.dev/e2e-topology/v1"
+	topologyTargetAPIVersion    = "marketmesh.dev/e2e-topology/targets/v1"
 	topologyTaskKey             = "MM-28"
 	topologyNamespace           = "marketmesh-system"
 	topologyTunnelPort          = 30443
@@ -25,15 +26,16 @@ var (
 )
 
 type topologyInventory struct {
-	APIVersion    string             `json:"api_version"`
-	Task          string             `json:"task"`
-	Instance      string             `json:"instance"`
-	DockerContext string             `json:"docker_context"`
-	Namespace     string             `json:"namespace"`
-	TunnelPort    int                `json:"tunnel_port"`
-	Ownership     inventoryOwnership `json:"ownership"`
-	Commands      inventoryCommands  `json:"commands"`
-	Clusters      []inventoryCluster `json:"clusters"`
+	APIVersion       string             `json:"api_version"`
+	TargetAPIVersion string             `json:"target_api_version"`
+	Task             string             `json:"task"`
+	Instance         string             `json:"instance"`
+	DockerContext    string             `json:"docker_context"`
+	Namespace        string             `json:"namespace"`
+	TunnelPort       int                `json:"tunnel_port"`
+	Ownership        inventoryOwnership `json:"ownership"`
+	Commands         inventoryCommands  `json:"commands"`
+	Clusters         []inventoryCluster `json:"clusters"`
 }
 
 type inventoryOwnership struct {
@@ -42,9 +44,12 @@ type inventoryOwnership struct {
 }
 
 type inventoryCommands struct {
-	Ready   string `json:"ready"`
-	Inspect string `json:"inspect"`
-	Down    string `json:"down"`
+	Ready           string `json:"ready"`
+	Inspect         string `json:"inspect"`
+	Down            string `json:"down"`
+	TargetsResolve  string `json:"targets_resolve"`
+	TargetsValidate string `json:"targets_validate"`
+	TargetsRebind   string `json:"targets_rebind"`
 }
 
 type inventoryCluster struct {
@@ -98,6 +103,9 @@ func requireJSONEOF(decoder *json.Decoder) error {
 func validateTopologyInventory(inventory topologyInventory) ([]Cluster, error) {
 	if inventory.APIVersion != topologyInventoryAPIVersion || inventory.Task != topologyTaskKey {
 		return nil, errors.New("rolling: unsupported topology inventory identity")
+	}
+	if inventory.TargetAPIVersion != topologyTargetAPIVersion {
+		return nil, errors.New("rolling: unsupported topology target API version")
 	}
 	if !topologyInstancePattern.MatchString(inventory.Instance) {
 		return nil, errors.New("rolling: topology instance is outside bounds")
