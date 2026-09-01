@@ -1,0 +1,308 @@
+syntax = "proto3";
+
+package tunnel.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/tunnel/v1;tunnelv1";
+
+// TunnelService carries the application-level reverse tunnel opened by gateway-out.
+service TunnelService {
+  // Connect multiplexes bounded logical requests over one bidirectional gRPC stream.
+  rpc Connect(stream ConnectRequest) returns (stream ConnectResponse);
+}
+
+// ConnectRequest is a frame sent from the internal gateway-out to DMZ gateway-in.
+message ConnectRequest {
+  // Header identifies the tunnel and, for request frames, the logical request.
+  FrameHeader header = 1;
+
+  // Payload is exactly one frame type permitted in the gateway-out direction.
+  oneof payload {
+    GatewayOutHello hello = 10;
+    Data data = 11;
+    HalfClose half_close = 12;
+    Cancel cancel = 13;
+    Result result = 14;
+    Credit credit = 15;
+    Ping ping = 16;
+    Pong pong = 17;
+    Drain drain = 18;
+    RevokeSession revoke_session = 19;
+  }
+}
+
+// ConnectResponse is a frame sent from DMZ gateway-in to the internal gateway-out.
+message ConnectResponse {
+  // Header identifies the tunnel and, for request frames, the logical request.
+  FrameHeader header = 1;
+
+  // Payload is exactly one frame type permitted in the gateway-in direction.
+  oneof payload {
+    GatewayInHello hello = 10;
+    Open open = 11;
+    Data data = 12;
+    HalfClose half_close = 13;
+    Cancel cancel = 14;
+    Credit credit = 15;
+    Ping ping = 16;
+    Pong pong = 17;
+    Drain drain = 18;
+  }
+}
+
+// FrameHeader contains routing-neutral identifiers shared by all frame types.
+message FrameHeader {
+  // ProtocolVersion is zero only during Hello negotiation and one afterwards.
+  uint32 protocol_version = 1;
+  // TunnelId is an opaque 16-byte identifier assigned by gateway-in.
+  bytes tunnel_id = 2;
+  // RequestId is an opaque 16-byte identifier and is empty for tunnel-level frames.
+  bytes request_id = 3;
+  // Sequence is positive for request frames and zero for tunnel-level frames.
+  uint64 sequence = 4;
+  // TrafficClass selects an independently bounded queue for request frames.
+  TrafficClass traffic_class = 5;
+}
+
+// GatewayOutHello proposes versions, capabilities, routes, traffic classes, and limits.
+message GatewayOutHello {
+  // InstanceId is an opaque 16-byte process instance identifier and grants no authority.
+  bytes instance_id = 1;
+  // SupportedProtocolVersions is a unique list that must contain version one.
+  repeated uint32 supported_protocol_versions = 2;
+  // Capabilities lists optional protocol behavior implemented by gateway-out.
+  repeated Capability capabilities = 3;
+  // TrafficClasses lists independently bounded classes available on this stream.
+  repeated TrafficClass traffic_classes = 4;
+  // RouteIds lists the only logical destinations gateway-out is prepared to serve.
+  repeated RouteId route_ids = 5;
+  // Limits proposes local receive-side resource ceilings.
+  Limits limits = 6;
+}
+
+// GatewayInHello selects version one and acknowledges the negotiated connection policy.
+message GatewayInHello {
+  // SelectedProtocolVersion is the single version selected by gateway-in.
+  uint32 selected_protocol_version = 1;
+  // Capabilities contains only optional behavior enabled for this tunnel.
+  repeated Capability capabilities = 2;
+  // TrafficClasses contains only traffic classes enabled for this tunnel.
+  repeated TrafficClass traffic_classes = 3;
+  // RouteIds contains only routes enabled by both sides.
+  repeated RouteId route_ids = 4;
+  // Limits contains the effective receive-side ceilings for the tunnel.
+  Limits limits = 5;
+}
+
+// Limits bounds memory, logical concurrency, and flow-control grants.
+message Limits {
+  // MaxFrameBytes is the maximum encoded protobuf frame size.
+  uint32 max_frame_bytes = 1;
+  // MaxDataBytes is the maximum payload size of one Data frame.
+  uint32 max_data_bytes = 2;
+  // MaxMessageBytes is the maximum reassembled logical message size.
+  uint32 max_message_bytes = 3;
+  // MaxInFlightRequests is the maximum concurrent logical request count.
+  uint32 max_in_flight_requests = 4;
+  // MaxMetadataEntries is the maximum metadata entry count on one frame.
+  uint32 max_metadata_entries = 5;
+  // MaxMetadataValueBytes is the maximum value size of one metadata entry.
+  uint32 max_metadata_value_bytes = 6;
+  // MaxCreditBytes is the maximum byte credit granted by one Credit frame.
+  uint32 max_credit_bytes = 7;
+}
+
+// Open starts one logical request for a compiled, allowlisted RouteId.
+message Open {
+  // RouteId is the only destination selector; addresses and method names are absent.
+  RouteId route_id = 1;
+  // Deadline is an absolute UTC deadline required for every logical request.
+  google.protobuf.Timestamp deadline = 2;
+  // IdempotencyKey is an optional opaque key interpreted only by route policy.
+  bytes idempotency_key = 3;
+  // Metadata contains only typed, allowlisted metadata keys.
+  repeated Metadata metadata = 4;
+}
+
+// Data carries one non-empty chunk of a request, response, or realtime message.
+message Data {
+  // Payload is opaque to the tunnel and is subject to frame and message limits.
+  bytes payload = 1;
+}
+
+// HalfClose states that the sender will not send more Data for the logical request.
+message HalfClose {}
+
+// Cancel requests bounded cancellation of the logical request.
+message Cancel {
+  // Reason is a safe, finite cancellation category without diagnostic details.
+  CancelReason reason = 1;
+}
+
+// Result completes a logical request without exposing internal topology or diagnostics.
+message Result {
+  // Code is the finite public result category.
+  ResultCode code = 1;
+  // RetryAfter is an optional bounded client backoff hint.
+  google.protobuf.Duration retry_after = 2;
+  // Metadata contains only typed, non-secret trailing metadata.
+  repeated Metadata metadata = 3;
+}
+
+// Credit grants permission to send an additional bounded number of Data bytes.
+message Credit {
+  // Bytes is a positive bounded increment and is not an absolute window size.
+  uint32 bytes = 1;
+}
+
+// Ping probes application-level stream liveness.
+message Ping {
+  // Nonce is copied verbatim into Pong and has no authentication meaning.
+  uint64 nonce = 1;
+}
+
+// Pong acknowledges the corresponding Ping nonce.
+message Pong {
+  // Nonce is copied from Ping and has no authentication meaning.
+  uint64 nonce = 1;
+}
+
+// Drain stops new logical requests while allowing bounded completion of active requests.
+message Drain {
+  // Deadline is the absolute UTC time after which active requests may be terminated.
+  google.protobuf.Timestamp deadline = 1;
+  // Reason is a safe operational category.
+  DrainReason reason = 2;
+}
+
+// RevokeSession closes external realtime connections associated with an opaque session.
+message RevokeSession {
+  // SessionId is an opaque identifier and must not contain a bearer or refresh token.
+  bytes session_id = 1;
+}
+
+// Metadata is one allowlisted metadata item; arbitrary HTTP or gRPC names are impossible.
+message Metadata {
+  // Key is a finite metadata identifier and never an arbitrary header name.
+  MetadataKey key = 1;
+  // Value is bounded and interpreted according to Key.
+  bytes value = 2;
+}
+
+// TrafficClass selects independently bounded queues and flow-control budgets.
+enum TrafficClass {
+  // TRAFFIC_CLASS_UNSPECIFIED is invalid for request frames.
+  TRAFFIC_CLASS_UNSPECIFIED = 0;
+  // TRAFFIC_CLASS_CONTROL_AUTH reserves capacity for authentication and control requests.
+  TRAFFIC_CLASS_CONTROL_AUTH = 1;
+  // TRAFFIC_CLASS_REGULAR carries bounded ordinary RPC traffic.
+  TRAFFIC_CLASS_REGULAR = 2;
+  // TRAFFIC_CLASS_REALTIME carries independently bounded realtime traffic.
+  TRAFFIC_CLASS_REALTIME = 3;
+}
+
+// Capability identifies optional protocol behavior negotiated during Hello.
+enum Capability {
+  // CAPABILITY_UNSPECIFIED is never advertised.
+  CAPABILITY_UNSPECIFIED = 0;
+  // CAPABILITY_DRAIN enables bounded graceful stream draining.
+  CAPABILITY_DRAIN = 1;
+  // CAPABILITY_SESSION_REVOCATION enables RevokeSession frames.
+  CAPABILITY_SESSION_REVOCATION = 2;
+  // CAPABILITY_REALTIME enables realtime route classes.
+  CAPABILITY_REALTIME = 3;
+}
+
+// RouteId is the complete v1 destination vocabulary; it contains no network location.
+enum RouteId {
+  // ROUTE_ID_UNSPECIFIED is rejected and never mapped to a destination.
+  ROUTE_ID_UNSPECIFIED = 0;
+  // ROUTE_ID_AUTH_REGISTER_CREDENTIALS registers a new credential in Auth.
+  ROUTE_ID_AUTH_REGISTER_CREDENTIALS = 1;
+  // ROUTE_ID_AUTH_LOGIN verifies credentials and starts a session.
+  ROUTE_ID_AUTH_LOGIN = 2;
+  // ROUTE_ID_AUTH_REFRESH_SESSION rotates and refreshes a session.
+  ROUTE_ID_AUTH_REFRESH_SESSION = 3;
+  // ROUTE_ID_AUTH_REVOKE_SESSION revokes an Auth session.
+  ROUTE_ID_AUTH_REVOKE_SESSION = 4;
+  // ROUTE_ID_AUTH_SESSION_ASSERTION exchanges external session state for an internal assertion.
+  ROUTE_ID_AUTH_SESSION_ASSERTION = 5;
+  // ROUTE_ID_USER_GET_ME reads the current user profile.
+  ROUTE_ID_USER_GET_ME = 100;
+  // ROUTE_ID_USER_UPDATE_ME updates the current user profile.
+  ROUTE_ID_USER_UPDATE_ME = 101;
+  // ROUTE_ID_REALTIME_CHAT carries a bounded bidirectional chat stream.
+  ROUTE_ID_REALTIME_CHAT = 200;
+  // ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.
+  ROUTE_ID_REALTIME_NOTIFICATIONS = 201;
+}
+
+// MetadataKey is the v1 metadata allowlist and intentionally excludes HTTP routing headers.
+enum MetadataKey {
+  // METADATA_KEY_UNSPECIFIED is rejected.
+  METADATA_KEY_UNSPECIFIED = 0;
+  // METADATA_KEY_CONTENT_TYPE carries the fixed protobuf content type.
+  METADATA_KEY_CONTENT_TYPE = 1;
+  // METADATA_KEY_TRACEPARENT carries bounded W3C traceparent data without authority.
+  METADATA_KEY_TRACEPARENT = 2;
+  // METADATA_KEY_TRACESTATE carries bounded W3C tracestate data without authority.
+  METADATA_KEY_TRACESTATE = 3;
+  // METADATA_KEY_SESSION_ASSERTION carries an opaque signed internal assertion.
+  METADATA_KEY_SESSION_ASSERTION = 4;
+}
+
+// CancelReason is a safe cancellation category.
+enum CancelReason {
+  // CANCEL_REASON_UNSPECIFIED is rejected.
+  CANCEL_REASON_UNSPECIFIED = 0;
+  // CANCEL_REASON_CALLER means the external caller canceled the operation.
+  CANCEL_REASON_CALLER = 1;
+  // CANCEL_REASON_DEADLINE means the request deadline elapsed.
+  CANCEL_REASON_DEADLINE = 2;
+  // CANCEL_REASON_DRAIN means bounded stream draining canceled the request.
+  CANCEL_REASON_DRAIN = 3;
+  // CANCEL_REASON_POLICY means a local policy canceled the request.
+  CANCEL_REASON_POLICY = 4;
+}
+
+// ResultCode is the finite error vocabulary visible across the trust boundary.
+enum ResultCode {
+  // RESULT_CODE_UNSPECIFIED is rejected.
+  RESULT_CODE_UNSPECIFIED = 0;
+  // RESULT_CODE_OK indicates successful completion.
+  RESULT_CODE_OK = 1;
+  // RESULT_CODE_INVALID_ARGUMENT indicates invalid public request data.
+  RESULT_CODE_INVALID_ARGUMENT = 2;
+  // RESULT_CODE_UNAUTHENTICATED indicates missing or invalid authentication.
+  RESULT_CODE_UNAUTHENTICATED = 3;
+  // RESULT_CODE_PERMISSION_DENIED indicates failed authorization.
+  RESULT_CODE_PERMISSION_DENIED = 4;
+  // RESULT_CODE_NOT_FOUND indicates absence without internal topology details.
+  RESULT_CODE_NOT_FOUND = 5;
+  // RESULT_CODE_CONFLICT indicates a safe public state conflict.
+  RESULT_CODE_CONFLICT = 6;
+  // RESULT_CODE_RESOURCE_EXHAUSTED indicates a bounded quota or capacity failure.
+  RESULT_CODE_RESOURCE_EXHAUSTED = 7;
+  // RESULT_CODE_DEADLINE_EXCEEDED indicates deadline expiration.
+  RESULT_CODE_DEADLINE_EXCEEDED = 8;
+  // RESULT_CODE_CANCELED indicates explicit cancellation.
+  RESULT_CODE_CANCELED = 9;
+  // RESULT_CODE_UNAVAILABLE indicates a transient unavailable dependency.
+  RESULT_CODE_UNAVAILABLE = 10;
+  // RESULT_CODE_INTERNAL indicates a safe generic internal failure.
+  RESULT_CODE_INTERNAL = 11;
+}
+
+// DrainReason is a safe operational category without internal diagnostics.
+enum DrainReason {
+  // DRAIN_REASON_UNSPECIFIED is rejected.
+  DRAIN_REASON_UNSPECIFIED = 0;
+  // DRAIN_REASON_MAINTENANCE means planned maintenance.
+  DRAIN_REASON_MAINTENANCE = 1;
+  // DRAIN_REASON_SHUTDOWN means process shutdown.
+  DRAIN_REASON_SHUTDOWN = 2;
+  // DRAIN_REASON_OVERLOAD means bounded load shedding.
+  DRAIN_REASON_OVERLOAD = 3;
+}

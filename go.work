@@ -2,6 +2,7 @@ go 1.27.0
 
 use (
 	./api/gen/go
+	./api/tunnel
 	./platform
 	./services/auth
 	./services/gateway-in
