@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"slices"
 	"sync"
+	"time"
 
 	"connectrpc.com/connect"
 	e2ev1 "github.com/v0hmly/marketmesh/api/gen/go/e2e/v1"
@@ -20,6 +21,7 @@ const (
 	FakeMutatingRoute = "user-update-me"
 	maxLedgerSources  = 128
 	maxLedgerLimit    = 100_000
+	ledgerReadTimeout = 5 * time.Second
 )
 
 // FakeTrafficClient — минимальный опубликованный MM-29 contract внешних
@@ -189,8 +191,9 @@ type LedgerSource struct {
 // LedgerCollector выполняет bounded discovery и финальное чтение всех
 // настроенных direct internal ledgers.
 type LedgerCollector struct {
-	sources []LedgerSource
-	limit   uint32
+	sources     []LedgerSource
+	limit       uint32
+	readTimeout time.Duration
 }
 
 // NewLedgerCollector проверяет конечное число sources и серверный limit.
@@ -214,7 +217,11 @@ func NewLedgerCollector(
 		}
 	}
 
-	return &LedgerCollector{sources: result, limit: limit}, nil
+	return &LedgerCollector{
+		sources:     result,
+		limit:       limit,
+		readTimeout: ledgerReadTimeout,
+	}, nil
 }
 
 // Discover получает instance ID каждого direct workload до запуска traffic.
@@ -281,7 +288,7 @@ func (collector *LedgerCollector) Collect(ctx context.Context) InternalSnapshot 
 		}
 		seenSources[source] = result.source.DataCenter
 		entries := result.response.GetEntries()
-		if uint32(len(entries)) >= collector.limit {
+		if len(entries) >= int(collector.limit) {
 			snapshot.IsComplete = false
 			snapshot.IncompleteReasons = append(
 				snapshot.IncompleteReasons,
@@ -317,13 +324,16 @@ func (collector *LedgerCollector) read(
 	ctx context.Context,
 	limit uint32,
 ) []ledgerResult {
+	readCtx, cancel := context.WithTimeout(ctx, collector.readTimeout)
+	defer cancel()
+
 	results := make(chan ledgerResult, len(collector.sources))
 	var group sync.WaitGroup
 	for index, source := range collector.sources {
 		group.Go(func() {
 			response, err := readLedgerSafely(
 				source.Client,
-				ctx,
+				readCtx,
 				&e2ev1.LedgerRequest{Limit: limit},
 			)
 			results <- ledgerResult{

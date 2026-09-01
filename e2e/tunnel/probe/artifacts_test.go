@@ -73,3 +73,20 @@ func TestWriteArtifactsCreatesPrivateCompleteBundle(t *testing.T) {
 		t.Fatal("second WriteArtifacts() error = nil")
 	}
 }
+
+func TestWriteArtifactsRejectsOversizedRunBeforePublication(t *testing.T) {
+	scenario, input := passingReportFixture()
+	result, err := BuildReport(scenario, input)
+	if err != nil {
+		t.Fatalf("BuildReport() error = %v", err)
+	}
+	result.Run.RunID = strings.Repeat("a", 65<<20)
+	directory := filepath.Join(t.TempDir(), "oversized-run")
+
+	if err := WriteArtifacts(directory, result); err == nil {
+		t.Fatal("WriteArtifacts() error = nil for run larger than DecodeRun capacity")
+	}
+	if _, err := os.Stat(directory); !os.IsNotExist(err) {
+		t.Fatalf("os.Stat(directory) error = %v, want not exist", err)
+	}
+}

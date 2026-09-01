@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	e2ev1 "github.com/v0hmly/marketmesh/api/gen/go/e2e/v1"
@@ -352,11 +353,99 @@ func TestLedgerCollectorRejectsNilContext(t *testing.T) {
 		t.Fatalf("NewLedgerCollector() error = %v", err)
 	}
 
-	if _, err := collector.Discover(nil); err == nil {
+	//lint:ignore SA1012 This test verifies the explicit fail-closed nil context contract.
+	if _, err := collector.Discover(nil); err == nil { //nolint:staticcheck // Explicit nil contract test.
 		t.Fatal("LedgerCollector.Discover(nil) error = nil")
 	}
-	snapshot := collector.Collect(nil)
+	//lint:ignore SA1012 This test verifies the explicit fail-closed nil context contract.
+	snapshot := collector.Collect(nil) //nolint:staticcheck // Explicit nil contract test.
 	assertStrings(t, snapshot.IncompleteReasons, []string{"ledger_context_invalid"})
+}
+
+func TestLedgerCollectorAddsDeadlineWhenCallerHasNone(t *testing.T) {
+	t.Parallel()
+
+	client := &deadlineObservingLedgerClient{response: &e2ev1.LedgerResponse{
+		InstanceId: "fake-a-1",
+	}}
+	collector, err := NewLedgerCollector([]LedgerSource{{
+		DataCenter: DataCenterA,
+		Client:     client,
+	}}, 4)
+	if err != nil {
+		t.Fatalf("NewLedgerCollector() error = %v", err)
+	}
+
+	if _, err := collector.Discover(context.Background()); err != nil {
+		t.Fatalf("LedgerCollector.Discover() error = %v", err)
+	}
+	snapshot := collector.Collect(context.Background())
+	if !snapshot.IsComplete {
+		t.Fatalf("LedgerCollector.Collect() incomplete reasons = %v", snapshot.IncompleteReasons)
+	}
+	if calls := client.calls.Load(); calls != 2 {
+		t.Fatalf("Ledger() calls = %d, want 2", calls)
+	}
+	if client.sawCallWithoutDeadline.Load() {
+		t.Fatal("Ledger() received a context without deadline")
+	}
+}
+
+func TestLedgerCollectorBoundsHungEndpointWithoutCallerDeadline(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		call func(*testing.T, *LedgerCollector)
+	}{
+		{
+			name: "discover",
+			call: func(t *testing.T, collector *LedgerCollector) {
+				t.Helper()
+				if _, err := collector.Discover(context.Background()); err == nil {
+					t.Fatal("LedgerCollector.Discover() error = nil for timed out endpoint")
+				}
+			},
+		},
+		{
+			name: "collect",
+			call: func(t *testing.T, collector *LedgerCollector) {
+				t.Helper()
+				snapshot := collector.Collect(context.Background())
+				if snapshot.IsComplete {
+					t.Fatal("LedgerCollector.Collect() complete after endpoint timeout")
+				}
+				assertStrings(t, snapshot.IncompleteReasons, []string{"ledger_rpc_failed"})
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			client := &cancelAwareLedgerClient{returned: make(chan struct{})}
+			collector, err := NewLedgerCollector([]LedgerSource{{
+				DataCenter: DataCenterA,
+				Client:     client,
+			}}, 4)
+			if err != nil {
+				t.Fatalf("NewLedgerCollector() error = %v", err)
+			}
+			collector.readTimeout = 20 * time.Millisecond
+
+			startedAt := time.Now()
+			test.call(t, collector)
+			if elapsed := time.Since(startedAt); elapsed > time.Second {
+				t.Fatalf("ledger call elapsed = %s, want bounded return", elapsed)
+			}
+			select {
+			case <-client.returned:
+			default:
+				t.Fatal("ledger client goroutine did not return after timeout")
+			}
+		})
+	}
 }
 
 type fakeTrafficClient struct {
@@ -389,6 +478,16 @@ type fakeLedgerClient struct {
 	err      error
 }
 
+type deadlineObservingLedgerClient struct {
+	response               *e2ev1.LedgerResponse
+	calls                  atomic.Uint32
+	sawCallWithoutDeadline atomic.Bool
+}
+
+type cancelAwareLedgerClient struct {
+	returned chan struct{}
+}
+
 type panicLedgerClient struct{}
 
 func (panicLedgerClient) Ledger(
@@ -405,6 +504,28 @@ func (client fakeLedgerClient) Ledger(
 	...grpc.CallOption,
 ) (*e2ev1.LedgerResponse, error) {
 	return client.response, client.err
+}
+
+func (client *deadlineObservingLedgerClient) Ledger(
+	ctx context.Context,
+	_ *e2ev1.LedgerRequest,
+	_ ...grpc.CallOption,
+) (*e2ev1.LedgerResponse, error) {
+	client.calls.Add(1)
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		client.sawCallWithoutDeadline.Store(true)
+	}
+	return client.response, nil
+}
+
+func (client *cancelAwareLedgerClient) Ledger(
+	ctx context.Context,
+	_ *e2ev1.LedgerRequest,
+	_ ...grpc.CallOption,
+) (*e2ev1.LedgerResponse, error) {
+	<-ctx.Done()
+	close(client.returned)
+	return nil, ctx.Err()
 }
 
 func requestIDBytes(value byte) []byte {
