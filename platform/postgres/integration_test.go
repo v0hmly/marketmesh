@@ -74,6 +74,30 @@ func TestIntegrationRWROTransactionsAndReadiness(t *testing.T) {
 	}
 }
 
+func TestIntegrationApplicationName(t *testing.T) {
+	database := newIntegrationDatabase(t)
+
+	for name, executor := range map[string]Executor{
+		"rw primary": database.RW(),
+		"ro replica": database.RO(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			var applicationName string
+			if err := executor.QueryRow(t.Context(), "SHOW application_name").Scan(
+				&applicationName,
+			); err != nil {
+				t.Fatalf("show application_name: %v", err)
+			}
+			if applicationName != "marketmesh-postgres-integration" {
+				t.Fatalf(
+					"application_name = %q, want marketmesh-postgres-integration",
+					applicationName,
+				)
+			}
+		})
+	}
+}
+
 func TestIntegrationRollbackReadOnlyAndCancellation(t *testing.T) {
 	database := newIntegrationDatabase(t)
 
@@ -177,8 +201,9 @@ func newIntegrationDatabase(t *testing.T) *Database {
 	database, err := New(
 		t.Context(),
 		Config{
-			RW: poolConfig(rwSecret),
-			RO: poolConfig(roSecret),
+			ApplicationName: "marketmesh-postgres-integration",
+			RW:              poolConfig(rwSecret),
+			RO:              poolConfig(roSecret),
 			Retry: &RetryPolicy{
 				MaxAttempts:       3,
 				InitialBackoff:    10 * time.Millisecond,

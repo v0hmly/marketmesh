@@ -8,7 +8,116 @@ import (
 	"time"
 
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
+	"go.opentelemetry.io/otel/trace"
 )
+
+func TestNormalizeConfigValidatesApplicationName(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		applicationName string
+		expected        string
+		errorPart       string
+	}{
+		"empty": {
+			errorPart: "required",
+		},
+		"whitespace": {
+			applicationName: " \t\n ",
+			errorPart:       "required",
+		},
+		"64 bytes": {
+			applicationName: strings.Repeat("a", 64),
+			errorPart:       "63 bytes",
+		},
+		"newline": {
+			applicationName: "user\nworker",
+			errorPart:       "printable ASCII",
+		},
+		"tab": {
+			applicationName: "user\tworker",
+			errorPart:       "printable ASCII",
+		},
+		"non-ASCII": {
+			applicationName: "пользователь",
+			errorPart:       "printable ASCII",
+		},
+		"one byte": {
+			applicationName: "u",
+			expected:        "u",
+		},
+		"63 bytes": {
+			applicationName: strings.Repeat("a", 63),
+			expected:        strings.Repeat("a", 63),
+		},
+		"trim": {
+			applicationName: "  user  ",
+			expected:        "user",
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			config := validConfig(t, testCase.applicationName)
+			settings, err := normalizeConfig(config)
+			if testCase.errorPart != "" {
+				if !errors.Is(err, ErrInvalidConfig) {
+					t.Fatalf("normalizeConfig() error = %v, want ErrInvalidConfig", err)
+				}
+				if !strings.Contains(err.Error(), testCase.errorPart) {
+					t.Fatalf("normalizeConfig() error = %v, want %q", err, testCase.errorPart)
+				}
+				if strings.Contains(err.Error(), "private-password") {
+					t.Fatalf("normalizeConfig() exposed DSN: %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("normalizeConfig() error = %v", err)
+			}
+			if settings.rw.applicationName != testCase.expected ||
+				settings.ro.applicationName != testCase.expected {
+				t.Fatalf(
+					"RW/RO application names = %q/%q, want %q",
+					settings.rw.applicationName,
+					settings.ro.applicationName,
+					testCase.expected,
+				)
+			}
+		})
+	}
+}
+
+func TestBuildPoolConfigOverridesApplicationNameSources(t *testing.T) {
+	t.Setenv("PGAPPNAME", "ambient-client")
+
+	for name, dsn := range map[string]string{
+		"ambient environment": "postgres://user:private-password@localhost/database",
+		"DSN parameter":       "postgres://user:private-password@localhost/database?application_name=dsn-client",
+	} {
+		t.Run(name, func(t *testing.T) {
+			settings, err := normalizeConfig(validConfig(t, "  canonical-client  "))
+			if err != nil {
+				t.Fatalf("normalizeConfig() error = %v", err)
+			}
+			settings.rw.dsn = validPoolConfig(t, dsn).DSN
+
+			config, err := buildPoolConfig(
+				roleRW,
+				settings.rw,
+				trace.NewNoopTracerProvider().Tracer(instrumentationName),
+			)
+			if err != nil {
+				t.Fatalf("buildPoolConfig() error = %v", err)
+			}
+			if actual := config.ConnConfig.RuntimeParams["application_name"]; actual != "canonical-client" {
+				t.Fatalf("application_name = %q, want canonical-client", actual)
+			}
+		})
+	}
+}
 
 func TestNormalizeConfigValidatesPools(t *testing.T) {
 	t.Parallel()
@@ -210,5 +319,21 @@ func validPoolConfig(t *testing.T, dsn string) PoolConfig {
 		MaxConnIdleTime:       5 * time.Minute,
 		HealthCheckPeriod:     30 * time.Second,
 		PingTimeout:           time.Second,
+	}
+}
+
+func validConfig(t *testing.T, applicationName string) Config {
+	t.Helper()
+
+	return Config{
+		ApplicationName: applicationName,
+		RW: validPoolConfig(
+			t,
+			"postgres://user:private-password@rw/database",
+		),
+		RO: validPoolConfig(
+			t,
+			"postgres://user:private-password@ro/database",
+		),
 	}
 }
