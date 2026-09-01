@@ -120,6 +120,7 @@ task e2e:topology:ready
 task e2e:topology:inspect
 task e2e:topology:down
 task e2e:topology:verify
+task e2e:topology:targets -- resolve --consumer-task MM-36 --consumer-run-id mm36-example
 ```
 
 Каждый subprocess имеет deadline. `up` идемпотентно проверяет уже существующие
@@ -153,6 +154,154 @@ kube current context или несвязанные Docker resources не исп�
 операции. После полностью успешного `down` inventory удаляется, чтобы потребитель
 не мог использовать устаревшие адреса; при частичном cleanup он сохраняется для
 диагностики. Копировать lifecycle или вычислять пути самостоятельно запрещено.
+
+Inventory v1 остаётся обратно совместимым: `api_version`, существующие поля и
+семантика не изменены. MM-38 добавляет только `target_api_version` и две команды
+`targets_resolve`/`targets_validate`. Старый потребитель, игнорирующий неизвестные
+JSON-поля, продолжает работать без изменений. Additive command metadata включает
+`targets_resolve`, `targets_validate` и `targets_rebind`.
+
+## Immutable fault targets v1
+
+Fault orchestration не входит в topology tool. Команды MM-38 только читают
+Docker/Kubernetes runtime и публикуют target при полном однозначном совпадении.
+Snapshot привязывается к конкретной задаче и уникальному run ID; run ID должен
+начинаться с нормализованного ключа задачи, например `mm35-` или `mm36-`.
+
+Разрешить оба target одного DC:
+
+```bash
+go run ./tools/e2e-topology \
+  --instance mm38-check \
+  --docker-context default \
+  targets resolve \
+  --consumer-task MM-35 \
+  --consumer-run-id mm35-check-001 \
+  --dc dc-a
+```
+
+Без `--dc` resolver требует и возвращает ровно четыре target. `--zone` допустим
+только вместе с exact `--dc`. Версия документа —
+`marketmesh.dev/e2e-topology/targets/v1`. Для каждого target snapshot содержит:
+
+- exact logical/resource cluster, DC, zone, kubeconfig/context и namespace;
+- полный immutable container ID, exact container name, pinned image reference,
+  immutable image ID и exact kind cluster label;
+- Kubernetes node name, UID и allowlist ownership labels instance/DC/zone;
+- все ожидаемые network attachments: у DMZ node одна primary DMZ network, у
+  internal node — primary internal и DMZ network того же DC;
+- полный network ID, name, bridge/local mode, subnet и MM-28 ownership labels;
+- endpoint ID/network ID, private address/prefix, gateway и MAC, одинаковые в
+  `container inspect` и `network inspect`;
+- единственный `ethN` с exact ifindex/MAC/address и bounded netns identity вида
+  `net:[digits]`, полученную фиксированным `readlink /proc/self/ns/net` внутри
+  exact container ID;
+- canonical `sha256:<64 hex>` token. Token обнаруживает изменение snapshot и
+  связывает validation receipt с исходным документом, но не является
+  authentication secret.
+
+Snapshot не содержит kubeconfig bytes, environment dump, host netns path,
+credentials, workload payload или logs. Resolver не использует shell, glob,
+Docker current context, kube current context или вычисленные потребителем имена.
+Все subprocesses получают explicit argv, sanitized environment, deadline и
+ограниченный output.
+
+Повторная проверка читает только один bounded snapshot со stdin; path input
+намеренно запрещён, чтобы исключить symlink/path replacement между проверкой и
+чтением:
+
+```bash
+go run ./tools/e2e-topology \
+  --instance mm38-check \
+  --docker-context default \
+  targets validate \
+  --snapshot - \
+  --expected-state running \
+  --target dc-a-internal <target-snapshot.json
+```
+
+`--target` можно повторить. Без него проверяются все target исходного snapshot;
+subset позволяет безопасно валидировать target непосредственно перед его
+операцией, не завися от несвязанного кластера. Validator никогда не ищет замену
+по имени: container и network повторно inspect-ятся только по ID snapshot, после
+чего сверяются name, image, labels, endpoint, membership с обеих сторон,
+interface, netns и Kubernetes UID/labels. Unknown/duplicate JSON fields,
+trailing document, неправильная cardinality/selector/token, stale ID,
+неоднозначный interface и любое частичное inspect приводят к non-zero exit и
+нулевому stdout. Успех возвращает bounded receipt версии
+`marketmesh.dev/e2e-topology/target-validation/v1` с тем же token, exact logical
+targets, observed state и `validated=true`; IDs для mutation всё равно берутся
+только из исходного snapshot.
+
+Для network fault используется `--expected-state running`: live endpoint,
+sandbox, interface, netns, container generation (`StartedAt`) и Kubernetes
+identity обязательны. Для stop/start сценария `--expected-state stopped`
+требует exact status `exited`, тот же `StartedAt`, валидный `FinishedAt`, пустые
+live endpoint/sandbox fields и отсутствие container в live membership каждого
+network. Immutable container/image/network/ownership продолжают проверяться.
+
+Docker 29.4 при `stop → start` сохраняет container ID, network ID и IP, но
+легитимно создаёт новые EndpointID, SandboxID, MAC и interface/netns binding.
+Поэтому старый running snapshot после start обязан стать stale. Принимать новую
+binding обычным resolve запрещено. Для этого есть единственный explicit
+state-transition API:
+
+```bash
+go run ./tools/e2e-topology \
+  --instance mm38-check \
+  --docker-context default \
+  targets rebind \
+  --transition - \
+  --target dc-a-internal <rebind-input.json
+```
+
+`rebind-input.json` содержит ровно `snapshot` и полученный непосредственно перед
+start `stopped_receipt`. Rebind повторно inspect-ит только original container ID
+и original network IDs и требует:
+
+- exact container name/image/cluster label и exact network names/subnets/labels;
+- отсутствие дополнительных attachments, тот же private IP/gateway и тот же
+  Kubernetes UID/context/ownership;
+- `StartedAt` новой running generation строго после подтверждённого `FinishedAt`;
+- running container `FinishedAt` равен stopped receipt, поэтому receipt нельзя
+  replay после второго stop/start;
+- stopped receipt имеет valid canonical digest, exact old snapshot token,
+  target/container/network IDs и был выдан после `FinishedAt`.
+
+Разрешённый diff ограничен live EndpointID/SandboxID/MAC/interface/netns.
+Результат содержит полный новый snapshot/token и transition receipt с
+`from_token`, `to_token`, target, new `StartedAt` и stopped receipt digest. Одна
+и та же фактическая binding с тем же old snapshot/receipt даёт тот же token и
+transition digest, поэтому повтор после потерянного stdout безопасен. Вызов с
+уже обновлённым snapshot и старым receipt, второй restart или любое static
+изменение завершаются fail-closed без нового snapshot.
+
+Типовой consumer flow:
+
+1. Один раз получить snapshot после `ready` и сохранить его token в bounded run
+   ledger.
+2. Перед первой mutation проверить все участвующие target.
+3. Непосредственно перед каждой mutation проверить exact target/subset по тому же
+   исходному snapshot и сверить token receipt.
+4. Выполнить mutation структурированным argv только по immutable ID snapshot.
+5. После stop получить stopped receipt. После start вызвать rebind с old snapshot
+   и этим receipt, сохранить token chain и немедленно `validate running` уже
+   нового snapshot. MM-36, не останавливающая container, rebind не использует.
+6. Непосредственно перед cleanup снова проверить актуальный snapshot/token;
+   обычный resolve во время fault/cleanup запрещён.
+
+Snapshot намеренно не имеет TTL: истечение времени не должно блокировать
+restorative cleanup. Staleness определяется заменой immutable runtime identity и
+повторным inspect. Любое несовпадение означает fail-closed: consumer не выполняет
+destructive команду и сохраняет diagnostics.
+
+Риски MM-38 ограничены расширением публичного JSON и дополнительными read-only
+inspect/exec вызовами. Rollback — удалить additive target fields/commands и
+вернуться к inventory v1; созданные MM-28 resources и их данные не мигрируются.
+Если rollback происходит во время fault-сценария, сначала consumer обязан
+восстановить fault по уже сохранённому и повторно проверенному snapshot, затем
+вызвать public `down`. Нельзя заменять этот порядок вычислением имён или чтением
+`.cache` internals.
 
 ## Diagnostics и cleanup
 

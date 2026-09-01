@@ -13,15 +13,16 @@ const InventoryAPIVersion = "marketmesh.dev/e2e-topology/v1"
 
 // InventoryDocument is the complete machine-readable topology handoff.
 type InventoryDocument struct {
-	APIVersion    string             `json:"api_version"`
-	Task          string             `json:"task"`
-	Instance      string             `json:"instance"`
-	DockerContext string             `json:"docker_context"`
-	Namespace     string             `json:"namespace"`
-	TunnelPort    int                `json:"tunnel_port"`
-	Ownership     InventoryOwnership `json:"ownership"`
-	Commands      InventoryCommands  `json:"commands"`
-	Clusters      []InventoryCluster `json:"clusters"`
+	APIVersion       string             `json:"api_version"`
+	TargetAPIVersion string             `json:"target_api_version"`
+	Task             string             `json:"task"`
+	Instance         string             `json:"instance"`
+	DockerContext    string             `json:"docker_context"`
+	Namespace        string             `json:"namespace"`
+	TunnelPort       int                `json:"tunnel_port"`
+	Ownership        InventoryOwnership `json:"ownership"`
+	Commands         InventoryCommands  `json:"commands"`
+	Clusters         []InventoryCluster `json:"clusters"`
 }
 
 // InventoryOwnership lists labels that consumers can use to verify resource ownership.
@@ -32,9 +33,12 @@ type InventoryOwnership struct {
 
 // InventoryCommands contains bounded lifecycle commands for consumers.
 type InventoryCommands struct {
-	Ready   string `json:"ready"`
-	Inspect string `json:"inspect"`
-	Down    string `json:"down"`
+	Ready           string `json:"ready"`
+	Inspect         string `json:"inspect"`
+	Down            string `json:"down"`
+	TargetsResolve  string `json:"targets_resolve"`
+	TargetsValidate string `json:"targets_validate"`
+	TargetsRebind   string `json:"targets_rebind"`
 }
 
 // InventoryCluster describes one logical cluster without granting implicit access.
@@ -78,12 +82,13 @@ func (t *Topology) inventoryDocument(addresses map[string]string) (InventoryDocu
 		t.config.DockerContext,
 	)
 	document := InventoryDocument{
-		APIVersion:    InventoryAPIVersion,
-		Task:          TaskKey,
-		Instance:      t.config.Instance,
-		DockerContext: t.config.DockerContext,
-		Namespace:     Namespace,
-		TunnelPort:    AllowedProbePort,
+		APIVersion:       InventoryAPIVersion,
+		TargetAPIVersion: TargetAPIVersion,
+		Task:             TaskKey,
+		Instance:         t.config.Instance,
+		DockerContext:    t.config.DockerContext,
+		Namespace:        Namespace,
+		TunnelPort:       AllowedProbePort,
 		Ownership: InventoryOwnership{
 			DockerLabels: map[string]string{
 				ownerLabelKey:    TaskKey,
@@ -95,9 +100,12 @@ func (t *Topology) inventoryDocument(addresses map[string]string) (InventoryDocu
 			},
 		},
 		Commands: InventoryCommands{
-			Ready:   commandPrefix + " ready",
-			Inspect: commandPrefix + " inspect",
-			Down:    commandPrefix + " down",
+			Ready:           commandPrefix + " ready",
+			Inspect:         commandPrefix + " inspect",
+			Down:            commandPrefix + " down",
+			TargetsResolve:  commandPrefix + " targets resolve",
+			TargetsValidate: commandPrefix + " targets validate --snapshot -",
+			TargetsRebind:   commandPrefix + " targets rebind --transition -",
 		},
 		Clusters: []InventoryCluster{},
 	}

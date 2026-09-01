@@ -32,11 +32,16 @@ type Topology struct {
 }
 
 type dockerNetwork struct {
+	ID         string            `json:"Id"`
 	Name       string            `json:"Name"`
+	Driver     string            `json:"Driver"`
+	Scope      string            `json:"Scope"`
 	Labels     map[string]string `json:"Labels"`
 	IPAM       dockerIPAM        `json:"IPAM"`
 	Containers map[string]struct {
 		Name        string `json:"Name"`
+		EndpointID  string `json:"EndpointID"`
+		MacAddress  string `json:"MacAddress"`
 		IPv4Address string `json:"IPv4Address"`
 	} `json:"Containers"`
 }
@@ -48,15 +53,32 @@ type dockerIPAM struct {
 }
 
 type dockerContainer struct {
+	ID     string `json:"Id"`
 	Name   string `json:"Name"`
+	Image  string `json:"Image"`
 	Config struct {
 		Image  string            `json:"Image"`
 		Labels map[string]string `json:"Labels"`
 	} `json:"Config"`
+	State struct {
+		Status     string `json:"Status"`
+		Running    bool   `json:"Running"`
+		Paused     bool   `json:"Paused"`
+		Restarting bool   `json:"Restarting"`
+		Dead       bool   `json:"Dead"`
+		StartedAt  string `json:"StartedAt"`
+		FinishedAt string `json:"FinishedAt"`
+	} `json:"State"`
 	NetworkSettings struct {
-		Networks map[string]struct {
-			IPAddress string `json:"IPAddress"`
-			Gateway   string `json:"Gateway"`
+		SandboxID  string `json:"SandboxID"`
+		SandboxKey string `json:"SandboxKey"`
+		Networks   map[string]struct {
+			NetworkID   string `json:"NetworkID"`
+			EndpointID  string `json:"EndpointID"`
+			Gateway     string `json:"Gateway"`
+			IPAddress   string `json:"IPAddress"`
+			IPPrefixLen int    `json:"IPPrefixLen"`
+			MacAddress  string `json:"MacAddress"`
 		} `json:"Networks"`
 	} `json:"NetworkSettings"`
 }
@@ -64,6 +86,7 @@ type dockerContainer struct {
 type kubernetesObject struct {
 	Metadata struct {
 		Name   string            `json:"name"`
+		UID    string            `json:"uid"`
 		Labels map[string]string `json:"labels"`
 	} `json:"metadata"`
 }
@@ -191,6 +214,20 @@ func (t *Topology) Verify(ctx context.Context) error {
 		if err := t.Ready(ctx); err != nil {
 			cleanupErr := t.Down(context.WithoutCancel(ctx))
 			return errors.Join(fmt.Errorf("topology verification run %d ready: %w", run, err), cleanupErr)
+		}
+		snapshot, err := t.ResolveTargets(ctx, TargetResolveRequest{
+			ConsumerTask:  "MM-38",
+			ConsumerRunID: fmt.Sprintf("mm38-verify-%d", run),
+		})
+		if err != nil {
+			cleanupErr := t.Down(context.WithoutCancel(ctx))
+			return errors.Join(fmt.Errorf("topology verification run %d resolve targets: %w", run, err), cleanupErr)
+		}
+		if _, err := t.ValidateTargets(ctx, snapshot, TargetValidateRequest{
+			ExpectedState: ExpectedStateRunning,
+		}); err != nil {
+			cleanupErr := t.Down(context.WithoutCancel(ctx))
+			return errors.Join(fmt.Errorf("topology verification run %d validate targets: %w", run, err), cleanupErr)
 		}
 		if err := t.Down(ctx); err != nil {
 			return fmt.Errorf("topology verification run %d down: %w", run, err)
@@ -374,6 +411,8 @@ func (t *Topology) inspectNetwork(ctx context.Context, name string) (dockerNetwo
 	if networks[0].Containers == nil {
 		networks[0].Containers = map[string]struct {
 			Name        string `json:"Name"`
+			EndpointID  string `json:"EndpointID"`
+			MacAddress  string `json:"MacAddress"`
 			IPv4Address string `json:"IPv4Address"`
 		}{}
 	}

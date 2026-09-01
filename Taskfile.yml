@@ -255,6 +255,11 @@ tasks:
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} inventory"
 
+  e2e:topology:targets:
+    desc: Разрешить или повторно проверить immutable fault targets MM-38
+    cmds:
+      - "{{.E2E_TOPOLOGY_TOOL}} targets {{.CLI_ARGS}}"
+
   e2e:topology:up:
     desc: Создать четыре disposable kind-кластера MM-28
     cmds:
