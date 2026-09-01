@@ -12,9 +12,10 @@ MM-28/MM-29 и MM-31. Реализация MM-34 должна использов
 - `Runner` ограничивает каждый этап отдельным deadline, синхронизируется с
   continuous probe и при любом пост-мутационном сбое выполняет цепочку
   diagnostics → rollback → проверка capacity → steady-state;
-- Kubernetes adapter принимает только четыре явных kubeconfig/context и
-  allowlisted Deployment MM-29, повторно проверяет namespace/run ownership
-  непосредственно перед patch и rollback;
+- Kubernetes adapter декодирует только versioned inventory v1 MM-28, извлекает
+  из него четыре явных kubeconfig/context и принимает только allowlisted
+  Deployment MM-29; непосредственно перед patch и rollback он повторно
+  проверяет UID кластера, runtime ownership topology и namespace/run ownership;
 - image-step принимает только digest того же repository, config-step изменяет
   только безопасную Pod template annotation;
 - отрицательный сценарий использует встроенную fail-closed конфигурацию каждого
@@ -34,7 +35,9 @@ E2E-запуска. Каждый вызов Kubernetes API обязан явно
 До первого изменения сценарий проверяет следующие значения:
 
 - уникальный `run_id`, входящий в имена всех disposable-ресурсов;
-- четыре ожидаемых context из topology MM-28: DMZ и internal для каждого DC;
+- inventory `marketmesh.dev/e2e-topology/v1` с ownership `MM-28`, четырьмя
+  ожидаемыми context: DMZ и internal для каждого DC; command strings из
+  inventory считаются только metadata и никогда не исполняются MM-34;
 - namespace и labels, однозначно связывающие workload с тем же `run_id`;
 - точные имена Deployment и Container, полученные из контракта MM-29;
 - отсутствие любого target за пределами allowlist этого запуска.

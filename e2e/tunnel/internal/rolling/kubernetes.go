@@ -63,11 +63,8 @@ func NewKubernetes(config KubernetesConfig) (Kubernetes, error) {
 	seen := make(map[string]struct{}, len(config.Clusters))
 	seenTargets := make(map[string]struct{}, len(config.Clusters))
 	for index, cluster := range config.Clusters {
-		if cluster.DC != "dc-a" && cluster.DC != "dc-b" {
-			return nil, errors.New("rolling: cluster dc must be dc-a or dc-b")
-		}
-		if cluster.Zone != "dmz" && cluster.Zone != "internal" {
-			return nil, errors.New("rolling: cluster zone must be dmz or internal")
+		if err := validateClusterHandoff(cluster); err != nil {
+			return nil, err
 		}
 		key := cluster.DC + "/" + cluster.Zone
 		if _, found := seen[key]; found {
@@ -130,23 +127,17 @@ func (kube *kubernetes) Prepare(ctx context.Context) error {
 		if !found {
 			return fmt.Errorf("rolling: cluster %s is missing", key)
 		}
-		output, err := kube.run(
-			ctx,
-			cluster,
-			nil,
-			"get",
-			"namespace",
-			"kube-system",
-			"--output=jsonpath={.metadata.uid}",
-		)
-		identity := strings.TrimSpace(string(output))
-		if err != nil || !isSafeUID(identity) {
-			return fmt.Errorf("rolling: cannot verify cluster identity for %s", key)
+		identity, err := kube.clusterIdentity(ctx, cluster)
+		if err != nil {
+			return err
 		}
 		if _, found := identities[identity]; found {
 			return errors.New("rolling: four distinct kubernetes clusters are required")
 		}
 		identities[identity] = struct{}{}
+		if err := kube.verifyTopologyOwnership(ctx, cluster); err != nil {
+			return err
+		}
 		if err := kube.verifyNamespaceAndOwner(ctx, cluster); err != nil {
 			return err
 		}
@@ -155,9 +146,79 @@ func (kube *kubernetes) Prepare(ctx context.Context) error {
 	return nil
 }
 
+func (kube *kubernetes) clusterIdentity(ctx context.Context, cluster Cluster) (string, error) {
+	output, err := kube.run(
+		ctx,
+		cluster,
+		nil,
+		"get",
+		"namespace",
+		"kube-system",
+		"--output=jsonpath={.metadata.uid}",
+	)
+	identity := strings.TrimSpace(string(output))
+	if err != nil || !isSafeUID(identity) {
+		return "", fmt.Errorf("rolling: cannot verify cluster identity for %s/%s", cluster.DC, cluster.Zone)
+	}
+
+	return identity, nil
+}
+
+func validateClusterHandoff(cluster Cluster) error {
+	if !topologyInstancePattern.MatchString(cluster.TopologyInstance) {
+		return errors.New("rolling: cluster topology instance is outside bounds")
+	}
+	expectedLogicalName := cluster.DC + "-" + cluster.Zone
+	expectedResourceName := cluster.TopologyInstance + "-" + expectedLogicalName
+	if (cluster.DC != "dc-a" && cluster.DC != "dc-b") ||
+		(cluster.Zone != "dmz" && cluster.Zone != "internal") ||
+		cluster.LogicalName != expectedLogicalName || cluster.ResourceName != expectedResourceName ||
+		cluster.Context != "kind-"+expectedResourceName {
+		return errors.New("rolling: cluster does not match the MM-28 topology handoff")
+	}
+
+	return nil
+}
+
+func (kube *kubernetes) verifyTopologyOwnership(ctx context.Context, cluster Cluster) error {
+	output, err := kube.run(ctx, cluster, nil, "get", "namespace", topologyNamespace, "--output=json")
+	if err != nil {
+		return fmt.Errorf("rolling: reading topology namespace in %s/%s", cluster.DC, cluster.Zone)
+	}
+	var namespace metadataObject
+	if err := json.Unmarshal(output, &namespace); err != nil {
+		return fmt.Errorf("rolling: decoding topology namespace in %s/%s", cluster.DC, cluster.Zone)
+	}
+	labels := namespace.Metadata.Labels
+	if namespace.Metadata.Name != topologyNamespace ||
+		labels["marketmesh.dev/cluster"] != cluster.LogicalName ||
+		labels["marketmesh.dev/dc"] != cluster.DC ||
+		labels["marketmesh.dev/zone"] != cluster.Zone ||
+		labels["marketmesh.dev/owner-task"] != topologyTaskKey ||
+		labels["marketmesh.dev/topology-instance"] != cluster.TopologyInstance {
+		return fmt.Errorf("rolling: refusing foreign topology in %s/%s", cluster.DC, cluster.Zone)
+	}
+
+	return nil
+}
+
 func (kube *kubernetes) Preflight(ctx context.Context, target Target) (Snapshot, error) {
 	if ctx == nil {
 		return Snapshot{}, errors.New("rolling: preflight context must not be nil")
+	}
+	cluster, found := kube.clusterFor(target)
+	if !found {
+		return Snapshot{}, errors.New("rolling: target cluster is missing")
+	}
+	clusterUID, err := kube.clusterIdentity(ctx, cluster)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if err := kube.verifyTopologyOwnership(ctx, cluster); err != nil {
+		return Snapshot{}, err
+	}
+	if err := kube.verifyNamespaceAndOwner(ctx, cluster); err != nil {
+		return Snapshot{}, err
 	}
 	deployment, err := kube.readDeployment(ctx, target)
 	if err != nil {
@@ -176,6 +237,7 @@ func (kube *kubernetes) Preflight(ctx context.Context, target Target) (Snapshot,
 	container, _ := findContainer(deployment, target.Container)
 
 	return Snapshot{
+		ClusterUID:     clusterUID,
 		UID:            deployment.Metadata.UID,
 		Revision:       revision,
 		Generation:     deployment.Metadata.Generation,
@@ -392,6 +454,16 @@ func (kube *kubernetes) Rollback(
 	if !found {
 		return errors.New("rolling: target cluster is missing")
 	}
+	clusterUID, err := kube.clusterIdentity(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	if clusterUID != snapshot.ClusterUID {
+		return errors.New("rolling: refusing rollback after cluster identity changed")
+	}
+	if err := kube.verifyTopologyOwnership(ctx, cluster); err != nil {
+		return err
+	}
 	if err := kube.verifyNamespaceAndOwner(ctx, cluster); err != nil {
 		return err
 	}
@@ -477,13 +549,6 @@ func (kube *kubernetes) revalidateSnapshot(
 	target Target,
 	snapshot Snapshot,
 ) error {
-	cluster, found := kube.clusterFor(target)
-	if !found {
-		return errors.New("rolling: target cluster is missing")
-	}
-	if err := kube.verifyNamespaceAndOwner(ctx, cluster); err != nil {
-		return err
-	}
 	current, err := kube.Preflight(ctx, target)
 	if err != nil {
 		return fmt.Errorf("rolling: revalidating target before mutation: %w", err)

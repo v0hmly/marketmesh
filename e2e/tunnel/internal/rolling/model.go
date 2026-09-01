@@ -134,6 +134,7 @@ type Marker struct {
 
 // Snapshot records the exact safe fields required to restore a Deployment.
 type Snapshot struct {
+	ClusterUID     string
 	UID            string
 	Revision       int64
 	Generation     int64
@@ -152,10 +153,13 @@ type Expectation struct {
 
 // Cluster is one explicit Kubernetes boundary. Ambient kubeconfig is never used.
 type Cluster struct {
-	DC         string
-	Zone       string
-	Kubeconfig string
-	Context    string
+	LogicalName      string
+	ResourceName     string
+	TopologyInstance string
+	DC               string
+	Zone             string
+	Kubeconfig       string
+	Context          string
 }
 
 // Probe is implemented by the MM-31 adapter. Its implementation owns traffic.

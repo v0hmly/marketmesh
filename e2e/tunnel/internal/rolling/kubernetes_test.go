@@ -16,12 +16,7 @@ import (
 func TestNewKubernetesValidatesExplicitTargets(t *testing.T) {
 	t.Parallel()
 	temporary := t.TempDir()
-	clusters := []Cluster{
-		{DC: "dc-a", Zone: "dmz", Kubeconfig: filepath.Join(temporary, "dc-a-dmz"), Context: "dc-a-dmz"},
-		{DC: "dc-a", Zone: "internal", Kubeconfig: filepath.Join(temporary, "dc-a-internal"), Context: "dc-a-internal"},
-		{DC: "dc-b", Zone: "dmz", Kubeconfig: filepath.Join(temporary, "dc-b-dmz"), Context: "dc-b-dmz"},
-		{DC: "dc-b", Zone: "internal", Kubeconfig: filepath.Join(temporary, "dc-b-internal"), Context: "dc-b-internal"},
-	}
+	clusters := testClusters(temporary)
 	for _, cluster := range clusters {
 		if err := os.WriteFile(cluster.Kubeconfig, []byte("apiVersion: v1\n"), 0o600); err != nil {
 			t.Fatalf("os.WriteFile() error = %v", err)
@@ -106,6 +101,19 @@ func TestKubernetesPrepareValidatesFourOwnedClusters(t *testing.T) {
 		switch {
 		case strings.Contains(joined, "get namespace kube-system"):
 			return []byte("uid-" + contextName), nil
+		case strings.Contains(joined, "get namespace "+topologyNamespace):
+			logicalName := strings.TrimPrefix(contextName, "kind-mm34topo-")
+			dc, zone := logicalDCAndZone(logicalName)
+			return mustJSON(t, metadataObject{Metadata: objectMetadata{
+				Name: topologyNamespace,
+				Labels: map[string]string{
+					"marketmesh.dev/cluster":           logicalName,
+					"marketmesh.dev/dc":                dc,
+					"marketmesh.dev/zone":              zone,
+					"marketmesh.dev/owner-task":        topologyTaskKey,
+					"marketmesh.dev/topology-instance": "mm34topo",
+				},
+			}}), nil
 		case strings.Contains(joined, "get namespace "+Namespace):
 			return mustJSON(t, metadataObject{Metadata: objectMetadata{
 				Name: Namespace,
@@ -115,9 +123,8 @@ func TestKubernetesPrepareValidatesFourOwnedClusters(t *testing.T) {
 				},
 			}}), nil
 		case strings.Contains(joined, "get configmap "+ownerConfigMap):
-			parts := strings.Split(contextName, "-")
-			dc := parts[0] + "-" + parts[1]
-			zone := parts[2]
+			logicalName := strings.TrimPrefix(contextName, "kind-mm34topo-")
+			dc, zone := logicalDCAndZone(logicalName)
 			return mustJSON(t, metadataObject{
 				Metadata: objectMetadata{
 					Name: ownerConfigMap, Namespace: Namespace,
@@ -137,8 +144,8 @@ func TestKubernetesPrepareValidatesFourOwnedClusters(t *testing.T) {
 	if err := kube.Prepare(t.Context()); err != nil {
 		t.Fatalf("Prepare() error = %v", err)
 	}
-	if len(runner.calls) != 12 {
-		t.Fatalf("kubectl calls = %d, want 12", len(runner.calls))
+	if len(runner.calls) != 16 {
+		t.Fatalf("kubectl calls = %d, want 16", len(runner.calls))
 	}
 }
 
@@ -195,7 +202,7 @@ func TestKubernetesPreflight(t *testing.T) {
 			if test.mutate != nil {
 				test.mutate(&deployment)
 			}
-			runner := &recordingCommandRunner{outputs: [][]byte{mustJSON(t, deployment)}}
+			runner := mutationCommandRunner(t, target, deployment)
 			kube := newTestKubernetes(t, runner)
 			snapshot, err := kube.Preflight(t.Context(), target)
 			if test.name == "valid" {
@@ -226,10 +233,10 @@ func TestKubernetesUpdateUsesStrategicPatchAfterRevalidation(t *testing.T) {
 	if err := kube.Update(t.Context(), target, change, snapshot); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
-	if len(runner.calls) != 4 {
-		t.Fatalf("kubectl calls = %d, want owner validation, revalidation, and patch", len(runner.calls))
+	if len(runner.calls) != 6 {
+		t.Fatalf("kubectl calls = %d, want boundary validation, revalidation, and patch", len(runner.calls))
 	}
-	patchCall := runner.calls[3]
+	patchCall := runner.calls[5]
 	if !slices.Contains(patchCall.arguments, "--type=strategic") ||
 		!slices.Contains(patchCall.arguments, "--patch-file=-") {
 		t.Fatalf("patch arguments = %v", patchCall.arguments)
@@ -261,6 +268,29 @@ func TestKubernetesUpdateRejectsForeignImageRepository(t *testing.T) {
 	for _, call := range runner.calls {
 		if slices.Contains(call.arguments, "patch") {
 			t.Fatalf("foreign repository reached mutation: %v", call.arguments)
+		}
+	}
+}
+
+func TestKubernetesUpdateRejectsChangedClusterIdentity(t *testing.T) {
+	t.Parallel()
+	target, _ := targetFor("dc-a", ComponentGatewayIn)
+	deployment := validDeployment(target)
+	runner := mutationCommandRunner(t, target, deployment)
+	kube := newTestKubernetes(t, runner)
+	snapshot := snapshotFor(deployment, target)
+	snapshot.ClusterUID = "previous-cluster-uid"
+	change := Change{
+		Kind: ChangeImage, Revision: "gateway-in-image-v2",
+		Image: "registry.test/marketmesh/gateway-in@sha256:" + strings.Repeat("c", 64),
+	}
+	err := kube.Update(t.Context(), target, change, snapshot)
+	if err == nil || !strings.Contains(err.Error(), "changed after preflight") {
+		t.Fatalf("Update() error = %v, want changed cluster rejection", err)
+	}
+	for _, call := range runner.calls {
+		if slices.Contains(call.arguments, "patch") {
+			t.Fatalf("changed cluster reached mutation: %v", call.arguments)
 		}
 	}
 }
@@ -354,7 +384,8 @@ func TestKubernetesRollbackUsesExactSavedRevision(t *testing.T) {
 	runner := mutationCommandRunner(t, target, deployment)
 	kube := newTestKubernetes(t, runner)
 	snapshot := Snapshot{
-		UID: "deployment-uid", Revision: 7, Generation: 7, Desired: 2,
+		ClusterUID: "uid-kind-mm34topo-dc-a-dmz",
+		UID:        "deployment-uid", Revision: 7, Generation: 7, Desired: 2,
 		Image: "registry.test/marketmesh/gateway-in:mm29-commit",
 	}
 	if err := kube.Rollback(
@@ -365,8 +396,8 @@ func TestKubernetesRollbackUsesExactSavedRevision(t *testing.T) {
 	); err != nil {
 		t.Fatalf("Rollback() error = %v", err)
 	}
-	if len(runner.calls) != 4 ||
-		!slices.Contains(runner.calls[3].arguments, "--to-revision=7") {
+	if len(runner.calls) != 6 ||
+		!slices.Contains(runner.calls[5].arguments, "--to-revision=7") {
 		t.Fatalf("rollback calls = %+v", runner.calls)
 	}
 }
@@ -381,7 +412,8 @@ func TestKubernetesRollbackRefusesForeignRollout(t *testing.T) {
 	runner := mutationCommandRunner(t, target, deployment)
 	kube := newTestKubernetes(t, runner)
 	err := kube.Rollback(t.Context(), target, "gateway-in-image-v2", Snapshot{
-		UID: "deployment-uid", Revision: 7, Desired: 2,
+		ClusterUID: "uid-kind-mm34topo-dc-a-dmz",
+		UID:        "deployment-uid", Revision: 7, Desired: 2,
 		Image: "registry.test/marketmesh/gateway-in:mm29-commit",
 	})
 	if err == nil || !strings.Contains(err.Error(), "foreign rollout") {
@@ -396,12 +428,7 @@ func TestKubernetesRollbackRefusesForeignRollout(t *testing.T) {
 
 func newTestKubernetes(t *testing.T, runner commandRunner) *kubernetes {
 	t.Helper()
-	clusters := []Cluster{
-		{DC: "dc-a", Zone: "dmz", Kubeconfig: "/tmp/dc-a-dmz", Context: "dc-a-dmz"},
-		{DC: "dc-a", Zone: "internal", Kubeconfig: "/tmp/dc-a-internal", Context: "dc-a-internal"},
-		{DC: "dc-b", Zone: "dmz", Kubeconfig: "/tmp/dc-b-dmz", Context: "dc-b-dmz"},
-		{DC: "dc-b", Zone: "internal", Kubeconfig: "/tmp/dc-b-internal", Context: "dc-b-internal"},
-	}
+	clusters := testClusters("/tmp")
 	kube, err := newKubernetes(KubernetesConfig{
 		RunID: "run-34", Clusters: clusters, PollInterval: time.Nanosecond,
 	}, clusters, runner)
@@ -410,6 +437,42 @@ func newTestKubernetes(t *testing.T, runner commandRunner) *kubernetes {
 	}
 
 	return kube
+}
+
+func testClusters(directory string) []Cluster {
+	definitions := []struct {
+		dc   string
+		zone string
+	}{
+		{dc: "dc-a", zone: "dmz"},
+		{dc: "dc-a", zone: "internal"},
+		{dc: "dc-b", zone: "dmz"},
+		{dc: "dc-b", zone: "internal"},
+	}
+	clusters := make([]Cluster, 0, len(definitions))
+	for _, definition := range definitions {
+		logicalName := definition.dc + "-" + definition.zone
+		resourceName := "mm34topo-" + logicalName
+		clusters = append(clusters, Cluster{
+			LogicalName:      logicalName,
+			ResourceName:     resourceName,
+			TopologyInstance: "mm34topo",
+			DC:               definition.dc,
+			Zone:             definition.zone,
+			Kubeconfig:       filepath.Join(directory, logicalName),
+			Context:          "kind-" + resourceName,
+		})
+	}
+
+	return clusters
+}
+
+func logicalDCAndZone(logicalName string) (string, string) {
+	if strings.HasSuffix(logicalName, "-internal") {
+		return strings.TrimSuffix(logicalName, "-internal"), "internal"
+	}
+
+	return strings.TrimSuffix(logicalName, "-dmz"), "dmz"
 }
 
 func validDeployment(target Target) deploymentObject {
@@ -463,7 +526,8 @@ func validDeployment(target Target) deploymentObject {
 func snapshotFor(deployment deploymentObject, target Target) Snapshot {
 	container, _ := findContainer(deployment, target.Container)
 	return Snapshot{
-		UID: deployment.Metadata.UID, Revision: 7, Generation: deployment.Metadata.Generation,
+		ClusterUID: "uid-kind-mm34topo-" + target.DC + "-" + target.Zone,
+		UID:        deployment.Metadata.UID, Revision: 7, Generation: deployment.Metadata.Generation,
 		Desired: *deployment.Spec.Replicas, Image: container.Image,
 		ConfigRevision: deployment.Spec.Template.Metadata.Annotations[configRevisionAnnotation],
 	}
@@ -497,6 +561,19 @@ func mutationCommandRunner(
 	runner.run = func(_ []byte, arguments []string) ([]byte, error) {
 		joined := strings.Join(arguments, " ")
 		switch {
+		case strings.Contains(joined, "get namespace kube-system"):
+			return []byte("uid-kind-mm34topo-" + target.DC + "-" + target.Zone), nil
+		case strings.Contains(joined, "get namespace "+topologyNamespace):
+			return mustJSON(t, metadataObject{Metadata: objectMetadata{
+				Name: topologyNamespace,
+				Labels: map[string]string{
+					"marketmesh.dev/cluster":           target.DC + "-" + target.Zone,
+					"marketmesh.dev/dc":                target.DC,
+					"marketmesh.dev/zone":              target.Zone,
+					"marketmesh.dev/owner-task":        topologyTaskKey,
+					"marketmesh.dev/topology-instance": "mm34topo",
+				},
+			}}), nil
 		case strings.Contains(joined, "get namespace "+Namespace):
 			return mustJSON(t, metadataObject{Metadata: objectMetadata{
 				Name: Namespace,
