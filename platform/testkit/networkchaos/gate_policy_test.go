@@ -93,24 +93,3 @@ func TestValidateQuarantineRequiresOwnerReasonAndExpiry(t *testing.T) {
 		})
 	}
 }
-
-func TestGateAttemptsDoesNotHideFailureWithRetry(t *testing.T) {
-	t.Parallel()
-
-	if err := GateAttempts([]bool{true, true}); err != nil {
-		t.Fatalf("GateAttempts() error = %v", err)
-	}
-	for _, attempts := range [][]bool{{false}, {false, true}, {true, false, true}} {
-		err := GateAttempts(attempts)
-		if err == nil || !strings.Contains(err.Error(), "cannot hide") {
-			t.Fatalf("GateAttempts(%v) error = %v, want failure", attempts, err)
-		}
-	}
-	if err := GateAttempts(nil); err == nil || !strings.Contains(err.Error(), "between 1 and") {
-		t.Fatalf("GateAttempts(nil) error = %v", err)
-	}
-	tooMany := make([]bool, maxAttempts+1)
-	if err := GateAttempts(tooMany); err == nil || !strings.Contains(err.Error(), "between 1 and") {
-		t.Fatalf("GateAttempts(tooMany) error = %v", err)
-	}
-}

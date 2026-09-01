@@ -61,11 +61,12 @@ snapshots в каталог конкретного run до удаления р�
 последовательностью faults, но без Docker IDs: новый запуск обязан заново
 разрешить disposable resources.
 
-`GateAttempts` сохраняет failure при любом неуспешном attempt и не позволяет
-последующему retry превратить flaky scenario в pass. Если scenario вынесен из
-required gate, `ValidateQuarantine` требует явные `@owner`, причину и будущий
-expiry не дальше 30 дней; quarantine остаётся метаданными и не переписывает
-фактический результат попытки.
+Запрет объявлять flaky run успешным не дублируется в этом пакете: merged
+исполняемый контракт MM-27 `e2e/tunnel/spec.Evaluate` считает любой retry,
+missing или unknown неуспешным SLO sample. Если scenario вынесен из required
+gate, `ValidateQuarantine` требует явные `@owner`, причину и будущий expiry не
+дальше 30 дней; quarantine остаётся метаданными и не переписывает итоговый
+SLO report.
 
 `HTTPCapacitySource` подключает публичный readiness-контракт MM-30 без импорта
 его internal package. Adapter принимает ровно два разных literal
@@ -77,11 +78,14 @@ capacity.
 
 ## Отложенная интеграция
 
-- workloads/PKI MM-29 уже доступны; фактический Docker topology contract и
-  destructive проверка adapter ожидают MM-28;
-- health-aware capacity MM-30 подключена; continuous probe ожидает MM-31;
-- pod/service/rolling/DC churn — композиция adapters после MM-32–MM-35;
-- SLO availability/recovery/error-budget gate и JSON/JUnit — после MM-27;
+- workloads/PKI MM-29 и versioned topology inventory MM-28 доступны; публичный
+  immutable fault-target snapshot/validator ожидается из MM-38, поэтому
+  destructive suite не запускается;
+- health-aware capacity MM-30 подключена; continuous probe MM-31 не интегрируется
+  до исправления integrity-проверки reconcile ledger;
+- service churn MM-33 доступен; pod/rolling/DC churn ожидает MM-32/MM-34/MM-35;
+- SLO availability/recovery/error-budget gate и JSON/JUnit берутся напрямую из
+  merged MM-27 без локальной копии;
 - permanent PR/scheduled GitHub Actions gate — после MM-6. До этого действует
   зафиксированное в проекте MarketMesh процессное исключение: PR/merge разрешены
   только после полного эквивалентного набора локальных проверок, независимого

@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	maxAttempts              = 8
 	maxQuarantineReasonRunes = 256
 	maxQuarantineLifetime    = 30 * 24 * time.Hour
 )
@@ -57,27 +56,6 @@ func ValidateQuarantine(now time.Time, quarantine Quarantine) error {
 			"networkchaos: quarantine lifetime must not exceed %s",
 			maxQuarantineLifetime,
 		)
-	}
-
-	return nil
-}
-
-// GateAttempts запрещает объявлять scenario успешным после failed retry. Все
-// фактически выполненные attempts обязаны быть успешными.
-func GateAttempts(attempts []bool) error {
-	if len(attempts) == 0 || len(attempts) > maxAttempts {
-		return fmt.Errorf(
-			"networkchaos: attempt ledger must contain between 1 and %d entries",
-			maxAttempts,
-		)
-	}
-	for attemptIndex, passed := range attempts {
-		if !passed {
-			return fmt.Errorf(
-				"networkchaos: attempt %d failed; retry success cannot hide the failure",
-				attemptIndex,
-			)
-		}
 	}
 
 	return nil

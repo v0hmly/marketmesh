@@ -80,7 +80,11 @@ func NewHTTPCapacitySource(config HTTPCapacityConfig) (*HTTPCapacitySource, erro
 
 	transport := config.Transport
 	if transport == nil {
-		defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
+		baseTransport, ok := http.DefaultTransport.(*http.Transport)
+		if !ok {
+			return nil, errors.New("networkchaos: default HTTP transport has unexpected type")
+		}
+		defaultTransport := baseTransport.Clone()
 		defaultTransport.Proxy = nil
 		defaultTransport.DisableCompression = true
 		defaultTransport.MaxResponseHeaderBytes = maxReadyHeaderBytes
