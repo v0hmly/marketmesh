@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"net/netip"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -31,6 +32,7 @@ var (
 type fakeDriver struct {
 	mu            sync.Mutex
 	snapshot      Snapshot
+	snapshots     map[string]Snapshot
 	applyErrors   []error
 	restoreErrors []error
 	events        []string
@@ -39,11 +41,14 @@ type fakeDriver struct {
 	nilRestore    bool
 }
 
-func (driver *fakeDriver) Inspect(ctx context.Context, _ Fault) (Snapshot, error) {
+func (driver *fakeDriver) Inspect(ctx context.Context, fault Fault) (Snapshot, error) {
 	driver.record("inspect")
 	if driver.waitOnInspect {
 		<-ctx.Done()
 		return Snapshot{}, ctx.Err()
+	}
+	if snapshot, found := driver.snapshots[fault.Name]; found {
+		return snapshot, nil
 	}
 	return driver.snapshot, nil
 }
@@ -261,6 +266,72 @@ func TestObservedRunnerPublishesBoundedFaultLifecycle(t *testing.T) {
 			point.FaultKind != KindPartition {
 			t.Fatalf("observation = %+v, want bounded plan metadata", point)
 		}
+	}
+}
+
+func TestObservedRunnerPublishesAllBaselineMarkersBeforeCombinedMutations(t *testing.T) {
+	t.Parallel()
+
+	firstFault := validPartitionFault("partition-first", 1)
+	secondFault := validPartitionFault("partition-second", 1)
+	secondFault.Container = ResourceRef{
+		ID:   strings.Repeat("d", 64),
+		Name: testRunID + "-gateway-out-second",
+	}
+	secondFault.Network = ResourceRef{
+		ID:   strings.Repeat("e", 64),
+		Name: testRunID + "-dc-b-internal",
+	}
+	secondFault.PeerNetworks = []ResourceRef{{
+		ID:   strings.Repeat("f", 64),
+		Name: testRunID + "-dc-b-dmz",
+	}}
+	secondSnapshot := validSnapshot()
+	secondSnapshot.Container.ID = secondFault.Container.ID
+	secondSnapshot.Container.Name = secondFault.Container.Name
+	secondSnapshot.Network.Resource.ID = secondFault.Network.ID
+	secondSnapshot.Network.Resource.Name = secondFault.Network.Name
+	secondSnapshot.PeerNetworks[0].Resource.ID = secondFault.PeerNetworks[0].ID
+	secondSnapshot.PeerNetworks[0].Resource.Name = secondFault.PeerNetworks[0].Name
+
+	driver := &fakeDriver{snapshots: map[string]Snapshot{
+		firstFault.Name:  validSnapshot(),
+		secondFault.Name: secondSnapshot,
+	}}
+	observer := &fakeObserver{driver: driver}
+	runner, err := newWithWaiter(
+		testConfig(),
+		driver,
+		&fakeCapacity{values: []uint{3, 2, 3}},
+		&fakeDiagnostics{driver: driver},
+		observer,
+		fakeWaiter{},
+	)
+	if err != nil {
+		t.Fatalf("newWithWaiter() error = %v", err)
+	}
+
+	err = runner.Run(t.Context(), Plan{
+		Seed: 42,
+		Steps: []Step{{
+			Name:   "combined",
+			Hold:   time.Second,
+			Faults: []Fault{firstFault, secondFault},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	events := driver.recordedEvents()
+	wantPrefix := []string{
+		"observer:before:partition-first",
+		"observer:before:partition-second",
+		"inspect",
+		"apply",
+		"observer:active:partition-first",
+	}
+	if len(events) < len(wantPrefix) || !slices.Equal(events[:len(wantPrefix)], wantPrefix) {
+		t.Fatalf("events = %v, want prefix %v", events, wantPrefix)
 	}
 }
 

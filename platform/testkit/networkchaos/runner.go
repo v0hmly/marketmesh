@@ -176,6 +176,11 @@ func (runner *Runner) runStep(
 			runErr = observeErr
 			break
 		}
+	}
+	for faultIndex, fault := range step.Faults {
+		if runErr != nil {
+			break
+		}
 		snapshot, inspectErr := runner.inspect(ctx, fault)
 		if inspectErr != nil {
 			runErr = inspectErr
