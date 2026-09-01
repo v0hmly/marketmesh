@@ -1,9 +1,9 @@
 # Полный отказ DC, failover и controlled failback
 
-Этот документ фиксирует исполняемый контракт сценария MM-35. Конкретные
-адаптеры стенда, front door, непрерывного probe и rolling redeploy поставляются
-задачами MM-28, MM-30, MM-31 и MM-34. Сценарий MM-35 использует их публичные
-границы и не воспроизводит их внутреннюю реализацию.
+Этот документ фиксирует исполняемый контракт сценария MM-35. Адаптеры стенда и
+front door используют уже слитые публичные границы MM-28 и MM-30. Адаптеры
+непрерывного probe и rolling redeploy поставляются задачами MM-31 и MM-34;
+сценарий MM-35 не копирует их незавершённую реализацию.
 
 ## Границы безопасности
 
@@ -14,11 +14,33 @@ run. До остановки, удаления или восстановлени
 - kubeconfig содержит ровно четыре ожидаемых context текущего run;
 - имена кластеров равны ожидаемым именам `dc-a-dmz`, `dc-a-internal`,
   `dc-b-dmz` и `dc-b-internal` с уникальным префиксом текущего run;
-- все контейнеры и Docker-сети принадлежат тому же run и имеют его label;
+- каждый container имеет точный kind cluster label текущего run, а каждая
+  Docker-сеть — ownership task и instance labels того же run;
 - выбранный DC содержит ровно DMZ- и internal-кластер;
 - второй DC полностью ready до начала fault phase;
 - context или resource без уникального префикса и label текущего run приводит к
   немедленному отказу без destructive-действий.
+
+Конкретный адаптер `MM28Topology` принимает только instance вида `mm35-*`
+длиной не более 20 символов, абсолютный корень репозитория и явный Docker
+context. Он получает topology только через публичную JSON inventory
+`marketmesh.dev/e2e-topology/v1` и проверяет её целиком: schema, task, instance,
+ownership labels, четыре записи в фиксированном порядке, абсолютные kubeconfig,
+точные kube context, container и network. Затем он запускает публичную проверку
+`ready` MM-28, которая подтверждает Kubernetes identity, readiness, firewall и
+изоляцию зон. Никакая строка command из inventory не исполняется через shell:
+CLI вызывается статическим набором аргументов.
+
+Непосредственно перед отказом адаптер повторно выполняет `docker container
+inspect` и `docker network inspect` в заданном context для обеих половин DC.
+Первая state-changing команда не запускается, пока не подтверждены оба точных
+control-plane container, их kind cluster label, attachment к ожидаемой сети, а
+также task и instance labels сети. Outage останавливает ровно два container;
+restore запускает только тот же авторизованный набор. Если сценарий прерван во
+время outage, cleanup сначала пытается вернуть остановленные принадлежащие run
+container, после чего вызывает fail-closed `down` MM-28. `down` повторно
+сохраняет diagnostics и самостоятельно проверяет ownership перед каждым
+удалением.
 
 Запрещено использовать текущий пользовательский Kubernetes context, широкие
 glob-выражения, выбор ресурсов только по частичному совпадению имени и любые
