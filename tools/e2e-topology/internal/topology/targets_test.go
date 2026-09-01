@@ -187,6 +187,9 @@ func TestValidateTargetsStoppedDoesNotInspectLiveEndpoint(t *testing.T) {
 	}); err == nil {
 		t.Fatal("ValidateTargets(stopped) error = nil, want live sandbox key rejection")
 	}
+	if readOnlyErr := runtime.assertReadOnly(); readOnlyErr != nil {
+		t.Fatal(readOnlyErr)
+	}
 	runtime.retainSandboxKey = false
 	runtime.containerID = strings.Repeat("7", 64)
 	if _, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
