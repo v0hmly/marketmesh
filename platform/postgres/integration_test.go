@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
-	"github.com/v0hmly/marketmesh/platform/telemetry"
+	"github.com/v0hmly/marketmesh/platform/testkit"
+	integrationtest "github.com/v0hmly/marketmesh/platform/testkit/integration"
 )
 
 func TestIntegrationRWROTransactionsAndReadiness(t *testing.T) {
@@ -165,14 +165,14 @@ func TestIntegrationRollbackReadOnlyAndCancellation(t *testing.T) {
 func newIntegrationDatabase(t *testing.T) *Database {
 	t.Helper()
 
-	rwDSN, rwFound := os.LookupEnv("MARKETMESH_POSTGRES_RW_DSN")
-	roDSN, roFound := os.LookupEnv("MARKETMESH_POSTGRES_RO_DSN")
-	if !rwFound || !roFound {
-		t.Skip("integration DSNs are not configured; run task postgres:integration")
-	}
+	environment := integrationtest.EnvOrSkip(
+		t,
+		"MARKETMESH_POSTGRES_RW_DSN",
+		"MARKETMESH_POSTGRES_RO_DSN",
+	)
 	secrets := serviceruntime.MapEnv(map[string]string{
-		"RW_DSN": rwDSN,
-		"RO_DSN": roDSN,
+		"RW_DSN": environment["MARKETMESH_POSTGRES_RW_DSN"],
+		"RO_DSN": environment["MARKETMESH_POSTGRES_RO_DSN"],
 	})
 	rwSecret, err := secrets.Secret("RW_DSN", true)
 	if err != nil {
@@ -211,7 +211,7 @@ func newIntegrationDatabase(t *testing.T) *Database {
 				BackoffMultiplier: 2,
 			},
 		},
-		telemetry.NewNoop(),
+		testkit.NoopTelemetry(t),
 	)
 	if err != nil {
 		t.Fatalf("New() integration database: %v", err)

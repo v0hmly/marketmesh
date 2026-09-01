@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -9,29 +8,16 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"github.com/v0hmly/marketmesh/platform/testkit"
 )
 
 func TestQueryTracerDoesNotRecordSQLArgumentsOrErrorText(t *testing.T) {
 	t.Parallel()
 
-	spanExporter := tracetest.NewInMemoryExporter()
-	provider := sdktrace.NewTracerProvider(
-		sdktrace.WithSyncer(spanExporter),
-	)
-	t.Cleanup(func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		if err := provider.Shutdown(shutdownCtx); err != nil {
-			t.Errorf("trace provider shutdown: %v", err)
-		}
-	})
+	observability := testkit.NewTelemetry(t)
 	tracer := &queryTracer{
 		pool:   roleRW,
-		tracer: provider.Tracer(instrumentationName),
+		tracer: observability.Tracer(instrumentationName),
 	}
 	sensitiveSQL := "SELECT private_column FROM private_table WHERE secret = $1"
 	sensitiveArgument := "private-query-argument"
@@ -56,7 +42,7 @@ func TestQueryTracerDoesNotRecordSQLArgumentsOrErrorText(t *testing.T) {
 		},
 	)
 
-	spans := spanExporter.GetSpans()
+	spans := observability.Spans(t)
 	if len(spans) != 1 {
 		t.Fatalf("exported spans = %d, want 1", len(spans))
 	}
@@ -74,15 +60,7 @@ func TestQueryTracerDoesNotRecordSQLArgumentsOrErrorText(t *testing.T) {
 func TestPoolAndTransactionMetricsUseBoundedAttributes(t *testing.T) {
 	t.Parallel()
 
-	reader := sdkmetric.NewManualReader()
-	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	t.Cleanup(func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		if err := provider.Shutdown(shutdownCtx); err != nil {
-			t.Errorf("meter provider shutdown: %v", err)
-		}
-	})
+	observability := testkit.NewTelemetry(t)
 	rw := &fakePool{poolStats: poolStats{
 		acquireCount:          11,
 		acquireDuration:       2 * time.Second,
@@ -100,7 +78,7 @@ func TestPoolAndTransactionMetricsUseBoundedAttributes(t *testing.T) {
 	}}
 	ro := &fakePool{poolStats: rw.poolStats}
 	instruments, err := newInstruments(
-		provider.Meter(instrumentationName),
+		observability.Meter(instrumentationName),
 		&managedPool{role: roleRW, backend: rw},
 		&managedPool{role: roleRO, backend: ro},
 	)
@@ -127,10 +105,7 @@ func TestPoolAndTransactionMetricsUseBoundedAttributes(t *testing.T) {
 		"committed",
 	)
 
-	var resourceMetrics metricdata.ResourceMetrics
-	if err := reader.Collect(t.Context(), &resourceMetrics); err != nil {
-		t.Fatalf("collect metrics: %v", err)
-	}
+	resourceMetrics := observability.Metrics(t)
 	names := map[string]struct{}{}
 	for _, scopeMetrics := range resourceMetrics.ScopeMetrics {
 		for _, measurement := range scopeMetrics.Metrics {

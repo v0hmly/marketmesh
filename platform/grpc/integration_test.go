@@ -1,7 +1,8 @@
+//go:build integration
+
 package grpc
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	platformlogger "github.com/v0hmly/marketmesh/platform/logger"
 	"github.com/v0hmly/marketmesh/platform/telemetry"
+	"github.com/v0hmly/marketmesh/platform/testkit"
 	grpcgo "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -283,8 +285,8 @@ func TestServerShutdownIsBoundedAndUpdatesHealth(t *testing.T) {
 func TestServerRejectsProductionReflection(t *testing.T) {
 	t.Parallel()
 
-	log, _ := newIntegrationLogger(t)
-	config := validIntegrationServerConfig(log, telemetry.NewNoop())
+	log, _ := testkit.NewLogger(t)
+	config := validIntegrationServerConfig(log, testkit.NoopTelemetry(t))
 	config.Environment = "production"
 	config.Security.Plaintext = PlaintextTrustedMesh
 	config.EnableReflection = true
@@ -298,8 +300,8 @@ func TestServerRejectsProductionReflection(t *testing.T) {
 func TestClientConnectionTimeout(t *testing.T) {
 	t.Parallel()
 
-	log, _ := newIntegrationLogger(t)
-	config := validIntegrationClientConfig(log, telemetry.NewNoop(), 50*time.Millisecond)
+	log, _ := testkit.NewLogger(t)
+	config := validIntegrationClientConfig(log, testkit.NoopTelemetry(t), 50*time.Millisecond)
 	config.Target = "passthrough:///blocked"
 	config.ConnectTimeout = 20 * time.Millisecond
 	config.Dialer = func(ctx context.Context, _ string) (net.Conn, error) {
@@ -320,7 +322,7 @@ func TestClientConnectionTimeout(t *testing.T) {
 type integrationHarness struct {
 	server    *Server
 	client    *Client
-	logs      *bytes.Buffer
+	logs      *testkit.LogCapture
 	component interface {
 		Shutdown(context.Context) error
 	}
@@ -336,8 +338,8 @@ func newIntegrationHarness(
 ) *integrationHarness {
 	t.Helper()
 
-	log, logs := newIntegrationLogger(t)
-	pipeline := telemetry.NewNoop()
+	log, logs := testkit.NewLogger(t)
+	pipeline := testkit.NoopTelemetry(t)
 	server, err := NewServer(validIntegrationServerConfig(log, pipeline))
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
@@ -457,23 +459,6 @@ func validIntegrationClientConfig(
 		UnaryAuthentication:  unaryClientAuthentication,
 		StreamAuthentication: streamClientAuthentication,
 	}
-}
-
-func newIntegrationLogger(t *testing.T) (*platformlogger.Logger, *bytes.Buffer) {
-	t.Helper()
-
-	var output bytes.Buffer
-	log, err := platformlogger.New(platformlogger.Config{
-		Service:     "grpc-test",
-		Version:     "test",
-		Environment: "test",
-		Output:      &output,
-	})
-	if err != nil {
-		t.Fatalf("logger.New() error = %v", err)
-	}
-
-	return log, &output
 }
 
 func unaryClientAuthentication(
