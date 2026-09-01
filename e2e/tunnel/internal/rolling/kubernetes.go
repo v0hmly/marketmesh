@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -173,7 +174,8 @@ func validateClusterHandoff(cluster Cluster) error {
 	if (cluster.DC != "dc-a" && cluster.DC != "dc-b") ||
 		(cluster.Zone != "dmz" && cluster.Zone != "internal") ||
 		cluster.LogicalName != expectedLogicalName || cluster.ResourceName != expectedResourceName ||
-		cluster.Context != "kind-"+expectedResourceName {
+		cluster.Context != "kind-"+expectedResourceName ||
+		net.ParseIP(cluster.ControlPlaneAddress).To4() == nil {
 		return errors.New("rolling: cluster does not match the MM-28 topology handoff")
 	}
 

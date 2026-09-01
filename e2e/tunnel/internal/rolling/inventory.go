@@ -161,12 +161,13 @@ func validateInventoryCluster(instance string, candidate inventoryCluster) (Clus
 	}
 
 	return Cluster{
-		LogicalName:      candidate.LogicalName,
-		ResourceName:     candidate.ResourceName,
-		TopologyInstance: instance,
-		DC:               candidate.DC,
-		Zone:             candidate.Zone,
-		Kubeconfig:       candidate.Kubeconfig,
-		Context:          candidate.Context,
+		LogicalName:         candidate.LogicalName,
+		ResourceName:        candidate.ResourceName,
+		TopologyInstance:    instance,
+		ControlPlaneAddress: candidate.ControlPlaneAddress,
+		DC:                  candidate.DC,
+		Zone:                candidate.Zone,
+		Kubeconfig:          candidate.Kubeconfig,
+		Context:             candidate.Context,
 	}, nil
 }

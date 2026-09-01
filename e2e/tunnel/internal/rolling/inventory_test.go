@@ -99,14 +99,14 @@ func TestDecodeTopologyInventoryRejectsMalformedInput(t *testing.T) {
 
 func validTopologyInventory(directory string) topologyInventory {
 	clusters := make([]inventoryCluster, 0, 4)
-	for index, cluster := range testClusters(directory) {
+	for _, cluster := range testClusters(directory) {
 		clusters = append(clusters, inventoryCluster{
 			LogicalName:            cluster.LogicalName,
 			ResourceName:           cluster.ResourceName,
 			DC:                     cluster.DC,
 			Zone:                   cluster.Zone,
 			NetworkName:            cluster.ResourceName,
-			ControlPlaneAddress:    "172.28.10." + string(rune('1'+index)),
+			ControlPlaneAddress:    cluster.ControlPlaneAddress,
 			Kubeconfig:             cluster.Kubeconfig,
 			Context:                cluster.Context,
 			Namespace:              topologyNamespace,

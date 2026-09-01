@@ -155,13 +155,14 @@ type Expectation struct {
 
 // Cluster is one explicit Kubernetes boundary. Ambient kubeconfig is never used.
 type Cluster struct {
-	LogicalName      string
-	ResourceName     string
-	TopologyInstance string
-	DC               string
-	Zone             string
-	Kubeconfig       string
-	Context          string
+	LogicalName         string
+	ResourceName        string
+	TopologyInstance    string
+	ControlPlaneAddress string
+	DC                  string
+	Zone                string
+	Kubeconfig          string
+	Context             string
 }
 
 // Probe is implemented by the MM-31 adapter. Its implementation owns traffic.

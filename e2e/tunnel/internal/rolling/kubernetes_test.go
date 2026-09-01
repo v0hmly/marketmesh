@@ -450,17 +450,18 @@ func testClusters(directory string) []Cluster {
 		{dc: "dc-b", zone: "internal"},
 	}
 	clusters := make([]Cluster, 0, len(definitions))
-	for _, definition := range definitions {
+	for index, definition := range definitions {
 		logicalName := definition.dc + "-" + definition.zone
 		resourceName := "mm34topo-" + logicalName
 		clusters = append(clusters, Cluster{
-			LogicalName:      logicalName,
-			ResourceName:     resourceName,
-			TopologyInstance: "mm34topo",
-			DC:               definition.dc,
-			Zone:             definition.zone,
-			Kubeconfig:       filepath.Join(directory, logicalName),
-			Context:          "kind-" + resourceName,
+			LogicalName:         logicalName,
+			ResourceName:        resourceName,
+			TopologyInstance:    "mm34topo",
+			ControlPlaneAddress: fmt.Sprintf("172.28.10.%d", index+1),
+			DC:                  definition.dc,
+			Zone:                definition.zone,
+			Kubeconfig:          filepath.Join(directory, logicalName),
+			Context:             "kind-" + resourceName,
 		})
 	}
 
