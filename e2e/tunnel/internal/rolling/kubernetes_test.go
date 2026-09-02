@@ -430,6 +430,7 @@ func TestKubernetesWaitPreservesCapacityInvariant(t *testing.T) {
 	surge.Status.ObservedGeneration = 7
 	surge.Status.Replicas = 3
 	surge.Status.UpdatedReplicas = 1
+	surge.Status.UnavailableReplicas = 1
 	surge.Spec.Template.Spec.Containers[0].Image = image
 	ready := surge
 	ready.Status.ObservedGeneration = 8
@@ -445,11 +446,13 @@ func TestKubernetesWaitPreservesCapacityInvariant(t *testing.T) {
 	}
 }
 
-func TestKubernetesWaitRejectsUnavailableReplica(t *testing.T) {
+func TestKubernetesWaitRejectsLostReadyCapacity(t *testing.T) {
 	t.Parallel()
 	target, _ := targetFor("dc-a", ComponentGatewayIn)
 	deployment := validDeployment(target)
 	deployment.Status.UnavailableReplicas = 1
+	deployment.Status.ReadyReplicas = 1
+	deployment.Status.AvailableReplicas = 1
 	runner := mutationCommandRunner(t, target, deployment)
 	kube := newTestKubernetes(t, runner)
 	err := kube.Wait(t.Context(), target, Expectation{

@@ -679,11 +679,9 @@ func validateReadyState(deployment deploymentObject, desired int32) error {
 }
 
 func validateCapacityInvariant(deployment deploymentObject, desired int32) error {
-	if deployment.Status.UnavailableReplicas != 0 {
-		return errors.New("rolling: unavailable replicas became non-zero")
-	}
-	if deployment.Status.ReadyReplicas < desired {
-		return errors.New("rolling: ready replicas dropped below desired")
+	if deployment.Status.ReadyReplicas < desired ||
+		deployment.Status.AvailableReplicas < desired {
+		return errors.New("rolling: ready capacity dropped below desired")
 	}
 	if deployment.Status.Replicas > desired+1 {
 		return errors.New("rolling: total replicas exceeded maxSurge")
