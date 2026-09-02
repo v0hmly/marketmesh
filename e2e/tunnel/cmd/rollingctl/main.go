@@ -186,9 +186,9 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 		"",
 		"new absolute artifact bundle directory",
 	)
-	flags.StringVar(&result.gatewayInImage, "gateway-in-image", "", "immutable adjacent image digest")
-	flags.StringVar(&result.gatewayOutImage, "gateway-out-image", "", "immutable adjacent image digest")
-	flags.StringVar(&result.fakeInternalImage, "fake-internal-image", "", "immutable adjacent image digest")
+	flags.StringVar(&result.gatewayInImage, "gateway-in-image", "", "adjacent image digest or MM-34 local tag")
+	flags.StringVar(&result.gatewayOutImage, "gateway-out-image", "", "adjacent image digest or MM-34 local tag")
+	flags.StringVar(&result.fakeInternalImage, "fake-internal-image", "", "adjacent image digest or MM-34 local tag")
 	flags.StringVar(
 		&result.gatewayInImageRevision,
 		"gateway-in-image-revision",
@@ -273,7 +273,7 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	}
 	if result.mode != "rollback" &&
 		(result.gatewayInImage == "" || result.gatewayOutImage == "" || result.fakeInternalImage == "") {
-		return options{}, errors.New("rollingctl: all three immutable image transitions are required")
+		return options{}, errors.New("rollingctl: all three image transitions are required")
 	}
 	if result.ledgerLimit == 0 || result.ledgerLimit > 100_000 {
 		return options{}, errors.New("rollingctl: ledger limit is outside bounds")

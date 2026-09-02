@@ -78,6 +78,25 @@ func TestNewPlanRejectsMutableImage(t *testing.T) {
 	}
 }
 
+func TestNewPlanAcceptsBoundedLocalImageTags(t *testing.T) {
+	t.Parallel()
+	transitions := map[Component]Transition{}
+	for _, component := range []Component{
+		ComponentGatewayIn,
+		ComponentGatewayOut,
+		ComponentFakeInternal,
+	} {
+		transitions[component] = Transition{
+			Image:          "docker.io/marketmesh/" + string(component) + ":mm34-0123456789ab",
+			ImageRevision:  "image-v2",
+			ConfigRevision: "config-v2",
+		}
+	}
+	if _, err := NewPlan(VariantA, transitions); err != nil {
+		t.Fatalf("NewPlan() error = %v", err)
+	}
+}
+
 func TestValidatePlanRejectsPartialPlan(t *testing.T) {
 	t.Parallel()
 	target, _ := targetFor("dc-a", ComponentGatewayIn)

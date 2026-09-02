@@ -28,8 +28,11 @@ const (
 )
 
 var (
-	revisionPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$`)
-	digestPattern   = regexp.MustCompile(`^[a-z0-9][a-z0-9./:_-]*@sha256:[0-9a-f]{64}$`)
+	revisionPattern   = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$`)
+	digestPattern     = regexp.MustCompile(`^[a-z0-9][a-z0-9./:_-]*@sha256:[0-9a-f]{64}$`)
+	localImagePattern = regexp.MustCompile(
+		`^(?:docker\.io/)?marketmesh/(?:gateway-in|gateway-out|fake-internal):mm34-[0-9a-f]{12}$`,
+	)
 
 	// ErrReadinessNotReached identifies the expected failure mode of a negative rollout.
 	ErrReadinessNotReached = errors.New("rolling: readiness was not reached")
@@ -216,8 +219,9 @@ func validateChange(change Change) error {
 	}
 	switch change.Kind {
 	case ChangeImage:
-		if len(change.Image) > 512 || !digestPattern.MatchString(change.Image) {
-			return errors.New("rolling: image must use an immutable sha256 digest")
+		if len(change.Image) > 512 ||
+			(!digestPattern.MatchString(change.Image) && !localImagePattern.MatchString(change.Image)) {
+			return errors.New("rolling: image must use a sha256 digest or bounded MM-34 local tag")
 		}
 		if change.ConfigRevision != "" {
 			return errors.New("rolling: image change cannot set config revision")

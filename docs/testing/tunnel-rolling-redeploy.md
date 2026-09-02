@@ -200,6 +200,11 @@ fail. Метрики и labels используют только конечны�
 три соседних image reference вида `repository@sha256:<64 hex>`; repository
 обязан точно совпадать с текущим image соответствующего Deployment.
 
+Для disposable kind допускается локальный режим без registry: три образа
+загружаются через `kind load docker-image` под уникальными тегами
+`marketmesh/<component>:mm34-<12 hex commit>`. Другие mutable tags, включая
+`latest`, отклоняются, а workload используют `imagePullPolicy: Never`.
+
 ```sh
 task tunnel-e2e:rolling -- \
   --run-id mm34-a-1 \
