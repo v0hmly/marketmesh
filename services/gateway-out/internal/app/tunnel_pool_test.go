@@ -12,31 +12,34 @@ func TestTunnelPoolRequiresDistinctInitialPathsAndRestoresDuplicates(t *testing.
 
 	firstID := [protocolv1.InstanceIDBytes]byte{1}
 	secondID := [protocolv1.InstanceIDBytes]byte{2}
+	thirdID := [protocolv1.InstanceIDBytes]byte{3}
 	first := &fakeManagedTunnel{ready: true, identity: firstID}
-	second := &fakeManagedTunnel{ready: true, identity: firstID}
-	pool, err := newTunnelPool([]managedTunnel{first, second})
+	second := &fakeManagedTunnel{ready: true, identity: secondID}
+	discovery := &fakeManagedTunnel{ready: true, identity: secondID}
+	pool, err := newTunnelPool([]managedTunnel{first, second, discovery})
 	if err != nil {
 		t.Fatalf("newTunnelPool() error = %v", err)
 	}
 
 	pool.reconcile()
-	if pool.IsReady() {
-		t.Fatal("IsReady() = true for duplicate initial gateway-in path")
+	if !pool.IsReady() {
+		t.Fatal("IsReady() = false with two distinct initial gateway-in paths")
 	}
-	if second.reconnects != 1 {
-		t.Fatalf("duplicate reconnects = %d, want 1", second.reconnects)
+	if discovery.reconnects != 1 {
+		t.Fatalf("discovery reconnects = %d, want 1", discovery.reconnects)
 	}
 
-	second.identity = secondID
+	discovery.identity = thirdID
 	pool.reconcile()
-	if !pool.IsReady() {
-		t.Fatal("IsReady() = false after two distinct gateway-in paths")
+	if discovery.reconnects != 1 {
+		t.Fatalf("discovery reconnects = %d after finding surge path, want 1", discovery.reconnects)
 	}
 
 	second.ready = false
 	if !pool.IsReady() {
 		t.Fatal("IsReady() = false with one surviving path after initial coverage")
 	}
+	discovery.ready = false
 	first.ready = false
 	if pool.IsReady() {
 		t.Fatal("IsReady() = true without a surviving path")
@@ -49,8 +52,14 @@ func TestNewTunnelPoolRejectsUnsafeCardinality(t *testing.T) {
 	if _, err := newTunnelPool(nil); err == nil {
 		t.Fatal("newTunnelPool(nil) error = nil")
 	}
-	if _, err := newTunnelPool([]managedTunnel{nil, nil}); err == nil {
+	if _, err := newTunnelPool([]managedTunnel{nil, nil, nil}); err == nil {
 		t.Fatal("newTunnelPool(nil clients) error = nil")
+	}
+	if _, err := newTunnelPool([]managedTunnel{
+		&fakeManagedTunnel{},
+		&fakeManagedTunnel{},
+	}); err == nil {
+		t.Fatal("newTunnelPool(two clients) error = nil")
 	}
 }
 

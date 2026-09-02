@@ -96,7 +96,8 @@ Readiness означает способность принять **новый** 
 - `gateway-in` готов только при готовности внешнего listener и наличии хотя бы
   одного аутентифицированного, не-draining tunnel для проверяемого route;
 - `gateway-out` готов только после успешного mTLS и tunnel v1 handshake, а при
-  начале termination немедленно становится not-ready;
+  начале termination немедленно становится not-ready; два независимых пути
+  дополняются одной ограниченной discovery-сессией, которая ищет surge Pod;
 - fake internal service готов только после готовности read/mutating handlers и
   request ledger, а при termination перестаёт принимать новые RPC до drain.
 

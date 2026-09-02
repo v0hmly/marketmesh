@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	tunnelPoolSize     = 2
+	tunnelPoolSize     = 3
+	tunnelReadyPaths   = 2
 	tunnelPoolInterval = 250 * time.Millisecond
 )
 
@@ -23,9 +24,10 @@ type managedTunnel interface {
 	Shutdown(context.Context) error
 }
 
-// tunnelPool keeps two sessions on distinct gateway-in processes. Initial
-// readiness is fail-closed until both paths are observed. Afterwards one path
-// preserves availability while the duplicate/missing path is restored.
+// tunnelPool keeps two sessions on distinct gateway-in processes and one
+// bounded discovery session. The discovery session reconnects while it is a
+// duplicate, allowing a maxSurge gateway-in Pod to receive a tunnel before an
+// old Pod is stopped. Readiness remains fail-closed until two paths are seen.
 type tunnelPool struct {
 	clients      []managedTunnel
 	initialReady atomic.Bool
@@ -33,7 +35,7 @@ type tunnelPool struct {
 
 func newTunnelPool(clients []managedTunnel) (*tunnelPool, error) {
 	if len(clients) != tunnelPoolSize {
-		return nil, errors.New("gateway-out: tunnel pool must contain two clients")
+		return nil, errors.New("gateway-out: tunnel pool must contain three clients")
 	}
 	for _, client := range clients {
 		if client == nil {
@@ -114,7 +116,7 @@ func (pool *tunnelPool) reconcile() {
 		}
 		identities[identity] = struct{}{}
 	}
-	if ready == tunnelPoolSize && len(identities) == tunnelPoolSize {
+	if ready >= tunnelReadyPaths && len(identities) >= tunnelReadyPaths {
 		pool.initialReady.Store(true)
 	}
 }

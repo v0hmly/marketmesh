@@ -249,6 +249,7 @@ func TestRequestReconnectReplacesOnlyCurrentSession(t *testing.T) {
 	}}
 	dialer := startGatewayIn(t, pki, gateway)
 	config := newTestConfig(t, pki, dialer, &bytes.Buffer{})
+	config.Reconnect.MaxAttempts = 1
 	client, err := NewClient(config, registry)
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
