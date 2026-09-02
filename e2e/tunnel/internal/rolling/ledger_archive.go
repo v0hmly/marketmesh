@@ -163,9 +163,10 @@ func (archive *LedgerArchive) Run(ctx context.Context) error {
 			return closeErr
 		case <-ticker.C:
 			pollCtx, cancel := context.WithTimeout(ctx, archive.config.CallTimeout)
-			if err := archive.refresh(pollCtx, false); err != nil {
-				archive.markIncomplete("archive_refresh_failed")
-			}
+			// A single kubectl or gRPC polling error does not lose ledger data.
+			// Retry on the next tick; refresh itself records irreversible
+			// integrity violations and final refresh remains mandatory.
+			_ = archive.refresh(pollCtx, false)
 			cancel()
 		}
 	}

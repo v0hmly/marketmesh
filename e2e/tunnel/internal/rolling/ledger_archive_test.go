@@ -170,6 +170,31 @@ func TestLedgerArchiveRejectsStaleResolverAfterPodNameReuse(t *testing.T) {
 	}
 }
 
+func TestLedgerArchiveRetriesTransientPollFailure(t *testing.T) {
+	t.Parallel()
+
+	state := replacementPodStates()[:1]
+	states := []map[string][]archivePod{state[0], state[0], state[0], state[0]}
+	runtime := newArchiveRuntimeStub(states)
+	runtime.failCalls[3] = true
+	runtime.entries["fake-a-old-1"] = []*e2ev1.LedgerEntry{
+		ledgerEntry(1, e2ev1.Operation_OPERATION_READ, 1),
+	}
+	archive := newTestLedgerArchive(t, runtime, 100)
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- archive.Run(ctx) }()
+	waitArchiveReady(t, archive)
+	waitForArchiveCalls(t, runtime, 7)
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatalf("LedgerArchive.Run() error = %v", err)
+	}
+	if snapshot := archive.Snapshot(); !snapshot.IsComplete {
+		t.Fatalf("snapshot = %#v", snapshot)
+	}
+}
+
 func TestLedgerArchiveBoundsHungDiscovery(t *testing.T) {
 	t.Parallel()
 
@@ -377,17 +402,18 @@ func ledgerEntry(
 }
 
 type archiveRuntimeStub struct {
-	mu      sync.RWMutex
-	states  []map[string][]archivePod
-	entries map[string][]*e2ev1.LedgerEntry
-	hung    map[string]bool
-	calls   atomic.Uint32
+	mu        sync.RWMutex
+	states    []map[string][]archivePod
+	entries   map[string][]*e2ev1.LedgerEntry
+	hung      map[string]bool
+	failCalls map[uint32]bool
+	calls     atomic.Uint32
 }
 
 func newArchiveRuntimeStub(states []map[string][]archivePod) *archiveRuntimeStub {
 	return &archiveRuntimeStub{
 		states: states, entries: make(map[string][]*e2ev1.LedgerEntry),
-		hung: make(map[string]bool),
+		hung: make(map[string]bool), failCalls: make(map[uint32]bool),
 	}
 }
 
@@ -396,6 +422,9 @@ func (runtime *archiveRuntimeStub) ListPods(
 	cluster Cluster,
 ) ([]archivePod, error) {
 	call := runtime.calls.Add(1)
+	if runtime.failCalls[call] {
+		return nil, errors.New("transient list failure")
+	}
 	stateIndex := min(int((call-1)/2), len(runtime.states)-1)
 	runtime.mu.RLock()
 	defer runtime.mu.RUnlock()
