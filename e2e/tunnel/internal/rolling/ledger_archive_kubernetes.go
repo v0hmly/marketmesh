@@ -473,7 +473,10 @@ func (connection *kubernetesLedgerConnection) Ledger(
 	request *e2ev1.LedgerRequest,
 	options ...grpcgo.CallOption,
 ) (*e2ev1.LedgerResponse, error) {
-	return connection.client.Ledger(ctx, request, options...)
+	bounded := make([]grpcgo.CallOption, 0, len(options)+1)
+	bounded = append(bounded, grpcgo.WaitForReady(true))
+	bounded = append(bounded, options...)
+	return connection.client.Ledger(ctx, request, bounded...)
 }
 
 func (connection *kubernetesLedgerConnection) Close() error {
