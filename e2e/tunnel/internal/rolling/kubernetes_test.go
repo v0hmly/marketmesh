@@ -237,6 +237,34 @@ func TestKubernetesUpdateUsesStrategicPatchAfterRevalidation(t *testing.T) {
 	target, _ := targetFor("dc-a", ComponentGatewayIn)
 	deployment := validDeployment(target)
 	runner := mutationCommandRunner(t, target, deployment)
+	baseRun := runner.run
+	patchPath := ""
+	patchContent := []byte{}
+	runner.run = func(stdin []byte, arguments []string) ([]byte, error) {
+		if !slices.Contains(arguments, "patch") {
+			return baseRun(stdin, arguments)
+		}
+		if len(stdin) != 0 {
+			t.Fatalf("patch stdin = %q, want empty", stdin)
+		}
+		patchPath = argumentValue(arguments, "--patch-file=")
+		if patchPath == "" || patchPath == "-" {
+			t.Fatalf("patch path = %q, want private temporary file", patchPath)
+		}
+		info, err := os.Lstat(patchPath)
+		if err != nil {
+			t.Fatalf("os.Lstat(%q) error = %v", patchPath, err)
+		}
+		if !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+			t.Fatalf("patch mode = %v, want regular 0600", info.Mode())
+		}
+		patchContent, err = os.ReadFile(patchPath)
+		if err != nil {
+			t.Fatalf("os.ReadFile(%q) error = %v", patchPath, err)
+		}
+
+		return baseRun(stdin, arguments)
+	}
 	kube := newTestKubernetes(t, runner)
 	snapshot := snapshotFor(deployment, target)
 	image := "registry.test/marketmesh/gateway-in@sha256:" + strings.Repeat("c", 64)
@@ -249,16 +277,19 @@ func TestKubernetesUpdateUsesStrategicPatchAfterRevalidation(t *testing.T) {
 	}
 	patchCall := runner.calls[5]
 	if !slices.Contains(patchCall.arguments, "--type=strategic") ||
-		!slices.Contains(patchCall.arguments, "--patch-file=-") {
+		argumentValue(patchCall.arguments, "--patch-file=") != patchPath {
 		t.Fatalf("patch arguments = %v", patchCall.arguments)
 	}
 	var patch map[string]any
-	if err := json.Unmarshal(patchCall.stdin, &patch); err != nil {
+	if err := json.Unmarshal(patchContent, &patch); err != nil {
 		t.Fatalf("patch JSON error = %v", err)
 	}
-	if !strings.Contains(string(patchCall.stdin), image) ||
-		!strings.Contains(string(patchCall.stdin), "gateway-in-image-v2") {
-		t.Fatalf("patch = %s", patchCall.stdin)
+	if !strings.Contains(string(patchContent), image) ||
+		!strings.Contains(string(patchContent), "gateway-in-image-v2") {
+		t.Fatalf("patch = %s", patchContent)
+	}
+	if _, err := os.Lstat(patchPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("temporary patch remains after Update(): %v", err)
 	}
 }
 
@@ -280,6 +311,37 @@ func TestKubernetesUpdateRejectsForeignImageRepository(t *testing.T) {
 		if slices.Contains(call.arguments, "patch") {
 			t.Fatalf("foreign repository reached mutation: %v", call.arguments)
 		}
+	}
+}
+
+func TestKubernetesUpdateRemovesPatchAfterCommandFailure(t *testing.T) {
+	t.Parallel()
+	target, _ := targetFor("dc-a", ComponentGatewayIn)
+	deployment := validDeployment(target)
+	runner := mutationCommandRunner(t, target, deployment)
+	baseRun := runner.run
+	patchPath := ""
+	runner.run = func(stdin []byte, arguments []string) ([]byte, error) {
+		if !slices.Contains(arguments, "patch") {
+			return baseRun(stdin, arguments)
+		}
+		patchPath = argumentValue(arguments, "--patch-file=")
+		if patchPath == "" {
+			t.Fatal("patch path is empty")
+		}
+		return nil, errors.New("kubectl failed")
+	}
+	kube := newTestKubernetes(t, runner)
+	change := Change{
+		Kind: ChangeImage, Revision: "gateway-in-image-v2",
+		Image: "registry.test/marketmesh/gateway-in@sha256:" + strings.Repeat("c", 64),
+	}
+	err := kube.Update(t.Context(), target, change, snapshotFor(deployment, target))
+	if err == nil || !strings.Contains(err.Error(), "patching deployment") {
+		t.Fatalf("Update() error = %v, want patch failure", err)
+	}
+	if _, err := os.Lstat(patchPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("temporary patch remains after failed Update(): %v", err)
 	}
 }
 
@@ -324,6 +386,20 @@ func TestKubernetesReadinessFaultsAreBuiltIn(t *testing.T) {
 			target, _ := targetFor(test.dc, test.component)
 			deployment := validDeployment(target)
 			runner := mutationCommandRunner(t, target, deployment)
+			baseRun := runner.run
+			patchContent := []byte{}
+			runner.run = func(stdin []byte, arguments []string) ([]byte, error) {
+				if !slices.Contains(arguments, "patch") {
+					return baseRun(stdin, arguments)
+				}
+				var err error
+				patchContent, err = os.ReadFile(argumentValue(arguments, "--patch-file="))
+				if err != nil {
+					t.Fatalf("reading readiness fault patch: %v", err)
+				}
+
+				return baseRun(stdin, arguments)
+			}
 			kube := newTestKubernetes(t, runner)
 			err := kube.InjectReadinessFault(
 				t.Context(),
@@ -334,7 +410,7 @@ func TestKubernetesReadinessFaultsAreBuiltIn(t *testing.T) {
 			if err != nil {
 				t.Fatalf("InjectReadinessFault() error = %v", err)
 			}
-			patch := string(runner.calls[len(runner.calls)-1].stdin)
+			patch := string(patchContent)
 			if !strings.Contains(patch, test.expected) || !strings.Contains(patch, "unready-v2") {
 				t.Fatalf("fault patch = %s", patch)
 			}

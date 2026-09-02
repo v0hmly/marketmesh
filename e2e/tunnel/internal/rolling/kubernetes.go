@@ -18,6 +18,7 @@ import (
 
 const (
 	maximumCommandOutputBytes = 1024 * 1024
+	maximumPatchBytes         = 64 * 1024
 	defaultPollInterval       = 250 * time.Millisecond
 )
 
@@ -776,28 +777,89 @@ func podTemplatePatch(annotations map[string]string, container map[string]any) m
 	}
 }
 
-func (kube *kubernetes) patch(ctx context.Context, target Target, patch map[string]any) error {
+func (kube *kubernetes) patch(
+	ctx context.Context,
+	target Target,
+	patch map[string]any,
+) (resultErr error) {
 	encoded, err := json.Marshal(patch)
 	if err != nil {
 		return fmt.Errorf("rolling: encoding deployment patch: %w", err)
 	}
+	patchPath, cleanup, err := writePrivatePatchFile(encoded)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := cleanup(); err != nil {
+			resultErr = errors.Join(
+				resultErr,
+				fmt.Errorf("rolling: removing deployment patch: %w", err),
+			)
+		}
+	}()
 	cluster, _ := kube.clusterFor(target)
 	_, err = kube.run(
 		ctx,
 		cluster,
-		encoded,
+		nil,
 		"patch",
 		"deployment",
 		target.Deployment,
 		"--namespace="+Namespace,
 		"--type=strategic",
-		"--patch-file=-",
+		"--patch-file="+patchPath,
 	)
 	if err != nil {
 		return errors.New("rolling: patching deployment")
 	}
 
 	return nil
+}
+
+func writePrivatePatchFile(content []byte) (string, func() error, error) {
+	if len(content) == 0 || len(content) > maximumPatchBytes {
+		return "", nil, errors.New("rolling: deployment patch is outside bounds")
+	}
+	file, err := os.CreateTemp("", "marketmesh-mm34-patch-*.json")
+	if err != nil {
+		return "", nil, errors.New("rolling: creating deployment patch")
+	}
+	path := file.Name()
+	closed := false
+	cleanup := func() error {
+		var closeErr error
+		if !closed {
+			closeErr = file.Close()
+			closed = true
+		}
+		removeErr := os.Remove(path)
+		if errors.Is(removeErr, os.ErrNotExist) {
+			removeErr = nil
+		}
+
+		return errors.Join(closeErr, removeErr)
+	}
+	fail := func(cause error) (string, func() error, error) {
+		return "", nil, errors.Join(cause, cleanup())
+	}
+	if err := file.Chmod(0o600); err != nil {
+		return fail(errors.New("rolling: securing deployment patch"))
+	}
+	written, err := file.Write(content)
+	if err != nil {
+		return fail(errors.New("rolling: writing deployment patch"))
+	}
+	if written != len(content) {
+		return fail(io.ErrShortWrite)
+	}
+	if err := file.Close(); err != nil {
+		closed = true
+		return fail(errors.New("rolling: closing deployment patch"))
+	}
+	closed = true
+
+	return path, cleanup, nil
 }
 
 func (kube *kubernetes) clusterFor(target Target) (Cluster, bool) {
