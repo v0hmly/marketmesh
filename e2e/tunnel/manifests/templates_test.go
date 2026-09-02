@@ -29,6 +29,7 @@ func TestRenderProducesBoundedOwnedWorkloads(t *testing.T) {
 		"replicas: 2",
 		"maxUnavailable: 0",
 		"maxSurge: 1",
+		"initialDelaySeconds: 10",
 		"progressDeadlineSeconds: 120",
 		"terminationGracePeriodSeconds: 30",
 		"readOnlyRootFilesystem: true",
