@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -152,8 +153,12 @@ func (archive *LedgerArchive) Run(ctx context.Context) error {
 			}
 			cancel()
 			closeErr := archive.closeAll()
-			if !archive.Snapshot().IsComplete {
-				return errors.Join(closeErr, errors.New("rolling: ledger archive is incomplete"))
+			snapshot := archive.Snapshot()
+			if !snapshot.IsComplete {
+				return errors.Join(closeErr, fmt.Errorf(
+					"rolling: ledger archive is incomplete: %s",
+					strings.Join(snapshot.IncompleteReasons, ","),
+				))
 			}
 			return closeErr
 		case <-ticker.C:

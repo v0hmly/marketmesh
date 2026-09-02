@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -91,8 +92,12 @@ func TestLedgerArchiveFailsClosedForMissedPreStopSnapshot(t *testing.T) {
 	waitArchiveReady(t, archive)
 	waitForArchiveCalls(t, runtime, 4)
 	cancel()
-	if err := <-done; err == nil {
+	err := <-done
+	if err == nil {
 		t.Fatal("LedgerArchive.Run() error = nil")
+	}
+	if !strings.Contains(err.Error(), "archive_final_snapshot_missed") {
+		t.Fatalf("LedgerArchive.Run() error = %q", err)
 	}
 	snapshot := archive.Snapshot()
 	if snapshot.IsComplete || !slices.Contains(
