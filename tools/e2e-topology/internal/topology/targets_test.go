@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -13,13 +14,13 @@ import (
 )
 
 const (
-	testContainerID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	testImageID     = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-	testNetworkID   = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-	testEndpointID  = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-	testMAC         = "02:42:ac:1c:0a:02"
-	testNodeUID     = "11111111-2222-3333-4444-555555555555"
-	testNetNS       = "net:[4026533001]"
+	testMachineID = "01M1JYNYGQG0SPZ1HYQWB1WSE1"
+	testIPv4      = "192.168.139.10"
+	testMAC       = "52:54:00:12:34:56"
+	testIface     = "eth0"
+	testBootID    = "11111111-2222-4333-8444-555555555555"
+	testNodeUID   = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	testVMUser    = "operator"
 )
 
 func TestResolveAndValidateTargets(t *testing.T) {
@@ -38,13 +39,10 @@ func TestResolveAndValidateTargets(t *testing.T) {
 		t.Fatalf("snapshot is incomplete: %+v", snapshot)
 	}
 	target := snapshot.Targets[0]
-	if target.Container.ID != testContainerID || target.Container.ImageID != testImageID ||
-		target.KubernetesNode.UID != testNodeUID || target.NetNS != testNetNS {
+	if target.Machine.ID != testMachineID || target.Machine.IPv4 != testIPv4 ||
+		target.Machine.MAC != testMAC || target.Machine.Interface != testIface ||
+		target.Machine.BootID != testBootID || target.KubernetesNode.UID != testNodeUID {
 		t.Fatalf("target immutable identity is incomplete: %+v", target)
-	}
-	if len(target.Networks) != 1 || target.Networks[0].ID != testNetworkID ||
-		target.Networks[0].Endpoint.ID != testEndpointID || target.Networks[0].Interface.Name != "eth0" {
-		t.Fatalf("target network identity is incomplete: %+v", target.Networks)
 	}
 
 	receipt, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
@@ -55,7 +53,8 @@ func TestResolveAndValidateTargets(t *testing.T) {
 		t.Fatalf("ValidateTargets() error = %v", err)
 	}
 	if receipt.SnapshotToken != snapshot.Token || len(receipt.Targets) != 1 ||
-		receipt.Targets[0].LogicalCluster != "dc-a-dmz" || receipt.Targets[0].State != "running" {
+		receipt.Targets[0].LogicalCluster != "dc-a-dmz" || receipt.Targets[0].State != "running" ||
+		receipt.Targets[0].MachineID != testMachineID {
 		t.Fatalf("validation receipt mismatch: %+v", receipt)
 	}
 	if err := runtime.assertReadOnly(); err != nil {
@@ -71,51 +70,33 @@ func TestValidateTargetsFailClosedOnRuntimeReplacement(t *testing.T) {
 		mutate func(*fakeTargetRuntime)
 	}{
 		{
-			name: "stale container id",
+			name: "stale machine id",
 			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.containerID = strings.Repeat("1", 64)
+				runtime.machineID = "01M1JYNYGQG0SPZ1HYQWB1WSE2"
 			},
 		},
 		{
-			name: "image replacement",
+			name: "machine address replacement",
 			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.imageID = "sha256:" + strings.Repeat("2", 64)
+				runtime.ipv4 = "192.168.139.99"
 			},
 		},
 		{
-			name: "container label replacement",
+			name: "interface mac replacement",
 			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.clusterLabel = "foreign-cluster"
+				runtime.mac = "52:54:00:65:43:21"
 			},
 		},
 		{
-			name: "network id replacement",
+			name: "interface name replacement",
 			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.networkID = strings.Repeat("3", 64)
+				runtime.ifname = "enp0s9"
 			},
 		},
 		{
-			name: "network label replacement",
+			name: "unexpected reboot",
 			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.ownerTask = "MM-999"
-			},
-		},
-		{
-			name: "endpoint replacement",
-			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.endpointID = strings.Repeat("4", 64)
-			},
-		},
-		{
-			name: "interface replacement",
-			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.interfaceIndex = 9
-			},
-		},
-		{
-			name: "netns replacement",
-			mutate: func(runtime *fakeTargetRuntime) {
-				runtime.netNS = "net:[4026533999]"
+				runtime.bootID = "99999999-2222-4333-8444-555555555555"
 			},
 		},
 		{
@@ -150,17 +131,14 @@ func TestValidateTargetsFailClosedOnRuntimeReplacement(t *testing.T) {
 	}
 }
 
-func TestValidateTargetsStoppedDoesNotInspectLiveEndpoint(t *testing.T) {
+func TestValidateTargetsStoppedDoesNotEnterMachine(t *testing.T) {
 	t.Parallel()
 
 	manager, runtime := newTargetFixture(t)
 	snapshot := resolveFixtureSnapshot(t, manager)
-	runtime.state = "exited"
-	runtime.running = false
-	runtime.finishedAt = "2026-09-01T10:05:00Z"
-	runtime.rejectExec = true
+	runtime.state = "stopped"
 	runtime.commands = nil
-	runtime.execCalls = 0
+	runtime.runCalls = 0
 
 	receipt, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
 		ExpectedState: ExpectedStateStopped,
@@ -168,34 +146,28 @@ func TestValidateTargetsStoppedDoesNotInspectLiveEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidateTargets(stopped) error = %v", err)
 	}
-	if len(receipt.Targets) != 1 || receipt.Targets[0].State != "exited" {
+	if len(receipt.Targets) != 1 || receipt.Targets[0].State != "stopped" {
 		t.Fatalf("stopped receipt mismatch: %+v", receipt)
 	}
-	if runtime.execCalls != 0 {
-		t.Fatalf("stopped validation exec calls = %d, want 0", runtime.execCalls)
+	if runtime.runCalls != 0 {
+		t.Fatalf("stopped validation in-guest run calls = %d, want 0", runtime.runCalls)
 	}
-	runtime.retainEndpoint = true
+
+	runtime.state = "running"
 	if _, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
 		ExpectedState: ExpectedStateStopped,
 	}); err == nil {
-		t.Fatal("ValidateTargets(stopped) error = nil, want live endpoint rejection")
+		t.Fatal("ValidateTargets(stopped) error = nil, want running machine rejection")
 	}
-	runtime.retainEndpoint = false
-	runtime.retainSandboxKey = true
+	runtime.state = "stopped"
+	runtime.machineID = "01M1JYNYGQG0SPZ1HYQWB1WSE2"
 	if _, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
 		ExpectedState: ExpectedStateStopped,
 	}); err == nil {
-		t.Fatal("ValidateTargets(stopped) error = nil, want live sandbox key rejection")
+		t.Fatal("ValidateTargets(stopped) error = nil, want stale machine id rejection")
 	}
 	if readOnlyErr := runtime.assertReadOnly(); readOnlyErr != nil {
 		t.Fatal(readOnlyErr)
-	}
-	runtime.retainSandboxKey = false
-	runtime.containerID = strings.Repeat("7", 64)
-	if _, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
-		ExpectedState: ExpectedStateStopped,
-	}); err == nil {
-		t.Fatal("ValidateTargets(stopped) error = nil, want stale container id rejection")
 	}
 }
 
@@ -219,10 +191,27 @@ func TestRebindTargetProvesStoppedToStartedTransition(t *testing.T) {
 		result.Transition.ToToken != result.Snapshot.Token || result.Transition.TransitionDigest == "" {
 		t.Fatalf("rebind result is incomplete: %+v", result)
 	}
-	if result.Snapshot.Targets[0].Networks[0].Endpoint.ID != runtime.endpointID ||
-		result.Snapshot.Targets[0].SandboxID != runtime.sandboxID ||
-		result.Snapshot.Targets[0].Container.StartedAt != runtime.startedAt {
-		t.Fatalf("rebound live binding mismatch: %+v", result.Snapshot.Targets[0])
+	if result.Snapshot.Targets[0].Machine.ID != original.Targets[0].Machine.ID ||
+		result.Snapshot.Targets[0].Machine.MAC != original.Targets[0].Machine.MAC ||
+		result.Snapshot.Targets[0].Machine.IPv4 != original.Targets[0].Machine.IPv4 ||
+		result.Snapshot.Targets[0].Machine.BootID != runtime.bootID {
+		t.Fatalf("rebound machine binding mismatch: %+v", result.Snapshot.Targets[0].Machine)
+	}
+	// netfilter state не переживает stop/start: rebind обязан пересоздать
+	// zone firewall rebound VM и дождаться Ready узла.
+	if runtime.firewallCalls == 0 {
+		t.Fatal("RebindTarget() did not restore the zone firewall")
+	}
+	firewallCalls := runtime.firewallCalls
+	waitFound := false
+	for _, command := range runtime.commands {
+		if command.Program == runtime.config.KubectlPath &&
+			containsSequence(command.Args, []string{"wait", "--for=condition=Ready"}) {
+			waitFound = true
+		}
+	}
+	if !waitFound {
+		t.Fatal("RebindTarget() did not wait for the rebound node to become Ready")
 	}
 	if _, err := manager.ValidateTargets(t.Context(), original, TargetValidateRequest{
 		ExpectedState: ExpectedStateRunning,
@@ -246,19 +235,45 @@ func TestRebindTargetProvesStoppedToStartedTransition(t *testing.T) {
 		retry.Transition.TransitionDigest != result.Transition.TransitionDigest {
 		t.Fatal("idempotent rebind produced a different token or transition digest")
 	}
-	runtime.finishedAt = "2026-09-01T10:07:00Z"
-	runtime.startedAt = "2026-09-01T10:08:00Z"
-	if _, err := manager.RebindTarget(t.Context(), TargetRebindInput{
+	if runtime.firewallCalls <= firewallCalls {
+		t.Fatal("idempotent rebind did not re-apply the zone firewall")
+	}
+	// После ещё одного restart rebind с исходным receipt привязывается к текущему
+	// поколению: в VM-модели orbctl не отдаёт per-stop timestamps, поэтому rebind
+	// всегда перечитывает живое состояние машины вместо сверки FinishedAt.
+	runtime.bootID = "77777777-2222-4333-8444-555555555555"
+	secondRestart, err := manager.RebindTarget(t.Context(), TargetRebindInput{
 		Snapshot:       original,
 		StoppedReceipt: stoppedReceipt,
-	}, "dc-a-dmz"); err == nil {
-		t.Fatal("replayed stopped receipt error = nil after a second restart")
+	}, "dc-a-dmz")
+	if err != nil {
+		t.Fatalf("RebindTarget() after second restart error = %v", err)
+	}
+	if secondRestart.Snapshot.Targets[0].Machine.BootID != runtime.bootID {
+		t.Fatal("rebind did not bind to the current machine generation")
 	}
 	if _, err := manager.RebindTarget(t.Context(), TargetRebindInput{
 		Snapshot:       result.Snapshot,
 		StoppedReceipt: stoppedReceipt,
 	}, "dc-a-dmz"); err == nil {
 		t.Fatal("second RebindTarget() error = nil, want receipt replay rejection")
+	}
+}
+
+func TestRebindTargetFailsWhenFirewallRestoreFails(t *testing.T) {
+	t.Parallel()
+
+	manager, runtime := newTargetFixture(t)
+	original := resolveFixtureSnapshot(t, manager)
+	stoppedReceipt := stopFixtureTarget(t, manager, runtime, original)
+	startFixtureTarget(runtime)
+	runtime.firewallErr = errors.New("iptables: permission denied")
+
+	if _, err := manager.RebindTarget(t.Context(), TargetRebindInput{
+		Snapshot:       original,
+		StoppedReceipt: stoppedReceipt,
+	}, "dc-a-dmz"); err == nil {
+		t.Fatal("RebindTarget() error = nil, want firewall restore failure")
 	}
 }
 
@@ -286,31 +301,25 @@ func TestRebindTargetFailClosed(t *testing.T) {
 		{
 			name: "no new generation",
 			mutate: func(runtime *fakeTargetRuntime, _ *TargetValidationReceipt) {
-				runtime.startedAt = "2026-09-01T10:00:00Z"
+				runtime.bootID = testBootID
 			},
 		},
 		{
-			name: "image replacement",
+			name: "machine id replacement",
 			mutate: func(runtime *fakeTargetRuntime, _ *TargetValidationReceipt) {
-				runtime.imageID = "sha256:" + strings.Repeat("1", 64)
+				runtime.machineID = "01M1JYNYGQG0SPZ1HYQWB1WSE2"
 			},
 		},
 		{
-			name: "network replacement",
+			name: "mac replacement",
 			mutate: func(runtime *fakeTargetRuntime, _ *TargetValidationReceipt) {
-				runtime.networkID = strings.Repeat("2", 64)
+				runtime.mac = "52:54:00:65:43:21"
 			},
 		},
 		{
 			name: "ip replacement",
 			mutate: func(runtime *fakeTargetRuntime, _ *TargetValidationReceipt) {
-				runtime.ipAddress = "172.28.10.3"
-			},
-		},
-		{
-			name: "extra network",
-			mutate: func(runtime *fakeTargetRuntime, _ *TargetValidationReceipt) {
-				runtime.extraNetwork = true
+				runtime.ipv4 = "192.168.139.11"
 			},
 		},
 		{
@@ -355,9 +364,7 @@ func stopFixtureTarget(
 	snapshot TargetSnapshot,
 ) TargetValidationReceipt {
 	t.Helper()
-	runtime.state = "exited"
-	runtime.running = false
-	runtime.finishedAt = "2026-09-01T10:05:00Z"
+	runtime.state = "stopped"
 	receipt, err := manager.ValidateTargets(t.Context(), snapshot, TargetValidateRequest{
 		ExpectedState: ExpectedStateStopped,
 		LogicalNames:  []string{"dc-a-dmz"},
@@ -370,13 +377,7 @@ func stopFixtureTarget(
 
 func startFixtureTarget(runtime *fakeTargetRuntime) {
 	runtime.state = "running"
-	runtime.running = true
-	runtime.startedAt = "2026-09-01T10:06:00Z"
-	runtime.endpointID = strings.Repeat("6", 64)
-	runtime.mac = "02:42:ac:1c:0a:03"
-	runtime.sandboxID = strings.Repeat("7", 64)
-	runtime.netNS = "net:[4026533002]"
-	runtime.interfaceIndex = 4
+	runtime.bootID = "66666666-2222-4333-8444-555555555555"
 }
 
 func TestValidateTargetsRejectsSnapshotTamperingAndSelectionErrors(t *testing.T) {
@@ -387,7 +388,7 @@ func TestValidateTargetsRejectsSnapshotTamperingAndSelectionErrors(t *testing.T)
 
 	tampered := snapshot
 	tampered.Targets = append([]FaultTarget{}, snapshot.Targets...)
-	tampered.Targets[0].Container.ID = strings.Repeat("f", 64)
+	tampered.Targets[0].Machine.ID = "01M1JYNYGQG0SPZ1HYQWB1WSE2"
 	if _, err := manager.ValidateTargets(t.Context(), tampered, TargetValidateRequest{
 		ExpectedState: ExpectedStateRunning,
 	}); err == nil {
@@ -419,7 +420,7 @@ func TestValidateTargetsRejectsSnapshotTamperingAndSelectionErrors(t *testing.T)
 func TestTargetSelectorCardinality(t *testing.T) {
 	t.Parallel()
 
-	config, err := NewConfig("/workspace/marketmesh", "mm38-test", "default")
+	config, err := NewConfig("/workspace/marketmesh", "mm44-test")
 	if err != nil {
 		t.Fatalf("NewConfig() error = %v", err)
 	}
@@ -523,7 +524,7 @@ func resolveFixtureSnapshot(t *testing.T, manager *Topology) TargetSnapshot {
 
 func newTargetFixture(t *testing.T) (*Topology, *fakeTargetRuntime) {
 	t.Helper()
-	config, err := NewConfig("/workspace/marketmesh", "mm38-test", "default")
+	config, err := NewConfig("/workspace/marketmesh", "mm44-test")
 	if err != nil {
 		t.Fatalf("NewConfig() error = %v", err)
 	}
@@ -532,27 +533,22 @@ func newTargetFixture(t *testing.T) (*Topology, *fakeTargetRuntime) {
 		t.Fatalf("Cluster() error = %v", err)
 	}
 	runtime := &fakeTargetRuntime{
-		config:         config,
-		cluster:        cluster,
-		containerID:    testContainerID,
-		imageID:        testImageID,
-		clusterLabel:   cluster.Name,
-		networkID:      testNetworkID,
-		endpointID:     testEndpointID,
-		ownerTask:      TaskKey,
-		instance:       config.Instance,
-		state:          "running",
-		running:        true,
-		interfaceIndex: 2,
-		mac:            testMAC,
-		ipAddress:      "172.28.10.2",
-		gateway:        "172.28.10.1",
-		sandboxID:      strings.Repeat("e", 64),
-		netNS:          testNetNS,
-		nodeUID:        testNodeUID,
-		startedAt:      "2026-09-01T10:00:00Z",
-		finishedAt:     "0001-01-01T00:00:00Z",
-		commands:       []Command{},
+		config:    config,
+		cluster:   cluster,
+		machineID: testMachineID,
+		state:     "running",
+		ipv4:      testIPv4,
+		mac:       testMAC,
+		ifname:    testIface,
+		bootID:    testBootID,
+		nodeUID:   testNodeUID,
+		username:  testVMUser,
+		peers: map[string]fakePeerMachine{
+			"mm44-test-dc-a-internal": {id: "01M1JYNYGQG0SPZ1HYQWB1WSE2", ipv4: "192.168.139.11"},
+			"mm44-test-dc-b-dmz":      {id: "01M1JYNYGQG0SPZ1HYQWB1WSE3", ipv4: "192.168.139.12"},
+			"mm44-test-dc-b-internal": {id: "01M1JYNYGQG0SPZ1HYQWB1WSE4", ipv4: "192.168.139.13"},
+		},
+		commands: []Command{},
 	}
 	manager := New(config, runtime, nil)
 	manager.now = func() time.Time {
@@ -561,34 +557,29 @@ func newTargetFixture(t *testing.T) (*Topology, *fakeTargetRuntime) {
 	return manager, runtime
 }
 
+// fakePeerMachine — статичная соседняя VM для mesh-восстановления firewall.
+type fakePeerMachine struct {
+	id   string
+	ipv4 string
+}
+
 type fakeTargetRuntime struct {
 	config             Config
 	cluster            Cluster
-	containerID        string
-	imageID            string
-	clusterLabel       string
-	networkID          string
-	endpointID         string
-	ownerTask          string
-	instance           string
+	machineID          string
 	state              string
-	running            bool
-	interfaceIndex     int
+	ipv4               string
 	mac                string
-	ipAddress          string
-	gateway            string
-	sandboxID          string
-	netNS              string
+	ifname             string
+	bootID             string
 	nodeUID            string
-	startedAt          string
-	finishedAt         string
+	username           string
+	peers              map[string]fakePeerMachine
 	duplicateInterface bool
-	extraNetwork       bool
-	retainEndpoint     bool
-	retainSandboxKey   bool
-	rejectExec         bool
 	kubernetesErr      error
-	execCalls          int
+	firewallErr        error
+	runCalls           int
+	firewallCalls      int
 	commands           []Command
 }
 
@@ -600,128 +591,121 @@ func (r *fakeTargetRuntime) Run(_ context.Context, command Command) (Result, err
 		}
 		return r.kubernetesNodeResult()
 	}
-	if command.Program != "docker" || len(command.Args) < 4 || command.Args[0] != "--context" ||
-		command.Args[1] != r.config.DockerContext {
+	if command.Program != "orbctl" || len(command.Args) == 0 {
 		return Result{}, fmt.Errorf("unexpected command: %+v", command)
 	}
-	args := command.Args[2:]
+	args := command.Args
 	switch {
-	case len(args) == 3 && args[0] == "container" && args[1] == "inspect":
-		return r.containerResult(args[2])
-	case len(args) == 3 && args[0] == "network" && args[1] == "inspect":
-		return r.networkResult(args[2])
-	case len(args) >= 4 && args[0] == "exec":
-		r.execCalls++
-		if r.rejectExec {
-			return Result{}, errors.New("exec rejected")
+	case len(args) == 4 && args[0] == "info":
+		if args[1] == r.cluster.Name {
+			return r.machineResult()
 		}
-		if args[2] == "readlink" {
-			return Result{Stdout: r.netNS + "\n"}, nil
+		if peer, ok := r.peers[args[1]]; ok {
+			return peer.machineResult(args[1])
 		}
-		if args[2] == "ip" {
+	case len(args) >= 4 && args[0] == "run" && args[1] == "-m" && args[2] == r.cluster.Name:
+		r.runCalls++
+		switch args[3] {
+		case "ip":
 			return r.interfaceResult()
+		case "cat":
+			return Result{Stdout: r.bootID + "\n"}, nil
+		case "sudo":
+			return r.sudoResult(args[5:])
 		}
 	}
-	return Result{}, fmt.Errorf("unexpected docker command: %v", args)
+	return Result{}, fmt.Errorf("unexpected orbctl command: %v", args)
 }
 
-func (r *fakeTargetRuntime) containerResult(selector string) (Result, error) {
-	if selector != r.cluster.NodeName && selector != testContainerID && selector != r.containerID {
-		return Result{}, errors.New("container not found")
-	}
-	networks := map[string]any{
-		r.cluster.NetworkName: map[string]any{
-			"NetworkID": r.networkID,
+// machineResult повторяет живую схему `orbctl info <name> -f json` v2.2.3:
+// объект с вложенным record и top-level ip4/ip6.
+func (p fakePeerMachine) machineResult(name string) (Result, error) {
+	payload := map[string]any{
+		"record": map[string]any{
+			"id":    p.id,
+			"name":  name,
+			"state": "running",
+			"image": map[string]any{
+				"distro":  "ubuntu",
+				"version": "noble",
+				"arch":    runtime.GOARCH,
+				"variant": "default",
+			},
+			"config": map[string]any{
+				"default_username": testVMUser,
+			},
+			"builtin": false,
 		},
+		"ip4": p.ipv4,
+		"ip6": "fd07:b51a:cc66:0:ac8c:31ff:fe6b:b491",
 	}
-	sandboxID := ""
-	sandboxKey := ""
-	if r.running || r.retainEndpoint {
-		sandboxID = r.sandboxID
-		networks[r.cluster.NetworkName] = map[string]any{
-			"NetworkID":   r.networkID,
-			"EndpointID":  r.endpointID,
-			"Gateway":     r.gateway,
-			"IPAddress":   r.ipAddress,
-			"IPPrefixLen": 24,
-			"MacAddress":  r.mac,
-		}
-	}
-	if r.running || r.retainSandboxKey {
-		sandboxKey = "/var/run/docker/netns/" + r.sandboxID[:12]
-	}
-	if r.extraNetwork {
-		networks["foreign-network"] = map[string]any{
-			"NetworkID": strings.Repeat("9", 64),
-		}
-	}
-	payload := []map[string]any{{
-		"Id":    r.containerID,
-		"Name":  "/" + r.cluster.NodeName,
-		"Image": r.imageID,
-		"Config": map[string]any{
-			"Image":  NodeImage,
-			"Labels": map[string]string{clusterLabelKey: r.clusterLabel},
-		},
-		"State": map[string]any{
-			"Status":     r.state,
-			"Running":    r.running,
-			"Paused":     false,
-			"Restarting": false,
-			"Dead":       false,
-			"StartedAt":  r.startedAt,
-			"FinishedAt": r.finishedAt,
-		},
-		"NetworkSettings": map[string]any{
-			"SandboxID":  sandboxID,
-			"SandboxKey": sandboxKey,
-			"Networks":   networks,
-		},
-	}}
 	return marshalResult(payload)
 }
 
-func (r *fakeTargetRuntime) networkResult(selector string) (Result, error) {
-	if selector != r.cluster.NetworkName && selector != testNetworkID && selector != r.networkID {
-		return Result{}, errors.New("network not found")
+// sudoResult имитирует root-команды восстановления firewall: iptables уже
+// установлен, jump-правила после restart отсутствуют (-C падает, -I вставляет).
+func (r *fakeTargetRuntime) sudoResult(guest []string) (Result, error) {
+	if len(guest) == 0 || guest[0] != "iptables" {
+		return Result{}, fmt.Errorf("unexpected sudo command: %v", guest)
 	}
-	containers := map[string]any{}
-	if r.running || r.retainEndpoint {
-		containers[r.containerID] = map[string]string{
-			"Name":        r.cluster.NodeName,
-			"EndpointID":  r.endpointID,
-			"MacAddress":  r.mac,
-			"IPv4Address": r.ipAddress + "/24",
-		}
+	r.firewallCalls++
+	switch {
+	case len(guest) == 2 && guest[1] == "--version":
+		return Result{Stdout: "iptables v1.8.10 (nf_tables)\n"}, nil
+	case r.firewallErr != nil && !slices.Contains(guest, "-L"):
+		return Result{}, r.firewallErr
+	case slices.Contains(guest, "-C"):
+		return Result{}, errors.New("iptables: rule does not exist")
+	default:
+		return Result{}, nil
 	}
-	payload := []map[string]any{{
-		"Id":     r.networkID,
-		"Name":   r.cluster.NetworkName,
-		"Driver": "bridge",
-		"Scope":  "local",
-		"Labels": map[string]string{
-			ownerLabelKey:    r.ownerTask,
-			instanceLabelKey: r.instance,
+}
+func (r *fakeTargetRuntime) machineResult() (Result, error) {
+	payload := map[string]any{
+		"record": map[string]any{
+			"id":    r.machineID,
+			"name":  r.cluster.Name,
+			"state": r.state,
+			"image": map[string]any{
+				"distro":  "ubuntu",
+				"version": "noble",
+				"arch":    runtime.GOARCH,
+				"variant": "default",
+			},
+			"config": map[string]any{
+				"default_username": r.username,
+			},
+			"builtin": false,
 		},
-		"IPAM": map[string]any{
-			"Config": []map[string]string{{"Subnet": r.cluster.DockerSubnet}},
-		},
-		"Containers": containers,
-	}}
+		"ip4": r.ipv4,
+		"ip6": "fd07:b51a:cc66:0:ac8c:31ff:fe6b:b491",
+	}
 	return marshalResult(payload)
 }
 
 func (r *fakeTargetRuntime) interfaceResult() (Result, error) {
-	interfaces := []map[string]any{{
-		"ifindex": r.interfaceIndex,
-		"ifname":  "eth0",
-		"address": r.mac,
-		"addr_info": []map[string]any{{
-			"family":    "inet",
-			"local":     r.ipAddress,
-			"prefixlen": 24,
-		}},
-	}}
+	interfaces := []map[string]any{
+		{
+			"ifindex": 1,
+			"ifname":  "lo",
+			"address": "00:00:00:00:00:00",
+			"addr_info": []map[string]any{{
+				"family":    "inet",
+				"local":     "127.0.0.1",
+				"prefixlen": 8,
+			}},
+		},
+		{
+			"ifindex": 2,
+			"ifname":  r.ifname,
+			"address": r.mac,
+			"addr_info": []map[string]any{{
+				"family":    "inet",
+				"local":     r.ipv4,
+				"prefixlen": 24,
+			}},
+		},
+	}
 	if r.duplicateInterface {
 		interfaces = append(interfaces, map[string]any{
 			"ifindex": 3,
@@ -729,7 +713,7 @@ func (r *fakeTargetRuntime) interfaceResult() (Result, error) {
 			"address": r.mac,
 			"addr_info": []map[string]any{{
 				"family":    "inet",
-				"local":     r.ipAddress,
+				"local":     r.ipv4,
 				"prefixlen": 24,
 			}},
 		})
@@ -756,11 +740,11 @@ func (r *fakeTargetRuntime) assertReadOnly() error {
 			}
 			continue
 		}
-		args := command.Args[2:]
-		isInspect := len(args) >= 2 && ((args[0] == "container" && args[1] == "inspect") ||
-			(args[0] == "network" && args[1] == "inspect"))
-		isReadOnlyExec := len(args) >= 3 && args[0] == "exec" && (args[2] == "ip" || args[2] == "readlink")
-		if !isInspect && !isReadOnlyExec {
+		args := command.Args
+		isInfo := len(args) >= 1 && args[0] == "info"
+		isReadOnlyRun := len(args) >= 4 && args[0] == "run" &&
+			(args[3] == "ip" || args[3] == "cat")
+		if !isInfo && !isReadOnlyRun {
 			return fmt.Errorf("unexpected destructive command: %v", args)
 		}
 	}

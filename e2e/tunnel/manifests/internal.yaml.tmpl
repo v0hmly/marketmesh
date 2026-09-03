@@ -56,7 +56,7 @@ spec:
       containers:
         - name: fake-internal
           image: {{.FakeInternalImage}}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           env:
             - name: SERVICE_VERSION
               value: {{.Version}}
@@ -210,7 +210,7 @@ spec:
       containers:
         - name: gateway-out
           image: {{.GatewayOutImage}}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           env:
             - name: SERVICE_VERSION
               value: {{.Version}}

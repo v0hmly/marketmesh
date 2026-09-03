@@ -10,17 +10,20 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	ownerLabelKey      = "com.marketmesh.task"
-	instanceLabelKey   = "com.marketmesh.topology"
-	clusterLabelKey    = "io.x-k8s.kind.cluster"
-	probeContainerPath = "/usr/local/bin/mm28-tcpprobe"
+	probeVMPath        = "/usr/local/bin/mm44-tcpprobe"
+	probeVMRuntimeDir  = "/run/mm44-topology"
+	k3sKubeconfigPath  = "/etc/rancher/k3s/k3s.yaml"
+	k3sServicePath     = "/etc/systemd/system/k3s.service"
+	dmzChainName       = "MM44-DMZ-IN"
+	internalChainName  = "MM44-INT-IN"
+	machinePollDelay   = 500 * time.Millisecond
+	probeServeLifetime = "20s"
 )
 
 // Topology manages one strictly named, disposable four-cluster environment.
@@ -31,56 +34,57 @@ type Topology struct {
 	now    func() time.Time
 }
 
-type dockerNetwork struct {
-	ID         string            `json:"Id"`
-	Name       string            `json:"Name"`
-	Driver     string            `json:"Driver"`
-	Scope      string            `json:"Scope"`
-	Labels     map[string]string `json:"Labels"`
-	IPAM       dockerIPAM        `json:"IPAM"`
-	Containers map[string]struct {
-		Name        string `json:"Name"`
-		EndpointID  string `json:"EndpointID"`
-		MacAddress  string `json:"MacAddress"`
-		IPv4Address string `json:"IPv4Address"`
-	} `json:"Containers"`
-}
-
-type dockerIPAM struct {
-	Config []struct {
-		Subnet string `json:"Subnet"`
-	} `json:"Config"`
-}
-
-type dockerContainer struct {
-	ID     string `json:"Id"`
-	Name   string `json:"Name"`
-	Image  string `json:"Image"`
+// orbMachine is the flat runtime view of one OrbStack machine, assembled from
+// the real orbctl JSON schemas by parseMachineDocument and parseMachineList.
+type orbMachine struct {
+	ID    string
+	Name  string
+	State string
+	IPv4  string
+	Image struct {
+		Distro  string
+		Version string
+		Arch    string
+	}
 	Config struct {
-		Image  string            `json:"Image"`
-		Labels map[string]string `json:"Labels"`
-	} `json:"Config"`
-	State struct {
-		Status     string `json:"Status"`
-		Running    bool   `json:"Running"`
-		Paused     bool   `json:"Paused"`
-		Restarting bool   `json:"Restarting"`
-		Dead       bool   `json:"Dead"`
-		StartedAt  string `json:"StartedAt"`
-		FinishedAt string `json:"FinishedAt"`
-	} `json:"State"`
-	NetworkSettings struct {
-		SandboxID  string `json:"SandboxID"`
-		SandboxKey string `json:"SandboxKey"`
-		Networks   map[string]struct {
-			NetworkID   string `json:"NetworkID"`
-			EndpointID  string `json:"EndpointID"`
-			Gateway     string `json:"Gateway"`
-			IPAddress   string `json:"IPAddress"`
-			IPPrefixLen int    `json:"IPPrefixLen"`
-			MacAddress  string `json:"MacAddress"`
-		} `json:"Networks"`
-	} `json:"NetworkSettings"`
+		DefaultUsername string
+	}
+}
+
+// orbMachineRecord mirrors one flat record of `orbctl list -f json`.
+type orbMachineRecord struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	State string `json:"state"`
+	Image struct {
+		Distro  string `json:"distro"`
+		Version string `json:"version"`
+		Arch    string `json:"arch"`
+	} `json:"image"`
+	Config struct {
+		DefaultUsername string `json:"default_username"`
+	} `json:"config"`
+}
+
+// orbMachineInfo mirrors the object returned by `orbctl info -f json`.
+type orbMachineInfo struct {
+	Record orbMachineRecord `json:"record"`
+	IPv4   string           `json:"ip4"`
+	IPv6   string           `json:"ip6"`
+}
+
+func machineFromRecord(record orbMachineRecord, ipv4 string) orbMachine {
+	machine := orbMachine{
+		ID:    record.ID,
+		Name:  record.Name,
+		State: record.State,
+		IPv4:  ipv4,
+	}
+	machine.Image.Distro = record.Image.Distro
+	machine.Image.Version = record.Image.Version
+	machine.Image.Arch = record.Image.Arch
+	machine.Config.DefaultUsername = record.Config.DefaultUsername
+	return machine
 }
 
 type kubernetesObject struct {
@@ -121,29 +125,36 @@ func (t *Topology) up(ctx context.Context) error {
 	if err := t.ensureToolchain(); err != nil {
 		return err
 	}
-	if err := t.dockerReady(ctx); err != nil {
+	if err := t.orbStackReady(ctx); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Join(t.config.StateDir, "kubeconfigs"), 0o750); err != nil {
 		return fmt.Errorf("creating kubeconfig directory: %w", err)
 	}
 	if err := os.MkdirAll(filepath.Join(t.config.StateDir, "configs"), 0o750); err != nil {
-		return fmt.Errorf("creating kind config directory: %w", err)
+		return fmt.Errorf("creating machine config directory: %w", err)
 	}
 
+	machines := make(map[string]orbMachine, len(t.config.Clusters()))
 	for _, cluster := range t.config.Clusters() {
-		if err := t.ensureNetwork(ctx, cluster); err != nil {
+		machine, err := t.ensureMachine(ctx, cluster)
+		if err != nil {
 			return err
 		}
-		if err := t.ensureCluster(ctx, cluster); err != nil {
+		if err := t.installK3s(ctx, cluster, machine); err != nil {
 			return err
 		}
+		if err := t.ensureFirewallToolchain(ctx, cluster); err != nil {
+			return err
+		}
+		if err := t.refreshKubeconfig(ctx, cluster, machine); err != nil {
+			return err
+		}
+		machines[cluster.LogicalName] = machine
 	}
 
-	for _, dc := range []string{"dc-a", "dc-b"} {
-		if err := t.connectAndIsolateZones(ctx, dc); err != nil {
-			return err
-		}
+	if err := t.isolateZones(ctx); err != nil {
+		return err
 	}
 	for _, cluster := range t.config.Clusters() {
 		if err := t.ensureIdentity(ctx, cluster); err != nil {
@@ -163,15 +174,12 @@ func (t *Topology) Ready(ctx context.Context) error {
 	if err := t.ensureToolchain(); err != nil {
 		return err
 	}
-	if err := t.dockerReady(ctx); err != nil {
+	if err := t.orbStackReady(ctx); err != nil {
 		return err
 	}
 
 	for _, cluster := range t.config.Clusters() {
-		if err := t.validateNetwork(ctx, cluster); err != nil {
-			return err
-		}
-		if _, err := t.validateContainer(ctx, cluster); err != nil {
+		if _, err := t.requireRunningMachine(ctx, cluster); err != nil {
 			return err
 		}
 		if err := t.waitForCluster(ctx, cluster); err != nil {
@@ -182,13 +190,11 @@ func (t *Topology) Ready(ctx context.Context) error {
 		}
 	}
 
-	for _, dc := range []string{"dc-a", "dc-b"} {
-		if err := t.validateFirewall(ctx, dc); err != nil {
-			return err
-		}
-		if err := t.checkZoneIsolation(ctx, dc); err != nil {
-			return err
-		}
+	if err := t.validateFirewall(ctx); err != nil {
+		return err
+	}
+	if err := t.checkZoneIsolation(ctx); err != nil {
+		return err
 	}
 
 	t.logger.InfoContext(ctx, "topology is ready and isolated", "instance", t.config.Instance)
@@ -239,9 +245,9 @@ func (t *Topology) Verify(ctx context.Context) error {
 // Versions returns the pinned and locally installed topology tool versions.
 func (t *Topology) Versions(ctx context.Context) (map[string]string, error) {
 	versions := map[string]string{
-		"kind":       KindVersion,
-		"kubernetes": KubernetesVersion,
-		"node_image": NodeImage,
+		"k3s":        K3sVersion,
+		"kubectl":    KubectlVersion,
+		"runtime":    RuntimeName,
 		"probe_port": strconv.Itoa(AllowedProbePort),
 	}
 	if err := t.ensureToolchain(); err != nil {
@@ -251,20 +257,20 @@ func (t *Topology) Versions(ctx context.Context) (map[string]string, error) {
 
 	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
-	result, err := t.runner.Run(commandCtx, Command{Program: t.config.KindPath, Args: []string{"version"}})
+	result, err := t.runner.Run(commandCtx, Command{Program: "orbctl", Args: []string{"version"}})
 	if err != nil {
 		return nil, err
 	}
 	versions["installed"] = "true"
-	versions["kind_actual"] = strings.TrimSpace(result.Stdout)
+	versions["orbctl"] = strings.TrimSpace(result.Stdout)
 	return versions, nil
 }
 
 func (t *Topology) ensureToolchain() error {
 	platform := runtime.GOOS + "/" + runtime.GOARCH
-	kindAsset, ok := kindAssets[platform]
-	if !ok {
-		return fmt.Errorf("topology: unsupported platform %s", platform)
+	k3sAsset, err := k3sAssetFor(runtime.GOARCH)
+	if err != nil {
+		return err
 	}
 	kubectlAsset, ok := kubectlAssets[platform]
 	if !ok {
@@ -276,7 +282,7 @@ func (t *Topology) ensureToolchain() error {
 		hash string
 		name string
 	}{
-		{path: t.config.KindPath, hash: kindAsset.sha256, name: "kind"},
+		{path: t.config.K3sPath, hash: k3sAsset.sha256, name: "k3s"},
 		{path: t.config.KubectlPath, hash: kubectlAsset.sha256, name: "kubectl"},
 	}
 	for _, check := range checks {
@@ -294,258 +300,407 @@ func (t *Topology) ensureToolchain() error {
 	return nil
 }
 
-func (t *Topology) dockerReady(ctx context.Context) error {
+// orbStackReady proves that the OrbStack service itself is running.
+func (t *Topology) orbStackReady(ctx context.Context) error {
 	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand("info", "--format", "{{.Architecture}}"))
-	if err != nil {
-		return fmt.Errorf("checking docker context %q: %w", t.config.DockerContext, err)
-	}
-	engineArchitecture := normalizeDockerArchitecture(strings.TrimSpace(result.Stdout))
-	if engineArchitecture != runtime.GOARCH {
-		return fmt.Errorf(
-			"topology: docker architecture %q does not match host architecture %q",
-			engineArchitecture,
-			runtime.GOARCH,
-		)
+	if _, err := t.runner.Run(commandCtx, Command{Program: "orbctl", Args: []string{"status"}}); err != nil {
+		return errors.New("topology: OrbStack is not running; start it first")
 	}
 	return nil
 }
 
-func normalizeDockerArchitecture(value string) string {
-	switch value {
-	case "aarch64":
-		return "arm64"
-	case "x86_64":
-		return "amd64"
-	default:
-		return value
-	}
-}
-
-func (t *Topology) ensureNetwork(ctx context.Context, cluster Cluster) error {
-	exists, err := t.networkExists(ctx, cluster.NetworkName)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return t.validateNetwork(ctx, cluster)
-	}
-
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	_, err = t.runner.Run(commandCtx, t.dockerCommand(
-		"network",
-		"create",
-		"--driver",
-		"bridge",
-		"--subnet",
-		cluster.DockerSubnet,
-		"--label",
-		ownerLabelKey+"="+TaskKey,
-		"--label",
-		instanceLabelKey+"="+t.config.Instance,
-		cluster.NetworkName,
-	))
-	if err != nil {
-		return fmt.Errorf("creating network %s: %w", cluster.NetworkName, err)
-	}
-	return t.validateNetwork(ctx, cluster)
-}
-
-func (t *Topology) networkExists(ctx context.Context, name string) (bool, error) {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"network",
-		"ls",
-		"--filter",
-		"name=^"+name+"$",
-		"--format",
-		"{{.Name}}",
-	))
-	if err != nil {
-		return false, fmt.Errorf("listing docker networks: %w", err)
-	}
-	names := strings.Fields(result.Stdout)
-	if len(names) == 0 {
-		return false, nil
-	}
-	if len(names) != 1 || names[0] != name {
-		return false, fmt.Errorf("topology: unexpected docker network match for %s", name)
-	}
-	return true, nil
-}
-
-func (t *Topology) validateNetwork(ctx context.Context, cluster Cluster) error {
-	network, err := t.inspectNetwork(ctx, cluster.NetworkName)
-	if err != nil {
-		return err
-	}
-	if network.Name != cluster.NetworkName {
-		return fmt.Errorf("topology: network name mismatch for %s", cluster.NetworkName)
-	}
-	if network.Labels[ownerLabelKey] != TaskKey || network.Labels[instanceLabelKey] != t.config.Instance {
-		return fmt.Errorf("topology: refusing unowned network %s", cluster.NetworkName)
-	}
-	if len(network.IPAM.Config) != 1 || network.IPAM.Config[0].Subnet != cluster.DockerSubnet {
-		return fmt.Errorf("topology: network %s has unexpected subnet", cluster.NetworkName)
-	}
-	return nil
-}
-
-func (t *Topology) inspectNetwork(ctx context.Context, name string) (dockerNetwork, error) {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand("network", "inspect", name))
-	if err != nil {
-		return dockerNetwork{}, fmt.Errorf("inspecting network %s: %w", name, err)
-	}
-	var networks []dockerNetwork
-	if err := json.Unmarshal([]byte(result.Stdout), &networks); err != nil || len(networks) != 1 {
-		return dockerNetwork{}, fmt.Errorf("topology: invalid docker network inspection for %s", name)
-	}
-	if networks[0].Labels == nil {
-		networks[0].Labels = map[string]string{}
-	}
-	if networks[0].Containers == nil {
-		networks[0].Containers = map[string]struct {
-			Name        string `json:"Name"`
-			EndpointID  string `json:"EndpointID"`
-			MacAddress  string `json:"MacAddress"`
-			IPv4Address string `json:"IPv4Address"`
-		}{}
-	}
-	return networks[0], nil
-}
-
-func (t *Topology) ensureCluster(ctx context.Context, cluster Cluster) error {
-	clusters, err := t.kindClusters(ctx)
-	if err != nil {
-		return err
-	}
-	if slices.Contains(clusters, cluster.Name) {
-		if _, err := t.validateContainer(ctx, cluster); err != nil {
-			return err
-		}
-		return t.refreshKubeconfig(ctx, cluster)
-	}
-	if slices.Contains(clusters, cluster.LogicalName) {
-		return fmt.Errorf("topology: refusing to reuse non-prefixed cluster %s", cluster.LogicalName)
-	}
-
-	configPath := filepath.Join(t.config.StateDir, "configs", cluster.LogicalName+".yaml")
-	if err := writePrivateFile(configPath, []byte(kindConfig(cluster))); err != nil {
-		return fmt.Errorf("writing kind config for %s: %w", cluster.Name, err)
-	}
-	if err := os.Remove(cluster.Kubeconfig); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("removing stale kubeconfig for %s: %w", cluster.Name, err)
-	}
-
-	commandCtx, cancel := context.WithTimeout(ctx, createTimeout)
-	defer cancel()
-	_, err = t.runner.Run(commandCtx, Command{
-		Program: t.config.KindPath,
-		Args: []string{
-			"create",
-			"cluster",
-			"--name",
-			cluster.Name,
-			"--image",
-			NodeImage,
-			"--config",
-			configPath,
-			"--kubeconfig",
-			cluster.Kubeconfig,
-			"--wait",
-			"240s",
-			"--retain",
-		},
-		Env: t.config.kindEnvironment(cluster.NetworkName),
-	})
-	if err != nil {
-		return fmt.Errorf("creating cluster %s: %w", cluster.Name, err)
-	}
-	if err := os.Chmod(cluster.Kubeconfig, 0o600); err != nil {
-		return fmt.Errorf("setting kubeconfig permissions for %s: %w", cluster.Name, err)
-	}
-	if _, err = t.validateContainer(ctx, cluster); err != nil {
-		return err
-	}
-	return t.refreshKubeconfig(ctx, cluster)
-}
-
-func (t *Topology) refreshKubeconfig(ctx context.Context, cluster Cluster) error {
+// listMachines returns every OrbStack machine known to the local service.
+// The list schema carries no addresses; IPv4 is resolved per machine via info.
+func (t *Topology) listMachines(ctx context.Context) ([]orbMachine, error) {
 	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
 	result, err := t.runner.Run(commandCtx, Command{
-		Program: t.config.KindPath,
-		Args:    []string{"get", "kubeconfig", "--name", cluster.Name},
-		Env:     t.config.kindEnvironment(""),
+		Program: "orbctl",
+		Args:    []string{"list", "--format", "json"},
 	})
 	if err != nil {
-		return fmt.Errorf("getting kubeconfig for %s: %w", cluster.Name, err)
+		return nil, fmt.Errorf("listing orbstack machines: %w", err)
 	}
-	if strings.TrimSpace(result.Stdout) == "" {
-		return fmt.Errorf("topology: kind returned an empty kubeconfig for %s", cluster.Name)
+	return parseMachineList(result.Stdout)
+}
+
+func parseMachineList(document string) ([]orbMachine, error) {
+	records := []orbMachineRecord{}
+	if err := json.Unmarshal([]byte(document), &records); err != nil {
+		return nil, errors.New("topology: invalid orbstack machine list document")
 	}
-	if err := writePrivateFile(cluster.Kubeconfig, []byte(result.Stdout)); err != nil {
+	machines := make([]orbMachine, 0, len(records))
+	for _, record := range records {
+		machines = append(machines, machineFromRecord(record, ""))
+	}
+	return machines, nil
+}
+
+// inspectMachine returns the machine with the exact requested name, failing closed otherwise.
+func (t *Topology) inspectMachine(ctx context.Context, name string) (orbMachine, error) {
+	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+	defer cancel()
+	result, err := t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args:    []string{"info", name, "--format", "json"},
+	})
+	if err != nil {
+		return orbMachine{}, fmt.Errorf("inspecting machine %s: %w", name, err)
+	}
+	return parseMachineDocument(result.Stdout, name)
+}
+
+func parseMachineDocument(document, expectedName string) (orbMachine, error) {
+	info := orbMachineInfo{}
+	if err := json.Unmarshal([]byte(document), &info); err != nil {
+		return orbMachine{}, fmt.Errorf("topology: invalid orbstack machine inspection for %s", expectedName)
+	}
+	if info.Record.Name != expectedName {
+		return orbMachine{}, fmt.Errorf("topology: machine name mismatch for %s", expectedName)
+	}
+	return machineFromRecord(info.Record, info.IPv4), nil
+}
+
+// requireRunningMachine validates name, state, and IPv4 of a topology machine.
+func (t *Topology) requireRunningMachine(ctx context.Context, cluster Cluster) (orbMachine, error) {
+	machine, err := t.inspectMachine(ctx, cluster.Name)
+	if err != nil {
+		return orbMachine{}, err
+	}
+	if machine.State != "running" {
+		return orbMachine{}, fmt.Errorf("topology: machine %s is not running", cluster.Name)
+	}
+	if net.ParseIP(machine.IPv4).To4() == nil {
+		return orbMachine{}, fmt.Errorf("topology: machine %s has no valid ipv4 address", cluster.Name)
+	}
+	return machine, nil
+}
+
+// ensureMachine creates the OrbStack VM for one cluster or validates an existing owned one.
+func (t *Topology) ensureMachine(ctx context.Context, cluster Cluster) (orbMachine, error) {
+	if !t.config.ownsResource(cluster.Name) {
+		return orbMachine{}, fmt.Errorf("topology: refusing unexpected machine name %s", cluster.Name)
+	}
+	machines, err := t.listMachines(ctx)
+	if err != nil {
+		return orbMachine{}, err
+	}
+	exists := false
+	for _, machine := range machines {
+		if machine.Name == cluster.Name {
+			exists = true
+			break
+		}
+	}
+
+	if exists {
+		machine, infoErr := t.inspectMachine(ctx, cluster.Name)
+		if infoErr != nil {
+			return orbMachine{}, infoErr
+		}
+		if err := validateMachineShape(cluster, machine); err != nil {
+			return orbMachine{}, err
+		}
+		if machine.State != "running" {
+			commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+			_, startErr := t.runner.Run(commandCtx, Command{
+				Program: "orbctl",
+				Args:    []string{"start", cluster.Name},
+			})
+			cancel()
+			if startErr != nil {
+				return orbMachine{}, fmt.Errorf("starting machine %s: %w", cluster.Name, startErr)
+			}
+		}
+		return t.waitMachineIPv4(ctx, cluster)
+	}
+
+	commandCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	_, err = t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args: []string{
+			"create",
+			VMDistro,
+			cluster.Name,
+			"--cpus",
+			VMCPUs,
+			"--memory",
+			VMMemory,
+			"--disk",
+			VMDisk,
+		},
+	})
+	cancel()
+	if err != nil {
+		return orbMachine{}, fmt.Errorf("creating machine %s: %w", cluster.Name, err)
+	}
+	machine, err := t.waitMachineIPv4(ctx, cluster)
+	if err != nil {
+		return orbMachine{}, err
+	}
+	return machine, validateMachineShape(cluster, machine)
+}
+
+func validateMachineShape(cluster Cluster, machine orbMachine) error {
+	// orbctl отдаёт версию образа кодовым именем: ubuntu:24.04 → "noble".
+	if machine.Image.Distro != "ubuntu" || (machine.Image.Version != "noble" && machine.Image.Version != "24.04") {
+		return fmt.Errorf("topology: machine %s uses an unexpected image", cluster.Name)
+	}
+	if machine.Image.Arch != runtime.GOARCH {
+		return fmt.Errorf(
+			"topology: machine %s architecture %q does not match host architecture %q",
+			cluster.Name,
+			machine.Image.Arch,
+			runtime.GOARCH,
+		)
+	}
+	if !vmUserPattern.MatchString(machine.Config.DefaultUsername) {
+		return fmt.Errorf("topology: machine %s has an unexpected default user", cluster.Name)
+	}
+	return nil
+}
+
+// waitMachineIPv4 polls bounded until OrbStack reports an IPv4 address for the machine.
+func (t *Topology) waitMachineIPv4(ctx context.Context, cluster Cluster) (orbMachine, error) {
+	deadline := time.NewTimer(createTimeout)
+	defer deadline.Stop()
+	poll := time.NewTicker(machinePollDelay)
+	defer poll.Stop()
+	for {
+		machine, err := t.inspectMachine(ctx, cluster.Name)
+		if err == nil && net.ParseIP(machine.IPv4).To4() != nil {
+			return machine, nil
+		}
+		select {
+		case <-ctx.Done():
+			return orbMachine{}, ctx.Err()
+		case <-deadline.C:
+			return orbMachine{}, fmt.Errorf("topology: machine %s did not receive an ipv4 address", cluster.Name)
+		case <-poll.C:
+		}
+	}
+}
+
+// ensureFirewallToolchain installs the pinned iptables package into the VM.
+// The base OrbStack ubuntu:24.04 image ships neither iptables nor nft, so the
+// zone firewall cannot be configured otherwise. Ubuntu noble ships iptables
+// 1.8.x as iptables-nft over nf_tables, which is compatible with the rule
+// syntax used here. The pinned apt version is deliberate fail-fast: when the
+// noble repository rotates the candidate, installation fails loudly and the
+// pin must be reviewed instead of silently drifting.
+func (t *Topology) ensureFirewallToolchain(ctx context.Context, cluster Cluster) error {
+	result, err := t.runMachineSudoResult(ctx, commandTimeout, cluster.Name, "iptables", "--version")
+	if err == nil {
+		return validateIPTablesVersion(cluster.Name, result.Stdout)
+	}
+
+	t.logger.InfoContext(ctx, "installing pinned firewall toolchain", "machine", cluster.Name)
+	if err := t.runMachineSudo(ctx, createTimeout, cluster.Name,
+		"env", "DEBIAN_FRONTEND=noninteractive", "apt-get", "update"); err != nil {
+		return fmt.Errorf("updating apt indexes in %s: %w", cluster.Name, err)
+	}
+	if err := t.runMachineSudo(ctx, createTimeout, cluster.Name,
+		"env", "DEBIAN_FRONTEND=noninteractive", "apt-get", "install", "-y",
+		"--no-install-recommends", "iptables="+IPTablesVersion); err != nil {
+		return fmt.Errorf("installing pinned iptables in %s: %w", cluster.Name, err)
+	}
+
+	result, err = t.runMachineSudoResult(ctx, commandTimeout, cluster.Name, "iptables", "--version")
+	if err != nil {
+		return fmt.Errorf("checking installed iptables in %s: %w", cluster.Name, err)
+	}
+	return validateIPTablesVersion(cluster.Name, result.Stdout)
+}
+
+// validateIPTablesVersion fails closed unless the installed binary reports the
+// pinned 1.8.10 line (nftables frontend suffix like "(nf_tables)" is allowed).
+func validateIPTablesVersion(name, output string) error {
+	if !strings.HasPrefix(strings.TrimSpace(output), "iptables v1.8.10") {
+		return fmt.Errorf("topology: machine %s has an unexpected iptables version %q", name, strings.TrimSpace(output))
+	}
+	return nil
+}
+
+// installK3s pushes the pinned k3s binary and systemd unit into the VM and starts the service.
+func (t *Topology) installK3s(ctx context.Context, cluster Cluster, machine orbMachine) error {
+	home := "/home/" + machine.Config.DefaultUsername
+
+	if err := t.pushToMachine(ctx, cluster.Name, t.config.K3sPath, "k3s"); err != nil {
+		return err
+	}
+	if err := t.runMachineSudo(ctx, createTimeout, cluster.Name,
+		"install", "-m", "0755", home+"/k3s", "/usr/local/bin/k3s"); err != nil {
+		return fmt.Errorf("installing k3s in %s: %w", cluster.Name, err)
+	}
+
+	unitPath := filepath.Join(t.config.StateDir, "configs", cluster.LogicalName+"-k3s.service")
+	if err := writePrivateFile(unitPath, []byte(k3sUnit(machine.IPv4))); err != nil {
+		return fmt.Errorf("writing k3s unit for %s: %w", cluster.Name, err)
+	}
+	if err := t.pushToMachine(ctx, cluster.Name, unitPath, "k3s.service"); err != nil {
+		return err
+	}
+	if err := t.runMachineSudo(ctx, commandTimeout, cluster.Name,
+		"install", "-m", "0644", home+"/k3s.service", k3sServicePath); err != nil {
+		return fmt.Errorf("installing k3s unit in %s: %w", cluster.Name, err)
+	}
+	if err := t.runMachineSudo(ctx, commandTimeout, cluster.Name, "systemctl", "daemon-reload"); err != nil {
+		return fmt.Errorf("reloading systemd in %s: %w", cluster.Name, err)
+	}
+	if err := t.runMachineSudo(ctx, commandTimeout, cluster.Name, "systemctl", "enable", "--now", "k3s"); err != nil {
+		return fmt.Errorf("enabling k3s in %s: %w", cluster.Name, err)
+	}
+	return t.waitK3sServer(ctx, cluster)
+}
+
+// pushToMachine copies a host file into the machine home directory (relative destination).
+func (t *Topology) pushToMachine(ctx context.Context, name, source, destination string) error {
+	commandCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+	_, err := t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args:    []string{"push", "-m", name, source, destination},
+	})
+	if err != nil {
+		return fmt.Errorf("pushing %s to machine %s: %w", filepath.Base(source), name, err)
+	}
+	return nil
+}
+
+// waitK3sServer polls bounded until k3s has written its admin kubeconfig.
+func (t *Topology) waitK3sServer(ctx context.Context, cluster Cluster) error {
+	deadline := time.NewTimer(readyTimeout)
+	defer deadline.Stop()
+	poll := time.NewTicker(machinePollDelay)
+	defer poll.Stop()
+	for {
+		commandCtx, checkCancel := context.WithTimeout(ctx, commandTimeout)
+		_, err := t.runner.Run(commandCtx, Command{
+			Program: "orbctl",
+			Args:    []string{"run", "-m", cluster.Name, "sudo", "-n", "test", "-f", k3sKubeconfigPath},
+		})
+		checkCancel()
+		if err == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-deadline.C:
+			return fmt.Errorf("topology: k3s did not become ready in %s", cluster.Name)
+		case <-poll.C:
+		}
+	}
+}
+
+// refreshKubeconfig extracts the k3s admin kubeconfig and rewrites it for host access.
+func (t *Topology) refreshKubeconfig(ctx context.Context, cluster Cluster, machine orbMachine) error {
+	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+	result, err := t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args:    []string{"run", "-m", cluster.Name, "sudo", "-n", "cat", k3sKubeconfigPath},
+	})
+	cancel()
+	if err != nil {
+		return fmt.Errorf("reading kubeconfig in %s: %w", cluster.Name, err)
+	}
+	rewritten, err := rewriteKubeconfig([]byte(result.Stdout), cluster.KubeContext, machine.IPv4)
+	if err != nil {
+		return fmt.Errorf("rewriting kubeconfig for %s: %w", cluster.Name, err)
+	}
+	if err := writePrivateFile(cluster.Kubeconfig, rewritten); err != nil {
 		return fmt.Errorf("writing kubeconfig for %s: %w", cluster.Name, err)
 	}
 	return nil
 }
 
-func (t *Topology) kindClusters(ctx context.Context) ([]string, error) {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, Command{
-		Program: t.config.KindPath,
-		Args:    []string{"get", "clusters"},
-		Env:     t.config.kindEnvironment(""),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("listing kind clusters: %w", err)
+// rewriteKubeconfig retargets a stock k3s kubeconfig to the VM address and the
+// instance-scoped context, user, and cluster name. It fails closed on any
+// deviation from the deterministic k3s document shape.
+func rewriteKubeconfig(data []byte, contextName, serverIPv4 string) ([]byte, error) {
+	if net.ParseIP(serverIPv4).To4() == nil {
+		return nil, errors.New("topology: kubeconfig server address is not a valid ipv4")
 	}
-	clusters := strings.Fields(result.Stdout)
-	slices.Sort(clusters)
-	return clusters, nil
+	if !contextNamePattern.MatchString(contextName) {
+		return nil, errors.New("topology: kubeconfig context name is invalid")
+	}
+
+	serverLine := "server: https://" + serverIPv4 + ":6443"
+	counts := map[string]int{}
+	lines := strings.Split(string(data), "\n")
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		replacement := ""
+		switch trimmed {
+		case "server: https://127.0.0.1:6443":
+			replacement = indent + serverLine
+		case "name: default":
+			replacement = indent + "name: " + contextName
+		case "- name: default":
+			replacement = indent + "- name: " + contextName
+		case "cluster: default":
+			replacement = indent + "cluster: " + contextName
+		case "user: default":
+			replacement = indent + "user: " + contextName
+		case "current-context: default":
+			replacement = indent + "current-context: " + contextName
+		default:
+			continue
+		}
+		counts[trimmed]++
+		lines[index] = replacement
+	}
+
+	expected := map[string]int{
+		"server: https://127.0.0.1:6443": 1,
+		"name: default":                  2,
+		"- name: default":                1,
+		"cluster: default":               1,
+		"user: default":                  1,
+		"current-context: default":       1,
+	}
+	for line, want := range expected {
+		if counts[line] != want {
+			return nil, fmt.Errorf("topology: unexpected k3s kubeconfig shape (%q seen %d times, want %d)", line, counts[line], want)
+		}
+	}
+	rewritten := []byte(strings.Join(lines, "\n"))
+	if !strings.Contains(string(rewritten), "certificate-authority-data:") {
+		return nil, errors.New("topology: rewritten kubeconfig lost the cluster certificate")
+	}
+	return rewritten, nil
 }
 
-func (t *Topology) validateContainer(ctx context.Context, cluster Cluster) (dockerContainer, error) {
-	container, err := t.inspectContainer(ctx, cluster.NodeName)
-	if err != nil {
-		return dockerContainer{}, err
-	}
-	if strings.TrimPrefix(container.Name, "/") != cluster.NodeName {
-		return dockerContainer{}, fmt.Errorf("topology: container name mismatch for %s", cluster.NodeName)
-	}
-	if container.Config.Labels[clusterLabelKey] != cluster.Name {
-		return dockerContainer{}, fmt.Errorf("topology: refusing unowned container %s", cluster.NodeName)
-	}
-	if container.Config.Image != NodeImage {
-		return dockerContainer{}, fmt.Errorf("topology: container %s uses an unexpected node image", cluster.NodeName)
-	}
-	if _, ok := container.NetworkSettings.Networks[cluster.NetworkName]; !ok {
-		return dockerContainer{}, fmt.Errorf("topology: container %s is not attached to %s", cluster.NodeName, cluster.NetworkName)
-	}
-	return container, nil
-}
+// k3sUnit renders the canonical k3s server systemd unit with topology flags.
+func k3sUnit(machineIPv4 string) string {
+	return fmt.Sprintf(`[Unit]
+Description=Lightweight Kubernetes
+Documentation=https://k3s.io
+Wants=network-online.target
+After=network-online.target
 
-func (t *Topology) inspectContainer(ctx context.Context, name string) (dockerContainer, error) {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand("container", "inspect", name))
-	if err != nil {
-		return dockerContainer{}, fmt.Errorf("inspecting container %s: %w", name, err)
-	}
-	var containers []dockerContainer
-	if err := json.Unmarshal([]byte(result.Stdout), &containers); err != nil || len(containers) != 1 {
-		return dockerContainer{}, fmt.Errorf("topology: invalid docker container inspection for %s", name)
-	}
-	if containers[0].Config.Labels == nil {
-		containers[0].Config.Labels = map[string]string{}
-	}
-	return containers[0], nil
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/default/%%N
+EnvironmentFile=-/etc/sysconfig/%%N
+EnvironmentFile=-/etc/systemd/system/k3s.service.env
+KillMode=process
+Delegate=yes
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+ExecStartPre=/bin/sh -xc '! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service 2>/dev/null'
+ExecStart=/usr/local/bin/k3s server --disable=traefik --disable=servicelb --disable=metrics-server --write-kubeconfig-mode=0600 --node-ip=%[1]s --tls-san=%[1]s
+`, machineIPv4)
 }
 
 func (t *Topology) ensureIdentity(ctx context.Context, cluster Cluster) error {
@@ -670,344 +825,252 @@ func validateKubernetesIdentity(
 	return nil
 }
 
-func (t *Topology) connectAndIsolateZones(ctx context.Context, dc string) error {
-	dmz, err := t.config.Cluster(dc, "dmz")
+// isolateZones installs the full mesh zone firewall inside every VM. All four
+// VMs share one OrbStack L2 segment, so each VM gates INPUT on the IPv4 of each
+// of the three other VMs and routes it into one dedicated chain. Exactly one
+// VM-to-VM flow is allowed: a DMZ VM accepts tcp/30443 from the internal VM of
+// the same DC. Everywhere ESTABLISHED,RELATED is accepted first so replies to
+// that allowed outbound flow pass; all other VM-to-VM packets — cross-DC,
+// DMZ-to-DMZ, internal-to-internal and DMZ-initiated — are dropped. Traffic
+// from the host is left untouched.
+func (t *Topology) isolateZones(ctx context.Context) error {
+	machines, err := t.runningMachines(ctx)
 	if err != nil {
 		return err
 	}
-	internal, err := t.config.Cluster(dc, "internal")
-	if err != nil {
-		return err
-	}
-	if _, err := t.validateContainer(ctx, dmz); err != nil {
-		return err
-	}
-	internalContainer, err := t.validateContainer(ctx, internal)
-	if err != nil {
-		return err
-	}
-	if _, isConnected := internalContainer.NetworkSettings.Networks[dmz.NetworkName]; !isConnected {
-		commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-		_, connectErr := t.runner.Run(commandCtx, t.dockerCommand(
-			"network",
-			"connect",
-			dmz.NetworkName,
-			internal.NodeName,
-		))
-		cancel()
-		if connectErr != nil {
-			return fmt.Errorf("connecting %s to %s: %w", internal.NodeName, dmz.NetworkName, connectErr)
+	for _, cluster := range t.config.Clusters() {
+		rules, err := zoneChainRules(cluster, machines)
+		if err != nil {
+			return err
 		}
-	}
-
-	internalContainer, err = t.inspectContainer(ctx, internal.NodeName)
-	if err != nil {
-		return err
-	}
-	internalAttachment, ok := internalContainer.NetworkSettings.Networks[internal.NetworkName]
-	if !ok || net.ParseIP(internalAttachment.IPAddress).To4() == nil || net.ParseIP(internalAttachment.Gateway).To4() == nil {
-		return fmt.Errorf("topology: missing internal attachment for %s", internal.NodeName)
-	}
-	internalInterface, err := t.interfaceForIP(ctx, internal.NodeName, internalAttachment.IPAddress)
-	if err != nil {
-		return err
-	}
-	if err := t.configureDefaultRoute(
-		ctx,
-		internal.NodeName,
-		internalAttachment.Gateway,
-		internalInterface,
-	); err != nil {
-		return err
-	}
-	dmzAttachment, ok := internalContainer.NetworkSettings.Networks[dmz.NetworkName]
-	if !ok || net.ParseIP(dmzAttachment.IPAddress).To4() == nil {
-		return fmt.Errorf("topology: missing dmz attachment for %s", internal.NodeName)
-	}
-	interfaceName, err := t.interfaceForIP(ctx, internal.NodeName, dmzAttachment.IPAddress)
-	if err != nil {
-		return err
-	}
-	return t.configureFirewall(ctx, internal.NodeName, interfaceName)
-}
-
-func (t *Topology) configureDefaultRoute(
-	ctx context.Context,
-	nodeName string,
-	gateway string,
-	interfaceName string,
-) error {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	_, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		nodeName,
-		"ip",
-		"route",
-		"replace",
-		"default",
-		"via",
-		gateway,
-		"dev",
-		interfaceName,
-	))
-	if err != nil {
-		return fmt.Errorf("restoring internal default route in %s: %w", nodeName, err)
-	}
-	return t.validateDefaultRoute(ctx, nodeName, gateway, interfaceName)
-}
-
-func (t *Topology) validateDefaultRoute(
-	ctx context.Context,
-	nodeName string,
-	gateway string,
-	interfaceName string,
-) error {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		nodeName,
-		"ip",
-		"route",
-		"show",
-		"default",
-	))
-	if err != nil {
-		return fmt.Errorf("reading default route in %s: %w", nodeName, err)
-	}
-	if !defaultRouteMatches(result.Stdout, gateway, interfaceName) {
-		return fmt.Errorf("topology: default route does not use the internal network in %s", nodeName)
+		if err := t.configureZoneFirewall(
+			ctx,
+			cluster.Name,
+			t.peerIPv4s(machines, cluster.LogicalName),
+			zoneChainName(cluster),
+			rules,
+		); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func defaultRouteMatches(output string, gateway string, interfaceName string) bool {
-	lines := strings.FieldsFunc(strings.TrimSpace(output), func(character rune) bool {
-		return character == '\n' || character == '\r'
-	})
-	if len(lines) != 1 {
-		return false
+// runningMachines validates and returns every owned machine by logical name.
+func (t *Topology) runningMachines(ctx context.Context) (map[string]orbMachine, error) {
+	machines := make(map[string]orbMachine, len(t.config.Clusters()))
+	for _, cluster := range t.config.Clusters() {
+		machine, err := t.requireRunningMachine(ctx, cluster)
+		if err != nil {
+			return nil, err
+		}
+		machines[cluster.LogicalName] = machine
 	}
-	fields := strings.Fields(lines[0])
-	return len(fields) >= 5 &&
-		fields[0] == "default" &&
-		fields[1] == "via" &&
-		fields[2] == gateway &&
-		fields[3] == "dev" &&
-		fields[4] == interfaceName
+	return machines, nil
 }
 
-func (t *Topology) interfaceForIP(ctx context.Context, nodeName, address string) (string, error) {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		nodeName,
-		"ip",
-		"-o",
-		"-4",
-		"address",
-		"show",
-	))
-	if err != nil {
-		return "", fmt.Errorf("listing interfaces in %s: %w", nodeName, err)
-	}
-	for line := range strings.SplitSeq(result.Stdout, "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 4 {
+// peerIPv4s returns the addresses of all other topology VMs in deterministic order.
+func (t *Topology) peerIPv4s(machines map[string]orbMachine, logicalName string) []string {
+	peers := make([]string, 0, len(machines)-1)
+	for _, cluster := range t.config.Clusters() {
+		if cluster.LogicalName == logicalName {
 			continue
 		}
-		interfaceIP, _, parseErr := net.ParseCIDR(fields[3])
-		if parseErr == nil && interfaceIP.String() == address {
-			return strings.TrimSuffix(fields[1], ":"), nil
+		peers = append(peers, machines[cluster.LogicalName].IPv4)
+	}
+	return peers
+}
+
+func zoneChainName(cluster Cluster) string {
+	if cluster.Zone == "dmz" {
+		return dmzChainName
+	}
+	return internalChainName
+}
+
+// zoneChainRules renders the chain content for one VM: established flows, the
+// single allowed same-DC internal → DMZ tunnel port for DMZ VMs, then DROP.
+func zoneChainRules(cluster Cluster, machines map[string]orbMachine) ([][]string, error) {
+	rules := [][]string{
+		{"-m", "conntrack", "--ctstate", "ESTABLISHED,RELATED", "-j", "ACCEPT"},
+	}
+	if cluster.Zone == "dmz" {
+		internal, ok := machines[cluster.DC+"-internal"]
+		if !ok {
+			return nil, fmt.Errorf("topology: no internal machine for %s", cluster.DC)
+		}
+		rules = append(rules, []string{
+			"-s", internal.IPv4,
+			"-p", "tcp", "--dport", strconv.Itoa(AllowedProbePort),
+			"-j", "ACCEPT",
+		})
+	}
+	return append(rules, []string{"-j", "DROP"}), nil
+}
+
+// configureZoneFirewall rebuilds one idempotent INPUT chain gated on every peer VM address.
+func (t *Topology) configureZoneFirewall(ctx context.Context, name string, peerIPv4s []string, chain string, rules [][]string) error {
+	if err := t.runIPTables(ctx, name, "-L", chain, "-n"); err != nil {
+		if err := t.runIPTables(ctx, name, "-N", chain); err != nil {
+			return fmt.Errorf("creating firewall chain %s in %s: %w", chain, name, err)
 		}
 	}
-	return "", fmt.Errorf("topology: interface for dmz address was not found in %s", nodeName)
-}
-
-func (t *Topology) configureFirewall(ctx context.Context, nodeName, interfaceName string) error {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	_, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		nodeName,
-		"sh",
-		"-ceu",
-		firewallScript,
-		"sh",
-		interfaceName,
-		strconv.Itoa(AllowedProbePort),
-	))
-	if err != nil {
-		return fmt.Errorf("configuring zone firewall in %s: %w", nodeName, err)
+	if err := t.runIPTables(ctx, name, "-F", chain); err != nil {
+		return fmt.Errorf("flushing firewall chain %s in %s: %w", chain, name, err)
+	}
+	for _, rule := range rules {
+		args := append([]string{"-A", chain}, rule...)
+		if err := t.runIPTables(ctx, name, args...); err != nil {
+			return fmt.Errorf("configuring firewall chain %s in %s: %w", chain, name, err)
+		}
+	}
+	for _, peerIPv4 := range peerIPv4s {
+		if err := t.runIPTables(ctx, name, "-C", "INPUT", "-s", peerIPv4, "-j", chain); err != nil {
+			if err := t.runIPTables(ctx, name, "-I", "INPUT", "1", "-s", peerIPv4, "-j", chain); err != nil {
+				return fmt.Errorf("installing firewall jump %s in %s: %w", chain, name, err)
+			}
+		}
 	}
 	return nil
 }
 
-func (t *Topology) validateFirewall(ctx context.Context, dc string) error {
-	dmz, err := t.config.Cluster(dc, "dmz")
+// validateFirewall proves that every jump and every rule of each VM chain is intact.
+func (t *Topology) validateFirewall(ctx context.Context) error {
+	machines, err := t.runningMachines(ctx)
 	if err != nil {
 		return err
 	}
-	internal, err := t.config.Cluster(dc, "internal")
-	if err != nil {
-		return err
-	}
-	container, err := t.inspectContainer(ctx, internal.NodeName)
-	if err != nil {
-		return err
-	}
-	internalAttachment, ok := container.NetworkSettings.Networks[internal.NetworkName]
-	if !ok || net.ParseIP(internalAttachment.IPAddress).To4() == nil || net.ParseIP(internalAttachment.Gateway).To4() == nil {
-		return fmt.Errorf("topology: %s is not connected to %s", internal.NodeName, internal.NetworkName)
-	}
-	internalInterface, err := t.interfaceForIP(ctx, internal.NodeName, internalAttachment.IPAddress)
-	if err != nil {
-		return err
-	}
-	if err := t.validateDefaultRoute(
-		ctx,
-		internal.NodeName,
-		internalAttachment.Gateway,
-		internalInterface,
-	); err != nil {
-		return err
-	}
-	attachment, ok := container.NetworkSettings.Networks[dmz.NetworkName]
-	if !ok {
-		return fmt.Errorf("topology: %s is not connected to %s", internal.NodeName, dmz.NetworkName)
-	}
-	interfaceName, err := t.interfaceForIP(ctx, internal.NodeName, attachment.IPAddress)
-	if err != nil {
-		return err
-	}
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	_, err = t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		internal.NodeName,
-		"sh",
-		"-ceu",
-		firewallCheckScript,
-		"sh",
-		interfaceName,
-		strconv.Itoa(AllowedProbePort),
-	))
-	if err != nil {
-		return fmt.Errorf("validating zone firewall in %s: %w", internal.NodeName, err)
+	for _, cluster := range t.config.Clusters() {
+		chain := zoneChainName(cluster)
+		for _, peerIPv4 := range t.peerIPv4s(machines, cluster.LogicalName) {
+			if err := t.runIPTables(ctx, cluster.Name, "-C", "INPUT", "-s", peerIPv4, "-j", chain); err != nil {
+				return fmt.Errorf("validating firewall jump %s in %s: %w", chain, cluster.Name, err)
+			}
+		}
+		rules, err := zoneChainRules(cluster, machines)
+		if err != nil {
+			return err
+		}
+		for _, rule := range rules {
+			args := append([]string{"-C", chain}, rule...)
+			if err := t.runIPTables(ctx, cluster.Name, args...); err != nil {
+				return fmt.Errorf("validating firewall chain %s in %s: %w", chain, cluster.Name, err)
+			}
+		}
 	}
 	return nil
 }
 
-func (t *Topology) checkZoneIsolation(ctx context.Context, dc string) error {
-	dmz, err := t.config.Cluster(dc, "dmz")
-	if err != nil {
-		return err
-	}
-	internal, err := t.config.Cluster(dc, "internal")
-	if err != nil {
-		return err
-	}
-	dmzContainer, err := t.inspectContainer(ctx, dmz.NodeName)
-	if err != nil {
-		return err
-	}
-	internalContainer, err := t.inspectContainer(ctx, internal.NodeName)
-	if err != nil {
-		return err
-	}
-	dmzIP := dmzContainer.NetworkSettings.Networks[dmz.NetworkName].IPAddress
-	internalDMZIP := internalContainer.NetworkSettings.Networks[dmz.NetworkName].IPAddress
-	if net.ParseIP(dmzIP).To4() == nil || net.ParseIP(internalDMZIP).To4() == nil {
-		return fmt.Errorf("topology: invalid probe addresses for %s", dc)
-	}
+func (t *Topology) runIPTables(ctx context.Context, name string, args ...string) error {
+	command := append([]string{"iptables", "-w", "5"}, args...)
+	return t.runMachineSudo(ctx, commandTimeout, name, command...)
+}
 
-	nodes := []string{dmz.NodeName, internal.NodeName}
-	for _, node := range nodes {
-		if err := t.installProbe(ctx, node); err != nil {
+// runMachineSudo executes one argv-only command as root inside the machine.
+func (t *Topology) runMachineSudo(ctx context.Context, timeout time.Duration, name string, args ...string) error {
+	_, err := t.runMachineSudoResult(ctx, timeout, name, args...)
+	return err
+}
+
+// checkZoneIsolation proves the full mesh policy with a bounded probe matrix.
+// Listeners are grouped per machine: each DMZ VM serves the tunnel port and the
+// denied port once, each internal VM serves the tunnel port once. Allowed:
+// same-DC internal → DMZ:30443. Denied: internal → DMZ:30444, DMZ →
+// internal:30443, cross-DC internal → DMZ:30443 and DMZ ↔ DMZ:30443.
+func (t *Topology) checkZoneIsolation(ctx context.Context) error {
+	machines, err := t.runningMachines(ctx)
+	if err != nil {
+		return err
+	}
+	clusters := make(map[string]Cluster, len(t.config.Clusters()))
+	names := make([]string, 0, len(machines))
+	for _, cluster := range t.config.Clusters() {
+		clusters[cluster.LogicalName] = cluster
+		names = append(names, cluster.Name)
+		if err := t.installProbe(ctx, machines[cluster.LogicalName]); err != nil {
 			return err
 		}
 	}
 	cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), commandTimeout)
 	defer cleanupCancel()
-	defer t.stopProbes(cleanupCtx, nodes)
+	defer t.stopProbes(cleanupCtx, names)
 
-	servers := []struct {
-		node string
-		port int
-	}{
-		{node: dmz.NodeName, port: AllowedProbePort},
-		{node: dmz.NodeName, port: DeniedProbePort},
-		{node: internal.NodeName, port: AllowedProbePort},
-	}
-	for _, server := range servers {
-		if err := t.startProbeServer(ctx, server.node, server.port); err != nil {
-			return err
+	for _, cluster := range t.config.Clusters() {
+		ports := []int{AllowedProbePort}
+		if cluster.Zone == "dmz" {
+			ports = append(ports, DeniedProbePort)
+		}
+		for _, port := range ports {
+			if err := t.startProbeServer(ctx, cluster.Name, port); err != nil {
+				return err
+			}
 		}
 	}
 
-	if _, err := t.probeConnection(ctx, internal.NodeName, dmzIP, AllowedProbePort); err != nil {
-		return fmt.Errorf("topology: allowed internal to dmz probe failed in %s: %w", dc, err)
+	type probeCase struct {
+		from  string
+		to    string
+		port  int
+		label string
 	}
-	result, err := t.probeConnection(ctx, internal.NodeName, dmzIP, DeniedProbePort)
-	if err == nil {
-		return fmt.Errorf("topology: internal to dmz non-tunnel port was reachable in %s", dc)
+	allowed := []probeCase{
+		{from: "dc-a-internal", to: "dc-a-dmz", port: AllowedProbePort, label: "dc-a internal to dmz"},
+		{from: "dc-b-internal", to: "dc-b-dmz", port: AllowedProbePort, label: "dc-b internal to dmz"},
 	}
-	if !isRejectedProbe(result) {
-		return fmt.Errorf("topology: internal to dmz negative probe failed unexpectedly in %s: %w", dc, err)
-	}
-	result, err = t.probeConnection(ctx, dmz.NodeName, internalDMZIP, AllowedProbePort)
-	if err == nil {
-		return fmt.Errorf("topology: forbidden dmz to internal probe was reachable in %s", dc)
-	}
-	if !isRejectedProbe(result) {
-		return fmt.Errorf("topology: dmz to internal negative probe failed unexpectedly in %s: %w", dc, err)
+	denied := []probeCase{
+		{from: "dc-a-internal", to: "dc-a-dmz", port: DeniedProbePort, label: "dc-a internal to dmz non-tunnel port"},
+		{from: "dc-b-internal", to: "dc-b-dmz", port: DeniedProbePort, label: "dc-b internal to dmz non-tunnel port"},
+		{from: "dc-a-dmz", to: "dc-a-internal", port: AllowedProbePort, label: "dc-a dmz to internal"},
+		{from: "dc-b-dmz", to: "dc-b-internal", port: AllowedProbePort, label: "dc-b dmz to internal"},
+		{from: "dc-a-internal", to: "dc-b-dmz", port: AllowedProbePort, label: "cross-dc dc-a internal to dc-b dmz"},
+		{from: "dc-b-internal", to: "dc-a-dmz", port: AllowedProbePort, label: "cross-dc dc-b internal to dc-a dmz"},
+		{from: "dc-a-dmz", to: "dc-b-dmz", port: AllowedProbePort, label: "dmz dc-a to dmz dc-b"},
+		{from: "dc-b-dmz", to: "dc-a-dmz", port: AllowedProbePort, label: "dmz dc-b to dmz dc-a"},
 	}
 
-	t.logger.InfoContext(ctx, "zone isolation verified", "dc", dc, "allowed_port", AllowedProbePort)
+	for _, probe := range allowed {
+		target := machines[probe.to].IPv4
+		if _, err := t.probeConnection(ctx, clusters[probe.from].Name, target, probe.port); err != nil {
+			return fmt.Errorf("topology: allowed %s probe failed: %w", probe.label, err)
+		}
+	}
+	for _, probe := range denied {
+		target := machines[probe.to].IPv4
+		result, err := t.probeConnection(ctx, clusters[probe.from].Name, target, probe.port)
+		if err == nil {
+			return fmt.Errorf("topology: forbidden %s probe was reachable", probe.label)
+		}
+		if !isRejectedProbe(result) {
+			return fmt.Errorf("topology: %s negative probe failed unexpectedly: %w", probe.label, err)
+		}
+	}
+
+	t.logger.InfoContext(ctx, "zone isolation verified", "allowed_port", AllowedProbePort)
 	return nil
 }
 
-func (t *Topology) installProbe(ctx context.Context, nodeName string) error {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	if _, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"cp",
-		t.config.ProbePath,
-		nodeName+":"+probeContainerPath,
-	)); err != nil {
-		return fmt.Errorf("copying tcp probe to %s: %w", nodeName, err)
+// installProbe copies the probe binary into the machine as a root-owned executable.
+func (t *Topology) installProbe(ctx context.Context, machine orbMachine) error {
+	if err := t.pushToMachine(ctx, machine.Name, t.config.ProbePath, "mm44-tcpprobe"); err != nil {
+		return err
 	}
-	commandCtx, cancel = context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	if _, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		nodeName,
-		"chmod",
-		"0750",
-		probeContainerPath,
-	)); err != nil {
-		return fmt.Errorf("setting tcp probe permissions in %s: %w", nodeName, err)
+	home := "/home/" + machine.Config.DefaultUsername
+	if err := t.runMachineSudo(ctx, commandTimeout, machine.Name,
+		"install", "-m", "0755", home+"/mm44-tcpprobe", probeVMPath); err != nil {
+		return fmt.Errorf("installing tcp probe in %s: %w", machine.Name, err)
 	}
 	return nil
 }
 
-func (t *Topology) startProbeServer(ctx context.Context, nodeName string, port int) error {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	if _, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		"--detach",
-		nodeName,
-		probeContainerPath,
-		"serve",
-		"--port",
-		strconv.Itoa(port),
-		"--lifetime",
-		"20s",
-	)); err != nil {
-		return fmt.Errorf("starting tcp probe in %s: %w", nodeName, err)
+// startProbeServer launches the probe as a transient systemd unit and waits for readiness.
+func (t *Topology) startProbeServer(ctx context.Context, name string, port int) error {
+	unit := fmt.Sprintf("mm44-probe-%d", port)
+	// Ignore stale transient units left by an interrupted previous run.
+	_ = t.runMachineSudo(ctx, commandTimeout, name, "systemctl", "reset-failed", unit)
+	if err := t.runMachineSudo(ctx, commandTimeout, name,
+		"systemd-run", "--quiet", "--collect", "--unit", unit,
+		probeVMPath, "serve", "--port", strconv.Itoa(port), "--lifetime", probeServeLifetime); err != nil {
+		return fmt.Errorf("starting tcp probe in %s: %w", name, err)
 	}
 
 	deadline := time.NewTimer(5 * time.Second)
@@ -1016,13 +1079,13 @@ func (t *Topology) startProbeServer(ctx context.Context, nodeName string, port i
 	defer poll.Stop()
 	for {
 		commandCtx, checkCancel := context.WithTimeout(ctx, 2*time.Second)
-		_, err := t.runner.Run(commandCtx, t.dockerCommand(
-			"exec",
-			nodeName,
-			"test",
-			"-f",
-			fmt.Sprintf("/run/mm28-topology/probe-%d.ready", port),
-		))
+		_, err := t.runner.Run(commandCtx, Command{
+			Program: "orbctl",
+			Args: []string{
+				"run", "-m", name, "sudo", "-n",
+				"test", "-f", fmt.Sprintf("%s/probe-%d.ready", probeVMRuntimeDir, port),
+			},
+		})
 		checkCancel()
 		if err == nil {
 			return nil
@@ -1031,7 +1094,7 @@ func (t *Topology) startProbeServer(ctx context.Context, nodeName string, port i
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-deadline.C:
-			return fmt.Errorf("topology: tcp probe did not become ready in %s", nodeName)
+			return fmt.Errorf("topology: tcp probe did not become ready in %s", name)
 		case <-poll.C:
 		}
 	}
@@ -1040,113 +1103,64 @@ func (t *Topology) startProbeServer(ctx context.Context, nodeName string, port i
 func (t *Topology) probeConnection(ctx context.Context, source, address string, port int) (Result, error) {
 	commandCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	return t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		source,
-		probeContainerPath,
-		"connect",
-		"--address",
-		net.JoinHostPort(address, strconv.Itoa(port)),
-		"--timeout",
-		"3s",
-	))
+	return t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args: []string{
+			"run", "-m", source,
+			probeVMPath, "connect",
+			"--address", net.JoinHostPort(address, strconv.Itoa(port)),
+			"--timeout", "3s",
+		},
+	})
 }
 
 func isRejectedProbe(result Result) bool {
 	return strings.Contains(result.Stderr, "tcpprobe: connection failed")
 }
 
-func (t *Topology) stopProbes(ctx context.Context, nodes []string) {
-	for _, node := range nodes {
+func (t *Topology) stopProbes(ctx context.Context, names []string) {
+	for _, name := range names {
 		for _, port := range []int{AllowedProbePort, DeniedProbePort} {
-			commandCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-			_, _ = t.runner.Run(commandCtx, t.dockerCommand(
-				"exec",
-				node,
-				probeContainerPath,
-				"stop",
-				"--port",
-				strconv.Itoa(port),
-			))
-			cancel()
+			_ = t.runMachineSudo(ctx, 5*time.Second, name,
+				probeVMPath, "stop", "--port", strconv.Itoa(port))
 		}
-		commandCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		_, _ = t.runner.Run(commandCtx, t.dockerCommand("exec", node, "rm", "-f", probeContainerPath))
-		cancel()
+		_ = t.runMachineSudo(ctx, 5*time.Second, name, "rm", "-f", probeVMPath)
 	}
 }
 
 func (t *Topology) cleanup(ctx context.Context) error {
-	if err := t.ensureToolchain(); err != nil {
+	if err := t.orbStackReady(ctx); err != nil {
 		return err
 	}
-	clusters, err := t.kindClusters(ctx)
+	machines, err := t.listMachines(ctx)
 	if err != nil {
 		return err
 	}
-	clusterSet := make(map[string]struct{}, len(clusters))
-	for _, cluster := range clusters {
-		clusterSet[cluster] = struct{}{}
+	machineNames := make(map[string]struct{}, len(machines))
+	for _, machine := range machines {
+		machineNames[machine.Name] = struct{}{}
 	}
 
 	var cleanupErrors []error
 	for _, cluster := range t.config.Clusters() {
 		if !t.config.ownsResource(cluster.Name) {
-			cleanupErrors = append(cleanupErrors, fmt.Errorf("topology: refusing unexpected cluster name %s", cluster.Name))
+			cleanupErrors = append(cleanupErrors, fmt.Errorf("topology: refusing unexpected machine name %s", cluster.Name))
 			continue
 		}
-		if _, exists := clusterSet[cluster.Name]; exists {
-			if _, validateErr := t.validateContainer(ctx, cluster); validateErr != nil {
-				cleanupErrors = append(cleanupErrors, validateErr)
-				continue
-			}
+		if _, exists := machineNames[cluster.Name]; exists {
 			commandCtx, cancel := context.WithTimeout(ctx, createTimeout)
 			_, deleteErr := t.runner.Run(commandCtx, Command{
-				Program: t.config.KindPath,
-				Args:    []string{"delete", "cluster", "--name", cluster.Name},
-				Env: append(
-					t.config.kindEnvironment(""),
-					"KUBECONFIG="+cluster.Kubeconfig,
-				),
+				Program: "orbctl",
+				Args:    []string{"delete", "--force", cluster.Name},
 			})
 			cancel()
 			if deleteErr != nil {
-				cleanupErrors = append(cleanupErrors, fmt.Errorf("deleting cluster %s: %w", cluster.Name, deleteErr))
+				cleanupErrors = append(cleanupErrors, fmt.Errorf("deleting machine %s: %w", cluster.Name, deleteErr))
 				continue
 			}
 		}
 		if removeErr := os.Remove(cluster.Kubeconfig); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
 			cleanupErrors = append(cleanupErrors, fmt.Errorf("removing kubeconfig for %s: %w", cluster.Name, removeErr))
-		}
-	}
-
-	for _, cluster := range t.config.Clusters() {
-		exists, existsErr := t.networkExists(ctx, cluster.NetworkName)
-		if existsErr != nil {
-			cleanupErrors = append(cleanupErrors, existsErr)
-			continue
-		}
-		if !exists {
-			continue
-		}
-		network, inspectErr := t.inspectNetwork(ctx, cluster.NetworkName)
-		if inspectErr != nil {
-			cleanupErrors = append(cleanupErrors, inspectErr)
-			continue
-		}
-		if network.Labels[ownerLabelKey] != TaskKey || network.Labels[instanceLabelKey] != t.config.Instance {
-			cleanupErrors = append(cleanupErrors, fmt.Errorf("topology: refusing unowned network %s", cluster.NetworkName))
-			continue
-		}
-		if len(network.Containers) != 0 {
-			cleanupErrors = append(cleanupErrors, fmt.Errorf("topology: network %s still has containers", cluster.NetworkName))
-			continue
-		}
-		commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-		_, removeErr := t.runner.Run(commandCtx, t.dockerCommand("network", "rm", cluster.NetworkName))
-		cancel()
-		if removeErr != nil {
-			cleanupErrors = append(cleanupErrors, fmt.Errorf("removing network %s: %w", cluster.NetworkName, removeErr))
 		}
 	}
 
@@ -1168,12 +1182,6 @@ func (t *Topology) removeInventory() error {
 		return fmt.Errorf("removing topology inventory: %w", err)
 	}
 	return nil
-}
-
-func (t *Topology) dockerCommand(args ...string) Command {
-	commandArgs := []string{"--context", t.config.DockerContext}
-	commandArgs = append(commandArgs, args...)
-	return Command{Program: "docker", Args: commandArgs}
 }
 
 func (t *Topology) runKubectl(
@@ -1219,38 +1227,3 @@ func writePrivateFile(path string, data []byte) (returnErr error) {
 	}
 	return os.Rename(temporaryPath, path)
 }
-
-const firewallScript = `
-iface="$1"
-port="$2"
-for chain in MM28-IN MM28-OUT MM28-FWD; do
-  iptables -w 5 -N "$chain" 2>/dev/null || true
-  iptables -w 5 -F "$chain"
-done
-iptables -w 5 -C INPUT -i "$iface" -j MM28-IN 2>/dev/null || iptables -w 5 -I INPUT 1 -i "$iface" -j MM28-IN
-iptables -w 5 -C OUTPUT -o "$iface" -j MM28-OUT 2>/dev/null || iptables -w 5 -I OUTPUT 1 -o "$iface" -j MM28-OUT
-iptables -w 5 -C FORWARD -i "$iface" -j MM28-FWD 2>/dev/null || iptables -w 5 -I FORWARD 1 -i "$iface" -j MM28-FWD
-iptables -w 5 -C FORWARD -o "$iface" -j MM28-FWD 2>/dev/null || iptables -w 5 -I FORWARD 1 -o "$iface" -j MM28-FWD
-iptables -w 5 -A MM28-IN -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-iptables -w 5 -A MM28-IN -j REJECT --reject-with icmp-port-unreachable
-iptables -w 5 -A MM28-OUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-iptables -w 5 -A MM28-OUT -p tcp --dport "$port" -j ACCEPT
-iptables -w 5 -A MM28-OUT -j REJECT --reject-with icmp-port-unreachable
-iptables -w 5 -A MM28-FWD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-iptables -w 5 -A MM28-FWD -o "$iface" -p tcp --dport "$port" -j ACCEPT
-iptables -w 5 -A MM28-FWD -j REJECT --reject-with icmp-port-unreachable
-`
-
-const firewallCheckScript = `
-iface="$1"
-port="$2"
-iptables -w 5 -C INPUT -i "$iface" -j MM28-IN
-iptables -w 5 -C OUTPUT -o "$iface" -j MM28-OUT
-iptables -w 5 -C FORWARD -i "$iface" -j MM28-FWD
-iptables -w 5 -C FORWARD -o "$iface" -j MM28-FWD
-iptables -w 5 -C MM28-IN -j REJECT --reject-with icmp-port-unreachable
-iptables -w 5 -C MM28-OUT -p tcp --dport "$port" -j ACCEPT
-iptables -w 5 -C MM28-OUT -j REJECT --reject-with icmp-port-unreachable
-iptables -w 5 -C MM28-FWD -o "$iface" -p tcp --dport "$port" -j ACCEPT
-iptables -w 5 -C MM28-FWD -j REJECT --reject-with icmp-port-unreachable
-`

@@ -56,7 +56,7 @@ spec:
       containers:
         - name: gateway-in
           image: {{.GatewayInImage}}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           env:
             - name: SERVICE_VERSION
               value: {{.Version}}

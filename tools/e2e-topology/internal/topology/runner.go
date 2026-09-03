@@ -86,10 +86,7 @@ func (r *ExecRunner) Run(ctx context.Context, command Command) (Result, error) {
 
 func commandEnvironment(overrides []string) []string {
 	blocked := map[string]struct{}{
-		"DOCKER_CONTEXT":                   {},
-		"KIND_EXPERIMENTAL_DOCKER_NETWORK": {},
-		"KIND_EXPERIMENTAL_PROVIDER":       {},
-		"KUBECONFIG":                       {},
+		"KUBECONFIG": {},
 	}
 	for _, value := range overrides {
 		key, _, ok := strings.Cut(value, "=")

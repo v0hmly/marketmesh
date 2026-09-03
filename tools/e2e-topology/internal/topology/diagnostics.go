@@ -7,15 +7,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 )
 
 type diagnosticsSummary struct {
-	Task          string               `json:"task"`
-	Instance      string               `json:"instance"`
-	DockerContext string               `json:"docker_context"`
-	CreatedAt     string               `json:"created_at"`
-	Clusters      []diagnosticsCluster `json:"clusters"`
+	Task      string               `json:"task"`
+	Instance  string               `json:"instance"`
+	Runtime   string               `json:"runtime"`
+	CreatedAt string               `json:"created_at"`
+	Clusters  []diagnosticsCluster `json:"clusters"`
 }
 
 type diagnosticsCluster struct {
@@ -23,11 +22,15 @@ type diagnosticsCluster struct {
 	ResourceName  string `json:"resource_name"`
 	DC            string `json:"dc"`
 	Zone          string `json:"zone"`
-	ClusterExists bool   `json:"cluster_exists"`
-	NetworkExists bool   `json:"network_exists"`
+	MachineExists bool   `json:"machine_exists"`
+	State         string `json:"state,omitempty"`
 }
 
 // Inspect records bounded, non-secret diagnostics in repository-local state.
+// Collection is best-effort per artifact: a failed capture is recorded in a
+// neighboring <name>.err file and never cancels the remaining artifacts, so
+// diagnostics survive partially created machines. Inspect returns an error
+// only when the diagnostics run itself cannot be created or summarized.
 func (t *Topology) Inspect(ctx context.Context) error {
 	if err := os.MkdirAll(t.config.DiagnosticsDir, 0o750); err != nil {
 		return fmt.Errorf("creating diagnostics directory: %w", err)
@@ -41,112 +44,78 @@ func (t *Topology) Inspect(ctx context.Context) error {
 	}
 
 	summary := diagnosticsSummary{
-		Task:          TaskKey,
-		Instance:      t.config.Instance,
-		DockerContext: t.config.DockerContext,
-		CreatedAt:     t.now().UTC().Format("2006-01-02T15:04:05.000000000Z"),
-		Clusters:      []diagnosticsCluster{},
-	}
-	var diagnosticsErrors []error
-
-	if err := t.captureCommand(
-		ctx,
-		directory,
-		"docker-info.txt",
-		t.dockerCommand("info", "--format", safeDockerInfoFormat),
-	); err != nil {
-		diagnosticsErrors = append(diagnosticsErrors, err)
+		Task:      TaskKey,
+		Instance:  t.config.Instance,
+		Runtime:   RuntimeName,
+		CreatedAt: t.now().UTC().Format("2006-01-02T15:04:05.000000000Z"),
+		Clusters:  []diagnosticsCluster{},
 	}
 
-	clusters, err := t.kindClusters(ctx)
+	machineIndex := map[string]orbMachine{}
+	machines, err := t.listMachines(ctx)
 	if err != nil {
-		diagnosticsErrors = append(diagnosticsErrors, err)
-		clusters = []string{}
+		t.recordArtifactError(directory, "orbctl-list", err)
+	} else {
+		encoded, err := json.MarshalIndent(machines, "", "  ")
+		if err != nil {
+			t.recordArtifactError(directory, "orbctl-list", fmt.Errorf("encoding machine list: %w", err))
+		} else if err := writePrivateFile(filepath.Join(directory, "orbctl-list.json"), append(encoded, '\n')); err != nil {
+			t.recordArtifactError(directory, "orbctl-list", err)
+		}
+		for _, machine := range machines {
+			machineIndex[machine.Name] = machine
+		}
 	}
 
 	for _, cluster := range t.config.Clusters() {
-		clusterExists := slices.Contains(clusters, cluster.Name)
-		networkExists, networkErr := t.networkExists(ctx, cluster.NetworkName)
-		if networkErr != nil {
-			diagnosticsErrors = append(diagnosticsErrors, networkErr)
-		}
-		summary.Clusters = append(summary.Clusters, diagnosticsCluster{
+		machine, machineExists := machineIndex[cluster.Name]
+		entry := diagnosticsCluster{
 			LogicalName:   cluster.LogicalName,
 			ResourceName:  cluster.Name,
 			DC:            cluster.DC,
 			Zone:          cluster.Zone,
-			ClusterExists: clusterExists,
-			NetworkExists: networkExists,
-		})
+			MachineExists: machineExists,
+		}
+		if machineExists {
+			entry.State = machine.State
+		}
+		summary.Clusters = append(summary.Clusters, entry)
 
 		clusterDirectory := filepath.Join(directory, cluster.LogicalName)
 		if err := os.Mkdir(clusterDirectory, 0o750); err != nil {
-			diagnosticsErrors = append(diagnosticsErrors, fmt.Errorf("creating diagnostics for %s: %w", cluster.Name, err))
+			t.recordArtifactError(directory, cluster.LogicalName,
+				fmt.Errorf("creating diagnostics for %s: %w", cluster.Name, err))
 			continue
 		}
-		if networkExists {
-			if captureErr := t.captureCommand(
-				ctx,
-				clusterDirectory,
-				"network-inspect.json",
-				t.dockerCommand("network", "inspect", cluster.NetworkName),
-			); captureErr != nil {
-				diagnosticsErrors = append(diagnosticsErrors, captureErr)
-			}
-		}
-		if !clusterExists {
+		if !machineExists {
 			continue
 		}
-		if _, validateErr := t.validateContainer(ctx, cluster); validateErr != nil {
-			diagnosticsErrors = append(diagnosticsErrors, validateErr)
+		t.captureCommand(ctx, clusterDirectory, "machine-info.json", Command{
+			Program: "orbctl",
+			Args:    []string{"info", cluster.Name, "--format", "json"},
+		})
+		if machine.State != "running" {
 			continue
 		}
 
-		commands := []struct {
-			file    string
-			command Command
+		guestCommands := []struct {
+			file string
+			args []string
 		}{
-			{
-				file: "container-inspect.json",
-				command: t.dockerCommand(
-					"container",
-					"inspect",
-					"--format",
-					safeContainerInspectFormat,
-					cluster.NodeName,
-				),
-			},
-			{
-				file: "container-stats.txt",
-				command: t.dockerCommand(
-					"stats",
-					"--no-stream",
-					"--format",
-					"{{json .}}",
-					cluster.NodeName,
-				),
-			},
-			{
-				file: "container-logs.txt",
-				command: t.dockerCommand(
-					"logs",
-					"--tail",
-					"500",
-					"--since",
-					"30m",
-					cluster.NodeName,
-				),
-			},
+			{file: "k3s-journal.txt", args: []string{"journalctl", "-u", "k3s", "--no-pager", "-n", "200"}},
+			{file: "iptables.txt", args: []string{"iptables", "-L", "-n", "-v"}},
 		}
-		for _, item := range commands {
-			if captureErr := t.captureCommand(ctx, clusterDirectory, item.file, item.command); captureErr != nil {
-				diagnosticsErrors = append(diagnosticsErrors, captureErr)
-			}
+		for _, item := range guestCommands {
+			commandArgs := append([]string{"run", "-m", cluster.Name, "sudo", "-n"}, item.args...)
+			t.captureCommand(ctx, clusterDirectory, item.file, Command{
+				Program: "orbctl",
+				Args:    commandArgs,
+			})
 		}
 
 		if _, statErr := os.Stat(cluster.Kubeconfig); statErr != nil {
 			if !errors.Is(statErr, os.ErrNotExist) {
-				diagnosticsErrors = append(diagnosticsErrors, statErr)
+				t.recordArtifactError(clusterDirectory, "kubeconfig-stat", statErr)
 			}
 			continue
 		}
@@ -154,7 +123,7 @@ func (t *Topology) Inspect(ctx context.Context) error {
 			file string
 			args []string
 		}{
-			{file: "nodes.json", args: []string{"get", "nodes", "-o", "json"}},
+			{file: "nodes.json", args: []string{"get", "nodes", "-o", "wide"}},
 			{file: "namespace.json", args: []string{"get", "namespace", Namespace, "-o", "json"}},
 			{
 				file: "events.txt",
@@ -170,64 +139,63 @@ func (t *Topology) Inspect(ctx context.Context) error {
 		for _, item := range kubectlCommands {
 			result, captureErr := t.runKubectl(ctx, diagnosticsTimeout, cluster, item.args...)
 			if captureErr != nil {
-				diagnosticsErrors = append(
-					diagnosticsErrors,
-					fmt.Errorf("collecting %s for %s: %w", item.file, cluster.Name, captureErr),
-				)
+				t.recordArtifactError(clusterDirectory, item.file,
+					fmt.Errorf("collecting %s for %s: %w", item.file, cluster.Name, captureErr))
 				continue
 			}
 			if writeErr := writePrivateFile(
 				filepath.Join(clusterDirectory, item.file),
 				[]byte(result.Stdout+result.Stderr),
 			); writeErr != nil {
-				diagnosticsErrors = append(diagnosticsErrors, writeErr)
+				t.recordArtifactError(clusterDirectory, item.file, writeErr)
 			}
 		}
 	}
 
 	summaryBytes, err := json.MarshalIndent(summary, "", "  ")
 	if err != nil {
-		diagnosticsErrors = append(diagnosticsErrors, fmt.Errorf("encoding diagnostics summary: %w", err))
-	} else if err := writePrivateFile(filepath.Join(directory, "summary.json"), append(summaryBytes, '\n')); err != nil {
-		diagnosticsErrors = append(diagnosticsErrors, fmt.Errorf("writing diagnostics summary: %w", err))
+		return fmt.Errorf("encoding diagnostics summary: %w", err)
+	}
+	if err := writePrivateFile(filepath.Join(directory, "summary.json"), append(summaryBytes, '\n')); err != nil {
+		return fmt.Errorf("writing diagnostics summary: %w", err)
 	}
 
 	t.logger.InfoContext(ctx, "topology diagnostics collected", "directory", directory)
-	return errors.Join(diagnosticsErrors...)
+	return nil
 }
 
-const safeDockerInfoFormat = `ServerVersion={{.ServerVersion}}
-Architecture={{.Architecture}}
-NCPU={{.NCPU}}
-MemTotal={{.MemTotal}}
-Driver={{.Driver}}
-OperatingSystem={{.OperatingSystem}}
-OSType={{.OSType}}
-KernelVersion={{.KernelVersion}}
-Containers={{.Containers}}
-ContainersRunning={{.ContainersRunning}}
-Images={{.Images}}`
-
-const safeContainerInspectFormat = `{"name":{{json .Name}},"image":{{json .Config.Image}},"labels":{{json .Config.Labels}},"status":{{json .State.Status}},"running":{{json .State.Running}},"started_at":{{json .State.StartedAt}},"networks":{{json .NetworkSettings.Networks}}}`
-
+// captureCommand records one bounded command output, or a <name>.err artifact.
 func (t *Topology) captureCommand(
 	ctx context.Context,
 	directory string,
 	filename string,
 	command Command,
-) error {
+) {
 	commandCtx, cancel := context.WithTimeout(ctx, diagnosticsTimeout)
 	defer cancel()
 	result, err := t.runner.Run(commandCtx, command)
 	if err != nil {
-		return fmt.Errorf("collecting %s: %w", filename, err)
+		t.recordArtifactError(directory, filename, fmt.Errorf("collecting %s: %w", filename, err))
+		return
 	}
 	contents := result.Stdout
 	if result.Stderr != "" {
 		contents += "\n[stderr]\n" + result.Stderr
 	}
 	if err := writePrivateFile(filepath.Join(directory, filename), []byte(contents)); err != nil {
-		return fmt.Errorf("writing %s: %w", filename, err)
+		t.recordArtifactError(directory, filename, fmt.Errorf("writing %s: %w", filename, err))
 	}
-	return nil
+}
+
+// recordArtifactError persists a per-artifact failure next to the artifact.
+func (t *Topology) recordArtifactError(directory, name string, artifactErr error) {
+	path := filepath.Join(directory, name+".err")
+	if err := writePrivateFile(path, []byte(artifactErr.Error()+"\n")); err != nil && t.logger != nil {
+		t.logger.WarnContext(
+			context.Background(),
+			"recording diagnostics artifact error failed",
+			"artifact", name,
+			"error", artifactErr,
+		)
+	}
 }

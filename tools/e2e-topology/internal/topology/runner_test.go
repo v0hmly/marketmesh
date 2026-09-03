@@ -8,32 +8,16 @@ import (
 
 func TestCommandEnvironmentReplacesSensitiveSelectors(t *testing.T) {
 	t.Setenv("KUBECONFIG", "/unexpected/user-config")
-	t.Setenv("DOCKER_CONTEXT", "unexpected")
-	t.Setenv("KIND_EXPERIMENTAL_DOCKER_NETWORK", "unexpected")
 
 	environment := commandEnvironment([]string{
 		"KUBECONFIG=/owned/config",
-		"DOCKER_CONTEXT=orbstack",
-		"KIND_EXPERIMENTAL_DOCKER_NETWORK=mm28-dc-a-dmz",
 	})
 	joined := strings.Join(environment, "\n")
-	for _, forbidden := range []string{
-		"/unexpected/user-config",
-		"DOCKER_CONTEXT=unexpected",
-		"KIND_EXPERIMENTAL_DOCKER_NETWORK=unexpected",
-	} {
-		if strings.Contains(joined, forbidden) {
-			t.Errorf("environment contains %q", forbidden)
-		}
+	if strings.Contains(joined, "/unexpected/user-config") {
+		t.Errorf("environment contains the unexpected KUBECONFIG")
 	}
-	for _, expected := range []string{
-		"KUBECONFIG=/owned/config",
-		"DOCKER_CONTEXT=orbstack",
-		"KIND_EXPERIMENTAL_DOCKER_NETWORK=mm28-dc-a-dmz",
-	} {
-		if !strings.Contains(joined, expected) {
-			t.Errorf("environment does not contain %q", expected)
-		}
+	if !strings.Contains(joined, "KUBECONFIG=/owned/config") {
+		t.Errorf("environment does not contain the owned KUBECONFIG")
 	}
 }
 

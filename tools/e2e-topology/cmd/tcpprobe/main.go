@@ -1,4 +1,4 @@
-// Command mm28-tcpprobe performs bounded TCP connectivity checks inside kind nodes.
+// Command mm44-tcpprobe performs bounded TCP connectivity checks inside OrbStack VM guests.
 package main
 
 import (
@@ -16,12 +16,12 @@ import (
 )
 
 const (
-	probeBinaryName = "mm28-tcpprobe"
+	probeBinaryName = "mm44-tcpprobe"
 	minProbePort    = 1024
 	maxProbePort    = 65535
 )
 
-var probeRuntimeDir = "/run/mm28-topology"
+var probeRuntimeDir = "/run/mm44-topology"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -32,7 +32,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: mm28-tcpprobe {connect|serve|stop}")
+		return errors.New("usage: mm44-tcpprobe {connect|serve|stop}")
 	}
 
 	switch args[0] {
@@ -43,7 +43,7 @@ func run(args []string) error {
 	case "stop":
 		return runStop(args[1:])
 	default:
-		return errors.New("usage: mm28-tcpprobe {connect|serve|stop}")
+		return errors.New("usage: mm44-tcpprobe {connect|serve|stop}")
 	}
 }
 

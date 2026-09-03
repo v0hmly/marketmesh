@@ -29,6 +29,7 @@ ADR фиксирует одно значимое архитектурное ре
 | 0011 | [Гексагональная архитектура Go-микросервисов](0011-go-service-hexagonal-architecture.md) | Принято | 2026-08-31 |
 | 0012 | [Структура монорепозитория и Go workspace](0012-monorepository-and-go-workspace.md) | Принято | 2026-08-31 |
 | 0013 | [Доступ к PostgreSQL и границы транзакций](0013-postgresql-access-and-transactions.md) | Принято | 2026-09-01 |
+| 0014 | [E2E topology на OrbStack VM с k3s вместо kind](0014-orbstack-vm-k3s-e2e-topology.md) | Принято | 2026-09-03 |
 
 ## Как добавить решение
 
