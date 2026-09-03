@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -212,6 +213,40 @@ func TestMutatingRequestIsNotReplayedAfterAmbiguousFailure(t *testing.T) {
 	}
 	if requestsA.Load() != 1 || requestsB.Load() != 0 {
 		t.Fatalf("mutating attempts = dc-a:%d dc-b:%d, want 1/0", requestsA.Load(), requestsB.Load())
+	}
+}
+
+func TestCheckBackendAcceptsAnySuccessStatus(t *testing.T) {
+	t.Parallel()
+
+	statuses := []int{http.StatusOK, http.StatusNoContent, http.StatusAccepted}
+	for _, status := range statuses {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			t.Parallel()
+
+			var requests atomic.Int64
+			backend := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+				if request.URL.Path == "/readyz" {
+					response.WriteHeader(status)
+					return
+				}
+				requests.Add(1)
+				response.WriteHeader(http.StatusOK)
+				_, _ = response.Write([]byte("ok"))
+			}))
+			t.Cleanup(backend.Close)
+
+			var otherRequests atomic.Int64
+			otherReady := atomic.Bool{}
+			other := newBackendServer(t, &otherReady, &otherRequests)
+			frontDoor := newNetworkFrontDoor(t, backend.URL, other.URL)
+			frontDoor.Check(context.Background())
+
+			proxyRequest(t, frontDoor, e2ev1connect.FakeInternalServiceReadProcedure, "read")
+			if requests.Load() != 1 || otherRequests.Load() != 0 {
+				t.Fatalf("requests = first:%d other:%d, want 1/0", requests.Load(), otherRequests.Load())
+			}
+		})
 	}
 }
 
