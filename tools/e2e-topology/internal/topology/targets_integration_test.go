@@ -8,12 +8,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 func TestTargetContractIntegrationExecRunner(t *testing.T) {
 	root := t.TempDir()
-	config, err := NewConfig(root, "mm38-it", "default")
+	config, err := NewConfig(root, "mm44-it")
 	if err != nil {
 		t.Fatalf("NewConfig() error = %v", err)
 	}
@@ -25,53 +26,36 @@ func TestTargetContractIntegrationExecRunner(t *testing.T) {
 		t.Fatalf("MkdirAll() error = %v", err)
 	}
 
-	dockerPath := filepath.Join(root, "docker")
-	dockerScript := fmt.Sprintf(`#!/bin/sh
+	orbctlPath := filepath.Join(root, "orbctl")
+	orbctlScript := fmt.Sprintf(`#!/bin/sh
 set -eu
-if [ "$1" != "--context" ] || [ "$2" != "default" ]; then exit 41; fi
-shift 2
-if [ "$1" = "container" ] && [ "$2" = "inspect" ]; then
-  printf '%%s' '[{"Id":"%s","Name":"/%s","Image":"%s","Config":{"Image":"%s","Labels":{"%s":"%s"}},"State":{"Status":"running","Running":true,"StartedAt":"2026-09-01T10:00:00Z","FinishedAt":"0001-01-01T00:00:00Z"},"NetworkSettings":{"SandboxID":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","Networks":{"%s":{"NetworkID":"%s","EndpointID":"%s","Gateway":"172.28.10.1","IPAddress":"172.28.10.2","IPPrefixLen":24,"MacAddress":"%s"}}}}]'
+if [ "$1" = "info" ] && [ "$2" = "%[1]s" ]; then
+  printf '%%s' '{"record":{"id":"%[2]s","name":"%[1]s","image":{"distro":"ubuntu","version":"noble","arch":"%[4]s","variant":"default"},"config":{"isolated":false,"default_username":"%[5]s"},"builtin":false,"state":"running"},"disk_size":683962368,"ip4":"%[3]s","ip6":"fd07:b51a:cc66:0:ac8c:31ff:fe6b:b491"}'
   exit 0
 fi
-if [ "$1" = "network" ] && [ "$2" = "inspect" ]; then
-  printf '%%s' '[{"Id":"%s","Name":"%s","Driver":"bridge","Scope":"local","Labels":{"%s":"%s","%s":"%s"},"IPAM":{"Config":[{"Subnet":"%s"}]},"Containers":{"%s":{"Name":"%s","EndpointID":"%s","MacAddress":"%s","IPv4Address":"172.28.10.2/24"}}}]'
-  exit 0
-fi
-if [ "$1" = "exec" ] && [ "$3" = "readlink" ]; then
-  printf 'net:[4026533001]\n'
-  exit 0
-fi
-if [ "$1" = "exec" ] && [ "$3" = "ip" ]; then
-  printf '%%s' '[{"ifindex":2,"ifname":"eth0","address":"%s","addr_info":[{"family":"inet","local":"172.28.10.2","prefixlen":24}]}]'
-  exit 0
+if [ "$1" = "run" ] && [ "$2" = "-m" ] && [ "$3" = "%[1]s" ]; then
+  shift 3
+  if [ "$1" = "ip" ]; then
+    printf '%%s' '[{"ifindex":1,"ifname":"lo","address":"00:00:00:00:00:00","addr_info":[{"family":"inet","local":"127.0.0.1","prefixlen":8}]},{"ifindex":2,"ifname":"%[6]s","address":"%[7]s","addr_info":[{"family":"inet","local":"%[3]s","prefixlen":24}]}]'
+    exit 0
+  fi
+  if [ "$1" = "cat" ]; then
+    printf '%%s\n' '%[8]s'
+    exit 0
+  fi
 fi
 exit 42
 `,
-		testContainerID,
-		cluster.NodeName,
-		testImageID,
-		NodeImage,
-		clusterLabelKey,
 		cluster.Name,
-		cluster.NetworkName,
-		testNetworkID,
-		testEndpointID,
+		testMachineID,
+		testIPv4,
+		runtime.GOARCH,
+		testVMUser,
+		testIface,
 		testMAC,
-		testNetworkID,
-		cluster.NetworkName,
-		ownerLabelKey,
-		TaskKey,
-		instanceLabelKey,
-		config.Instance,
-		cluster.DockerSubnet,
-		testContainerID,
-		cluster.NodeName,
-		testEndpointID,
-		testMAC,
-		testMAC,
+		testBootID,
 	)
-	writeExecutable(t, dockerPath, dockerScript)
+	writeExecutable(t, orbctlPath, orbctlScript)
 
 	kubectlScript := fmt.Sprintf(`#!/bin/sh
 set -eu

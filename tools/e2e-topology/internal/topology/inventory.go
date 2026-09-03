@@ -17,7 +17,7 @@ type InventoryDocument struct {
 	TargetAPIVersion string             `json:"target_api_version"`
 	Task             string             `json:"task"`
 	Instance         string             `json:"instance"`
-	DockerContext    string             `json:"docker_context"`
+	Runtime          string             `json:"runtime"`
 	Namespace        string             `json:"namespace"`
 	TunnelPort       int                `json:"tunnel_port"`
 	Ownership        InventoryOwnership `json:"ownership"`
@@ -27,7 +27,6 @@ type InventoryDocument struct {
 
 // InventoryOwnership lists labels that consumers can use to verify resource ownership.
 type InventoryOwnership struct {
-	DockerLabels     map[string]string `json:"docker_labels"`
 	KubernetesLabels map[string]string `json:"kubernetes_labels"`
 }
 
@@ -47,7 +46,6 @@ type InventoryCluster struct {
 	ResourceName           string `json:"resource_name"`
 	DC                     string `json:"dc"`
 	Zone                   string `json:"zone"`
-	NetworkName            string `json:"network_name"`
 	ControlPlaneAddress    string `json:"control_plane_address"`
 	Kubeconfig             string `json:"kubeconfig"`
 	Context                string `json:"context"`
@@ -55,45 +53,30 @@ type InventoryCluster struct {
 	WorkloadIdentityFormat string `json:"workload_identity_format"`
 }
 
-// Inventory returns the topology handoff after validating every running node container.
+// Inventory returns the topology handoff after validating every running machine.
 func (t *Topology) Inventory(ctx context.Context) (InventoryDocument, error) {
 	addresses := make(map[string]string, len(t.config.Clusters()))
 	for _, cluster := range t.config.Clusters() {
-		container, err := t.validateContainer(ctx, cluster)
+		machine, err := t.requireRunningMachine(ctx, cluster)
 		if err != nil {
 			return InventoryDocument{}, fmt.Errorf("inventory: %w", err)
 		}
-		attachment, ok := container.NetworkSettings.Networks[cluster.NetworkName]
-		if !ok || net.ParseIP(attachment.IPAddress).To4() == nil {
-			return InventoryDocument{}, fmt.Errorf(
-				"topology: control-plane address is missing for %s",
-				cluster.Name,
-			)
-		}
-		addresses[cluster.LogicalName] = attachment.IPAddress
+		addresses[cluster.LogicalName] = machine.IPv4
 	}
 	return t.inventoryDocument(addresses)
 }
 
 func (t *Topology) inventoryDocument(addresses map[string]string) (InventoryDocument, error) {
-	commandPrefix := fmt.Sprintf(
-		"go run ./tools/e2e-topology --instance %s --docker-context %s",
-		t.config.Instance,
-		t.config.DockerContext,
-	)
+	commandPrefix := fmt.Sprintf("go run ./tools/e2e-topology --instance %s", t.config.Instance)
 	document := InventoryDocument{
 		APIVersion:       InventoryAPIVersion,
 		TargetAPIVersion: TargetAPIVersion,
 		Task:             TaskKey,
 		Instance:         t.config.Instance,
-		DockerContext:    t.config.DockerContext,
+		Runtime:          RuntimeName,
 		Namespace:        Namespace,
 		TunnelPort:       AllowedProbePort,
 		Ownership: InventoryOwnership{
-			DockerLabels: map[string]string{
-				ownerLabelKey:    TaskKey,
-				instanceLabelKey: t.config.Instance,
-			},
 			KubernetesLabels: map[string]string{
 				"marketmesh.dev/owner-task":        TaskKey,
 				"marketmesh.dev/topology-instance": t.config.Instance,
@@ -123,7 +106,6 @@ func (t *Topology) inventoryDocument(addresses map[string]string) (InventoryDocu
 			ResourceName:           cluster.Name,
 			DC:                     cluster.DC,
 			Zone:                   cluster.Zone,
-			NetworkName:            cluster.NetworkName,
 			ControlPlaneAddress:    address,
 			Kubeconfig:             cluster.Kubeconfig,
 			Context:                cluster.KubeContext,

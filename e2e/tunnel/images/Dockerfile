@@ -15,6 +15,7 @@ COPY services/auth/go.mod services/auth/go.sum ./services/auth/
 COPY services/gateway-in/go.mod services/gateway-in/go.sum ./services/gateway-in/
 COPY services/gateway-out/go.mod services/gateway-out/go.sum ./services/gateway-out/
 COPY services/user/go.mod ./services/user/
+COPY tools/e2e-topology/go.mod ./tools/e2e-topology/
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
     go mod download

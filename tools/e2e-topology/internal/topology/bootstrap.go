@@ -17,30 +17,28 @@ import (
 	"time"
 )
 
-const maxDownloadSize = 128 << 20
+const maxDownloadSize = 256 << 20
 
 type asset struct {
 	url    string
 	sha256 string
 }
 
-var kindAssets = map[string]asset{
-	"darwin/amd64": {
-		url:    "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-darwin-amd64",
-		sha256: "5a99f26f57246dc9319dd294803313197a0f34d33c525b3ea8b655db5916ece0",
-	},
-	"darwin/arm64": {
-		url:    "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-darwin-arm64",
-		sha256: "0c8c7dbe5e23594a198b786c4bc13dacc101fa6196b0cb0b23a1ca44e61f4b4f",
-	},
-	"linux/amd64": {
-		url:    "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64",
-		sha256: "aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d",
-	},
-	"linux/arm64": {
-		url:    "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-arm64",
-		sha256: "20022bee6cfcd5086cb7234d218e3454e6090022f2a8f55d1fa7fcf42c3867a2",
-	},
+// k3sAssetFor returns the pinned linux k3s binary matching the host architecture,
+// because OrbStack machines always run the host architecture.
+func k3sAssetFor(goarch string) (asset, error) {
+	checksum, ok := k3sBinarySHA256[goarch]
+	if !ok {
+		return asset{}, fmt.Errorf("topology: k3s is not pinned for %s", goarch)
+	}
+	suffix := "-" + goarch
+	if goarch == "amd64" {
+		suffix = ""
+	}
+	return asset{
+		url:    "https://github.com/k3s-io/k3s/releases/download/" + K3sVersion + "/k3s" + suffix,
+		sha256: checksum,
+	}, nil
 }
 
 var kubectlAssets = map[string]asset{
@@ -95,9 +93,9 @@ func NewBootstrapper(config Config, runner Runner, logger *slog.Logger) *Bootstr
 // Bootstrap verifies or installs every pinned tool required by the topology.
 func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	platform := b.goos + "/" + b.goarch
-	kindAsset, ok := kindAssets[platform]
-	if !ok {
-		return fmt.Errorf("topology: kind is not pinned for %s", platform)
+	k3sAsset, err := k3sAssetFor(b.goarch)
+	if err != nil {
+		return err
 	}
 	kubectlAsset, ok := kubectlAssets[platform]
 	if !ok {
@@ -107,7 +105,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	if err := os.MkdirAll(b.config.BinDir, 0o750); err != nil {
 		return fmt.Errorf("creating topology bin directory: %w", err)
 	}
-	if err := b.ensureAsset(ctx, "kind", b.config.KindPath, kindAsset); err != nil {
+	if err := b.ensureAsset(ctx, "k3s", b.config.K3sPath, k3sAsset); err != nil {
 		return err
 	}
 	if err := b.ensureAsset(ctx, "kubectl", b.config.KubectlPath, kubectlAsset); err != nil {
@@ -116,15 +114,28 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	if err := b.buildProbe(ctx); err != nil {
 		return err
 	}
+	if err := b.checkOrbctl(ctx); err != nil {
+		return err
+	}
 
 	b.logger.InfoContext(
 		ctx,
 		"topology toolchain is ready",
-		"kind_version",
-		KindVersion,
-		"kubernetes_version",
-		KubernetesVersion,
+		"k3s_version",
+		K3sVersion,
+		"kubectl_version",
+		KubectlVersion,
 	)
+	return nil
+}
+
+// checkOrbctl proves that the OrbStack CLI is installed and executable.
+func (b *Bootstrapper) checkOrbctl(ctx context.Context) error {
+	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+	defer cancel()
+	if _, err := b.runner.Run(commandCtx, Command{Program: "orbctl", Args: []string{"version"}}); err != nil {
+		return fmt.Errorf("checking orbctl installation: %w", err)
+	}
 	return nil
 }
 

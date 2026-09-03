@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestRunLoadImagesRejectsPositionalArguments(t *testing.T) {
+	t.Parallel()
+
+	err := runLoadImages(
+		context.Background(),
+		nil,
+		[]string{"marketmesh/gateway-in:mm29-0123456789ab"},
+	)
+	if err == nil {
+		t.Fatal("runLoadImages() error = nil, want positional argument rejection")
+	}
+}
+
 func TestRunTargetsRejectsPathSnapshotWithoutOutput(t *testing.T) {
 	t.Parallel()
 

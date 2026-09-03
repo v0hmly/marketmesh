@@ -1,8 +1,8 @@
 # Tunnel E2E workloads
 
 Каталог содержит минимальный workload stack задачи MM-29. Он разворачивается
-поверх четырёх одноразовых кластеров MM-28 и не создаёт topology, global front
-door, traffic probe или fault scenarios.
+поверх четырёх одноразовых OrbStack VM с k3s задачи MM-44 и не создаёт
+topology, global front door, traffic probe или fault scenarios.
 
 ## Публичный контракт ресурсов
 
@@ -55,8 +55,8 @@ bounded проверки и плавно возвращает восстанов
 ```sh
 task tunnel-e2e:frontdoor -- \
   --listen 127.0.0.1:18080 \
-  --dc-a-target http://<dc-a-dmz-node-ip>:30080 \
-  --dc-b-target http://<dc-b-dmz-node-ip>:30080 \
+  --dc-a-target http://<dc-a-dmz-vm-ip>:30080 \
+  --dc-b-target http://<dc-b-dmz-vm-ip>:30080 \
   --health-interval 1s \
   --health-timeout 250ms \
   --failback-warmup 30s
@@ -88,7 +88,7 @@ TLS 1.3, отдельные server/client EKU, DNS SAN и единственны
 NetworkPolicy запрещает произвольный ingress в internal. `fake-internal:9443`
 доступен только Pod с метками текущего `gateway-out`; `gateway-out` может
 исходяще обратиться только к DNS, `fake-internal:9443` и фиксированному tunnel
-port `30443`. Топологический запрет DMZ → internal обеспечивает MM-28.
+port `30443`. Топологический запрет DMZ → internal обеспечивает MM-44.
 
 Внешние Connect methods статически связаны с двумя существующими route ID:
 
@@ -108,18 +108,24 @@ instance ID `gateway-out` на Pod равны первым 16 байтам SHA-2
 принадлежности и разнообразия путей, не дают полномочий и не становятся
 metric labels.
 
-## Сборка образов
+## Сборка и загрузка образов
 
 ```sh
 task tunnel-e2e:images
+task tunnel-e2e:load
 ```
 
-Команда собирает три локальных образа и ничего не публикует. Builder и runtime
-base images закреплены multi-arch digest, сборка использует `-trimpath`,
-`buildvcs=false`, commit timestamp как `SOURCE_DATE_EPOCH`, отключённую локальную
-provenance attestation, non-root distroless runtime и source revision в OCI labels.
-Полученные имена печатаются в stdout и затем явно загружаются в кластеры
-средствами MM-28.
+Первая команда собирает три локальных образа и ничего не публикует. Builder и
+runtime base images закреплены multi-arch digest, сборка использует
+`-trimpath`, `buildvcs=false`, commit timestamp как `SOURCE_DATE_EPOCH`,
+отключённую локальную provenance attestation, non-root distroless runtime и
+source revision в OCI labels. Полученные имена печатаются в stdout.
+
+Вторая команда передаёт каждый образ в containerd всех четырёх VM topology
+MM-44 через `e2e-topology load-images` (`docker save` → tar в VM →
+`k3s ctr -n k8s.io images import` → проверка точного тега в каждой VM).
+Манифесты используют `imagePullPolicy: Never`, поэтому пропущенная загрузка
+обнаруживается сразу при deploy.
 
 ## Deploy и cleanup
 
@@ -135,11 +141,15 @@ task tunnel-e2e:deploy -- \
   --gateway-out-image <image> \
   --fake-internal-image <image> \
   --dc-a-dmz-kubeconfig <path> \
+  --dc-a-dmz-context mm44-dc-a-dmz \
   --dc-a-internal-kubeconfig <path> \
-  --dc-a-gateway-in-target passthrough:///<dc-a-dmz-node>:30443 \
+  --dc-a-internal-context mm44-dc-a-internal \
+  --dc-a-gateway-in-target passthrough:///<dc-a-dmz-vm-ip>:30443 \
   --dc-b-dmz-kubeconfig <path> \
+  --dc-b-dmz-context mm44-dc-b-dmz \
   --dc-b-internal-kubeconfig <path> \
-  --dc-b-gateway-in-target passthrough:///<dc-b-dmz-node>:30443 \
+  --dc-b-internal-context mm44-dc-b-internal \
+  --dc-b-gateway-in-target passthrough:///<dc-b-dmz-vm-ip>:30443 \
   --timeout 3m
 ```
 
@@ -159,6 +169,9 @@ task tunnel-e2e:inspect -- --run-id run-29 <topology-flags>
 task tunnel-e2e:undeploy -- --run-id run-29 <topology-flags>
 ```
 
+Полный поток: `task e2e:topology:up` → `ready` → `tunnel-e2e:images` →
+`tunnel-e2e:load` → deploy → frontdoor → внешний проход read+mutate через оба
+DC → undeploy → `e2e:topology:down`. Rolling redeploy описан в ветке MM-34.
 Полный deploy/undeploy и внешний проход через оба DC выполняются только после
-объединения MM-28. Локальные unit/integration проверки PKI, mTLS, route
+объединения MM-44. Локальные unit/integration проверки PKI, mTLS, route
 allowlist, idempotency, manifests и точного cleanup от topology не зависят.

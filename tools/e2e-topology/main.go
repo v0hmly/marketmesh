@@ -1,4 +1,5 @@
-// Command e2e-topology manages the disposable MM-28 Kubernetes topology.
+// Command e2e-topology manages the disposable MM-44 Kubernetes topology
+// running on OrbStack VMs with k3s.
 package main
 
 import (
@@ -31,8 +32,7 @@ func run(args []string) error {
 
 func runWithIO(args []string, stdin io.Reader, stdout io.Writer) error {
 	flags := flag.NewFlagSet("e2e-topology", flag.ContinueOnError)
-	instance := flags.String("instance", "mm28", "unique disposable resource prefix")
-	dockerContext := flags.String("docker-context", "orbstack", "explicit Docker context")
+	instance := flags.String("instance", "mm44", "unique disposable resource prefix")
 	debug := flags.Bool("debug", false, "enable debug logs")
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -45,7 +45,7 @@ func runWithIO(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	config, err := topology.NewConfig(root, *instance, *dockerContext)
+	config, err := topology.NewConfig(root, *instance)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func runWithIO(args []string, stdin io.Reader, stdout io.Writer) error {
 
 	command := flags.Arg(0)
 	commandArgs := flags.Args()[1:]
-	if command != "targets" && len(commandArgs) != 0 {
+	if command != "targets" && command != "load-images" && len(commandArgs) != 0 {
 		return usageError()
 	}
 	switch command {
@@ -86,6 +86,8 @@ func runWithIO(args []string, stdin io.Reader, stdout io.Writer) error {
 		return manager.Ready(ctx)
 	case "up":
 		return manager.Up(ctx)
+	case "load-images":
+		return runLoadImages(ctx, manager, commandArgs)
 	case "verify":
 		return manager.Verify(ctx)
 	case "versions":
@@ -103,6 +105,19 @@ func runWithIO(args []string, stdin io.Reader, stdout io.Writer) error {
 	default:
 		return usageError()
 	}
+}
+
+func runLoadImages(ctx context.Context, manager *topology.Topology, args []string) error {
+	flags := flag.NewFlagSet("load-images", flag.ContinueOnError)
+	images := stringListFlag{}
+	flags.Var(&images, "image", "exact image reference repo:tag; repeat for each image")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("topology: load-images received unexpected arguments")
+	}
+	return manager.LoadImages(ctx, []string(images))
 }
 
 func runTargets(
@@ -230,7 +245,7 @@ func writeJSON(writer io.Writer, encoded []byte) error {
 
 func usageError() error {
 	return errors.New(
-		"usage: e2e-topology [flags] {bootstrap|down|inspect|inventory|ready|targets|up|verify|versions}",
+		"usage: e2e-topology [flags] {bootstrap|down|inspect|inventory|load-images|ready|targets|up|verify|versions}",
 	)
 }
 

@@ -32,13 +32,14 @@ const (
 var (
 	consumerTaskPattern  = regexp.MustCompile(`^MM-[0-9]{1,6}$`)
 	consumerRunIDPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$`)
-	dockerIDPattern      = regexp.MustCompile(`^[a-f0-9]{64}$`)
-	imageIDPattern       = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
-	interfaceNamePattern = regexp.MustCompile(`^eth[0-9]+$`)
-	netNSPattern         = regexp.MustCompile(`^net:\[[0-9]+\]$`)
+	sha256DigestPattern  = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
+	machineIDPattern     = regexp.MustCompile(`^[0-9A-HJKMNP-TV-Z]{26}$`)
+	machineMACPattern    = regexp.MustCompile(`^[0-9a-f]{2}(:[0-9a-f]{2}){5}$`)
+	bootIDPattern        = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	ifaceNamePattern     = regexp.MustCompile(`^[a-z][a-z0-9]{1,14}$`)
 )
 
-// ExpectedTargetState is the only mutable container state accepted by validation.
+// ExpectedTargetState is the only mutable machine state accepted by validation.
 type ExpectedTargetState string
 
 // TargetSelector scopes one immutable snapshot without inferring resource names.
@@ -66,7 +67,6 @@ type TargetSnapshot struct {
 	Task          string         `json:"task"`
 	Environment   string         `json:"environment"`
 	Instance      string         `json:"instance"`
-	DockerContext string         `json:"docker_context"`
 	ConsumerTask  string         `json:"consumer_task"`
 	ConsumerRunID string         `json:"consumer_run_id"`
 	ResolvedAt    string         `json:"resolved_at"`
@@ -76,7 +76,7 @@ type TargetSnapshot struct {
 	Token         string         `json:"token"`
 }
 
-// FaultTarget identifies one kind node and all topology-owned network attachments.
+// FaultTarget identifies one OrbStack machine hosting one logical cluster.
 type FaultTarget struct {
 	LogicalCluster  string                    `json:"logical_cluster"`
 	ResourceCluster string                    `json:"resource_cluster"`
@@ -85,21 +85,19 @@ type FaultTarget struct {
 	Kubeconfig      string                    `json:"kubeconfig"`
 	KubeContext     string                    `json:"kube_context"`
 	Namespace       string                    `json:"namespace"`
-	Container       FaultTargetContainer      `json:"container"`
+	Machine         FaultTargetMachine        `json:"machine"`
 	KubernetesNode  FaultTargetKubernetesNode `json:"kubernetes_node"`
-	SandboxID       string                    `json:"sandbox_id"`
-	NetNS           string                    `json:"netns"`
-	Networks        []FaultTargetNetwork      `json:"networks"`
 }
 
-// FaultTargetContainer contains immutable Docker container identity.
-type FaultTargetContainer struct {
-	ID             string            `json:"id"`
-	Name           string            `json:"name"`
-	ImageID        string            `json:"image_id"`
-	ImageReference string            `json:"image_reference"`
-	StartedAt      string            `json:"started_at"`
-	Labels         map[string]string `json:"labels"`
+// FaultTargetMachine contains the immutable OrbStack machine identity plus the
+// boot generation that must change across any stop/start transition.
+type FaultTargetMachine struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	IPv4      string `json:"ipv4"`
+	MAC       string `json:"mac"`
+	Interface string `json:"interface"`
+	BootID    string `json:"boot_id"`
 }
 
 // FaultTargetKubernetesNode contains exact Kubernetes identity and ownership.
@@ -107,37 +105,6 @@ type FaultTargetKubernetesNode struct {
 	Name   string            `json:"name"`
 	UID    string            `json:"uid"`
 	Labels map[string]string `json:"labels"`
-}
-
-// FaultTargetNetwork binds one Docker network, endpoint, and in-netns interface.
-type FaultTargetNetwork struct {
-	LogicalNetwork string               `json:"logical_network"`
-	Primary        bool                 `json:"primary"`
-	ID             string               `json:"id"`
-	Name           string               `json:"name"`
-	Driver         string               `json:"driver"`
-	Scope          string               `json:"scope"`
-	Subnet         string               `json:"subnet"`
-	Labels         map[string]string    `json:"labels"`
-	Endpoint       FaultTargetEndpoint  `json:"endpoint"`
-	Interface      FaultTargetInterface `json:"interface"`
-}
-
-// FaultTargetEndpoint is cross-checked between container and network inspection.
-type FaultTargetEndpoint struct {
-	ID        string `json:"id"`
-	NetworkID string `json:"network_id"`
-	Address   string `json:"address"`
-	Gateway   string `json:"gateway"`
-	MAC       string `json:"mac"`
-}
-
-// FaultTargetInterface identifies the exact interface inside the container netns.
-type FaultTargetInterface struct {
-	Name    string `json:"name"`
-	Index   int    `json:"index"`
-	Address string `json:"address"`
-	MAC     string `json:"mac"`
 }
 
 // TargetValidationReceipt proves that exact snapshot targets passed a fresh inspection.
@@ -153,12 +120,10 @@ type TargetValidationReceipt struct {
 
 // ValidatedFaultTarget reports only the immutable ID and observed state.
 type ValidatedFaultTarget struct {
-	LogicalCluster string   `json:"logical_cluster"`
-	ContainerID    string   `json:"container_id"`
-	State          string   `json:"state"`
-	StartedAt      string   `json:"started_at"`
-	FinishedAt     string   `json:"finished_at"`
-	NetworkIDs     []string `json:"network_ids"`
+	LogicalCluster string `json:"logical_cluster"`
+	MachineID      string `json:"machine_id"`
+	State          string `json:"state"`
+	IPv4           string `json:"ipv4"`
 }
 
 // TargetRebindInput supplies the original binding and exact stopped receipt.
@@ -179,8 +144,8 @@ type TargetRebindTransition struct {
 	FromToken            string `json:"from_token"`
 	ToToken              string `json:"to_token"`
 	LogicalCluster       string `json:"logical_cluster"`
-	ContainerID          string `json:"container_id"`
-	StartedAt            string `json:"started_at"`
+	MachineID            string `json:"machine_id"`
+	BootID               string `json:"boot_id"`
 	StoppedReceiptDigest string `json:"stopped_receipt_digest"`
 	TransitionDigest     string `json:"transition_digest"`
 }
@@ -198,17 +163,11 @@ type interfaceAddressInfo struct {
 	PrefixLen int    `json:"prefixlen"`
 }
 
-type observedTargetState struct {
-	status     string
-	startedAt  string
-	finishedAt string
-}
-
-type targetNetworkResolveInput struct {
-	cluster        Cluster
-	networkCluster Cluster
-	container      dockerContainer
-	interfaces     []interfaceInspection
+// machineInterface binds the primary in-guest interface to the machine IPv4.
+type machineInterface struct {
+	Name    string
+	MAC     string
+	Address string
 }
 
 // ResolveTargets publishes exact runtime identities only after complete live validation.
@@ -229,7 +188,6 @@ func (t *Topology) ResolveTargets(
 		Task:          TaskKey,
 		Environment:   TargetEnvironment,
 		Instance:      t.config.Instance,
-		DockerContext: t.config.DockerContext,
 		ConsumerTask:  request.ConsumerTask,
 		ConsumerRunID: request.ConsumerRunID,
 		ResolvedAt:    t.now().UTC().Format(time.RFC3339Nano),
@@ -278,21 +236,15 @@ func (t *Topology) ValidateTargets(
 		Targets:       make([]ValidatedFaultTarget, 0, len(selected)),
 	}
 	for _, target := range selected {
-		state, validateErr := t.validateTargetRuntime(ctx, target, request.ExpectedState)
+		observed, validateErr := t.validateTargetRuntime(ctx, target, request.ExpectedState)
 		if validateErr != nil {
 			return TargetValidationReceipt{}, fmt.Errorf("validating target %s: %w", target.LogicalCluster, validateErr)
 		}
-		networkIDs := make([]string, 0, len(target.Networks))
-		for _, network := range target.Networks {
-			networkIDs = append(networkIDs, network.ID)
-		}
 		receipt.Targets = append(receipt.Targets, ValidatedFaultTarget{
 			LogicalCluster: target.LogicalCluster,
-			ContainerID:    target.Container.ID,
-			State:          state.status,
-			StartedAt:      state.startedAt,
-			FinishedAt:     state.finishedAt,
-			NetworkIDs:     networkIDs,
+			MachineID:      target.Machine.ID,
+			State:          observed.State,
+			IPv4:           observed.IPv4,
 		})
 	}
 	digest, err := targetValidationReceiptDigest(receipt)
@@ -321,7 +273,7 @@ func (t *Topology) RebindTarget(
 		return TargetRebindResult{}, err
 	}
 
-	refreshedTarget, err := t.rebindRunningTarget(ctx, target, input.StoppedReceipt.Targets[0])
+	refreshedTarget, err := t.rebindRunningTarget(ctx, target)
 	if err != nil {
 		return TargetRebindResult{}, fmt.Errorf("rebinding target %s: %w", logicalName, err)
 	}
@@ -344,8 +296,8 @@ func (t *Topology) RebindTarget(
 		FromToken:            input.Snapshot.Token,
 		ToToken:              refreshedSnapshot.Token,
 		LogicalCluster:       logicalName,
-		ContainerID:          target.Container.ID,
-		StartedAt:            refreshedTarget.Container.StartedAt,
+		MachineID:            target.Machine.ID,
+		BootID:               refreshedTarget.Machine.BootID,
 		StoppedReceiptDigest: input.StoppedReceipt.ReceiptDigest,
 	}
 	digest, err := targetRebindTransitionDigest(transition)
@@ -360,43 +312,40 @@ func (t *Topology) RebindTarget(
 	}, nil
 }
 
-func (t *Topology) rebindRunningTarget(
-	ctx context.Context,
-	target FaultTarget,
-	stopped ValidatedFaultTarget,
-) (FaultTarget, error) {
+// rebindRunningTarget proves that the same machine came back with a new boot generation.
+func (t *Topology) rebindRunningTarget(ctx context.Context, target FaultTarget) (FaultTarget, error) {
+	machine, err := t.inspectMachine(ctx, target.Machine.Name)
+	if err != nil {
+		return FaultTarget{}, err
+	}
+	if machine.ID != target.Machine.ID {
+		return FaultTarget{}, errors.New("topology: immutable machine identity changed during rebind")
+	}
+	if machine.State != string(ExpectedStateRunning) {
+		return FaultTarget{}, errors.New("topology: rebound machine is not running")
+	}
+	if machine.IPv4 != target.Machine.IPv4 {
+		return FaultTarget{}, errors.New("topology: rebound machine address changed")
+	}
+	iface, err := t.primaryMachineInterface(ctx, machine)
+	if err != nil {
+		return FaultTarget{}, err
+	}
+	if iface.MAC != target.Machine.MAC || iface.Name != target.Machine.Interface {
+		return FaultTarget{}, errors.New("topology: rebound machine interface identity changed")
+	}
+	bootID, err := t.machineBootID(ctx, machine.Name)
+	if err != nil {
+		return FaultTarget{}, err
+	}
+	if bootID == target.Machine.BootID {
+		return FaultTarget{}, errors.New("topology: no proved stopped-to-started generation transition")
+	}
+
 	cluster, err := t.config.Cluster(target.DC, target.Zone)
 	if err != nil {
 		return FaultTarget{}, err
 	}
-	container, err := t.inspectContainer(ctx, target.Container.ID)
-	if err != nil {
-		return FaultTarget{}, err
-	}
-	if container.ID != target.Container.ID || strings.TrimPrefix(container.Name, "/") != target.Container.Name ||
-		container.Image != target.Container.ImageID || container.Config.Image != target.Container.ImageReference ||
-		container.Config.Labels[clusterLabelKey] != target.Container.Labels[clusterLabelKey] {
-		return FaultTarget{}, errors.New("topology: immutable container identity changed during rebind")
-	}
-	if err := validateObservedState(container, ExpectedStateRunning); err != nil {
-		return FaultTarget{}, err
-	}
-	startedAt, err := time.Parse(time.RFC3339Nano, container.State.StartedAt)
-	if err != nil {
-		return FaultTarget{}, errors.New("topology: rebound container started_at is invalid")
-	}
-	finishedAt, err := time.Parse(time.RFC3339Nano, stopped.FinishedAt)
-	if err != nil || !startedAt.After(finishedAt) || container.State.StartedAt == target.Container.StartedAt ||
-		container.State.FinishedAt != stopped.FinishedAt {
-		return FaultTarget{}, errors.New("topology: no proved stopped-to-started generation transition")
-	}
-	if !dockerIDPattern.MatchString(container.NetworkSettings.SandboxID) {
-		return FaultTarget{}, errors.New("topology: rebound docker sandbox identity is invalid")
-	}
-	if len(container.NetworkSettings.Networks) != len(target.Networks) {
-		return FaultTarget{}, errors.New("topology: rebound container has unexpected network attachments")
-	}
-
 	node, err := t.resolveKubernetesNode(ctx, cluster)
 	if err != nil {
 		return FaultTarget{}, err
@@ -404,57 +353,46 @@ func (t *Topology) rebindRunningTarget(
 	if node.UID != target.KubernetesNode.UID || !exactLabels(node.Labels, target.KubernetesNode.Labels) {
 		return FaultTarget{}, errors.New("topology: kubernetes node identity changed during rebind")
 	}
-	netNS, err := t.inspectNetNS(ctx, container.ID)
+
+	// Netfilter state does not survive a VM stop/start: identity is already
+	// proved, so rebuild the zone firewall of the rebound machine and wait for
+	// the node before handing the refreshed snapshot to chaos consumers.
+	// Peer rules keep pointing at the unchanged machine IPv4.
+	machines, err := t.runningMachines(ctx)
 	if err != nil {
 		return FaultTarget{}, err
 	}
-	interfaces, err := t.inspectInterfaces(ctx, container.ID)
+	if err := t.ensureFirewallToolchain(ctx, cluster); err != nil {
+		return FaultTarget{}, err
+	}
+	rules, err := zoneChainRules(cluster, machines)
 	if err != nil {
 		return FaultTarget{}, err
 	}
-	refreshedNetworks := make([]FaultTargetNetwork, 0, len(target.Networks))
-	for _, oldNetwork := range target.Networks {
-		networkCluster, networkErr := findNetworkCluster(t.config.Clusters(), oldNetwork.LogicalNetwork)
-		if networkErr != nil {
-			return FaultTarget{}, networkErr
-		}
-		network, networkErr := t.inspectNetwork(ctx, oldNetwork.ID)
-		if networkErr != nil {
-			return FaultTarget{}, networkErr
-		}
-		if network.ID != oldNetwork.ID || network.Name != oldNetwork.Name {
-			return FaultTarget{}, errors.New("topology: immutable network identity changed during rebind")
-		}
-		if networkErr := validateTargetNetworkBase(t.config.Instance, networkCluster, network); networkErr != nil {
-			return FaultTarget{}, networkErr
-		}
-		attachment, ok := container.NetworkSettings.Networks[oldNetwork.Name]
-		if !ok {
-			return FaultTarget{}, errors.New("topology: rebound network attachment is missing")
-		}
-		endpoint, networkErr := validateTargetEndpoint(container, network, attachment)
-		if networkErr != nil {
-			return FaultTarget{}, networkErr
-		}
-		if endpoint.Address != oldNetwork.Endpoint.Address || endpoint.Gateway != oldNetwork.Endpoint.Gateway {
-			return FaultTarget{}, errors.New("topology: rebound network address changed")
-		}
-		interfaceIdentity, networkErr := findTargetInterface(interfaces, endpoint)
-		if networkErr != nil {
-			return FaultTarget{}, networkErr
-		}
-		refreshedNetwork := oldNetwork
-		refreshedNetwork.Endpoint = endpoint
-		refreshedNetwork.Interface = interfaceIdentity
-		refreshedNetworks = append(refreshedNetworks, refreshedNetwork)
+	if err := t.configureZoneFirewall(
+		ctx,
+		cluster.Name,
+		t.peerIPv4s(machines, cluster.LogicalName),
+		zoneChainName(cluster),
+		rules,
+	); err != nil {
+		return FaultTarget{}, fmt.Errorf("restoring zone firewall in %s: %w", cluster.Name, err)
+	}
+	if _, err := t.runKubectl(
+		ctx,
+		readyTimeout,
+		cluster,
+		"wait",
+		"--for=condition=Ready",
+		"node/"+cluster.NodeName,
+		"--timeout=90s",
+	); err != nil {
+		return FaultTarget{}, fmt.Errorf("waiting for rebound node %s: %w", cluster.NodeName, err)
 	}
 
 	refreshed := target
-	refreshed.Container.StartedAt = container.State.StartedAt
+	refreshed.Machine.BootID = bootID
 	refreshed.KubernetesNode = node
-	refreshed.SandboxID = container.NetworkSettings.SandboxID
-	refreshed.NetNS = netNS
-	refreshed.Networks = refreshedNetworks
 	return refreshed, nil
 }
 
@@ -475,54 +413,39 @@ func validateStoppedReceipt(
 	if subtle.ConstantTimeCompare([]byte(receipt.ReceiptDigest), []byte(expectedDigest)) != 1 {
 		return errors.New("topology: stopped receipt digest mismatch")
 	}
-	validatedAt, err := time.Parse(time.RFC3339Nano, receipt.ValidatedAt)
-	if err != nil {
+	if _, err := time.Parse(time.RFC3339Nano, receipt.ValidatedAt); err != nil {
 		return errors.New("topology: stopped receipt validated_at is invalid")
 	}
 	observed := receipt.Targets[0]
-	expectedNetworkIDs := make([]string, 0, len(target.Networks))
-	for _, network := range target.Networks {
-		expectedNetworkIDs = append(expectedNetworkIDs, network.ID)
-	}
-	finishedAt, err := time.Parse(time.RFC3339Nano, observed.FinishedAt)
-	if observed.LogicalCluster != target.LogicalCluster || observed.ContainerID != target.Container.ID ||
-		observed.State != "exited" || observed.StartedAt != target.Container.StartedAt ||
-		err != nil || validatedAt.Before(finishedAt) || !slices.Equal(observed.NetworkIDs, expectedNetworkIDs) {
+	if observed.LogicalCluster != target.LogicalCluster || observed.MachineID != target.Machine.ID ||
+		observed.State != string(ExpectedStateStopped) {
 		return errors.New("topology: stopped receipt target identity mismatch")
 	}
 	return nil
 }
 
 func (t *Topology) resolveTarget(ctx context.Context, cluster Cluster) (FaultTarget, error) {
-	container, err := t.inspectContainer(ctx, cluster.NodeName)
+	machine, err := t.requireRunningMachine(ctx, cluster)
 	if err != nil {
 		return FaultTarget{}, err
 	}
-	if err := validateRunningContainer(cluster, container); err != nil {
-		return FaultTarget{}, err
+	if !machineIDPattern.MatchString(machine.ID) {
+		return FaultTarget{}, fmt.Errorf("topology: machine %s returned an invalid immutable id", cluster.Name)
 	}
-	expectedNetworks, err := t.expectedNetworkClusters(cluster)
+	iface, err := t.primaryMachineInterface(ctx, machine)
 	if err != nil {
 		return FaultTarget{}, err
 	}
-	if len(container.NetworkSettings.Networks) != len(expectedNetworks) {
-		return FaultTarget{}, fmt.Errorf("topology: container %s has unexpected network attachments", cluster.NodeName)
+	bootID, err := t.machineBootID(ctx, machine.Name)
+	if err != nil {
+		return FaultTarget{}, err
 	}
-
 	node, err := t.resolveKubernetesNode(ctx, cluster)
 	if err != nil {
 		return FaultTarget{}, err
 	}
-	netNS, err := t.inspectNetNS(ctx, container.ID)
-	if err != nil {
-		return FaultTarget{}, err
-	}
-	interfaces, err := t.inspectInterfaces(ctx, container.ID)
-	if err != nil {
-		return FaultTarget{}, err
-	}
 
-	target := FaultTarget{
+	return FaultTarget{
 		LogicalCluster:  cluster.LogicalName,
 		ResourceCluster: cluster.Name,
 		DC:              cluster.DC,
@@ -530,257 +453,72 @@ func (t *Topology) resolveTarget(ctx context.Context, cluster Cluster) (FaultTar
 		Kubeconfig:      cluster.Kubeconfig,
 		KubeContext:     cluster.KubeContext,
 		Namespace:       Namespace,
-		Container: FaultTargetContainer{
-			ID:             container.ID,
-			Name:           cluster.NodeName,
-			ImageID:        container.Image,
-			ImageReference: container.Config.Image,
-			StartedAt:      container.State.StartedAt,
-			Labels: map[string]string{
-				clusterLabelKey: cluster.Name,
-			},
+		Machine: FaultTargetMachine{
+			ID:        machine.ID,
+			Name:      machine.Name,
+			IPv4:      machine.IPv4,
+			MAC:       iface.MAC,
+			Interface: iface.Name,
+			BootID:    bootID,
 		},
 		KubernetesNode: node,
-		SandboxID:      container.NetworkSettings.SandboxID,
-		NetNS:          netNS,
-		Networks:       make([]FaultTargetNetwork, 0, len(expectedNetworks)),
-	}
-	for _, networkCluster := range expectedNetworks {
-		network, networkErr := t.resolveTargetNetwork(ctx, targetNetworkResolveInput{
-			cluster:        cluster,
-			networkCluster: networkCluster,
-			container:      container,
-			interfaces:     interfaces,
-		})
-		if networkErr != nil {
-			return FaultTarget{}, networkErr
-		}
-		target.Networks = append(target.Networks, network)
-	}
-	slices.SortFunc(target.Networks, func(left, right FaultTargetNetwork) int {
-		return strings.Compare(left.LogicalNetwork, right.LogicalNetwork)
+	}, nil
+}
+
+// primaryMachineInterface resolves the first non-loopback interface that owns the machine IPv4.
+func (t *Topology) primaryMachineInterface(ctx context.Context, machine orbMachine) (machineInterface, error) {
+	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+	defer cancel()
+	result, err := t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args:    []string{"run", "-m", machine.Name, "ip", "-j", "address", "show"},
 	})
-	return target, nil
-}
-
-func (t *Topology) resolveTargetNetwork(
-	ctx context.Context,
-	input targetNetworkResolveInput,
-) (FaultTargetNetwork, error) {
-	network, err := t.inspectNetwork(ctx, input.networkCluster.NetworkName)
 	if err != nil {
-		return FaultTargetNetwork{}, err
+		return machineInterface{}, fmt.Errorf("inspecting interfaces in machine %s: %w", machine.Name, err)
 	}
-	if err := validateTargetNetworkBase(t.config.Instance, input.networkCluster, network); err != nil {
-		return FaultTargetNetwork{}, err
+	interfaces := []interfaceInspection{}
+	if err := json.Unmarshal([]byte(result.Stdout), &interfaces); err != nil || len(interfaces) == 0 {
+		return machineInterface{}, errors.New("topology: invalid machine interface inspection")
 	}
-	attachment, ok := input.container.NetworkSettings.Networks[input.networkCluster.NetworkName]
-	if !ok {
-		return FaultTargetNetwork{}, fmt.Errorf(
-			"topology: expected attachment %s is missing",
-			input.networkCluster.NetworkName,
-		)
-	}
-	endpoint, err := validateTargetEndpoint(input.container, network, attachment)
-	if err != nil {
-		return FaultTargetNetwork{}, err
-	}
-	if !addressWithinSubnet(endpoint.Address, input.networkCluster.DockerSubnet) ||
-		!ipWithinSubnet(endpoint.Gateway, input.networkCluster.DockerSubnet) {
-		return FaultTargetNetwork{}, errors.New("topology: endpoint address or gateway does not match the network subnet")
-	}
-	interfaceIdentity, err := findTargetInterface(input.interfaces, endpoint)
-	if err != nil {
-		return FaultTargetNetwork{}, err
-	}
-	return FaultTargetNetwork{
-		LogicalNetwork: input.networkCluster.LogicalName,
-		Primary:        input.networkCluster.LogicalName == input.cluster.LogicalName,
-		ID:             network.ID,
-		Name:           network.Name,
-		Driver:         network.Driver,
-		Scope:          network.Scope,
-		Subnet:         input.networkCluster.DockerSubnet,
-		Labels: map[string]string{
-			ownerLabelKey:    TaskKey,
-			instanceLabelKey: t.config.Instance,
-		},
-		Endpoint:  endpoint,
-		Interface: interfaceIdentity,
-	}, nil
-}
 
-func validateRunningContainer(cluster Cluster, container dockerContainer) error {
-	if !dockerIDPattern.MatchString(container.ID) {
-		return fmt.Errorf("topology: container %s returned an invalid immutable id", cluster.NodeName)
-	}
-	if strings.TrimPrefix(container.Name, "/") != cluster.NodeName {
-		return fmt.Errorf("topology: container name mismatch for %s", cluster.NodeName)
-	}
-	if container.Config.Labels[clusterLabelKey] != cluster.Name {
-		return fmt.Errorf("topology: refusing unowned container %s", cluster.NodeName)
-	}
-	if container.Config.Image != NodeImage || !imageIDPattern.MatchString(container.Image) {
-		return fmt.Errorf("topology: container %s has an invalid image identity", cluster.NodeName)
-	}
-	if !container.State.Running || container.State.Paused || container.State.Restarting || container.State.Dead {
-		return fmt.Errorf("topology: container %s is not stably running", cluster.NodeName)
-	}
-	if !dockerIDPattern.MatchString(container.NetworkSettings.SandboxID) || !validRuntimeTime(container.State.StartedAt) {
-		return fmt.Errorf("topology: container %s has an invalid running generation", cluster.NodeName)
-	}
-	return nil
-}
-
-func validRuntimeTime(value string) bool {
-	parsed, err := time.Parse(time.RFC3339Nano, value)
-	return err == nil && parsed.Year() >= 2000
-}
-
-func validateTargetNetworkBase(instance string, cluster Cluster, network dockerNetwork) error {
-	if !dockerIDPattern.MatchString(network.ID) || network.Name != cluster.NetworkName {
-		return fmt.Errorf("topology: network %s has an invalid immutable identity", cluster.NetworkName)
-	}
-	if network.Driver != "bridge" || network.Scope != "local" {
-		return fmt.Errorf("topology: network %s has unexpected driver or scope", cluster.NetworkName)
-	}
-	if network.Labels[ownerLabelKey] != TaskKey || network.Labels[instanceLabelKey] != instance {
-		return fmt.Errorf("topology: refusing unowned network %s", cluster.NetworkName)
-	}
-	if len(network.IPAM.Config) != 1 || network.IPAM.Config[0].Subnet != cluster.DockerSubnet {
-		return fmt.Errorf("topology: network %s has unexpected subnet", cluster.NetworkName)
-	}
-	return nil
-}
-
-func validateTargetEndpoint(
-	container dockerContainer,
-	network dockerNetwork,
-	attachment struct {
-		NetworkID   string `json:"NetworkID"`
-		EndpointID  string `json:"EndpointID"`
-		Gateway     string `json:"Gateway"`
-		IPAddress   string `json:"IPAddress"`
-		IPPrefixLen int    `json:"IPPrefixLen"`
-		MacAddress  string `json:"MacAddress"`
-	},
-) (FaultTargetEndpoint, error) {
-	if attachment.NetworkID != network.ID || !dockerIDPattern.MatchString(attachment.EndpointID) {
-		return FaultTargetEndpoint{}, errors.New("topology: endpoint has an invalid immutable identity")
-	}
-	if net.ParseIP(attachment.IPAddress).To4() == nil || attachment.IPPrefixLen < 1 || attachment.IPPrefixLen > 32 {
-		return FaultTargetEndpoint{}, errors.New("topology: endpoint has an invalid private ipv4 address")
-	}
-	address := fmt.Sprintf("%s/%d", attachment.IPAddress, attachment.IPPrefixLen)
-	if !validPrivateNetworkAddress(address) || net.ParseIP(attachment.Gateway).To4() == nil {
-		return FaultTargetEndpoint{}, errors.New("topology: endpoint is outside the expected private network")
-	}
-	membership, ok := network.Containers[container.ID]
-	if !ok || membership.Name != strings.TrimPrefix(container.Name, "/") {
-		return FaultTargetEndpoint{}, errors.New("topology: network membership does not match the container")
-	}
-	if membership.EndpointID != attachment.EndpointID || membership.MacAddress != attachment.MacAddress ||
-		membership.IPv4Address != address {
-		return FaultTargetEndpoint{}, errors.New("topology: endpoint inspection is inconsistent")
-	}
-	return FaultTargetEndpoint{
-		ID:        attachment.EndpointID,
-		NetworkID: attachment.NetworkID,
-		Address:   address,
-		Gateway:   attachment.Gateway,
-		MAC:       attachment.MacAddress,
-	}, nil
-}
-
-func validPrivateNetworkAddress(address string) bool {
-	ip, _, err := net.ParseCIDR(address)
-	return err == nil && ip.IsPrivate()
-}
-
-func addressWithinSubnet(address, subnet string) bool {
-	ip, _, err := net.ParseCIDR(address)
-	if err != nil {
-		return false
-	}
-	return ipWithinSubnet(ip.String(), subnet)
-}
-
-func ipWithinSubnet(address, subnet string) bool {
-	ip := net.ParseIP(address)
-	_, network, err := net.ParseCIDR(subnet)
-	return err == nil && ip != nil && network.Contains(ip)
-}
-
-func findTargetInterface(
-	interfaces []interfaceInspection,
-	endpoint FaultTargetEndpoint,
-) (FaultTargetInterface, error) {
-	expectedIP, expectedNetwork, err := net.ParseCIDR(endpoint.Address)
-	if err != nil {
-		return FaultTargetInterface{}, errors.New("topology: endpoint address is invalid")
-	}
-	ones, _ := expectedNetwork.Mask.Size()
-	matches := make([]FaultTargetInterface, 0, 1)
+	matches := make([]machineInterface, 0, 1)
 	for _, candidate := range interfaces {
-		if candidate.Index <= 0 || !interfaceNamePattern.MatchString(candidate.Name) || candidate.MAC != endpoint.MAC {
+		if candidate.Name == "lo" || !ifaceNamePattern.MatchString(candidate.Name) ||
+			!machineMACPattern.MatchString(candidate.MAC) {
 			continue
 		}
 		for _, address := range candidate.AddressInfo {
-			if address.Family == "inet" && address.Local == expectedIP.String() && address.PrefixLen == ones {
-				matches = append(matches, FaultTargetInterface{
+			if address.Family == "inet" && address.Local == machine.IPv4 {
+				matches = append(matches, machineInterface{
 					Name:    candidate.Name,
-					Index:   candidate.Index,
-					Address: endpoint.Address,
 					MAC:     candidate.MAC,
+					Address: machine.IPv4,
 				})
 			}
 		}
 	}
 	if len(matches) != 1 {
-		return FaultTargetInterface{}, errors.New("topology: endpoint interface resolution is ambiguous")
+		return machineInterface{}, fmt.Errorf("topology: machine %s interface resolution is ambiguous", machine.Name)
 	}
 	return matches[0], nil
 }
 
-func (t *Topology) inspectInterfaces(ctx context.Context, containerID string) ([]interfaceInspection, error) {
+// machineBootID reads the per-boot kernel UUID that proves a stop/start transition.
+func (t *Topology) machineBootID(ctx context.Context, name string) (string, error) {
 	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		containerID,
-		"ip",
-		"-j",
-		"-details",
-		"address",
-		"show",
-	))
+	result, err := t.runner.Run(commandCtx, Command{
+		Program: "orbctl",
+		Args:    []string{"run", "-m", name, "cat", "/proc/sys/kernel/random/boot_id"},
+	})
 	if err != nil {
-		return nil, fmt.Errorf("inspecting interfaces for container %s: %w", containerID, err)
+		return "", fmt.Errorf("reading boot id in machine %s: %w", name, err)
 	}
-	interfaces := []interfaceInspection{}
-	if err := json.Unmarshal([]byte(result.Stdout), &interfaces); err != nil || len(interfaces) == 0 {
-		return nil, errors.New("topology: invalid interface inspection")
+	bootID := strings.TrimSpace(result.Stdout)
+	if !bootIDPattern.MatchString(bootID) {
+		return "", errors.New("topology: invalid machine boot id")
 	}
-	return interfaces, nil
-}
-
-func (t *Topology) inspectNetNS(ctx context.Context, containerID string) (string, error) {
-	commandCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-	result, err := t.runner.Run(commandCtx, t.dockerCommand(
-		"exec",
-		containerID,
-		"readlink",
-		"/proc/self/ns/net",
-	))
-	if err != nil {
-		return "", fmt.Errorf("inspecting netns for container %s: %w", containerID, err)
-	}
-	identity := strings.TrimSpace(result.Stdout)
-	if !netNSPattern.MatchString(identity) {
-		return "", errors.New("topology: invalid network namespace identity")
-	}
-	return identity, nil
+	return bootID, nil
 }
 
 func (t *Topology) resolveKubernetesNode(
@@ -858,18 +596,6 @@ func (t *Topology) selectedClusters(selector TargetSelector) ([]Cluster, error) 
 	return clusters, nil
 }
 
-func (t *Topology) expectedNetworkClusters(cluster Cluster) ([]Cluster, error) {
-	networks := []Cluster{cluster}
-	if cluster.Zone == "internal" {
-		dmz, err := t.config.Cluster(cluster.DC, "dmz")
-		if err != nil {
-			return nil, err
-		}
-		networks = append(networks, dmz)
-	}
-	return networks, nil
-}
-
 func validateConsumer(task, runID string) error {
 	if !consumerTaskPattern.MatchString(task) {
 		return errors.New("topology: consumer task must be an MM task key")
@@ -910,8 +636,7 @@ func canonicalSHA256(value any, description string) (string, error) {
 
 func (t *Topology) validateSnapshot(snapshot TargetSnapshot) error {
 	if snapshot.APIVersion != TargetAPIVersion || snapshot.Task != TaskKey ||
-		snapshot.Environment != TargetEnvironment || snapshot.Instance != t.config.Instance ||
-		snapshot.DockerContext != t.config.DockerContext {
+		snapshot.Environment != TargetEnvironment || snapshot.Instance != t.config.Instance {
 		return errors.New("topology: target snapshot metadata mismatch")
 	}
 	if err := validateConsumer(snapshot.ConsumerTask, snapshot.ConsumerRunID); err != nil {
@@ -927,7 +652,7 @@ func (t *Topology) validateSnapshot(snapshot TargetSnapshot) error {
 	if len(snapshot.Targets) != len(expectedClusters) {
 		return errors.New("topology: target snapshot cardinality mismatch")
 	}
-	if snapshot.PreviousToken != "" && !imageIDPattern.MatchString(snapshot.PreviousToken) {
+	if snapshot.PreviousToken != "" && !sha256DigestPattern.MatchString(snapshot.PreviousToken) {
 		return errors.New("topology: target snapshot previous token is invalid")
 	}
 	for index, cluster := range expectedClusters {
@@ -951,67 +676,23 @@ func (t *Topology) validateTargetShape(target FaultTarget, cluster Cluster) erro
 		target.KubeContext != cluster.KubeContext || target.Namespace != Namespace {
 		return fmt.Errorf("topology: target %s does not match configured cluster identity", cluster.LogicalName)
 	}
-	if target.Container.Name != cluster.NodeName || target.Container.ImageReference != NodeImage ||
-		!dockerIDPattern.MatchString(target.Container.ID) || !imageIDPattern.MatchString(target.Container.ImageID) ||
-		!validRuntimeTime(target.Container.StartedAt) ||
-		!exactLabels(target.Container.Labels, map[string]string{clusterLabelKey: cluster.Name}) {
-		return fmt.Errorf("topology: target %s has invalid container identity", cluster.LogicalName)
+	if target.Machine.Name != cluster.Name || !machineIDPattern.MatchString(target.Machine.ID) ||
+		!machineMACPattern.MatchString(target.Machine.MAC) || !ifaceNamePattern.MatchString(target.Machine.Interface) ||
+		!bootIDPattern.MatchString(target.Machine.BootID) ||
+		!validPrivateIPv4(target.Machine.IPv4) {
+		return fmt.Errorf("topology: target %s has invalid machine identity", cluster.LogicalName)
 	}
 	expectedNodeLabels := targetKubernetesLabels(cluster, t.config.Instance)
 	if target.KubernetesNode.Name != cluster.NodeName || target.KubernetesNode.UID == "" ||
 		len(target.KubernetesNode.UID) > 128 || !exactLabels(target.KubernetesNode.Labels, expectedNodeLabels) {
 		return fmt.Errorf("topology: target %s has invalid kubernetes identity", cluster.LogicalName)
 	}
-	if !dockerIDPattern.MatchString(target.SandboxID) || !netNSPattern.MatchString(target.NetNS) {
-		return fmt.Errorf("topology: target %s has invalid netns identity", cluster.LogicalName)
-	}
-	expectedNetworks, err := t.expectedNetworkClusters(cluster)
-	if err != nil {
-		return err
-	}
-	if len(target.Networks) != len(expectedNetworks) {
-		return fmt.Errorf("topology: target %s has invalid network cardinality", cluster.LogicalName)
-	}
-	slices.SortFunc(expectedNetworks, func(left, right Cluster) int {
-		return strings.Compare(left.LogicalName, right.LogicalName)
-	})
-	for index, networkCluster := range expectedNetworks {
-		if err := validateTargetNetworkShape(
-			target.Networks[index],
-			networkCluster,
-			networkCluster.LogicalName == cluster.LogicalName,
-			t.config.Instance,
-		); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func validateTargetNetworkShape(
-	target FaultTargetNetwork,
-	cluster Cluster,
-	isPrimary bool,
-	instance string,
-) error {
-	labels := map[string]string{ownerLabelKey: TaskKey, instanceLabelKey: instance}
-	if target.LogicalNetwork != cluster.LogicalName || target.Primary != isPrimary ||
-		target.Name != cluster.NetworkName || target.Driver != "bridge" || target.Scope != "local" ||
-		target.Subnet != cluster.DockerSubnet || !dockerIDPattern.MatchString(target.ID) ||
-		!exactLabels(target.Labels, labels) {
-		return fmt.Errorf("topology: network target %s has invalid identity", cluster.LogicalName)
-	}
-	if target.Endpoint.NetworkID != target.ID || !dockerIDPattern.MatchString(target.Endpoint.ID) ||
-		!validPrivateNetworkAddress(target.Endpoint.Address) || net.ParseIP(target.Endpoint.Gateway).To4() == nil ||
-		target.Endpoint.MAC == "" || !addressWithinSubnet(target.Endpoint.Address, target.Subnet) ||
-		!ipWithinSubnet(target.Endpoint.Gateway, target.Subnet) {
-		return fmt.Errorf("topology: network target %s has invalid endpoint identity", cluster.LogicalName)
-	}
-	if !interfaceNamePattern.MatchString(target.Interface.Name) || target.Interface.Index <= 0 ||
-		target.Interface.Address != target.Endpoint.Address || target.Interface.MAC != target.Endpoint.MAC {
-		return fmt.Errorf("topology: network target %s has invalid interface identity", cluster.LogicalName)
-	}
-	return nil
+func validPrivateIPv4(address string) bool {
+	ip := net.ParseIP(address)
+	return ip != nil && ip.To4() != nil && ip.IsPrivate()
 }
 
 func exactLabels(actual, expected map[string]string) bool {
@@ -1050,163 +731,61 @@ func selectSnapshotTargets(targets []FaultTarget, names []string) ([]FaultTarget
 	return selected, nil
 }
 
+// validateTargetRuntime re-checks the immutable machine identity. Stopped targets
+// are validated host-side only: a stopped machine must not expose any live
+// in-guest execution handle, so no `orbctl run` happens in that state.
 func (t *Topology) validateTargetRuntime(
 	ctx context.Context,
 	target FaultTarget,
 	expectedState ExpectedTargetState,
-) (observedTargetState, error) {
-	cluster, err := t.config.Cluster(target.DC, target.Zone)
+) (orbMachine, error) {
+	machine, err := t.inspectMachine(ctx, target.Machine.Name)
 	if err != nil {
-		return observedTargetState{}, err
+		return orbMachine{}, err
 	}
-	container, err := t.inspectContainer(ctx, target.Container.ID)
-	if err != nil {
-		return observedTargetState{}, err
+	if machine.ID != target.Machine.ID {
+		return orbMachine{}, errors.New("topology: immutable machine identity changed")
 	}
-	if container.ID != target.Container.ID || strings.TrimPrefix(container.Name, "/") != target.Container.Name ||
-		container.Image != target.Container.ImageID || container.Config.Image != target.Container.ImageReference ||
-		container.Config.Labels[clusterLabelKey] != target.Container.Labels[clusterLabelKey] ||
-		container.State.StartedAt != target.Container.StartedAt {
-		return observedTargetState{}, errors.New("topology: immutable container identity or generation changed")
-	}
-	if err := validateObservedState(container, expectedState); err != nil {
-		return observedTargetState{}, err
-	}
-	for _, targetNetwork := range target.Networks {
-		networkCluster, networkErr := findNetworkCluster(t.config.Clusters(), targetNetwork.LogicalNetwork)
-		if networkErr != nil {
-			return observedTargetState{}, networkErr
+
+	switch expectedState {
+	case ExpectedStateRunning:
+		if machine.State != string(ExpectedStateRunning) {
+			return orbMachine{}, errors.New("topology: machine is not running")
 		}
-		network, networkErr := t.inspectNetwork(ctx, targetNetwork.ID)
-		if networkErr != nil {
-			return observedTargetState{}, networkErr
+		if machine.IPv4 != target.Machine.IPv4 {
+			return orbMachine{}, errors.New("topology: machine address changed")
 		}
-		if network.ID != targetNetwork.ID || network.Name != targetNetwork.Name {
-			return observedTargetState{}, errors.New("topology: immutable network identity changed")
+		iface, ifaceErr := t.primaryMachineInterface(ctx, machine)
+		if ifaceErr != nil {
+			return orbMachine{}, ifaceErr
 		}
-		if networkErr := validateTargetNetworkBase(t.config.Instance, networkCluster, network); networkErr != nil {
-			return observedTargetState{}, networkErr
+		if iface.MAC != target.Machine.MAC || iface.Name != target.Machine.Interface {
+			return orbMachine{}, errors.New("topology: machine interface identity changed")
 		}
-		if expectedState == ExpectedStateRunning {
-			if networkErr := validateRunningAttachment(container, network, targetNetwork); networkErr != nil {
-				return observedTargetState{}, networkErr
-			}
-		} else if networkErr := validateStoppedAttachment(container, network, targetNetwork); networkErr != nil {
-			return observedTargetState{}, networkErr
+		bootID, bootErr := t.machineBootID(ctx, machine.Name)
+		if bootErr != nil {
+			return orbMachine{}, bootErr
 		}
-	}
-	if expectedState == ExpectedStateRunning {
-		if len(container.NetworkSettings.Networks) != len(target.Networks) {
-			return observedTargetState{}, errors.New("topology: running container network attachments changed")
+		if bootID != target.Machine.BootID {
+			return orbMachine{}, errors.New("topology: machine rebooted without a proved rebind")
 		}
-		if container.NetworkSettings.SandboxID != target.SandboxID {
-			return observedTargetState{}, errors.New("topology: docker sandbox identity changed")
-		}
-		netNS, netNSErr := t.inspectNetNS(ctx, target.Container.ID)
-		if netNSErr != nil {
-			return observedTargetState{}, netNSErr
-		}
-		if netNS != target.NetNS {
-			return observedTargetState{}, errors.New("topology: network namespace identity changed")
-		}
-		interfaces, interfaceErr := t.inspectInterfaces(ctx, target.Container.ID)
-		if interfaceErr != nil {
-			return observedTargetState{}, interfaceErr
-		}
-		for _, targetNetwork := range target.Networks {
-			interfaceIdentity, findErr := findTargetInterface(interfaces, targetNetwork.Endpoint)
-			if findErr != nil {
-				return observedTargetState{}, findErr
-			}
-			if interfaceIdentity != targetNetwork.Interface {
-				return observedTargetState{}, errors.New("topology: network interface identity changed")
-			}
+		cluster, clusterErr := t.config.Cluster(target.DC, target.Zone)
+		if clusterErr != nil {
+			return orbMachine{}, clusterErr
 		}
 		node, nodeErr := t.resolveKubernetesNode(ctx, cluster)
 		if nodeErr != nil {
-			return observedTargetState{}, nodeErr
+			return orbMachine{}, nodeErr
 		}
 		if node.UID != target.KubernetesNode.UID || !exactLabels(node.Labels, target.KubernetesNode.Labels) {
-			return observedTargetState{}, errors.New("topology: kubernetes node identity changed")
-		}
-	} else if container.NetworkSettings.SandboxID != "" || container.NetworkSettings.SandboxKey != "" {
-		return observedTargetState{}, errors.New("topology: stopped container retains a live sandbox")
-	}
-	return observedTargetState{
-		status:     container.State.Status,
-		startedAt:  container.State.StartedAt,
-		finishedAt: container.State.FinishedAt,
-	}, nil
-}
-
-func validateObservedState(container dockerContainer, expectedState ExpectedTargetState) error {
-	switch expectedState {
-	case ExpectedStateRunning:
-		if !container.State.Running || container.State.Status != "running" || container.State.Paused ||
-			container.State.Restarting || container.State.Dead {
-			return errors.New("topology: container is not stably running")
-		}
-		if !validRuntimeTime(container.State.StartedAt) {
-			return errors.New("topology: running container started_at is invalid")
+			return orbMachine{}, errors.New("topology: kubernetes node identity changed")
 		}
 	case ExpectedStateStopped:
-		if container.State.Running || container.State.Status != "exited" || container.State.Paused ||
-			container.State.Restarting || container.State.Dead {
-			return errors.New("topology: container is not safely stopped")
-		}
-		if !validRuntimeTime(container.State.StartedAt) || !validRuntimeTime(container.State.FinishedAt) {
-			return errors.New("topology: stopped container transition times are invalid")
+		if machine.State != string(ExpectedStateStopped) {
+			return orbMachine{}, errors.New("topology: machine is not safely stopped")
 		}
 	default:
-		return errors.New("topology: unsupported expected container state")
+		return orbMachine{}, errors.New("topology: unsupported expected machine state")
 	}
-	return nil
-}
-
-func validateRunningAttachment(
-	container dockerContainer,
-	network dockerNetwork,
-	target FaultTargetNetwork,
-) error {
-	attachment, ok := container.NetworkSettings.Networks[target.Name]
-	if !ok {
-		return errors.New("topology: running network attachment is missing")
-	}
-	endpoint, err := validateTargetEndpoint(container, network, attachment)
-	if err != nil {
-		return err
-	}
-	if endpoint != target.Endpoint {
-		return errors.New("topology: endpoint identity changed")
-	}
-	return nil
-}
-
-func validateStoppedAttachment(
-	container dockerContainer,
-	network dockerNetwork,
-	target FaultTargetNetwork,
-) error {
-	attachment, ok := container.NetworkSettings.Networks[target.Name]
-	if !ok || attachment.NetworkID != target.ID {
-		return errors.New("topology: stopped container network identity changed")
-	}
-	hasLiveEndpoint := attachment.EndpointID != "" || attachment.IPAddress != "" ||
-		attachment.MacAddress != "" || attachment.IPPrefixLen != 0
-	if hasLiveEndpoint {
-		return errors.New("topology: stopped container retains a live endpoint")
-	}
-	if _, exists := network.Containers[container.ID]; exists {
-		return errors.New("topology: stopped container remains a live network member")
-	}
-	return nil
-}
-
-func findNetworkCluster(clusters []Cluster, logicalName string) (Cluster, error) {
-	for _, cluster := range clusters {
-		if cluster.LogicalName == logicalName {
-			return cluster, nil
-		}
-	}
-	return Cluster{}, fmt.Errorf("topology: unknown logical network %q", logicalName)
+	return machine, nil
 }
