@@ -416,7 +416,7 @@ func (t *Topology) ensureMachine(ctx context.Context, cluster Cluster) (orbMachi
 		return t.waitMachineIPv4(ctx, cluster)
 	}
 
-	commandCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	commandCtx, cancel := context.WithTimeout(ctx, machineCreateTimeout)
 	_, err = t.runner.Run(commandCtx, Command{
 		Program: "orbctl",
 		Args: []string{

@@ -39,10 +39,13 @@ const (
 	// not ship a firewall toolchain.
 	IPTablesVersion = "1.8.10-3ubuntu2"
 
-	commandTimeout     = 30 * time.Second
-	createTimeout      = 5 * time.Minute
-	readyTimeout       = 2 * time.Minute
-	diagnosticsTimeout = 2 * time.Minute
+	commandTimeout = 30 * time.Second
+	createTimeout  = 5 * time.Minute
+	// machineCreateTimeout bounds orbctl create; VM image provisioning varies
+	// between two and five-plus minutes under host load.
+	machineCreateTimeout = 10 * time.Minute
+	readyTimeout         = 2 * time.Minute
+	diagnosticsTimeout   = 2 * time.Minute
 )
 
 // k3sBinarySHA256 pins the linux k3s binary for each supported host architecture;
