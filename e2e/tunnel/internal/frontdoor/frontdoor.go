@@ -306,7 +306,7 @@ func (frontDoor *FrontDoor) checkBackend(ctx context.Context, candidate *backend
 		return
 	}
 	response, err := frontDoor.healthClient.Do(request)
-	healthy := err == nil && response.StatusCode == http.StatusOK
+	healthy := err == nil && response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices
 	if response != nil {
 		_, _ = io.CopyN(io.Discard, response.Body, maxHealthBodyBytes)
 		_ = response.Body.Close()
