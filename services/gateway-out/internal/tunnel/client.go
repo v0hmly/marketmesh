@@ -176,6 +176,7 @@ func (client *Client) Run(ctx context.Context) error {
 		client.markReady(session.serverInstanceID)
 		client.settings.logger.InfoContext(ctx, "reverse tunnel готов")
 		started := client.settings.now()
+		requestedReconnect := false
 
 		sessionResult := make(chan error, 1)
 		go func() {
@@ -201,6 +202,7 @@ func (client *Client) Run(ctx context.Context) error {
 			<-sessionResult
 			return nil
 		case <-client.reconnect:
+			requestedReconnect = true
 			client.markNotReady()
 			drainCtx, cancelDrain := context.WithTimeout(
 				context.WithoutCancel(ctx),
@@ -219,6 +221,10 @@ func (client *Client) Run(ctx context.Context) error {
 			client.settings.logger.WarnContext(ctx, "reverse tunnel разорван")
 		}
 
+		if requestedReconnect {
+			failures = 0
+			continue
+		}
 		if client.settings.now().Sub(started) >= client.settings.reconnect.StableResetAfter {
 			failures = 0
 		}

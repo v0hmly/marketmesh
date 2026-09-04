@@ -237,6 +237,11 @@ tasks:
     cmds:
       - go run ./e2e/tunnel/cmd/frontdoor {{.CLI_ARGS}}
 
+  tunnel-e2e:rolling:
+    desc: Выполнить bounded rolling redeploy или rollback-матрицу MM-34
+    cmds:
+      - go run ./e2e/tunnel/cmd/rollingctl {{.CLI_ARGS}}
+
   tunnel-e2e:undeploy:
     desc: Собрать diagnostics и удалить точные workloads MM-29
     cmds:

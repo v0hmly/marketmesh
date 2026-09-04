@@ -32,6 +32,10 @@ func TestTunnelPoolRequiresDistinctInitialPathsAndRestoresDuplicates(t *testing.
 	if !pool.IsReady() {
 		t.Fatal("IsReady() = false after two distinct gateway-in paths")
 	}
+	pool.rediscover()
+	if first.reconnects != 1 {
+		t.Fatalf("rediscovery reconnects = %d, want 1", first.reconnects)
+	}
 
 	second.ready = false
 	if !pool.IsReady() {
@@ -51,6 +55,29 @@ func TestNewTunnelPoolRejectsUnsafeCardinality(t *testing.T) {
 	}
 	if _, err := newTunnelPool([]managedTunnel{nil, nil}); err == nil {
 		t.Fatal("newTunnelPool(nil clients) error = nil")
+	}
+	if _, err := newTunnelPool([]managedTunnel{
+		&fakeManagedTunnel{},
+		&fakeManagedTunnel{},
+		&fakeManagedTunnel{},
+	}); err == nil {
+		t.Fatal("newTunnelPool(three clients) error = nil")
+	}
+}
+
+func TestTunnelPoolDoesNotRediscoverBeforeInitialCoverage(t *testing.T) {
+	t.Parallel()
+
+	first := &fakeManagedTunnel{}
+	second := &fakeManagedTunnel{}
+	pool, err := newTunnelPool([]managedTunnel{first, second})
+	if err != nil {
+		t.Fatalf("newTunnelPool() error = %v", err)
+	}
+
+	pool.rediscover()
+	if first.reconnects != 0 || second.reconnects != 0 {
+		t.Fatal("rediscovery was requested before initial coverage")
 	}
 }
 

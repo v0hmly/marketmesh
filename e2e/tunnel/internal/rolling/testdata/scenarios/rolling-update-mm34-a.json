@@ -1,0 +1,24 @@
+{
+  "schema_version": "marketmesh.tunnel.slo.scenario/v1",
+  "id": "rolling-update-mm34-a",
+  "kind": "planned_rolling_update",
+  "warm_up": "10s",
+  "targets": [
+    {"class": "read_idempotent", "min_eligible": 100, "max_error_rate_ppm": 0, "max_downtime": "0s"},
+    {"class": "mutating", "min_eligible": 100, "max_error_rate_ppm": 0, "max_downtime": "0s"}
+  ],
+  "faults": [
+    {"id": "mm34-a-dc-a-gateway-in-image", "target": "gateway_in", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-a-gateway-in-config", "target": "gateway_in", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-a-gateway-out-image", "target": "gateway_out", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-a-gateway-out-config", "target": "gateway_out", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-a-fake-internal-image", "target": "internal_service", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-a-fake-internal-config", "target": "internal_service", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-b-gateway-in-image", "target": "gateway_in", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-b-gateway-in-config", "target": "gateway_in", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-b-gateway-out-image", "target": "gateway_out", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-b-gateway-out-config", "target": "gateway_out", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-b-fake-internal-image", "target": "internal_service", "mode": "rolling_update"},
+    {"id": "mm34-a-dc-b-fake-internal-config", "target": "internal_service", "mode": "rolling_update"}
+  ]
+}

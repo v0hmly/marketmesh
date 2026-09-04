@@ -29,6 +29,7 @@ func TestRenderProducesBoundedOwnedWorkloads(t *testing.T) {
 		"replicas: 2",
 		"maxUnavailable: 0",
 		"maxSurge: 1",
+		"initialDelaySeconds: 10",
 		"progressDeadlineSeconds: 120",
 		"terminationGracePeriodSeconds: 30",
 		"readOnlyRootFilesystem: true",
@@ -52,6 +53,9 @@ func TestRenderProducesBoundedOwnedWorkloads(t *testing.T) {
 	}
 	if bytes.Contains(combined, []byte("{{")) {
 		t.Fatal("rendered manifests retain a template marker")
+	}
+	if count := bytes.Count(combined, []byte("imagePullPolicy: Never")); count != 3 {
+		t.Fatalf("local-only image pull policies = %d, want 3", count)
 	}
 }
 

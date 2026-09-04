@@ -12,6 +12,9 @@
 fault scenarios. Все kube-команды используют только явные `--kubeconfig` и
 `--context`; пользовательский current context не читается и не изменяется.
 
+Контракт планового E2E rolling redeploy и rollback tunnel описан в
+[`docs/testing/tunnel-rolling-redeploy.md`](../../docs/testing/tunnel-rolling-redeploy.md).
+
 ## PostgreSQL client identity
 
 Каждый Go-service передаёт в `platform/postgres.Config.ApplicationName`

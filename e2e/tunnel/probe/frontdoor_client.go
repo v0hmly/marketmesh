@@ -30,6 +30,21 @@ func NewFrontDoorInvoker(
 	endpoint string,
 	directory InstanceDirectory,
 ) (*FrontDoorInvoker, error) {
+	if len(directory.dataCenters) == 0 {
+		return nil, errors.New("probe: instance directory must not be empty")
+	}
+
+	return NewFrontDoorInvokerWithResolver(endpoint, directory)
+}
+
+// NewFrontDoorInvokerWithResolver creates the constrained front-door adapter
+// with a resolver that may learn bounded replacement instances during a
+// rolling scenario. Existing callers should prefer NewFrontDoorInvoker with
+// an immutable InstanceDirectory.
+func NewFrontDoorInvokerWithResolver(
+	endpoint string,
+	resolver InstanceResolver,
+) (*FrontDoorInvoker, error) {
 	baseURL, err := validateFrontDoorEndpoint(endpoint)
 	if err != nil {
 		return nil, err
@@ -49,7 +64,7 @@ func NewFrontDoorInvoker(
 		baseURL.String(),
 	)
 
-	delegate, err := NewFakeInvoker(trafficClient, directory)
+	delegate, err := NewFakeInvokerWithResolver(trafficClient, resolver)
 	if err != nil {
 		return nil, err
 	}

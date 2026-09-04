@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	tunnelPoolSize     = 2
-	tunnelPoolInterval = 250 * time.Millisecond
+	tunnelPoolSize            = 2
+	tunnelPoolInterval        = 250 * time.Millisecond
+	tunnelRediscoveryInterval = 5 * time.Second
 )
 
 type managedTunnel interface {
@@ -25,10 +26,12 @@ type managedTunnel interface {
 
 // tunnelPool keeps two sessions on distinct gateway-in processes. Initial
 // readiness is fail-closed until both paths are observed. Afterwards one path
-// preserves availability while the duplicate/missing path is restored.
+// remains available while the other is periodically redistributed so a
+// maxSurge gateway-in Pod can receive a tunnel before an old Pod is stopped.
 type tunnelPool struct {
 	clients      []managedTunnel
 	initialReady atomic.Bool
+	nextClient   int
 }
 
 func newTunnelPool(clients []managedTunnel) (*tunnelPool, error) {
@@ -55,6 +58,8 @@ func (pool *tunnelPool) Component() serviceruntime.Component {
 			pool.reconcile()
 			ticker := time.NewTicker(tunnelPoolInterval)
 			defer ticker.Stop()
+			rediscovery := time.NewTicker(tunnelRediscoveryInterval)
+			defer rediscovery.Stop()
 			for {
 				select {
 				case <-ctx.Done():
@@ -63,6 +68,8 @@ func (pool *tunnelPool) Component() serviceruntime.Component {
 					return err
 				case <-ticker.C:
 					pool.reconcile()
+				case <-rediscovery.C:
+					pool.rediscover()
 				}
 			}
 		},
@@ -117,4 +124,12 @@ func (pool *tunnelPool) reconcile() {
 	if ready == tunnelPoolSize && len(identities) == tunnelPoolSize {
 		pool.initialReady.Store(true)
 	}
+}
+
+func (pool *tunnelPool) rediscover() {
+	if pool == nil || !pool.initialReady.Load() {
+		return
+	}
+	pool.clients[pool.nextClient%len(pool.clients)].RequestReconnect()
+	pool.nextClient++
 }
