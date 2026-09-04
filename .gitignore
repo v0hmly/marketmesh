@@ -42,3 +42,6 @@ dist/
 # Temporary files
 tmp/
 .tmp/
+
+# Graphify artifacts
+graphify-out/
