@@ -12,5 +12,6 @@
 - [`postgres`](postgres/README.md) — явные RW/RO-пулы, транзакции, readiness и telemetry поверх pgx.
 - [`redis`](redis/README.md) — независимые edge/auth clients, bounded pool/retry, readiness и безопасная telemetry поверх go-redis.
 - [`testkit`](testkit/README.md) — повторно используемые lifecycle-safe helpers для logger/telemetry, TLS/mTLS, bufconn, fake time, bounded wait и безопасных временных путей; production imports запрещены архитектурной проверкой.
+- [`sessionassert`](sessionassert/README.md) — подписанные Ed25519 внутренние session assertions по ADR-0005: выпуск с фиксированной аудиторией и локальная проверка по набору открытых ключей с ротацией в перекрытие; только стандартная библиотека.
 
 Пакеты создаются соответствующими задачами и не добавляются пустыми заранее.
