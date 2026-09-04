@@ -281,7 +281,7 @@ func newBackendServer(t *testing.T, ready *atomic.Bool, requests *atomic.Int64) 
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/readyz" {
 			if ready.Load() {
-				response.WriteHeader(http.StatusOK)
+				response.WriteHeader(http.StatusNoContent)
 			} else {
 				response.WriteHeader(http.StatusServiceUnavailable)
 			}

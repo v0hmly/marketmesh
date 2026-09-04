@@ -45,6 +45,47 @@ func TestLoadConfigRequiresBoundedDataCenter(t *testing.T) {
 	}
 }
 
+func TestLoadConfigKeepsE2ESnapshotDisabledByDefault(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := loadConfig(serviceruntime.MapEnv(validEnvironment()))
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.e2eRoutingSnapshot {
+		t.Fatal("e2eRoutingSnapshot = true, want false")
+	}
+}
+
+func TestLoadConfigValidatesE2ESnapshotSwitch(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		enabled   string
+		wantValue bool
+		wantError bool
+	}{
+		{name: "invalid", enabled: "sometimes", wantError: true},
+		{name: "disabled", enabled: "false"},
+		{name: "enabled", enabled: "true", wantValue: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			environment := validEnvironment()
+			environment["E2E_ROUTING_SNAPSHOT_ENABLED"] = test.enabled
+			cfg, err := loadConfig(serviceruntime.MapEnv(environment))
+			if (err != nil) != test.wantError {
+				t.Fatalf("loadConfig() error = %v, wantError = %v", err, test.wantError)
+			}
+			if err == nil && cfg.e2eRoutingSnapshot != test.wantValue {
+				t.Fatalf("e2eRoutingSnapshot = %t, want %t", cfg.e2eRoutingSnapshot, test.wantValue)
+			}
+		})
+	}
+}
+
 func TestTunnelConfigPinsAuthenticatedPeerToConfiguredDataCenter(t *testing.T) {
 	t.Parallel()
 

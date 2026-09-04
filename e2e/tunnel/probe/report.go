@@ -270,7 +270,13 @@ func reconciliationViolations(result Reconciliation) []spec.Violation {
 	violations = appendCountViolation(violations, "unexpected_internal_results", len(result.Unexpected))
 	violations = appendCountViolation(violations, "duplicate_results", len(result.Duplicate))
 	violations = appendCountViolation(violations, "late_results", len(result.Late))
-	violations = appendCountViolation(violations, "reordered_results", len(result.Reordered))
+	internalReordered := 0
+	for _, reordered := range result.Reordered {
+		if reordered.Stage == "internal_ledger" {
+			internalReordered++
+		}
+	}
+	violations = appendCountViolation(violations, "reordered_results", internalReordered)
 	violations = appendCountViolation(violations, "invalid_ledger_records", len(result.Invalid))
 	return violations
 }
