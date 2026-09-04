@@ -14,6 +14,9 @@
 - `NewBufconn` — in-memory gRPC harness с единым connection и гарантированным shutdown;
 - `NewClock` — управляемые fake clock, timer и ticker без process-global состояния;
 - `Wait` и `Eventually` — bounded ожидания без необоснованных `time.Sleep`;
+- `testkit/networkchaos` — проверяемый lifecycle сетевых E2E faults, безопасный
+  Docker adapter, bounded resource sampler/growth gate и replay manifest только
+  для точно идентифицированных disposable resources;
 - `TempDir` и `TempFile` — временные пути с режимами `0700` и `0600` и защитой от path traversal;
 - `testkit/integration.EnvOrSkip` — чтение обязательного integration environment; пакет доступен только с `-tags=integration`.
 
