@@ -45,3 +45,7 @@ tmp/
 
 # Graphify artifacts
 graphify-out/
+
+# Taskboard transient SQLite files (сама база .taskboard/taskboard.db коммитится)
+.taskboard/*.db-shm
+.taskboard/*.db-wal
