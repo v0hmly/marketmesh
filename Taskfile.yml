@@ -98,6 +98,11 @@ tasks:
     cmds:
       - "{{.TASKBOARD_TOOL}} start {{.CLI_ARGS}}"
 
+  taskboard:mcp:
+    desc: Запустить Taskboard mcp с репозиторной базой
+    cmds:
+      - "{{.TASKBOARD_TOOL}} mcp {{.CLI_ARGS}}"
+
   api:bootstrap:
     desc: Установить зафиксированные protobuf-инструменты в корневой bin
     cmds:
