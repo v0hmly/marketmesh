@@ -7,6 +7,8 @@ vars:
   PROTOBUF_TOOL: ./tools/protobuf.sh
   INFRA_TOOL: ./infra/compose/scripts/local.sh
   E2E_TOPOLOGY_TOOL: go run ./tools/e2e-topology
+  TASKBOARD_TOOL: ./tools/taskboard.sh
+  TASKBOARD_PROJECT: "01M1BNBBHNN26MRG0XAXVR5K5M"
 
 tasks:
   default:
@@ -64,6 +66,37 @@ tasks:
     desc: Проверить workspace и архитектурные зависимости
     cmds:
       - "{{.WORKSPACE_TOOL}} arch"
+
+  taskboard:list:
+    desc: Показать задачи Taskboard (по умолчанию todo и in_progress; фильтры через -- --status done)
+    cmds:
+      - |
+        if [ -n "{{.CLI_ARGS}}" ]; then
+          {{.TASKBOARD_TOOL}} ticket list --project {{.TASKBOARD_PROJECT}} {{.CLI_ARGS}}
+        else
+          {{.TASKBOARD_TOOL}} ticket list --project {{.TASKBOARD_PROJECT}} --status in_progress
+          {{.TASKBOARD_TOOL}} ticket list --project {{.TASKBOARD_PROJECT}} --status todo
+        fi
+
+  taskboard:create:
+    desc: Создать задачу Taskboard (task taskboard:create -- --title "..." --priority high)
+    cmds:
+      - "{{.TASKBOARD_TOOL}} ticket create --project {{.TASKBOARD_PROJECT}} {{.CLI_ARGS}}"
+
+  taskboard:start:
+    desc: Перевести задачу в in_progress (task taskboard:start -- <ticket-id>)
+    cmds:
+      - "{{.TASKBOARD_TOOL}} ticket move {{.CLI_ARGS}} --status in_progress"
+
+  taskboard:done:
+    desc: Перевести задачу в done (task taskboard:done -- <ticket-id>)
+    cmds:
+      - "{{.TASKBOARD_TOOL}} ticket move {{.CLI_ARGS}} --status done"
+
+  taskboard:web:
+    desc: Запустить web UI Taskboard с репозиторной базой
+    cmds:
+      - "{{.TASKBOARD_TOOL}} start {{.CLI_ARGS}}"
 
   api:bootstrap:
     desc: Установить зафиксированные protobuf-инструменты в корневой bin
