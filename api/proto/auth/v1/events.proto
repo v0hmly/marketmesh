@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1";
+
+// AccountRegisteredEvent is the immutable fact used to provision a User profile.
+// Delivery is at least once; consumers deduplicate event_id within their own transaction.
+message AccountRegisteredEvent {
+  // EventId is a nonzero opaque 16-byte identifier, stable across every publication attempt.
+  bytes event_id = 1;
+  // EventType is exactly auth.account.registered.v1.
+  string event_type = 2;
+  // SchemaVersion is 1 for this schema.
+  uint32 schema_version = 3;
+  // OccurredAtUnixNano is a positive Unix timestamp with microsecond precision.
+  int64 occurred_at_unix_nano = 4;
+  // Producer is exactly auth.
+  string producer = 5;
+  // TraceId is an optional 16-byte trace identifier; no baggage is propagated.
+  bytes trace_id = 6;
+  // CausationId is an optional 16-byte preceding event identifier.
+  bytes causation_id = 7;
+  // SubjectId is the immutable nonzero 16-byte aggregate identifier and the entire domain payload.
+  // Credentials, tokens and profile data never belong in this event.
+  bytes subject_id = 8;
+}

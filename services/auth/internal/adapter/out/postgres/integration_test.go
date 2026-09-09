@@ -125,6 +125,13 @@ func integrationPool(t *testing.T) *pgxpool.Pool {
 	if _, err := pool.Exec(ctx, migrations.CredentialsUp); err != nil {
 		t.Fatalf("apply migration: %v", err)
 	}
+	t.Cleanup(func() {
+		cleanupCtx, cancelCleanup := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancelCleanup()
+		if _, err := pool.Exec(cleanupCtx, migrations.CredentialsDown); err != nil {
+			t.Error(err)
+		}
+	})
 	return pool
 }
 
