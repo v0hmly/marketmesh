@@ -102,6 +102,13 @@ func NewUnaryHandler[Request any, Response any](config Config) (http.Handler, er
 		config.Options...,
 	)
 
+	if config.Route == contractv1.RouteId_ROUTE_ID_USER_GET_ME || config.Route == contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME {
+		return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+			// Personal profile responses, including transport errors, must never enter a shared cache.
+			response.Header().Set("Cache-Control", "no-store")
+			handler.ServeHTTP(response, request)
+		}), nil
+	}
 	return handler, nil
 }
 

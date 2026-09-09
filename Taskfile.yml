@@ -248,6 +248,11 @@ tasks:
     cmds:
       - bash services/auth/internal/adapter/out/postgressession/testdata/integration.sh
 
+  user:integration:
+    desc: Проверить профиль User с PostgreSQL primary/replica, mTLS и проверкой сессии
+    cmds:
+      - bash services/user/internal/adapter/out/postgres/testdata/integration.sh
+
   tunnel-e2e:images:
     desc: Собрать локальные immutable-source образы MM-29 без публикации
     cmds:

@@ -27,6 +27,7 @@ const (
 )
 
 type config struct {
+	profile        profileConfig
 	serviceVersion string
 	environment    string
 	instanceID     string
@@ -188,5 +189,9 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 		return config{}, fmt.Errorf("loading telemetry authorization: %w", err)
 	}
 
+	result.profile, err = loadProfileConfig(env, result.environment)
+	if err != nil {
+		return config{}, err
+	}
 	return result, nil
 }

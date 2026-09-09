@@ -60,6 +60,7 @@ func run(ctx context.Context, dependencies systemDependencies) error {
 		Output:      dependencies.stdout,
 		Console:     config.logConsole,
 		MaskFields: []string{
+			"subject_id", "display_name", "bio", "profile", "assertion", "marketmesh-session-assertion-bin", "dsn", "private_key",
 			"authorization",
 			"cookie",
 			"password",
@@ -109,8 +110,21 @@ func runService(
 		}
 	}()
 
+	profiles, err := newProfileResources(ctx, config, log, pipeline, listen)
+	if err != nil {
+		return err
+	}
+	profilesOwned := true
+	defer func() {
+		if profilesOwned {
+			shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), config.shutdownTimeout)
+			defer cancel()
+			resultErr = errors.Join(resultErr, profiles.close(shutdownCtx))
+		}
+	}()
 	health, err := serviceruntime.NewHealth(serviceruntime.HealthConfig{
 		CheckTimeout: config.healthCheckTimeout,
+		Dependencies: profiles.dependencies(),
 	})
 	if err != nil {
 		return fmt.Errorf("creating health checks: %w", err)
@@ -163,19 +177,24 @@ func runService(
 		Shutdown: pipeline.Shutdown,
 	}
 
+	components := []serviceruntime.Component{telemetryComponent}
+	if profiles != nil {
+		components = append(components, profiles.components...)
+	}
+	components = append(components, httpComponent)
 	runner, err := serviceruntime.NewRunner(
 		serviceruntime.RunnerConfig{
 			ShutdownTimeout: config.shutdownTimeout,
 			Health:          health,
 		},
-		telemetryComponent,
-		httpComponent,
+		components...,
 	)
 	if err != nil {
 		return fmt.Errorf("creating service runner: %w", err)
 	}
 
 	pipelineOwned = false
+	profilesOwned = false
 	listenerOwned = false
 	log.Info(
 		"user service запущен",
