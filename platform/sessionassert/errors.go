@@ -6,6 +6,10 @@ import "errors"
 // с обёрткой %w и дополнительным контекстом причины; сырой токен в текст
 // ошибки никогда не включается.
 var (
+	// ErrBadAlgorithm — заголовок не объявляет обязательный EdDSA.
+	ErrBadAlgorithm = errors.New("sessionassert: unexpected algorithm")
+	// ErrSessionRejected — online-проверка сессии отказала или недоступна.
+	ErrSessionRejected = errors.New("sessionassert: session check failed")
 	// ErrMalformed — утверждение не соответствует compact-формату
 	// header.payload.signature или содержит битые сегменты.
 	ErrMalformed = errors.New("sessionassert: malformed assertion")

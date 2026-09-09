@@ -10,6 +10,12 @@ service AuthService {
   rpc RegisterCredentials(RegisterCredentialsRequest) returns (RegisterCredentialsResponse);
   // Login verifies a credential and returns an opaque subject identifier on success.
   rpc Login(LoginRequest) returns (LoginResponse);
+  // RefreshSession rotates the HttpOnly refresh cookie; consumed-token reuse revokes its family.
+  rpc RefreshSession(RefreshSessionRequest) returns (RefreshSessionResponse);
+  // Logout revokes the session authenticated by its HttpOnly access cookie.
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  // LogoutAll revokes every session of the authenticated subject.
+  rpc LogoutAll(LogoutAllRequest) returns (LogoutAllResponse);
 }
 
 // RegisterCredentialsRequest carries the secret material needed for credential registration.
@@ -36,3 +42,21 @@ message LoginResponse {
   // SubjectId is an opaque 16-byte identifier and is never an authentication secret.
   bytes subject_id = 1;
 }
+
+// RefreshSessionRequest uses only the secure refresh cookie, never a token in the body.
+message RefreshSessionRequest {}
+
+// RefreshSessionResponse sets replacement secure cookies without exposing tokens to JavaScript.
+message RefreshSessionResponse {}
+
+// LogoutRequest uses only the secure access cookie.
+message LogoutRequest {}
+
+// LogoutResponse contains no session secrets.
+message LogoutResponse {}
+
+// LogoutAllRequest acts on the authenticated subject, never a caller-supplied subject ID.
+message LogoutAllRequest {}
+
+// LogoutAllResponse contains no session secrets.
+message LogoutAllResponse {}

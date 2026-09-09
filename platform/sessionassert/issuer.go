@@ -27,10 +27,16 @@ type Issuer struct {
 	kid    string
 	issuer string
 	maxTTL time.Duration
+	clock  func() time.Time
 }
 
 // IssuerOption настраивает Issuer.
 type IssuerOption func(*Issuer)
+
+// WithIssuerClock задаёт часы издателя; функция должна быть безопасна для конкурентных вызовов.
+func WithIssuerClock(clock func() time.Time) IssuerOption {
+	return func(i *Issuer) { i.clock = clock }
+}
 
 // WithMaxTTL задаёт максимальную допустимую длительность утверждения.
 func WithMaxTTL(d time.Duration) IssuerOption {
@@ -49,12 +55,12 @@ func NewIssuer(key ed25519.PrivateKey, kid, issuer string, opts ...IssuerOption)
 	if issuer == "" {
 		return nil, fmt.Errorf("%w: empty issuer", ErrInvalidParams)
 	}
-	i := &Issuer{key: key, kid: kid, issuer: issuer, maxTTL: DefaultMaxTTL}
+	i := &Issuer{key: append(ed25519.PrivateKey(nil), key...), kid: kid, issuer: issuer, maxTTL: DefaultMaxTTL, clock: time.Now}
 	for _, opt := range opts {
 		opt(i)
 	}
-	if i.maxTTL <= 0 {
-		return nil, fmt.Errorf("%w: non-positive max TTL", ErrInvalidParams)
+	if i.clock == nil || i.maxTTL < time.Second {
+		return nil, fmt.Errorf("%w: clock must be non-nil and max TTL at least one second", ErrInvalidParams)
 	}
 	return i, nil
 }
@@ -91,7 +97,7 @@ func (i *Issuer) Issue(p IssueParams) (string, error) {
 	if ttl == 0 {
 		ttl = i.maxTTL
 	}
-	if ttl < 0 || ttl > i.maxTTL {
+	if ttl < time.Second || ttl > i.maxTTL {
 		return "", fmt.Errorf("%w: TTL %s exceeds max %s", ErrInvalidParams, ttl, i.maxTTL)
 	}
 	seen := make(map[string]struct{}, len(p.Scopes))
@@ -105,7 +111,10 @@ func (i *Issuer) Issue(p IssueParams) (string, error) {
 		seen[s] = struct{}{}
 	}
 
-	now := time.Now().UTC().Truncate(time.Second)
+	now := i.clock().UTC().Truncate(time.Second)
+	if now.Unix() <= 0 || p.AuthTime.Unix() <= 0 || p.AuthTime.UTC().Truncate(time.Second).After(now) || p.ACR == "" || !validValues(p.AMR, true) {
+		return "", fmt.Errorf("%w: invalid authentication claims", ErrInvalidParams)
+	}
 	claims := &Claims{
 		Issuer:    i.issuer,
 		Audience:  p.Audience,

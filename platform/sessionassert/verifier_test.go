@@ -55,7 +55,7 @@ func TestVerifyExpired(t *testing.T) {
 	v := newTestVerifier(t, "k1", pub)
 
 	payload := validPayload()
-	payload["iat"] = time.Now().Add(-time.Hour).Unix()
+	payload["iat"] = time.Now().Add(-2 * time.Minute).Unix()
 	payload["exp"] = time.Now().Add(-time.Minute).Unix() // за пределами leeway
 	token := craftToken(t, priv, validHeader("k1"), payload)
 	if _, err := v.Verify(token); !errors.Is(err, ErrExpired) {
@@ -84,6 +84,7 @@ func TestVerifyNotYetValid(t *testing.T) {
 
 	// iat чуть в будущем в пределах leeway — принимается.
 	payload["iat"] = time.Now().Add(10 * time.Second).Unix()
+	payload["exp"] = time.Now().Add(time.Minute).Unix()
 	token = craftToken(t, priv, validHeader("k1"), payload)
 	if _, err := v.Verify(token); err != nil {
 		t.Fatalf("Verify within leeway: %v", err)
@@ -164,27 +165,16 @@ func TestVerifyUnknownKeyID(t *testing.T) {
 	}
 }
 
-// RFC 8725: значение alg из заголовка игнорируется, подпись всегда
-// проверяется как EdDSA/Ed25519.
-func TestVerifyAlgIgnored(t *testing.T) {
+// Заголовок обязан явно объявлять единственный разрешённый алгоритм.
+func TestVerifyRejectsOtherAlgorithms(t *testing.T) {
 	pub, priv := testKeys(t)
 	v := newTestVerifier(t, "k1", pub)
-
-	for _, alg := range []string{"none", "HS256", "RS256"} {
+	for _, alg := range []string{"", "none", "HS256", "RS256", "eddsa"} {
 		header := validHeader("k1")
 		header["alg"] = alg
-
-		// Валидная подпись Ed25519 — токен принимается, alg не влияет.
 		token := craftToken(t, priv, header, validPayload())
-		if _, err := v.Verify(token); err != nil {
-			t.Fatalf("alg=%q with valid signature: %v", alg, err)
-		}
-
-		// Невалидная подпись — отклоняется даже при alg:none.
-		_, otherPriv := testKeys(t)
-		token = craftToken(t, otherPriv, header, validPayload())
-		if _, err := v.Verify(token); !errors.Is(err, ErrBadSignature) {
-			t.Fatalf("alg=%q with bad signature: Verify error = %v, want ErrBadSignature", alg, err)
+		if _, err := v.Verify(token); !errors.Is(err, ErrBadAlgorithm) {
+			t.Fatalf("alg=%q: %v", alg, err)
 		}
 	}
 }
