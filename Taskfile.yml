@@ -253,6 +253,11 @@ tasks:
     cmds:
       - bash services/user/internal/adapter/out/postgres/testdata/integration.sh
 
+  auth:registration:integration:
+    desc: Проверить атомарную регистрацию и доставку outbox через PostgreSQL и NATS JetStream
+    cmds:
+      - bash services/auth/internal/app/testdata/registration/integration.sh
+
   tunnel-e2e:images:
     desc: Собрать локальные immutable-source образы MM-29 без публикации
     cmds:

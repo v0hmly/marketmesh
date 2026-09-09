@@ -79,8 +79,9 @@ type config struct {
 	postgresHealthCheckPeriod     time.Duration
 	postgresPingTimeout           time.Duration
 
-	argon2   argon2id.Config
-	sessions sessionConfig
+	argon2       argon2id.Config
+	sessions     sessionConfig
+	registration registrationConfig
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -218,6 +219,10 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	result.argon2 = argon2id.Config{Memory: memory, Time: timeCost, Parallelism: parallelism, SaltLength: saltLength, KeyLength: keyLength}
 	result.sessions, err = loadSessionConfig(env, result.environment)
+	if err != nil {
+		return config{}, err
+	}
+	result.registration, err = loadRegistrationConfig(env, result.environment, result.postgresQueryTimeout)
 	if err != nil {
 		return config{}, err
 	}

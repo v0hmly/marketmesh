@@ -4,6 +4,13 @@ package migrations
 import _ "embed"
 
 var (
+	// RegistrationOutboxUp creates the durable registration publication queue.
+	//go:embed 000003_registration_outbox.up.sql
+	RegistrationOutboxUp string
+	// RegistrationOutboxDown removes the registration queue; pending events are lost.
+	//go:embed 000003_registration_outbox.down.sql
+	RegistrationOutboxDown string
+
 	// CredentialsUp creates the isolated Auth schema and credentials table.
 	//go:embed 000001_credentials.up.sql
 	CredentialsUp string

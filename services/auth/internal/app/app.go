@@ -21,6 +21,7 @@ import (
 	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/audit"
 	postgresadapter "github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/postgres"
 	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/randomid"
+	registrationeventadapter "github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/registrationevent"
 	"github.com/v0hmly/marketmesh/services/auth/internal/application/login"
 	"github.com/v0hmly/marketmesh/services/auth/internal/application/register"
 )
@@ -66,6 +67,7 @@ func run(ctx context.Context, dependencies systemDependencies) error {
 		MaskFields: []string{
 			"authorization", "cookie", "identifier", "email", "password", "password_digest",
 			"salt", "subject_id", "token", "payload", "access_token", "refresh_token", "assertion", "private_key", "set-cookie",
+			"event_id", "lease_token", "nats_url",
 		},
 	})
 	if err != nil {
@@ -120,6 +122,9 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 		return fmt.Errorf("creating audit recorder: %w", err)
 	}
 	registration, err := register.New(repository, hasher, randomid.New())
+	if config.registration.enabled {
+		registration, err = register.NewWithEvents(repository, hasher, randomid.New(), registrationeventadapter.New())
+	}
 	if err != nil {
 		return fmt.Errorf("creating registration use case: %w", err)
 	}
@@ -127,6 +132,16 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 	if err != nil {
 		return fmt.Errorf("creating login use case: %w", err)
 	}
+	events, err := newRegistrationResources(config, database, pipeline)
+	if err != nil {
+		return err
+	}
+	eventsOwned := true
+	defer func() {
+		if eventsOwned {
+			resultErr = errors.Join(resultErr, events.close())
+		}
+	}()
 	sessions, err := newSessionResources(ctx, config, log, pipeline, database, listen)
 	if err != nil {
 		return fmt.Errorf("creating session resources: %w", err)
@@ -148,9 +163,11 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 		return fmt.Errorf("creating Connect telemetry interceptor: %w", err)
 	}
 
+	dependencies := append(database.ReadinessDependencies(), sessions.dependencies()...)
+	dependencies = append(dependencies, events.dependencies()...)
 	health, err := serviceruntime.NewHealth(serviceruntime.HealthConfig{
 		CheckTimeout: config.healthCheckTimeout,
-		Dependencies: append(database.ReadinessDependencies(), sessions.dependencies()...),
+		Dependencies: dependencies,
 	})
 	if err != nil {
 		return fmt.Errorf("creating health checks: %w", err)
@@ -214,6 +231,9 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 	if sessions != nil {
 		components = append(components, sessions.components...)
 	}
+	if events != nil {
+		components = append(components, events.components...)
+	}
 	components = append(components, httpComponent)
 	runner, err := serviceruntime.NewRunner(serviceruntime.RunnerConfig{ShutdownTimeout: config.shutdownTimeout, Health: health}, components...)
 	if err != nil {
@@ -223,6 +243,7 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 	pipelineOwned = false
 	databaseOwned = false
 	sessionsOwned = false
+	eventsOwned = false
 	listenerOwned = false
 	log.Info("auth service запущен", logger.String("http_address", listener.Addr().String()))
 	if err := runner.Run(ctx); err != nil {

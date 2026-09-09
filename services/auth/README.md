@@ -165,3 +165,68 @@ task verify
 `auth:sessions:integration` проверяет lifecycle с настоящими PostgreSQL и Redis
 в одноразовом изолированном окружении. Доставка событий в WS/SSE или NATS
 остаётся задачей будущего worker.
+
+## Регистрация и JetStream — MM-50, шаг 03
+
+Регистрация может сохранять учётную запись и событие `auth.account.registered.v1` одним SQL statement с двумя связанными INSERT CTE. Нарушение ограничения outbox откатывает и credential; конкурентные регистрации одного identifier сохраняют ровно одну пару. Повторная регистрация сохраняет прежний внешний ответ без признака существования аккаунта. PostgreSQL не вызывается из доменной модели, а прикладной порт `RegistrationWriter.CreateRegistration` явно задаёт атомарную границу.
+
+Событие описано в [events.proto](../../api/proto/auth/v1/events.proto). Его непрозрачный `event_id` имеет 16 байт и не меняется при повторной публикации. `subject_id` — единственный предметный payload и идентификатор агрегата. Envelope фиксирует тип, версию 1, производителя `auth`, время с микросекундной точностью и необязательные trace/causation ID; входящий tracing baggage не переносится. Identifier/email, password digest, cookie, токены и профиль в событие не входят. Канонический protobuf payload сохраняется в outbox целиком и не пересобирается издателем.
+
+### Доставка
+
+Фоновый издатель получает по одной записи через `FOR UPDATE SKIP LOCKED`, устанавливая случайный lease token и срок. Транзакция БД завершается до обращения к NATS. Издатель отправляет сохранённый payload в точный subject `auth.account.registered.v1` с `Nats-Msg-Id=hex(event_id)` и ожидаемым stream `AUTH_REGISTRATION`. `published_at` выставляется только после положительного синхронного PubAck с правильным stream и ненулевой sequence, причём только владелец ещё действующего lease может изменить запись.
+
+Ошибка публикации планирует ограниченную экспоненциальную задержку. Авария между PubAck и записью `published_at` оставляет событие для повторной доставки после истечения lease. Это доставка «как минимум один раз»; дедупликация JetStream уменьшает повторы в своём временном окне, а будущий User consumer должен сохранять event ID в своём inbox в одной транзакции с созданием профиля. Обработка события и backfill существующих аккаунтов относятся к шагу 04 MM-50.
+
+NATS не является критической readiness-зависимостью Auth: его недоступность увеличивает очередь и задержку создания профиля, но не откатывает регистрацию. Успех в API означает сохранённые credential и outbox, а не готовый User-профиль. Схема и права outbox в PostgreSQL проверяются через readiness. Выключение runtime останавливает HTTP, затем издатель и сессии, затем БД/telemetry; неопределённый результат публикации остаётся для повторной попытки.
+
+### Настройки и поэтапное включение
+
+| Variable | Назначение / значение по умолчанию |
+| --- | --- |
+| `AUTH_REGISTRATION_EVENTS_ENABLED` | `false`; `true` включает атомарное сохранение событий |
+| `AUTH_REGISTRATION_PUBLISH_ENABLED` | `false`; требует включённого сохранения; `true` запускает издателя |
+| `AUTH_NATS_URL` | Один обязательный `tls://host:port` без credentials, query и path при включённом издателе |
+| `AUTH_NATS_SERVER_NAME` | Проверяемое DNS-имя брокера |
+| `AUTH_EVENTS_TRUST_DOMAIN` | Trust domain Auth workload |
+| `AUTH_NATS_TLS_CERT_FILE` / `AUTH_NATS_TLS_KEY_FILE` | Абсолютные пути к клиентскому сертификату Auth и ключу |
+| `AUTH_NATS_TLS_CA_FILE` | Абсолютный путь к доверенному CA брокера |
+| `AUTH_EVENTS_CONNECT_TIMEOUT` / `AUTH_EVENTS_PUBLISH_TIMEOUT` | `2s` / `5s`; connect не больше publish, publish не больше `30s` |
+| `AUTH_EVENTS_POLL_INTERVAL` | `1s`, от `10ms` до `1m` |
+| `AUTH_EVENTS_BATCH_SIZE` | `32`, не больше `256` за один проход |
+| `AUTH_EVENTS_LEASE_DURATION` | `30s`, не больше `5m`; строго больше publish timeout + два `POSTGRES_QUERY_TIMEOUT` + `1s` |
+| `AUTH_EVENTS_RETRY_INITIAL` / `AUTH_EVENTS_RETRY_MAX` | `1s` / `1m`; начальная задержка от `1ms`, максимум не больше `24h` |
+
+При обоих выключенных флагах сохраняется прежняя регистрация без outbox. Такие аккаунты, включая созданные до включения, потребуют backfill. После включения сохранения можно отдельно приостановить издателя, оставив события на диске.
+
+1. Владелец схемы применяет [000003_registration_outbox.up.sql](migrations/000003_registration_outbox.up.sql) после credentials/sessions migrations. Это расширение схемы; runtime DDL не выполняет. Auth RW получает SELECT/INSERT/UPDATE на `auth.registration_outbox`; RO не используется издателем. Старый runtime продолжает работать при установленной новой таблице.
+2. Включается `AUTH_REGISTRATION_EVENTS_ENABLED=true` и проверяются readiness/атомарная регистрация. У аккаунтов, зарегистрированных выключенной версией во время последовательного развёртывания, событий ещё нет — их покрывает будущий backfill.
+3. Администратор брокера создаёт stream `AUTH_REGISTRATION` с единственным subject `auth.account.registered.v1`, file storage и Limits retention. Для dev/test достаточно одной реплики; в рабочем кластере используйте три. Ограничьте общий размер согласно ёмкости окружения; `DiscardNew` при заполнении сохраняет неотправленные события в outbox. Срок хранения должен покрывать оговорённое окно восстановления; для начального развёртывания не включайте автоматическое удаление по возрасту до готовности потребителя. Duplicate window, например 10 минут, не заменяет долговременный inbox потребителя.
+4. NATS должен требовать TLS 1.3 и клиентский сертификат. Для `verify_and_map` сопоставьте выделенную identity сертификата с пользователем, которому разрешены только публикация `auth.account.registered.v1` и подписка на `_INBOX.>` для PubAck. Права `$JS.API.>` и административные credentials приложению не выдаются; provisioning stream выполняется отдельно. Сертификат приложения также содержит `spiffe://<trust-domain>/<environment>/auth` и назначение clientAuth. Стенд использует отдельный email SAN для NATS user; production PKI должна выдавать его только уполномоченному Auth workload.
+5. Выдаются настройки TLS/NATS и включается `AUTH_REGISTRATION_PUBLISH_ENABLED=true`. Проверяется уменьшение очереди и получение PubAck. Сам runtime не создаёт stream/consumer и не публикует события отзыва сессий из `auth.session_revocation_outbox`.
+
+### Наблюдение и восстановление
+
+Издатель экспортирует `marketmesh.auth.registration.pending`, `marketmesh.auth.registration.oldest_pending_age` (секунды) и счётчик `marketmesh.auth.registration.delivery` с ограниченными исходами `published`, `publish_error`, `store_error`, `lease_lost`. В labels нет идентификаторов пользователей или событий. При отключённом издателе состояние очереди проверяется SQL; метрики остановленного издателя не являются текущим состоянием.
+
+```sql
+SELECT count(*) AS pending, min(occurred_at) AS oldest_pending
+FROM auth.registration_outbox WHERE published_at IS NULL;
+```
+
+Рост возраста и повторов требует проверки TLS/ACL, существования stream, места в JetStream и доступности PostgreSQL. Повреждённый payload не подтверждается молча: остаётся в очереди и увеличивает показатели ошибок; его исправление требует проверки первичного факта оператором. Очистка подтверждённых событий и сроки хранения требуют отдельной эксплуатационной политики; этот runtime не удаляет outbox автоматически и не обещает replay уже удалённых событий из брокера.
+
+Откат: сначала выключить издателя, сохранив capture, либо откатить runtime с сохранённой таблицей. Выключение capture возвращает регистрацию без событий и создаёт необходимость backfill. Down-миграция удаляет очередь, включая ещё не опубликованные события: это не штатный откат приложения, её применение требует отдельного согласования после остановки производителей/издателей и резервной копии.
+
+### Проверки регистрации
+
+Из корня репозитория:
+
+```bash
+task verify
+task auth:registration:integration
+```
+
+Одноразовый integration стенд включает PostgreSQL primary/recovery replica и настоящий NATS JetStream с mTLS и ограниченными ACL. Файлы сертификатов создаются внутри отдельного именованного тома; host bind mounts и опубликованные порты отсутствуют. Тесты выполняются последовательно, ресурсы удаляются при завершении. Проверяются конкурентная регистрация, атомарный rollback, истечение/перехват lease, повтор после PubAck без mark, дедупликация, запрет чужих subjects и admin API, capture-only → публикация, сбой/восстановление NATS, readiness и graceful shutdown. Переменная `REGISTRATION_TEST_IMAGE` позволяет использовать заранее собранный локальный проверенный тестовый образ в окружении без доступа Docker builder к Go proxy.
+
+Протокольные основания: [JetStream publishing](https://docs.nats.io/learn/jetstream/publishing), [NATS mTLS и mapping сертификата](https://docs.nats.io/learn/security/encryption).

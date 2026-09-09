@@ -88,8 +88,16 @@
 
 ## Отложенные вопросы
 
-- Формат схем и реестр совместимости.
-- Именование stream и subject.
+### Первый контракт: регистрация Auth (MM-50, шаг 03, 2026-09-09)
+
+Для первого producer принят protobuf `auth.v1.AccountRegisteredEvent` из [events.proto](../../api/proto/auth/v1/events.proto), проверяемый штатными lint/breaking/generate-check. Тип и NATS subject — `auth.account.registered.v1`, schema version — 1, producer — `auth`, stream — `AUTH_REGISTRATION`. Событие содержит стабильный 16-байтный event ID, 16-байтный subject как идентификатор агрегата и весь предметный payload, время Unix с микросекундной точностью и необязательные trace/causation ID. При отсутствии причинного события causation ID пуст; tracing baggage и credentials не переносятся.
+
+Auth сохраняет канонические байты события и credential одним SQL statement. Издатель захватывает запись ограниченным lease, не удерживает транзакцию во время сети и ставит published_at после проверенного PubAck с CAS по lease. Идентификатор Nats-Msg-Id равен hex(event_id). Окно дедупликации брокера не покрывает все будущие повторы: User consumer обязан отдельно реализовать долговременную дедупликацию. Брокер не влияет на readiness регистрации, а накопление outbox наблюдается метриками. Capture и publication включаются отдельно; runtime не управляет stream или consumers. Развёртывание и откат описаны в [Auth README](../../services/auth/README.md#регистрация-и-jetstream--mm-50-шаг-03).
+
+### Для следующих событий и потребителей
+
+- Общий формат envelope и отдельный реестр совместимости после появления нескольких типов событий.
+- Именование stream и subject для других доменных событий.
 - Сроки хранения событий, outbox и inbox.
 - Стратегия восстановления проекций с начала потока.
 
