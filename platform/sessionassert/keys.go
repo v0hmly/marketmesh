@@ -39,7 +39,7 @@ func (s *StaticKeySet) Add(kid string, key ed25519.PublicKey) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.keys[kid] = key
+	s.keys[kid] = append(ed25519.PublicKey(nil), key...)
 	return nil
 }
 
@@ -59,5 +59,5 @@ func (s *StaticKeySet) Key(kid string) (ed25519.PublicKey, error) {
 	if !ok {
 		return nil, fmt.Errorf("%w: %q", ErrUnknownKeyID, kid)
 	}
-	return key, nil
+	return append(ed25519.PublicKey(nil), key...), nil
 }

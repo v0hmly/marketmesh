@@ -24,6 +24,8 @@ func FuzzVerify(f *testing.F) {
 		SessionID: "s-456",
 		TTL:       time.Minute,
 		AuthTime:  time.Now(),
+		ACR:       "urn:marketmesh:acr:1",
+		AMR:       []string{"pwd"},
 	})
 	if err != nil {
 		f.Fatalf("Issue: %v", err)

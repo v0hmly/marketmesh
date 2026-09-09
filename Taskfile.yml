@@ -238,6 +238,11 @@ tasks:
     cmds:
       - bash services/auth/internal/adapter/out/postgres/testdata/integration.sh
 
+  auth:sessions:integration:
+    desc: Проверить ротацию и отзыв сессий Auth с PostgreSQL и Redis
+    cmds:
+      - bash services/auth/internal/adapter/out/postgressession/testdata/integration.sh
+
   tunnel-e2e:images:
     desc: Собрать локальные immutable-source образы MM-29 без публикации
     cmds:

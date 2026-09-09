@@ -65,7 +65,7 @@ func run(ctx context.Context, dependencies systemDependencies) error {
 		Console:     config.logConsole,
 		MaskFields: []string{
 			"authorization", "cookie", "identifier", "email", "password", "password_digest",
-			"salt", "subject_id", "token", "payload",
+			"salt", "subject_id", "token", "payload", "access_token", "refresh_token", "assertion", "private_key", "set-cookie",
 		},
 	})
 	if err != nil {
@@ -127,7 +127,19 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 	if err != nil {
 		return fmt.Errorf("creating login use case: %w", err)
 	}
-	connectHandler, err := connectadapter.New(registration, verification, log)
+	sessions, err := newSessionResources(ctx, config, log, pipeline, database, listen)
+	if err != nil {
+		return fmt.Errorf("creating session resources: %w", err)
+	}
+	sessionsOwned := true
+	defer func() {
+		if sessionsOwned {
+			shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), config.shutdownTimeout)
+			defer cancel()
+			resultErr = errors.Join(resultErr, sessions.close(shutdownCtx))
+		}
+	}()
+	connectHandler, err := connectadapter.New(registration, verification, log, sessions.connectOptions(config)...)
 	if err != nil {
 		return fmt.Errorf("creating Connect handler: %w", err)
 	}
@@ -138,7 +150,7 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 
 	health, err := serviceruntime.NewHealth(serviceruntime.HealthConfig{
 		CheckTimeout: config.healthCheckTimeout,
-		Dependencies: database.ReadinessDependencies(),
+		Dependencies: append(database.ReadinessDependencies(), sessions.dependencies()...),
 	})
 	if err != nil {
 		return fmt.Errorf("creating health checks: %w", err)
@@ -198,18 +210,19 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 	if err != nil {
 		return fmt.Errorf("creating HTTP component: %w", err)
 	}
-	runner, err := serviceruntime.NewRunner(
-		serviceruntime.RunnerConfig{ShutdownTimeout: config.shutdownTimeout, Health: health},
-		telemetryComponent,
-		databaseComponent,
-		httpComponent,
-	)
+	components := []serviceruntime.Component{telemetryComponent, databaseComponent}
+	if sessions != nil {
+		components = append(components, sessions.components...)
+	}
+	components = append(components, httpComponent)
+	runner, err := serviceruntime.NewRunner(serviceruntime.RunnerConfig{ShutdownTimeout: config.shutdownTimeout, Health: health}, components...)
 	if err != nil {
 		return fmt.Errorf("creating service runner: %w", err)
 	}
 
 	pipelineOwned = false
 	databaseOwned = false
+	sessionsOwned = false
 	listenerOwned = false
 	log.Info("auth service запущен", logger.String("http_address", listener.Addr().String()))
 	if err := runner.Run(ctx); err != nil {

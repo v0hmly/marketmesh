@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1";
+
+// AuthInternalService is exposed only on Auth's workload-authenticated internal gRPC listener.
+service AuthInternalService {
+  // ExchangeSession accepts an opaque external cookie only from an authorized gateway-out workload.
+  rpc ExchangeSession(ExchangeSessionRequest) returns (ExchangeSessionResponse);
+  // VerifyAssertion checks both the signature and current revocation state for the calling service.
+  rpc VerifyAssertion(VerifyAssertionRequest) returns (VerifyAssertionResponse);
+  // GetSigningKeys publishes the current, finitely trusted Ed25519 public keys.
+  rpc GetSigningKeys(GetSigningKeysRequest) returns (GetSigningKeysResponse);
+}
+
+// ExchangeSessionRequest carries sensitive input that must never be logged or traced.
+message ExchangeSessionRequest {
+  // Cookie is forwarded unchanged to Auth; other services must not interpret it.
+  string cookie = 1;
+  // Audience is a configured internal service, never an arbitrary URL or key source.
+  string audience = 2;
+}
+
+// ExchangeSessionResponse is private to internal transport and must never reach the browser or cache.
+message ExchangeSessionResponse {
+  // Assertion is a short-lived, signed, audience-bound credential.
+  string assertion = 1;
+  // ExpiresAtUnix is the exclusive expiry in whole Unix seconds.
+  int64 expires_at_unix = 2;
+}
+
+// VerifyAssertionRequest accepts only an internal assertion; no external token is accepted here.
+message VerifyAssertionRequest {
+  // Assertion is verified against the audience derived from the caller's authenticated workload role.
+  string assertion = 1;
+}
+
+// VerifyAssertionResponse contains only verified pseudonymous session context.
+message VerifyAssertionResponse {
+  // SubjectId is the opaque 16-byte subject identifier.
+  bytes subject_id = 1;
+  // SessionId is an opaque session-family identifier.
+  string session_id = 2;
+  // ExpiresAtUnix is the exclusive expiry in whole Unix seconds.
+  int64 expires_at_unix = 3;
+}
+
+// GetSigningKeysRequest carries no caller-selected URL or key source.
+message GetSigningKeysRequest {}
+
+// GetSigningKeysResponse carries a JSON Web Key Set with explicit trust deadlines.
+message GetSigningKeysResponse {
+  // JwksJson contains public OKP/Ed25519 keys only; consumers must respect verify_until.
+  string jwks_json = 1;
+}

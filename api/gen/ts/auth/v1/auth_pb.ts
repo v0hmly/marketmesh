@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file auth/v1/auth.proto.
  */
 export const file_auth_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiQgoaUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSEgoKaWRlbnRpZmllchgBIAEoCRIQCghwYXNzd29yZBgCIAEoDCIdChtSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2UiNAoMTG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiIwoNTG9naW5SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMMqcBCgtBdXRoU2VydmljZRJgChNSZWdpc3RlckNyZWRlbnRpYWxzEiMuYXV0aC52MS5SZWdpc3RlckNyZWRlbnRpYWxzUmVxdWVzdBokLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEjYKBUxvZ2luEhUuYXV0aC52MS5Mb2dpblJlcXVlc3QaFi5hdXRoLnYxLkxvZ2luUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL2F1dGgvdjE7YXV0aHYxYgZwcm90bzM");
+  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiQgoaUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSEgoKaWRlbnRpZmllchgBIAEoCRIQCghwYXNzd29yZBgCIAEoDCIdChtSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2UiNAoMTG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiIwoNTG9naW5SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMIhcKFVJlZnJlc2hTZXNzaW9uUmVxdWVzdCIYChZSZWZyZXNoU2Vzc2lvblJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UiEgoQTG9nb3V0QWxsUmVxdWVzdCITChFMb2dvdXRBbGxSZXNwb25zZTL5AgoLQXV0aFNlcnZpY2USYAoTUmVnaXN0ZXJDcmVkZW50aWFscxIjLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QaJC5hdXRoLnYxLlJlZ2lzdGVyQ3JlZGVudGlhbHNSZXNwb25zZRI2CgVMb2dpbhIVLmF1dGgudjEuTG9naW5SZXF1ZXN0GhYuYXV0aC52MS5Mb2dpblJlc3BvbnNlElEKDlJlZnJlc2hTZXNzaW9uEh4uYXV0aC52MS5SZWZyZXNoU2Vzc2lvblJlcXVlc3QaHy5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVzcG9uc2USOQoGTG9nb3V0EhYuYXV0aC52MS5Mb2dvdXRSZXF1ZXN0GhcuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRJCCglMb2dvdXRBbGwSGS5hdXRoLnYxLkxvZ291dEFsbFJlcXVlc3QaGi5hdXRoLnYxLkxvZ291dEFsbFJlc3BvbnNlQjhaNmdpdGh1Yi5jb20vdjBobWx5L21hcmtldG1lc2gvYXBpL2dlbi9nby9hdXRoL3YxO2F1dGh2MWIGcHJvdG8z");
 
 /**
  * RegisterCredentialsRequest carries the secret material needed for credential registration.
@@ -105,6 +105,96 @@ export const LoginResponseSchema: GenMessage<LoginResponse> = /*@__PURE__*/
   messageDesc(file_auth_v1_auth, 3);
 
 /**
+ * RefreshSessionRequest uses only the secure refresh cookie, never a token in the body.
+ *
+ * @generated from message auth.v1.RefreshSessionRequest
+ */
+export type RefreshSessionRequest = Message<"auth.v1.RefreshSessionRequest"> & {
+};
+
+/**
+ * Describes the message auth.v1.RefreshSessionRequest.
+ * Use `create(RefreshSessionRequestSchema)` to create a new message.
+ */
+export const RefreshSessionRequestSchema: GenMessage<RefreshSessionRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 4);
+
+/**
+ * RefreshSessionResponse sets replacement secure cookies without exposing tokens to JavaScript.
+ *
+ * @generated from message auth.v1.RefreshSessionResponse
+ */
+export type RefreshSessionResponse = Message<"auth.v1.RefreshSessionResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.RefreshSessionResponse.
+ * Use `create(RefreshSessionResponseSchema)` to create a new message.
+ */
+export const RefreshSessionResponseSchema: GenMessage<RefreshSessionResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 5);
+
+/**
+ * LogoutRequest uses only the secure access cookie.
+ *
+ * @generated from message auth.v1.LogoutRequest
+ */
+export type LogoutRequest = Message<"auth.v1.LogoutRequest"> & {
+};
+
+/**
+ * Describes the message auth.v1.LogoutRequest.
+ * Use `create(LogoutRequestSchema)` to create a new message.
+ */
+export const LogoutRequestSchema: GenMessage<LogoutRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 6);
+
+/**
+ * LogoutResponse contains no session secrets.
+ *
+ * @generated from message auth.v1.LogoutResponse
+ */
+export type LogoutResponse = Message<"auth.v1.LogoutResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.LogoutResponse.
+ * Use `create(LogoutResponseSchema)` to create a new message.
+ */
+export const LogoutResponseSchema: GenMessage<LogoutResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 7);
+
+/**
+ * LogoutAllRequest acts on the authenticated subject, never a caller-supplied subject ID.
+ *
+ * @generated from message auth.v1.LogoutAllRequest
+ */
+export type LogoutAllRequest = Message<"auth.v1.LogoutAllRequest"> & {
+};
+
+/**
+ * Describes the message auth.v1.LogoutAllRequest.
+ * Use `create(LogoutAllRequestSchema)` to create a new message.
+ */
+export const LogoutAllRequestSchema: GenMessage<LogoutAllRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 8);
+
+/**
+ * LogoutAllResponse contains no session secrets.
+ *
+ * @generated from message auth.v1.LogoutAllResponse
+ */
+export type LogoutAllResponse = Message<"auth.v1.LogoutAllResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.LogoutAllResponse.
+ * Use `create(LogoutAllResponseSchema)` to create a new message.
+ */
+export const LogoutAllResponseSchema: GenMessage<LogoutAllResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 9);
+
+/**
  * AuthService registers and verifies user-controlled credentials.
  *
  * @generated from service auth.v1.AuthService
@@ -129,6 +219,36 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof LoginRequestSchema;
     output: typeof LoginResponseSchema;
+  },
+  /**
+   * RefreshSession rotates the HttpOnly refresh cookie; consumed-token reuse revokes its family.
+   *
+   * @generated from rpc auth.v1.AuthService.RefreshSession
+   */
+  refreshSession: {
+    methodKind: "unary";
+    input: typeof RefreshSessionRequestSchema;
+    output: typeof RefreshSessionResponseSchema;
+  },
+  /**
+   * Logout revokes the session authenticated by its HttpOnly access cookie.
+   *
+   * @generated from rpc auth.v1.AuthService.Logout
+   */
+  logout: {
+    methodKind: "unary";
+    input: typeof LogoutRequestSchema;
+    output: typeof LogoutResponseSchema;
+  },
+  /**
+   * LogoutAll revokes every session of the authenticated subject.
+   *
+   * @generated from rpc auth.v1.AuthService.LogoutAll
+   */
+  logoutAll: {
+    methodKind: "unary";
+    input: typeof LogoutAllRequestSchema;
+    output: typeof LogoutAllResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_auth_v1_auth, 0);

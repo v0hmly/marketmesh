@@ -38,6 +38,13 @@ const (
 	AuthServiceRegisterCredentialsProcedure = "/auth.v1.AuthService/RegisterCredentials"
 	// AuthServiceLoginProcedure is the fully-qualified name of the AuthService's Login RPC.
 	AuthServiceLoginProcedure = "/auth.v1.AuthService/Login"
+	// AuthServiceRefreshSessionProcedure is the fully-qualified name of the AuthService's
+	// RefreshSession RPC.
+	AuthServiceRefreshSessionProcedure = "/auth.v1.AuthService/RefreshSession"
+	// AuthServiceLogoutProcedure is the fully-qualified name of the AuthService's Logout RPC.
+	AuthServiceLogoutProcedure = "/auth.v1.AuthService/Logout"
+	// AuthServiceLogoutAllProcedure is the fully-qualified name of the AuthService's LogoutAll RPC.
+	AuthServiceLogoutAllProcedure = "/auth.v1.AuthService/LogoutAll"
 )
 
 // AuthServiceClient is a client for the auth.v1.AuthService service.
@@ -46,6 +53,12 @@ type AuthServiceClient interface {
 	RegisterCredentials(context.Context, *connect.Request[v1.RegisterCredentialsRequest]) (*connect.Response[v1.RegisterCredentialsResponse], error)
 	// Login verifies a credential and returns an opaque subject identifier on success.
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	// RefreshSession rotates the HttpOnly refresh cookie; consumed-token reuse revokes its family.
+	RefreshSession(context.Context, *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error)
+	// Logout revokes the session authenticated by its HttpOnly access cookie.
+	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
+	// LogoutAll revokes every session of the authenticated subject.
+	LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the auth.v1.AuthService service. By default, it uses
@@ -71,6 +84,24 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("Login")),
 			connect.WithClientOptions(opts...),
 		),
+		refreshSession: connect.NewClient[v1.RefreshSessionRequest, v1.RefreshSessionResponse](
+			httpClient,
+			baseURL+AuthServiceRefreshSessionProcedure,
+			connect.WithSchema(authServiceMethods.ByName("RefreshSession")),
+			connect.WithClientOptions(opts...),
+		),
+		logout: connect.NewClient[v1.LogoutRequest, v1.LogoutResponse](
+			httpClient,
+			baseURL+AuthServiceLogoutProcedure,
+			connect.WithSchema(authServiceMethods.ByName("Logout")),
+			connect.WithClientOptions(opts...),
+		),
+		logoutAll: connect.NewClient[v1.LogoutAllRequest, v1.LogoutAllResponse](
+			httpClient,
+			baseURL+AuthServiceLogoutAllProcedure,
+			connect.WithSchema(authServiceMethods.ByName("LogoutAll")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -78,6 +109,9 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 type authServiceClient struct {
 	registerCredentials *connect.Client[v1.RegisterCredentialsRequest, v1.RegisterCredentialsResponse]
 	login               *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	refreshSession      *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
+	logout              *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
+	logoutAll           *connect.Client[v1.LogoutAllRequest, v1.LogoutAllResponse]
 }
 
 // RegisterCredentials calls auth.v1.AuthService.RegisterCredentials.
@@ -90,12 +124,33 @@ func (c *authServiceClient) Login(ctx context.Context, req *connect.Request[v1.L
 	return c.login.CallUnary(ctx, req)
 }
 
+// RefreshSession calls auth.v1.AuthService.RefreshSession.
+func (c *authServiceClient) RefreshSession(ctx context.Context, req *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error) {
+	return c.refreshSession.CallUnary(ctx, req)
+}
+
+// Logout calls auth.v1.AuthService.Logout.
+func (c *authServiceClient) Logout(ctx context.Context, req *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
+	return c.logout.CallUnary(ctx, req)
+}
+
+// LogoutAll calls auth.v1.AuthService.LogoutAll.
+func (c *authServiceClient) LogoutAll(ctx context.Context, req *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error) {
+	return c.logoutAll.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the auth.v1.AuthService service.
 type AuthServiceHandler interface {
 	// RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
 	RegisterCredentials(context.Context, *connect.Request[v1.RegisterCredentialsRequest]) (*connect.Response[v1.RegisterCredentialsResponse], error)
 	// Login verifies a credential and returns an opaque subject identifier on success.
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	// RefreshSession rotates the HttpOnly refresh cookie; consumed-token reuse revokes its family.
+	RefreshSession(context.Context, *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error)
+	// Logout revokes the session authenticated by its HttpOnly access cookie.
+	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
+	// LogoutAll revokes every session of the authenticated subject.
+	LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -117,12 +172,36 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("Login")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceRefreshSessionHandler := connect.NewUnaryHandler(
+		AuthServiceRefreshSessionProcedure,
+		svc.RefreshSession,
+		connect.WithSchema(authServiceMethods.ByName("RefreshSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceLogoutHandler := connect.NewUnaryHandler(
+		AuthServiceLogoutProcedure,
+		svc.Logout,
+		connect.WithSchema(authServiceMethods.ByName("Logout")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceLogoutAllHandler := connect.NewUnaryHandler(
+		AuthServiceLogoutAllProcedure,
+		svc.LogoutAll,
+		connect.WithSchema(authServiceMethods.ByName("LogoutAll")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/auth.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceRegisterCredentialsProcedure:
 			authServiceRegisterCredentialsHandler.ServeHTTP(w, r)
 		case AuthServiceLoginProcedure:
 			authServiceLoginHandler.ServeHTTP(w, r)
+		case AuthServiceRefreshSessionProcedure:
+			authServiceRefreshSessionHandler.ServeHTTP(w, r)
+		case AuthServiceLogoutProcedure:
+			authServiceLogoutHandler.ServeHTTP(w, r)
+		case AuthServiceLogoutAllProcedure:
+			authServiceLogoutAllHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -138,4 +217,16 @@ func (UnimplementedAuthServiceHandler) RegisterCredentials(context.Context, *con
 
 func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.Login is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) RefreshSession(context.Context, *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.RefreshSession is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.Logout is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.LogoutAll is not implemented"))
 }

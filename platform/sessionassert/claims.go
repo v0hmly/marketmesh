@@ -96,3 +96,21 @@ func claimsFromJSON(j claimsJSON) *Claims {
 		Actor:     j.Actor,
 	}
 }
+
+// validValues проверяет обязательность, непустые значения и отсутствие повторов.
+func validValues(values []string, required bool) bool {
+	if required && len(values) == 0 {
+		return false
+	}
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		if value == "" {
+			return false
+		}
+		if _, ok := seen[value]; ok {
+			return false
+		}
+		seen[value] = struct{}{}
+	}
+	return true
+}

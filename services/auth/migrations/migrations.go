@@ -11,4 +11,12 @@ var (
 	// CredentialsDown removes the credentials table and its schema.
 	//go:embed 000001_credentials.down.sql
 	CredentialsDown string
+
+	// SessionsUp creates durable session families, refresh history, and revocation outbox.
+	//go:embed 000002_sessions.up.sql
+	SessionsUp string
+
+	// SessionsDown removes session storage before the credentials migration is reverted.
+	//go:embed 000002_sessions.down.sql
+	SessionsDown string
 )
