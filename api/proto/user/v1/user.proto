@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1";
+
+// UserService exposes the authenticated caller's profile on the internal workload-authenticated listener.
+service UserService {
+  // GetMe reads the caller's profile with read-after-write consistency.
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  // UpdateMe replaces editable fields only when the expected profile version still matches.
+  rpc UpdateMe(UpdateMeRequest) returns (UpdateMeResponse);
+}
+
+// GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
+message GetMeRequest {}
+
+// GetMeResponse is private and must not be cached at the external boundary.
+message GetMeResponse {
+  // Profile is the current authenticated caller's profile.
+  Profile profile = 1;
+}
+
+// UpdateMeRequest replaces the editable profile fields without changing account credentials.
+message UpdateMeRequest {
+  // DisplayName is an optional display name of at most 80 Unicode characters.
+  string display_name = 1;
+  // Bio is optional plain text of at most 1000 Unicode characters, never HTML.
+  string bio = 2;
+  // ExpectedVersion must match the last-read version to prevent lost concurrent updates.
+  uint64 expected_version = 3;
+}
+
+// UpdateMeResponse carries the committed state, without a subsequent read from a replica.
+message UpdateMeResponse {
+  // Profile includes the incremented version of the caller's profile.
+  Profile profile = 1;
+}
+
+// Profile contains private user data; its fields must not be logged or cached publicly.
+message Profile {
+  // SubjectId is the opaque immutable 16-byte account identifier.
+  bytes subject_id = 1;
+  // DisplayName is the user-provided display name, possibly empty before completion.
+  string display_name = 2;
+  // Bio is optional user-provided plain text.
+  string bio = 3;
+  // Version is a positive concurrency version, incremented by each successful update.
+  uint64 version = 4;
+  // CreatedAtUnix is the profile creation time in whole Unix seconds.
+  int64 created_at_unix = 5;
+  // UpdatedAtUnix is the last profile update time in whole Unix seconds.
+  int64 updated_at_unix = 6;
+}
