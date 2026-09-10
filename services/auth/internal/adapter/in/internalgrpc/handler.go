@@ -61,6 +61,7 @@ func New(service SessionOperations, keys *sessionkeys.Manager, config Config) (*
 	}
 	audiences := make(map[string][]string, len(config.Audiences))
 	rules := map[workloadid.Identity][]string{base: {method("ExchangeSession"), method("GetSigningKeys")}}
+	rules[base] = append(rules[base], browserMethods()...)
 	for audience, scopes := range config.Audiences {
 		identity := workloadid.Identity{TrustDomain: config.TrustDomain, Environment: config.Environment, Role: audience}
 		if err := identity.Validate(); err != nil {

@@ -56,7 +56,7 @@ labels не добавляются.
 в logs, traces и metric labels. Публичный ответ front door должен использовать
 только агрегированную route readiness и не сериализовать opaque IDs.
 
-Пакет `internal/connectbridge` содержит ограниченный unary-адаптер ConnectRPC. Procedure и `RouteId` фиксируются при создании handler; входные HTTP headers, URL и method через туннель не передаются. Адаптер принимает и возвращает только типизированные protobuf-сообщения.
+Пакет `internal/connectbridge` содержит ограниченный unary-адаптер ConnectRPC. Procedure и `RouteId` фиксируются при создании handler; произвольные HTTP headers, URL и method через туннель не передаются. Адаптер принимает и возвращает только типизированные protobuf-сообщения.
 
 ## Проверка
 
@@ -70,3 +70,46 @@ go build ./...
 ```
 
 Интеграционные тесты поднимают in-memory gRPC listener с TLS 1.3 и обязательным клиентским сертификатом, выполняют настоящий ConnectRPC-вызов через обратный туннель и проверяют негативные mTLS/policy-сценарии, flow control, отмену, разрыв и Drain.
+
+
+## Браузерный Auth через HTTPS
+
+`AUTH_BROWSER_ENABLED` по умолчанию `false`. При включении обязательны
+`PUBLIC_TLS_CERT_FILE` и `PUBLIC_TLS_KEY_FILE`: отдельный сертификат публичного
+HTTPS listener на `HTTP_ADDRESS`, TLS 1.3. TLS завершается в Gateway In;
+`Forwarded` и `X-Forwarded-Proto` не подтверждают защищённость запроса.
+Health endpoints на этом listener также переходят на HTTPS. Listener туннеля
+остаётся отдельным, с обязательным mTLS. Публичный сертификат не используется
+как сертификат внутренней рабочей нагрузки.
+
+Доступны только POST `/auth.v1.AuthService/RegisterCredentials`, `Login`,
+`RefreshSession`, `Logout`, `LogoutAll`. Размещайте браузерное приложение на том
+же HTTPS origin; CORS для отдельного origin не включён. Точное значение origin
+должно присутствовать в `AUTH_ALLOWED_ORIGINS` сервиса Auth. Cookie остаются
+`__Host-`, Secure, HttpOnly, SameSite=Strict, Path=/ без Domain. Gateway In
+не интерпретирует их и не возвращает их в JSON/protobuf body.
+
+На каждый маршрут действуют пределы 16 KiB для внутреннего запроса и ответа,
+четыре одновременных вызова, общий срок `REQUEST_TIMEOUT` и независимая очередь
+control/auth. Для Cookie ограничение 8192 байта, Origin — 2048,
+Sec-Fetch-Site — 256; не более 16 отдельных строк каждого заголовка.
+Дубликаты Origin сохраняются для отказа Auth. Все ответы этих методов имеют
+`Cache-Control: no-store`; отдельные Set-Cookie передаются без объединения.
+
+Readiness при включённом флаге требует всех пяти маршрутов. Недоступный туннель
+или Auth приводит к безопасной ошибке; входящее соединение из DMZ к Auth
+не создаётся. Существующие тестовые User-маршруты сохраняются до шага 06 MM-50.
+Порядок обновления и отката описан в [протоколе туннеля](../../docs/architecture/tunnel-protocol.md#публичные-браузерные-методы-auth-mm-50-шаг-05).
+
+`task auth:browser:integration` проверяет HTTPS → reverse mTLS tunnel →
+настоящий Auth с PostgreSQL primary/replica и Redis в изолированной Docker-сети.
+Проверяются выдача двух cookie, ротация, отзыв одной/всех сессий и отказы
+Origin/CSRF. Go cookie jar проверяет сетевой путь; отдельная проверка Chrome
+подключается к тому же тесту через `AUTH_BROWSER_NODE_BIN` и
+`AUTH_BROWSER_CHROME_BIN` при нативном запуске. Она проверяет недоступность
+HttpOnly cookie из JavaScript и реальное поведение cookie на HTTPS origin.
+Chrome использует новый временный профиль и доверяет только SPKI тестового
+сертификата; пользовательский профиль не используется. Бинарные файлы Auth
+и Gateway Out можно задать через `AUTH_BROWSER_AUTH_BIN` и
+`AUTH_BROWSER_GATEWAY_OUT_BIN` (по умолчанию `/usr/local/bin/auth` и
+`/usr/local/bin/gateway-out`).

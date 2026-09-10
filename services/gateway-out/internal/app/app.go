@@ -59,7 +59,7 @@ func run(ctx context.Context, dependencies systemDependencies) error {
 		Service: serviceName, Version: cfg.serviceVersion, Environment: cfg.environment,
 		Level: cfg.logLevel, Output: dependencies.stdout,
 		MaskFields: []string{
-			"authorization", "cookie", "idempotency_key", "payload", "request_id", "token",
+			"authorization", "cookie", "set-cookie", "password", "idempotency_key", "payload", "request_id", "token",
 		},
 	})
 	if err != nil {
@@ -112,15 +112,23 @@ func runService(
 		}
 	}()
 
-	registry, err := tunnel.NewRegistry(
-		tunnel.ClassClients{
-			ControlAuth: internalClient.Connection(),
-			Regular:     internalClient.Connection(),
-			Realtime:    internalClient.Connection(),
-		},
-		readRoute(cfg.callTimeout),
-		mutateRoute(cfg.callTimeout),
-	)
+	authClient, err := newAuthClient(ctx, cfg, log, pipeline)
+	if err != nil {
+		return err
+	}
+	authOwned := true
+	defer func() {
+		if authOwned {
+			resultErr = errors.Join(resultErr, authClient.Close())
+		}
+	}()
+	clients := tunnel.ClassClients{Regular: internalClient.Connection(), Realtime: internalClient.Connection()}
+	specs := []tunnel.RouteSpec{readRoute(cfg.callTimeout), mutateRoute(cfg.callTimeout)}
+	if cfg.authBrowserEnabled {
+		clients.ControlAuth = authClient.Connection()
+		specs = append(specs, authRoutes(cfg.callTimeout)...)
+	}
+	registry, err := tunnel.NewRegistry(clients, specs...)
 	if err != nil {
 		return fmt.Errorf("creating static route registry: %w", err)
 	}
@@ -196,6 +204,11 @@ func runService(
 		internalClientComponent(internalClient),
 		pool.Component(),
 	}
+	if cfg.authBrowserEnabled {
+		component := internalClientComponent(authClient)
+		component.Name = "auth-grpc"
+		components = append(components, component)
+	}
 	components = append(components, httpComponent)
 	runner, err := serviceruntime.NewRunner(
 		serviceruntime.RunnerConfig{ShutdownTimeout: cfg.shutdownTimeout, Health: health},
@@ -205,6 +218,7 @@ func runService(
 		return fmt.Errorf("creating runner: %w", err)
 	}
 
+	authOwned = false
 	internalOwned = false
 	listenerOwned = false
 	log.Info("gateway-out запущен", logger.String("http_address", listener.Addr().String()))

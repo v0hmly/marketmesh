@@ -34,6 +34,9 @@ type config struct {
 	healthTimeout         time.Duration
 	logLevel              string
 	e2eRoutingSnapshot    bool
+	authBrowserEnabled    bool
+	publicTLSCertificate  string
+	publicTLSPrivateKey   string
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -95,5 +98,16 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 		return config{}, err
 	}
 
+	if result.authBrowserEnabled, err = env.Bool("AUTH_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.authBrowserEnabled {
+		if result.publicTLSCertificate, err = env.RequiredString("PUBLIC_TLS_CERT_FILE"); err != nil {
+			return config{}, err
+		}
+		if result.publicTLSPrivateKey, err = env.RequiredString("PUBLIC_TLS_KEY_FILE"); err != nil {
+			return config{}, err
+		}
+	}
 	return result, nil
 }

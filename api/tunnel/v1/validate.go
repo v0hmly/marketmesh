@@ -770,7 +770,8 @@ func routeTrafficClass(route contractv1.RouteId) contractv1.TrafficClass {
 		contractv1.RouteId_ROUTE_ID_AUTH_LOGIN,
 		contractv1.RouteId_ROUTE_ID_AUTH_REFRESH_SESSION,
 		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_SESSION,
-		contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION:
+		contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION,
+		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL:
 		return contractv1.TrafficClass_TRAFFIC_CLASS_CONTROL_AUTH
 	case contractv1.RouteId_ROUTE_ID_USER_GET_ME,
 		contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME:
@@ -815,6 +816,7 @@ func knownRoute(value contractv1.RouteId) bool {
 		contractv1.RouteId_ROUTE_ID_AUTH_REFRESH_SESSION,
 		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_SESSION,
 		contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION,
+		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL,
 		contractv1.RouteId_ROUTE_ID_USER_GET_ME,
 		contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME,
 		contractv1.RouteId_ROUTE_ID_REALTIME_CHAT,

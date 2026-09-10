@@ -93,6 +93,7 @@
 | `AUTH_REFRESH_SESSION` | 3 | control/auth |
 | `AUTH_REVOKE_SESSION` | 4 | control/auth |
 | `AUTH_SESSION_ASSERTION` | 5 | control/auth |
+| `AUTH_LOGOUT_ALL` | 6 | control/auth |
 | `USER_GET_ME` | 100 | regular |
 | `USER_UPDATE_ME` | 101 | regular |
 | `REALTIME_CHAT` | 200 | realtime |
@@ -232,3 +233,27 @@ Hello может предложить меньшие receive-пределы. Э�
 - [ADR-0003: границы внешних и внутренних транспортов](../adr/0003-external-and-internal-transport-boundaries.md)
 - [ADR-0004: идентичность рабочих нагрузок](../adr/0004-workload-identity-and-service-authentication.md)
 - [ADR-0005: пользовательская сессия](../adr/0005-user-session-and-identity-propagation.md)
+
+
+## Публичные браузерные методы Auth (MM-50, шаг 05)
+
+При `AUTH_BROWSER_ENABLED=true` на обоих шлюзах публичный `AuthService`
+отображается в закрытый `AuthBrowserService` (методы с префиксом `Browser`): RegisterCredentials → маршрут 1,
+Login → 2, RefreshSession → 3, Logout → 4, LogoutAll → 6. Маршрут 5
+и внутренние методы выдачи/проверки утверждений не становятся публичными.
+
+В `Data` передаётся типизированная обёртка исходного DTO и `BrowserContext`:
+только отдельные строки Cookie, Origin и Sec-Fetch-Site с ограничением размеров.
+В ответной обёртке находятся исходный DTO и отдельные строки Set-Cookie.
+Это данные конкретных методов Auth, а не расширение общей tunnel metadata:
+передача произвольного HTTP-заголовка, адреса или имени RPC не допускается.
+Auth проверяет Origin, интерпретирует cookie и управляет сессиями. Gateway In
+отделяет Set-Cookie от protobuf-ответа до отправки браузеру, сохраняет каждый
+заголовок и устанавливает no-store, включая ошибки ограничений HTTP body.
+
+Флаг выключен по умолчанию. Сначала необходимо обновить Auth и обе стороны
+туннеля с выключенным флагом, затем включить его на шлюзах. Строгий старый
+декодер не принимает новый enum 6 в Hello; включать новый набор маршрутов
+в смешанном пуле старых и новых экземпляров нельзя. Для отката сначала
+выключают флаг на обоих шлюзах, затем возвращают прежние бинарные файлы.
+Формат существующих кадров и номера маршрутов 1–5 не меняются; миграций БД нет.

@@ -158,6 +158,9 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 	if err != nil {
 		return fmt.Errorf("creating Connect handler: %w", err)
 	}
+	if err := sessions.registerBrowser(connectHandler); err != nil {
+		return err
+	}
 	interceptor, err := pipeline.PublicConnectInterceptor()
 	if err != nil {
 		return fmt.Errorf("creating Connect telemetry interceptor: %w", err)

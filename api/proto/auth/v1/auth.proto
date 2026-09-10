@@ -60,3 +60,110 @@ message LogoutAllRequest {}
 
 // LogoutAllResponse contains no session secrets.
 message LogoutAllResponse {}
+
+// AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
+service AuthBrowserService {
+  // RegisterCredentials delegates to the same public Auth handler and browser security policy.
+  rpc BrowserRegisterCredentials(BrowserRegisterCredentialsRequest) returns (BrowserRegisterCredentialsResponse);
+  // Login delegates to the same public Auth handler and browser security policy.
+  rpc BrowserLogin(BrowserLoginRequest) returns (BrowserLoginResponse);
+  // RefreshSession delegates to the same public Auth handler and browser security policy.
+  rpc BrowserRefreshSession(BrowserRefreshSessionRequest) returns (BrowserRefreshSessionResponse);
+  // Logout delegates to the same public Auth handler and browser security policy.
+  rpc BrowserLogout(BrowserLogoutRequest) returns (BrowserLogoutResponse);
+  // LogoutAll delegates to the same public Auth handler and browser security policy.
+  rpc BrowserLogoutAll(BrowserLogoutAllRequest) returns (BrowserLogoutAllResponse);
+}
+
+// BrowserContext is private transport data, never a public request body or log payload.
+// Values retain individual HTTP header lines, including duplicates; gateways do not parse cookies.
+// Each field accepts at most 16 lines; cookie totals at most 8192 bytes, origin 2048,
+// and sec_fetch_site 256. CR, LF and NUL are forbidden in all values.
+message BrowserContext {
+  // Cookie contains opaque Cookie header lines.
+  repeated string cookie = 1;
+  // Origin preserves duplicates so Auth can reject ambiguous origins.
+  repeated string origin = 2;
+  // SecFetchSite preserves fetch metadata for Auth's browser security policy.
+  repeated string sec_fetch_site = 3;
+}
+
+// BrowserRegisterCredentialsRequest carries only typed Auth input and browser context.
+message BrowserRegisterCredentialsRequest {
+  // Request is the original public request without added token fields.
+  RegisterCredentialsRequest request = 1;
+  // Context is reconstructed exclusively from allowed browser headers.
+  BrowserContext context = 2;
+}
+
+// BrowserRegisterCredentialsResponse is private and must be unwrapped before returning to a browser.
+message BrowserRegisterCredentialsResponse {
+  // Response is the original public response.
+  RegisterCredentialsResponse response = 1;
+  // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+  repeated string set_cookie = 2;
+}
+
+// BrowserLoginRequest carries only typed Auth input and browser context.
+message BrowserLoginRequest {
+  // Request is the original public request without added token fields.
+  LoginRequest request = 1;
+  // Context is reconstructed exclusively from allowed browser headers.
+  BrowserContext context = 2;
+}
+
+// BrowserLoginResponse is private and must be unwrapped before returning to a browser.
+message BrowserLoginResponse {
+  // Response is the original public response.
+  LoginResponse response = 1;
+  // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+  repeated string set_cookie = 2;
+}
+
+// BrowserRefreshSessionRequest carries only typed Auth input and browser context.
+message BrowserRefreshSessionRequest {
+  // Request is the original public request without added token fields.
+  RefreshSessionRequest request = 1;
+  // Context is reconstructed exclusively from allowed browser headers.
+  BrowserContext context = 2;
+}
+
+// BrowserRefreshSessionResponse is private and must be unwrapped before returning to a browser.
+message BrowserRefreshSessionResponse {
+  // Response is the original public response.
+  RefreshSessionResponse response = 1;
+  // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+  repeated string set_cookie = 2;
+}
+
+// BrowserLogoutRequest carries only typed Auth input and browser context.
+message BrowserLogoutRequest {
+  // Request is the original public request without added token fields.
+  LogoutRequest request = 1;
+  // Context is reconstructed exclusively from allowed browser headers.
+  BrowserContext context = 2;
+}
+
+// BrowserLogoutResponse is private and must be unwrapped before returning to a browser.
+message BrowserLogoutResponse {
+  // Response is the original public response.
+  LogoutResponse response = 1;
+  // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+  repeated string set_cookie = 2;
+}
+
+// BrowserLogoutAllRequest carries only typed Auth input and browser context.
+message BrowserLogoutAllRequest {
+  // Request is the original public request without added token fields.
+  LogoutAllRequest request = 1;
+  // Context is reconstructed exclusively from allowed browser headers.
+  BrowserContext context = 2;
+}
+
+// BrowserLogoutAllResponse is private and must be unwrapped before returning to a browser.
+message BrowserLogoutAllResponse {
+  // Response is the original public response.
+  LogoutAllResponse response = 1;
+  // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+  repeated string set_cookie = 2;
+}

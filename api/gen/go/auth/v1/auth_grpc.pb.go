@@ -285,3 +285,271 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "auth/v1/auth.proto",
 }
+
+const (
+	AuthBrowserService_BrowserRegisterCredentials_FullMethodName = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
+	AuthBrowserService_BrowserLogin_FullMethodName               = "/auth.v1.AuthBrowserService/BrowserLogin"
+	AuthBrowserService_BrowserRefreshSession_FullMethodName      = "/auth.v1.AuthBrowserService/BrowserRefreshSession"
+	AuthBrowserService_BrowserLogout_FullMethodName              = "/auth.v1.AuthBrowserService/BrowserLogout"
+	AuthBrowserService_BrowserLogoutAll_FullMethodName           = "/auth.v1.AuthBrowserService/BrowserLogoutAll"
+)
+
+// AuthBrowserServiceClient is the client API for AuthBrowserService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
+type AuthBrowserServiceClient interface {
+	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
+	BrowserRegisterCredentials(ctx context.Context, in *BrowserRegisterCredentialsRequest, opts ...grpc.CallOption) (*BrowserRegisterCredentialsResponse, error)
+	// Login delegates to the same public Auth handler and browser security policy.
+	BrowserLogin(ctx context.Context, in *BrowserLoginRequest, opts ...grpc.CallOption) (*BrowserLoginResponse, error)
+	// RefreshSession delegates to the same public Auth handler and browser security policy.
+	BrowserRefreshSession(ctx context.Context, in *BrowserRefreshSessionRequest, opts ...grpc.CallOption) (*BrowserRefreshSessionResponse, error)
+	// Logout delegates to the same public Auth handler and browser security policy.
+	BrowserLogout(ctx context.Context, in *BrowserLogoutRequest, opts ...grpc.CallOption) (*BrowserLogoutResponse, error)
+	// LogoutAll delegates to the same public Auth handler and browser security policy.
+	BrowserLogoutAll(ctx context.Context, in *BrowserLogoutAllRequest, opts ...grpc.CallOption) (*BrowserLogoutAllResponse, error)
+}
+
+type authBrowserServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewAuthBrowserServiceClient(cc grpc.ClientConnInterface) AuthBrowserServiceClient {
+	return &authBrowserServiceClient{cc}
+}
+
+func (c *authBrowserServiceClient) BrowserRegisterCredentials(ctx context.Context, in *BrowserRegisterCredentialsRequest, opts ...grpc.CallOption) (*BrowserRegisterCredentialsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserRegisterCredentialsResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserRegisterCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserLogin(ctx context.Context, in *BrowserLoginRequest, opts ...grpc.CallOption) (*BrowserLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserLoginResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserRefreshSession(ctx context.Context, in *BrowserRefreshSessionRequest, opts ...grpc.CallOption) (*BrowserRefreshSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserRefreshSessionResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserRefreshSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserLogout(ctx context.Context, in *BrowserLogoutRequest, opts ...grpc.CallOption) (*BrowserLogoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserLogoutResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserLogout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserLogoutAll(ctx context.Context, in *BrowserLogoutAllRequest, opts ...grpc.CallOption) (*BrowserLogoutAllResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserLogoutAllResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserLogoutAll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AuthBrowserServiceServer is the server API for AuthBrowserService service.
+// All implementations must embed UnimplementedAuthBrowserServiceServer
+// for forward compatibility.
+//
+// AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
+type AuthBrowserServiceServer interface {
+	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
+	BrowserRegisterCredentials(context.Context, *BrowserRegisterCredentialsRequest) (*BrowserRegisterCredentialsResponse, error)
+	// Login delegates to the same public Auth handler and browser security policy.
+	BrowserLogin(context.Context, *BrowserLoginRequest) (*BrowserLoginResponse, error)
+	// RefreshSession delegates to the same public Auth handler and browser security policy.
+	BrowserRefreshSession(context.Context, *BrowserRefreshSessionRequest) (*BrowserRefreshSessionResponse, error)
+	// Logout delegates to the same public Auth handler and browser security policy.
+	BrowserLogout(context.Context, *BrowserLogoutRequest) (*BrowserLogoutResponse, error)
+	// LogoutAll delegates to the same public Auth handler and browser security policy.
+	BrowserLogoutAll(context.Context, *BrowserLogoutAllRequest) (*BrowserLogoutAllResponse, error)
+	mustEmbedUnimplementedAuthBrowserServiceServer()
+}
+
+// UnimplementedAuthBrowserServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedAuthBrowserServiceServer struct{}
+
+func (UnimplementedAuthBrowserServiceServer) BrowserRegisterCredentials(context.Context, *BrowserRegisterCredentialsRequest) (*BrowserRegisterCredentialsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserRegisterCredentials not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserLogin(context.Context, *BrowserLoginRequest) (*BrowserLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserLogin not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserRefreshSession(context.Context, *BrowserRefreshSessionRequest) (*BrowserRefreshSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserRefreshSession not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserLogout(context.Context, *BrowserLogoutRequest) (*BrowserLogoutResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserLogout not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserLogoutAll(context.Context, *BrowserLogoutAllRequest) (*BrowserLogoutAllResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserLogoutAll not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) mustEmbedUnimplementedAuthBrowserServiceServer() {}
+func (UnimplementedAuthBrowserServiceServer) testEmbeddedByValue()                            {}
+
+// UnsafeAuthBrowserServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AuthBrowserServiceServer will
+// result in compilation errors.
+type UnsafeAuthBrowserServiceServer interface {
+	mustEmbedUnimplementedAuthBrowserServiceServer()
+}
+
+func RegisterAuthBrowserServiceServer(s grpc.ServiceRegistrar, srv AuthBrowserServiceServer) {
+	// If the following call panics, it indicates UnimplementedAuthBrowserServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&AuthBrowserService_ServiceDesc, srv)
+}
+
+func _AuthBrowserService_BrowserRegisterCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserRegisterCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserRegisterCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserRegisterCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserRegisterCredentials(ctx, req.(*BrowserRegisterCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserLogin(ctx, req.(*BrowserLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserRefreshSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserRefreshSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserRefreshSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserRefreshSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserRefreshSession(ctx, req.(*BrowserRefreshSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserLogout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserLogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserLogout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserLogout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserLogout(ctx, req.(*BrowserLogoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserLogoutAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserLogoutAllRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserLogoutAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserLogoutAll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserLogoutAll(ctx, req.(*BrowserLogoutAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// AuthBrowserService_ServiceDesc is the grpc.ServiceDesc for AuthBrowserService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AuthBrowserService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "auth.v1.AuthBrowserService",
+	HandlerType: (*AuthBrowserServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "BrowserRegisterCredentials",
+			Handler:    _AuthBrowserService_BrowserRegisterCredentials_Handler,
+		},
+		{
+			MethodName: "BrowserLogin",
+			Handler:    _AuthBrowserService_BrowserLogin_Handler,
+		},
+		{
+			MethodName: "BrowserRefreshSession",
+			Handler:    _AuthBrowserService_BrowserRefreshSession_Handler,
+		},
+		{
+			MethodName: "BrowserLogout",
+			Handler:    _AuthBrowserService_BrowserLogout_Handler,
+		},
+		{
+			MethodName: "BrowserLogoutAll",
+			Handler:    _AuthBrowserService_BrowserLogoutAll_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "auth/v1/auth.proto",
+}

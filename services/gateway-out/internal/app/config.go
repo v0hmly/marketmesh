@@ -37,6 +37,13 @@ type config struct {
 	shutdownTimeout      time.Duration
 	healthTimeout        time.Duration
 	logLevel             string
+	authBrowserEnabled   bool
+	authTarget           string
+	authServerName       string
+	expectedAuthURI      string
+	authCertificate      string
+	authPrivateKey       string
+	authRootCA           string
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -107,5 +114,22 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 		return config{}, err
 	}
 
+	if result.authBrowserEnabled, err = env.Bool("AUTH_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.authBrowserEnabled {
+		for _, item := range []struct {
+			name  string
+			value *string
+		}{
+			{"AUTH_TARGET", &result.authTarget}, {"AUTH_SERVER_NAME", &result.authServerName},
+			{"EXPECTED_AUTH_URI", &result.expectedAuthURI}, {"AUTH_TLS_CERT_FILE", &result.authCertificate},
+			{"AUTH_TLS_KEY_FILE", &result.authPrivateKey}, {"AUTH_TLS_ROOT_CA_FILE", &result.authRootCA},
+		} {
+			if *item.value, err = env.RequiredString(item.name); err != nil {
+				return config{}, err
+			}
+		}
+	}
 	return result, nil
 }
