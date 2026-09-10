@@ -43,6 +43,7 @@ type ServerConfig struct {
 	Logger                 *logger.Logger
 	Telemetry              *telemetry.Telemetry
 	ErrorCodeMapper        ErrorCodeMapper
+	PublicErrorInfo        []PublicErrorInfo
 	UnaryAuthentication    grpcgo.UnaryServerInterceptor
 	StreamAuthentication   grpcgo.StreamServerInterceptor
 	UnaryInterceptors      []grpcgo.UnaryServerInterceptor
@@ -77,6 +78,10 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err := validateServerConfig(config); err != nil {
 		return nil, err
 	}
+	if err := validatePublicErrorInfo(config.PublicErrorInfo); err != nil {
+		return nil, err
+	}
+	publicInfo := append([]PublicErrorInfo(nil), config.PublicErrorInfo...)
 
 	transportCredentials, err := serverTransportCredentials(config.Environment, config.Security)
 	if err != nil {
@@ -87,7 +92,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 		unaryServerTimeoutInterceptor(config.RequestTimeout),
 		unaryServerRecoveryInterceptor(config.Logger),
 		unaryServerLoggingInterceptor(config.Logger),
-		unaryServerStatusInterceptor(config.ErrorCodeMapper),
+		unaryServerStatusInterceptor(config.ErrorCodeMapper, publicInfo...),
 	}
 	if config.UnaryAuthentication != nil {
 		unaryInterceptors = append(unaryInterceptors, config.UnaryAuthentication)
@@ -98,7 +103,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 		streamServerTimeoutInterceptor(config.RequestTimeout),
 		streamServerRecoveryInterceptor(config.Logger),
 		streamServerLoggingInterceptor(config.Logger),
-		streamServerStatusInterceptor(config.ErrorCodeMapper),
+		streamServerStatusInterceptor(config.ErrorCodeMapper, publicInfo...),
 	}
 	if config.StreamAuthentication != nil {
 		streamInterceptors = append(streamInterceptors, config.StreamAuthentication)

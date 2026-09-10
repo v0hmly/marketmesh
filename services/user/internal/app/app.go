@@ -61,6 +61,7 @@ func run(ctx context.Context, dependencies systemDependencies) error {
 		Console:     config.logConsole,
 		MaskFields: []string{
 			"subject_id", "display_name", "bio", "profile", "assertion", "marketmesh-session-assertion-bin", "dsn", "private_key",
+			"event_id", "payload", "payload_hash", "nats_url",
 			"authorization",
 			"cookie",
 			"password",

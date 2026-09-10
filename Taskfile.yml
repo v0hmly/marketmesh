@@ -258,6 +258,11 @@ tasks:
     cmds:
       - bash services/auth/internal/app/testdata/registration/integration.sh
 
+  user:registration:integration:
+    desc: Проверить регистрацию Auth, inbox User и backfill через настоящий JetStream
+    cmds:
+      - bash services/user/internal/app/testdata/registration/integration.sh
+
   tunnel-e2e:images:
     desc: Собрать локальные immutable-source образы MM-29 без публикации
     cmds:

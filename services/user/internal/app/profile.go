@@ -15,21 +15,24 @@ import (
 	"github.com/v0hmly/marketmesh/platform/telemetry"
 	"github.com/v0hmly/marketmesh/platform/workloadid"
 	"github.com/v0hmly/marketmesh/services/user/internal/adapter/in/internalgrpc"
+	"github.com/v0hmly/marketmesh/services/user/internal/adapter/in/jetstream"
 	"github.com/v0hmly/marketmesh/services/user/internal/adapter/out/authsession"
 	userpostgres "github.com/v0hmly/marketmesh/services/user/internal/adapter/out/postgres"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/getme"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/updateme"
 	grpcgo "google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
 
 type profileResources struct {
-	database   *platformpostgres.Database
-	client     *platformgrpc.Client
-	server     *platformgrpc.Server
-	listener   net.Listener
-	verifier   *authsession.Verifier
-	components []serviceruntime.Component
+	database     *platformpostgres.Database
+	client       *platformgrpc.Client
+	server       *platformgrpc.Server
+	listener     net.Listener
+	verifier     *authsession.Verifier
+	registration *jetstream.Consumer
+	components   []serviceruntime.Component
 }
 
 func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipeline *telemetry.Telemetry, listen listenFunc) (*profileResources, error) {
@@ -93,6 +96,10 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 		Environment: c.environment, ConnectionTimeout: p.connectTimeout, RequestTimeout: p.requestTimeout,
 		KeepaliveTime: 2 * time.Minute, KeepaliveTimeout: 20 * time.Second, MaxReceiveMessageBytes: 32 * 1024, MaxSendMessageBytes: 32 * 1024,
 		Security: platformgrpc.ServerSecurity{TLSConfig: serverTLS, RequireClientCertificate: true}, Logger: log, Telemetry: pipeline,
+		PublicErrorInfo: []platformgrpc.PublicErrorInfo{
+			{Method: userv1.UserService_GetMe_FullMethodName, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"},
+			{Method: userv1.UserService_UpdateMe_FullMethodName, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"},
+		},
 		UnaryAuthentication: func(ctx context.Context, req any, info *grpcgo.UnaryServerInfo, next grpcgo.UnaryHandler) (any, error) {
 			_ = grpcgo.SetHeader(ctx, metadata.Pairs("cache-control", "no-store"))
 			return workloadAuth(ctx, req, info, next)
@@ -119,6 +126,9 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 		Name: "user-auth-client", Run: func(ctx context.Context) error { <-ctx.Done(); return ctx.Err() },
 		Shutdown: func(context.Context) error { return r.client.Close() },
 	}, grpcComponent}
+	if err := r.addRegistration(c, pipeline); err != nil {
+		return nil, err
+	}
 	owned = false
 	return r, nil
 }
@@ -127,7 +137,11 @@ func (r *profileResources) dependencies() []serviceruntime.CriticalDependency {
 	if r == nil {
 		return nil
 	}
-	return append(r.database.ReadinessDependencies(), serviceruntime.CriticalDependency{Name: "user-auth-keys", Check: r.verifier.Ready},
+	dependencies := r.database.ReadinessDependencies()
+	if r.registration != nil {
+		dependencies = append(dependencies, r.registrationDependency())
+	}
+	return append(dependencies, serviceruntime.CriticalDependency{Name: "user-auth-keys", Check: r.verifier.Ready},
 		serviceruntime.CriticalDependency{Name: "user-profile-schema", Check: func(ctx context.Context) error {
 			for _, executor := range []platformpostgres.Executor{r.database.RW(), r.database.RO()} {
 				rows, err := executor.Query(ctx, "SELECT subject_id, display_name, bio, version, created_at, updated_at FROM users.profiles LIMIT 0")
@@ -154,6 +168,9 @@ func (r *profileResources) close(ctx context.Context) error {
 		_ = r.listener.Close()
 	}
 	var err error
+	if r.registration != nil {
+		err = errors.Join(err, r.registration.Close())
+	}
 	if r.client != nil {
 		err = errors.Join(err, r.client.Close())
 	}
