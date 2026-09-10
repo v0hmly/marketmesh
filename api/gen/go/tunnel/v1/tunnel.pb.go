@@ -153,6 +153,8 @@ const (
 	RouteId_ROUTE_ID_AUTH_REVOKE_SESSION RouteId = 4
 	// ROUTE_ID_AUTH_SESSION_ASSERTION exchanges external session state for an internal assertion.
 	RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION RouteId = 5
+	// ROUTE_ID_AUTH_LOGOUT_ALL revokes every session of the authenticated subject.
+	RouteId_ROUTE_ID_AUTH_LOGOUT_ALL RouteId = 6
 	// ROUTE_ID_USER_GET_ME reads the current user profile.
 	RouteId_ROUTE_ID_USER_GET_ME RouteId = 100
 	// ROUTE_ID_USER_UPDATE_ME updates the current user profile.
@@ -172,6 +174,7 @@ var (
 		3:   "ROUTE_ID_AUTH_REFRESH_SESSION",
 		4:   "ROUTE_ID_AUTH_REVOKE_SESSION",
 		5:   "ROUTE_ID_AUTH_SESSION_ASSERTION",
+		6:   "ROUTE_ID_AUTH_LOGOUT_ALL",
 		100: "ROUTE_ID_USER_GET_ME",
 		101: "ROUTE_ID_USER_UPDATE_ME",
 		200: "ROUTE_ID_REALTIME_CHAT",
@@ -184,6 +187,7 @@ var (
 		"ROUTE_ID_AUTH_REFRESH_SESSION":      3,
 		"ROUTE_ID_AUTH_REVOKE_SESSION":       4,
 		"ROUTE_ID_AUTH_SESSION_ASSERTION":    5,
+		"ROUTE_ID_AUTH_LOGOUT_ALL":           6,
 		"ROUTE_ID_USER_GET_ME":               100,
 		"ROUTE_ID_USER_UPDATE_ME":            101,
 		"ROUTE_ID_REALTIME_CHAT":             200,
@@ -1944,14 +1948,15 @@ const file_tunnel_v1_tunnel_proto_rawDesc = "" +
 	"\x16CAPABILITY_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10CAPABILITY_DRAIN\x10\x01\x12!\n" +
 	"\x1dCAPABILITY_SESSION_REVOCATION\x10\x02\x12\x17\n" +
-	"\x13CAPABILITY_REALTIME\x10\x03*\xc8\x02\n" +
+	"\x13CAPABILITY_REALTIME\x10\x03*\xe6\x02\n" +
 	"\aRouteId\x12\x18\n" +
 	"\x14ROUTE_ID_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"ROUTE_ID_AUTH_REGISTER_CREDENTIALS\x10\x01\x12\x17\n" +
 	"\x13ROUTE_ID_AUTH_LOGIN\x10\x02\x12!\n" +
 	"\x1dROUTE_ID_AUTH_REFRESH_SESSION\x10\x03\x12 \n" +
 	"\x1cROUTE_ID_AUTH_REVOKE_SESSION\x10\x04\x12#\n" +
-	"\x1fROUTE_ID_AUTH_SESSION_ASSERTION\x10\x05\x12\x18\n" +
+	"\x1fROUTE_ID_AUTH_SESSION_ASSERTION\x10\x05\x12\x1c\n" +
+	"\x18ROUTE_ID_AUTH_LOGOUT_ALL\x10\x06\x12\x18\n" +
 	"\x14ROUTE_ID_USER_GET_ME\x10d\x12\x1b\n" +
 	"\x17ROUTE_ID_USER_UPDATE_ME\x10e\x12\x1b\n" +
 	"\x16ROUTE_ID_REALTIME_CHAT\x10\xc8\x01\x12$\n" +

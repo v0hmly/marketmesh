@@ -331,3 +331,24 @@ func newSessionHandler(t *testing.T, registration handleradapter.Registration, v
 	}
 	return handler
 }
+
+func TestRegistrationWithSessionsRequiresUnambiguousOrigin(t *testing.T) {
+	var logs bytes.Buffer
+	handler := newSessionHandler(t, &registrationStub{}, &verificationStub{}, newSessionStub(t, credential.SubjectID{1}), &logs)
+	for _, origins := range [][]string{nil, {"null"}, {"https://evil.example"}, {"https://app.example", "https://app.example"}} {
+		req := connect.NewRequest(&authv1.RegisterCredentialsRequest{Password: []byte("secret")})
+		req.Header()["Origin"] = origins
+		if _, err := handler.RegisterCredentials(context.Background(), req); connect.CodeOf(err) != connect.CodeUnauthenticated {
+			t.Fatalf("invalid origin accepted: %v", err)
+		}
+	}
+	req := connect.NewRequest(&authv1.RegisterCredentialsRequest{})
+	req.Header().Set("Origin", "https://app.example")
+	if _, err := handler.RegisterCredentials(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	req.Header()["Sec-Fetch-Site"] = []string{"same-origin", "cross-site"}
+	if _, err := handler.RegisterCredentials(context.Background(), req); connect.CodeOf(err) != connect.CodeUnauthenticated {
+		t.Fatal("duplicate fetch metadata accepted")
+	}
+}

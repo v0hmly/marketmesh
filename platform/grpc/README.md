@@ -74,7 +74,7 @@ userClient := userpb.NewUserServiceClient(client.Connection())
 
 `NewClient` создаёт одно переиспользуемое connection и не возвращается до состояния `Ready` либо `ConnectTimeout`. Каждый unary RPC и весь stream получают не более `CallTimeout`; более короткий deadline вызывающего context сохраняется. Cancellation передаётся transport и серверному handler.
 
-Автоматические retry выключены по умолчанию. `RetryPolicy` разрешает не более пяти попыток только для явно перечисленных полных имён идемпотентных unary methods и только для `Unavailable`, `ResourceExhausted` или `Aborted`. Общий `CallTimeout` ограничивает все попытки вместе. Streaming RPC автоматически не повторяются.
+Повторы interceptor платформы выключены по умолчанию. Для мутаций задавайте `ClientConfig.DisableRetries: true`: режим запрещает одновременно задавать `Retry`, отключает native gRPC retry policy и принятие service config от resolver. Это исключает повтор уже обработанной операции по resolver retry policy. Прозрачные транспортные повторы gRPC, когда запрос не отправлен либо сервером ещё не обработан, сохраняются ([контракт gRPC](https://pkg.go.dev/google.golang.org/grpc#WithDisableRetry)). Значение `false` сохраняет прежнее поведение клиента, включая принятие resolver service config. `RetryPolicy` разрешает не более пяти попыток только для явно перечисленных полных имён идемпотентных unary methods и только для `Unavailable`, `ResourceExhausted` или `Aborted`. Общий `CallTimeout` ограничивает все попытки вместе. Streaming RPC автоматически не повторяются.
 
 ## TLS и mTLS
 

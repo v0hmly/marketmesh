@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file auth/v1/auth.proto.
  */
 export const file_auth_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiQgoaUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSEgoKaWRlbnRpZmllchgBIAEoCRIQCghwYXNzd29yZBgCIAEoDCIdChtSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2UiNAoMTG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiIwoNTG9naW5SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMIhcKFVJlZnJlc2hTZXNzaW9uUmVxdWVzdCIYChZSZWZyZXNoU2Vzc2lvblJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UiEgoQTG9nb3V0QWxsUmVxdWVzdCITChFMb2dvdXRBbGxSZXNwb25zZTL5AgoLQXV0aFNlcnZpY2USYAoTUmVnaXN0ZXJDcmVkZW50aWFscxIjLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QaJC5hdXRoLnYxLlJlZ2lzdGVyQ3JlZGVudGlhbHNSZXNwb25zZRI2CgVMb2dpbhIVLmF1dGgudjEuTG9naW5SZXF1ZXN0GhYuYXV0aC52MS5Mb2dpblJlc3BvbnNlElEKDlJlZnJlc2hTZXNzaW9uEh4uYXV0aC52MS5SZWZyZXNoU2Vzc2lvblJlcXVlc3QaHy5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVzcG9uc2USOQoGTG9nb3V0EhYuYXV0aC52MS5Mb2dvdXRSZXF1ZXN0GhcuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRJCCglMb2dvdXRBbGwSGS5hdXRoLnYxLkxvZ291dEFsbFJlcXVlc3QaGi5hdXRoLnYxLkxvZ291dEFsbFJlc3BvbnNlQjhaNmdpdGh1Yi5jb20vdjBobWx5L21hcmtldG1lc2gvYXBpL2dlbi9nby9hdXRoL3YxO2F1dGh2MWIGcHJvdG8z");
+  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiQgoaUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSEgoKaWRlbnRpZmllchgBIAEoCRIQCghwYXNzd29yZBgCIAEoDCIdChtSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2UiNAoMTG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiIwoNTG9naW5SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMIhcKFVJlZnJlc2hTZXNzaW9uUmVxdWVzdCIYChZSZWZyZXNoU2Vzc2lvblJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UiEgoQTG9nb3V0QWxsUmVxdWVzdCITChFMb2dvdXRBbGxSZXNwb25zZSJICg5Ccm93c2VyQ29udGV4dBIOCgZjb29raWUYASADKAkSDgoGb3JpZ2luGAIgAygJEhYKDnNlY19mZXRjaF9zaXRlGAMgAygJIoMBCiFCcm93c2VyUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSNAoHcmVxdWVzdBgBIAEoCzIjLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQicAoiQnJvd3NlclJlZ2lzdGVyQ3JlZGVudGlhbHNSZXNwb25zZRI2CghyZXNwb25zZRgBIAEoCzIkLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEhIKCnNldF9jb29raWUYAiADKAkiZwoTQnJvd3NlckxvZ2luUmVxdWVzdBImCgdyZXF1ZXN0GAEgASgLMhUuYXV0aC52MS5Mb2dpblJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiVAoUQnJvd3NlckxvZ2luUmVzcG9uc2USKAoIcmVzcG9uc2UYASABKAsyFi5hdXRoLnYxLkxvZ2luUmVzcG9uc2USEgoKc2V0X2Nvb2tpZRgCIAMoCSJ5ChxCcm93c2VyUmVmcmVzaFNlc3Npb25SZXF1ZXN0Ei8KB3JlcXVlc3QYASABKAsyHi5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJmCh1Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXNwb25zZRIxCghyZXNwb25zZRgBIAEoCzIfLmF1dGgudjEuUmVmcmVzaFNlc3Npb25SZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJImkKFEJyb3dzZXJMb2dvdXRSZXF1ZXN0EicKB3JlcXVlc3QYASABKAsyFi5hdXRoLnYxLkxvZ291dFJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiVgoVQnJvd3NlckxvZ291dFJlc3BvbnNlEikKCHJlc3BvbnNlGAEgASgLMhcuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJIm8KF0Jyb3dzZXJMb2dvdXRBbGxSZXF1ZXN0EioKB3JlcXVlc3QYASABKAsyGS5hdXRoLnYxLkxvZ291dEFsbFJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiXAoYQnJvd3NlckxvZ291dEFsbFJlc3BvbnNlEiwKCHJlc3BvbnNlGAEgASgLMhouYXV0aC52MS5Mb2dvdXRBbGxSZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJMvkCCgtBdXRoU2VydmljZRJgChNSZWdpc3RlckNyZWRlbnRpYWxzEiMuYXV0aC52MS5SZWdpc3RlckNyZWRlbnRpYWxzUmVxdWVzdBokLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEjYKBUxvZ2luEhUuYXV0aC52MS5Mb2dpblJlcXVlc3QaFi5hdXRoLnYxLkxvZ2luUmVzcG9uc2USUQoOUmVmcmVzaFNlc3Npb24SHi5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVxdWVzdBofLmF1dGgudjEuUmVmcmVzaFNlc3Npb25SZXNwb25zZRI5CgZMb2dvdXQSFi5hdXRoLnYxLkxvZ291dFJlcXVlc3QaFy5hdXRoLnYxLkxvZ291dFJlc3BvbnNlEkIKCUxvZ291dEFsbBIZLmF1dGgudjEuTG9nb3V0QWxsUmVxdWVzdBoaLmF1dGgudjEuTG9nb3V0QWxsUmVzcG9uc2Uy6QMKEkF1dGhCcm93c2VyU2VydmljZRJ1ChpCcm93c2VyUmVnaXN0ZXJDcmVkZW50aWFscxIqLmF1dGgudjEuQnJvd3NlclJlZ2lzdGVyQ3JlZGVudGlhbHNSZXF1ZXN0GisuYXV0aC52MS5Ccm93c2VyUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEksKDEJyb3dzZXJMb2dpbhIcLmF1dGgudjEuQnJvd3NlckxvZ2luUmVxdWVzdBodLmF1dGgudjEuQnJvd3NlckxvZ2luUmVzcG9uc2USZgoVQnJvd3NlclJlZnJlc2hTZXNzaW9uEiUuYXV0aC52MS5Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXF1ZXN0GiYuYXV0aC52MS5Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXNwb25zZRJOCg1Ccm93c2VyTG9nb3V0Eh0uYXV0aC52MS5Ccm93c2VyTG9nb3V0UmVxdWVzdBoeLmF1dGgudjEuQnJvd3NlckxvZ291dFJlc3BvbnNlElcKEEJyb3dzZXJMb2dvdXRBbGwSIC5hdXRoLnYxLkJyb3dzZXJMb2dvdXRBbGxSZXF1ZXN0GiEuYXV0aC52MS5Ccm93c2VyTG9nb3V0QWxsUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL2F1dGgvdjE7YXV0aHYxYgZwcm90bzM");
 
 /**
  * RegisterCredentialsRequest carries the secret material needed for credential registration.
@@ -195,6 +195,324 @@ export const LogoutAllResponseSchema: GenMessage<LogoutAllResponse> = /*@__PURE_
   messageDesc(file_auth_v1_auth, 9);
 
 /**
+ * BrowserContext is private transport data, never a public request body or log payload.
+ * Values retain individual HTTP header lines, including duplicates; gateways do not parse cookies.
+ * Each field accepts at most 16 lines; cookie totals at most 8192 bytes, origin 2048,
+ * and sec_fetch_site 256. CR, LF and NUL are forbidden in all values.
+ *
+ * @generated from message auth.v1.BrowserContext
+ */
+export type BrowserContext = Message<"auth.v1.BrowserContext"> & {
+  /**
+   * Cookie contains opaque Cookie header lines.
+   *
+   * @generated from field: repeated string cookie = 1;
+   */
+  cookie: string[];
+
+  /**
+   * Origin preserves duplicates so Auth can reject ambiguous origins.
+   *
+   * @generated from field: repeated string origin = 2;
+   */
+  origin: string[];
+
+  /**
+   * SecFetchSite preserves fetch metadata for Auth's browser security policy.
+   *
+   * @generated from field: repeated string sec_fetch_site = 3;
+   */
+  secFetchSite: string[];
+};
+
+/**
+ * Describes the message auth.v1.BrowserContext.
+ * Use `create(BrowserContextSchema)` to create a new message.
+ */
+export const BrowserContextSchema: GenMessage<BrowserContext> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 10);
+
+/**
+ * BrowserRegisterCredentialsRequest carries only typed Auth input and browser context.
+ *
+ * @generated from message auth.v1.BrowserRegisterCredentialsRequest
+ */
+export type BrowserRegisterCredentialsRequest = Message<"auth.v1.BrowserRegisterCredentialsRequest"> & {
+  /**
+   * Request is the original public request without added token fields.
+   *
+   * @generated from field: auth.v1.RegisterCredentialsRequest request = 1;
+   */
+  request?: RegisterCredentialsRequest | undefined;
+
+  /**
+   * Context is reconstructed exclusively from allowed browser headers.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message auth.v1.BrowserRegisterCredentialsRequest.
+ * Use `create(BrowserRegisterCredentialsRequestSchema)` to create a new message.
+ */
+export const BrowserRegisterCredentialsRequestSchema: GenMessage<BrowserRegisterCredentialsRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 11);
+
+/**
+ * BrowserRegisterCredentialsResponse is private and must be unwrapped before returning to a browser.
+ *
+ * @generated from message auth.v1.BrowserRegisterCredentialsResponse
+ */
+export type BrowserRegisterCredentialsResponse = Message<"auth.v1.BrowserRegisterCredentialsResponse"> & {
+  /**
+   * Response is the original public response.
+   *
+   * @generated from field: auth.v1.RegisterCredentialsResponse response = 1;
+   */
+  response?: RegisterCredentialsResponse | undefined;
+
+  /**
+   * SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+   *
+   * @generated from field: repeated string set_cookie = 2;
+   */
+  setCookie: string[];
+};
+
+/**
+ * Describes the message auth.v1.BrowserRegisterCredentialsResponse.
+ * Use `create(BrowserRegisterCredentialsResponseSchema)` to create a new message.
+ */
+export const BrowserRegisterCredentialsResponseSchema: GenMessage<BrowserRegisterCredentialsResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 12);
+
+/**
+ * BrowserLoginRequest carries only typed Auth input and browser context.
+ *
+ * @generated from message auth.v1.BrowserLoginRequest
+ */
+export type BrowserLoginRequest = Message<"auth.v1.BrowserLoginRequest"> & {
+  /**
+   * Request is the original public request without added token fields.
+   *
+   * @generated from field: auth.v1.LoginRequest request = 1;
+   */
+  request?: LoginRequest | undefined;
+
+  /**
+   * Context is reconstructed exclusively from allowed browser headers.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message auth.v1.BrowserLoginRequest.
+ * Use `create(BrowserLoginRequestSchema)` to create a new message.
+ */
+export const BrowserLoginRequestSchema: GenMessage<BrowserLoginRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 13);
+
+/**
+ * BrowserLoginResponse is private and must be unwrapped before returning to a browser.
+ *
+ * @generated from message auth.v1.BrowserLoginResponse
+ */
+export type BrowserLoginResponse = Message<"auth.v1.BrowserLoginResponse"> & {
+  /**
+   * Response is the original public response.
+   *
+   * @generated from field: auth.v1.LoginResponse response = 1;
+   */
+  response?: LoginResponse | undefined;
+
+  /**
+   * SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+   *
+   * @generated from field: repeated string set_cookie = 2;
+   */
+  setCookie: string[];
+};
+
+/**
+ * Describes the message auth.v1.BrowserLoginResponse.
+ * Use `create(BrowserLoginResponseSchema)` to create a new message.
+ */
+export const BrowserLoginResponseSchema: GenMessage<BrowserLoginResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 14);
+
+/**
+ * BrowserRefreshSessionRequest carries only typed Auth input and browser context.
+ *
+ * @generated from message auth.v1.BrowserRefreshSessionRequest
+ */
+export type BrowserRefreshSessionRequest = Message<"auth.v1.BrowserRefreshSessionRequest"> & {
+  /**
+   * Request is the original public request without added token fields.
+   *
+   * @generated from field: auth.v1.RefreshSessionRequest request = 1;
+   */
+  request?: RefreshSessionRequest | undefined;
+
+  /**
+   * Context is reconstructed exclusively from allowed browser headers.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message auth.v1.BrowserRefreshSessionRequest.
+ * Use `create(BrowserRefreshSessionRequestSchema)` to create a new message.
+ */
+export const BrowserRefreshSessionRequestSchema: GenMessage<BrowserRefreshSessionRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 15);
+
+/**
+ * BrowserRefreshSessionResponse is private and must be unwrapped before returning to a browser.
+ *
+ * @generated from message auth.v1.BrowserRefreshSessionResponse
+ */
+export type BrowserRefreshSessionResponse = Message<"auth.v1.BrowserRefreshSessionResponse"> & {
+  /**
+   * Response is the original public response.
+   *
+   * @generated from field: auth.v1.RefreshSessionResponse response = 1;
+   */
+  response?: RefreshSessionResponse | undefined;
+
+  /**
+   * SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+   *
+   * @generated from field: repeated string set_cookie = 2;
+   */
+  setCookie: string[];
+};
+
+/**
+ * Describes the message auth.v1.BrowserRefreshSessionResponse.
+ * Use `create(BrowserRefreshSessionResponseSchema)` to create a new message.
+ */
+export const BrowserRefreshSessionResponseSchema: GenMessage<BrowserRefreshSessionResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 16);
+
+/**
+ * BrowserLogoutRequest carries only typed Auth input and browser context.
+ *
+ * @generated from message auth.v1.BrowserLogoutRequest
+ */
+export type BrowserLogoutRequest = Message<"auth.v1.BrowserLogoutRequest"> & {
+  /**
+   * Request is the original public request without added token fields.
+   *
+   * @generated from field: auth.v1.LogoutRequest request = 1;
+   */
+  request?: LogoutRequest | undefined;
+
+  /**
+   * Context is reconstructed exclusively from allowed browser headers.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message auth.v1.BrowserLogoutRequest.
+ * Use `create(BrowserLogoutRequestSchema)` to create a new message.
+ */
+export const BrowserLogoutRequestSchema: GenMessage<BrowserLogoutRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 17);
+
+/**
+ * BrowserLogoutResponse is private and must be unwrapped before returning to a browser.
+ *
+ * @generated from message auth.v1.BrowserLogoutResponse
+ */
+export type BrowserLogoutResponse = Message<"auth.v1.BrowserLogoutResponse"> & {
+  /**
+   * Response is the original public response.
+   *
+   * @generated from field: auth.v1.LogoutResponse response = 1;
+   */
+  response?: LogoutResponse | undefined;
+
+  /**
+   * SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+   *
+   * @generated from field: repeated string set_cookie = 2;
+   */
+  setCookie: string[];
+};
+
+/**
+ * Describes the message auth.v1.BrowserLogoutResponse.
+ * Use `create(BrowserLogoutResponseSchema)` to create a new message.
+ */
+export const BrowserLogoutResponseSchema: GenMessage<BrowserLogoutResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 18);
+
+/**
+ * BrowserLogoutAllRequest carries only typed Auth input and browser context.
+ *
+ * @generated from message auth.v1.BrowserLogoutAllRequest
+ */
+export type BrowserLogoutAllRequest = Message<"auth.v1.BrowserLogoutAllRequest"> & {
+  /**
+   * Request is the original public request without added token fields.
+   *
+   * @generated from field: auth.v1.LogoutAllRequest request = 1;
+   */
+  request?: LogoutAllRequest | undefined;
+
+  /**
+   * Context is reconstructed exclusively from allowed browser headers.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message auth.v1.BrowserLogoutAllRequest.
+ * Use `create(BrowserLogoutAllRequestSchema)` to create a new message.
+ */
+export const BrowserLogoutAllRequestSchema: GenMessage<BrowserLogoutAllRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 19);
+
+/**
+ * BrowserLogoutAllResponse is private and must be unwrapped before returning to a browser.
+ *
+ * @generated from message auth.v1.BrowserLogoutAllResponse
+ */
+export type BrowserLogoutAllResponse = Message<"auth.v1.BrowserLogoutAllResponse"> & {
+  /**
+   * Response is the original public response.
+   *
+   * @generated from field: auth.v1.LogoutAllResponse response = 1;
+   */
+  response?: LogoutAllResponse | undefined;
+
+  /**
+   * SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+   *
+   * @generated from field: repeated string set_cookie = 2;
+   */
+  setCookie: string[];
+};
+
+/**
+ * Describes the message auth.v1.BrowserLogoutAllResponse.
+ * Use `create(BrowserLogoutAllResponseSchema)` to create a new message.
+ */
+export const BrowserLogoutAllResponseSchema: GenMessage<BrowserLogoutAllResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 20);
+
+/**
  * AuthService registers and verifies user-controlled credentials.
  *
  * @generated from service auth.v1.AuthService
@@ -252,3 +570,62 @@ export const AuthService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_auth_v1_auth, 0);
+
+/**
+ * AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
+ *
+ * @generated from service auth.v1.AuthBrowserService
+ */
+export const AuthBrowserService: GenService<{
+  /**
+   * RegisterCredentials delegates to the same public Auth handler and browser security policy.
+   *
+   * @generated from rpc auth.v1.AuthBrowserService.BrowserRegisterCredentials
+   */
+  browserRegisterCredentials: {
+    methodKind: "unary";
+    input: typeof BrowserRegisterCredentialsRequestSchema;
+    output: typeof BrowserRegisterCredentialsResponseSchema;
+  },
+  /**
+   * Login delegates to the same public Auth handler and browser security policy.
+   *
+   * @generated from rpc auth.v1.AuthBrowserService.BrowserLogin
+   */
+  browserLogin: {
+    methodKind: "unary";
+    input: typeof BrowserLoginRequestSchema;
+    output: typeof BrowserLoginResponseSchema;
+  },
+  /**
+   * RefreshSession delegates to the same public Auth handler and browser security policy.
+   *
+   * @generated from rpc auth.v1.AuthBrowserService.BrowserRefreshSession
+   */
+  browserRefreshSession: {
+    methodKind: "unary";
+    input: typeof BrowserRefreshSessionRequestSchema;
+    output: typeof BrowserRefreshSessionResponseSchema;
+  },
+  /**
+   * Logout delegates to the same public Auth handler and browser security policy.
+   *
+   * @generated from rpc auth.v1.AuthBrowserService.BrowserLogout
+   */
+  browserLogout: {
+    methodKind: "unary";
+    input: typeof BrowserLogoutRequestSchema;
+    output: typeof BrowserLogoutResponseSchema;
+  },
+  /**
+   * LogoutAll delegates to the same public Auth handler and browser security policy.
+   *
+   * @generated from rpc auth.v1.AuthBrowserService.BrowserLogoutAll
+   */
+  browserLogoutAll: {
+    methodKind: "unary";
+    input: typeof BrowserLogoutAllRequestSchema;
+    output: typeof BrowserLogoutAllResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_auth_v1_auth, 1);

@@ -35,11 +35,14 @@ type ClientConfig struct {
 	Logger                 *logger.Logger
 	Telemetry              *telemetry.Telemetry
 	Retry                  *RetryPolicy
-	UnaryAuthentication    grpcgo.UnaryClientInterceptor
-	StreamAuthentication   grpcgo.StreamClientInterceptor
-	UnaryInterceptors      []grpcgo.UnaryClientInterceptor
-	StreamInterceptors     []grpcgo.StreamClientInterceptor
-	Dialer                 ContextDialer
+	// DisableRetries rejects Retry and disables resolver service configs and native
+	// retry policies. gRPC may still transparently retry an unprocessed transport call.
+	DisableRetries       bool
+	UnaryAuthentication  grpcgo.UnaryClientInterceptor
+	StreamAuthentication grpcgo.StreamClientInterceptor
+	UnaryInterceptors    []grpcgo.UnaryClientInterceptor
+	StreamInterceptors   []grpcgo.StreamClientInterceptor
+	Dialer               ContextDialer
 }
 
 // Client владеет одним переиспользуемым grpc.ClientConn.
@@ -93,6 +96,9 @@ func NewClient(ctx context.Context, config ClientConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	if config.DisableRetries && config.Retry != nil {
+		return nil, errors.New("grpc: retries are disabled but retry policy is configured")
+	}
 	retry, err := newRetrySettings(config.Retry)
 	if err != nil {
 		return nil, err
@@ -133,6 +139,9 @@ func NewClient(ctx context.Context, config ClientConfig) (*Client, error) {
 		),
 		grpcgo.WithChainUnaryInterceptor(unaryInterceptors...),
 		grpcgo.WithChainStreamInterceptor(streamInterceptors...),
+	}
+	if config.DisableRetries {
+		options = append(options, grpcgo.WithDisableRetry(), grpcgo.WithDisableServiceConfig())
 	}
 	if config.Dialer != nil {
 		options = append(options, grpcgo.WithContextDialer(config.Dialer))

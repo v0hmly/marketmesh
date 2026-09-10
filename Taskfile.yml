@@ -253,6 +253,11 @@ tasks:
     cmds:
       - bash services/user/internal/adapter/out/postgres/testdata/integration.sh
 
+  auth:browser:integration:
+    desc: Проверить публичный HTTPS Auth через обратный mTLS-туннель с PostgreSQL и Redis
+    cmds:
+      - bash services/gateway-in/internal/app/testdata/auth/integration.sh
+
   auth:registration:integration:
     desc: Проверить атомарную регистрацию и доставку outbox через PostgreSQL и NATS JetStream
     cmds:

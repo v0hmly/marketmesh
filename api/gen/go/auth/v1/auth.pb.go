@@ -436,6 +436,623 @@ func (*LogoutAllResponse) Descriptor() ([]byte, []int) {
 	return file_auth_v1_auth_proto_rawDescGZIP(), []int{9}
 }
 
+// BrowserContext is private transport data, never a public request body or log payload.
+// Values retain individual HTTP header lines, including duplicates; gateways do not parse cookies.
+// Each field accepts at most 16 lines; cookie totals at most 8192 bytes, origin 2048,
+// and sec_fetch_site 256. CR, LF and NUL are forbidden in all values.
+type BrowserContext struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Cookie contains opaque Cookie header lines.
+	Cookie []string `protobuf:"bytes,1,rep,name=cookie,proto3" json:"cookie,omitempty"`
+	// Origin preserves duplicates so Auth can reject ambiguous origins.
+	Origin []string `protobuf:"bytes,2,rep,name=origin,proto3" json:"origin,omitempty"`
+	// SecFetchSite preserves fetch metadata for Auth's browser security policy.
+	SecFetchSite  []string `protobuf:"bytes,3,rep,name=sec_fetch_site,json=secFetchSite,proto3" json:"sec_fetch_site,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserContext) Reset() {
+	*x = BrowserContext{}
+	mi := &file_auth_v1_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserContext) ProtoMessage() {}
+
+func (x *BrowserContext) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserContext.ProtoReflect.Descriptor instead.
+func (*BrowserContext) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *BrowserContext) GetCookie() []string {
+	if x != nil {
+		return x.Cookie
+	}
+	return nil
+}
+
+func (x *BrowserContext) GetOrigin() []string {
+	if x != nil {
+		return x.Origin
+	}
+	return nil
+}
+
+func (x *BrowserContext) GetSecFetchSite() []string {
+	if x != nil {
+		return x.SecFetchSite
+	}
+	return nil
+}
+
+// BrowserRegisterCredentialsRequest carries only typed Auth input and browser context.
+type BrowserRegisterCredentialsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public request without added token fields.
+	Request *RegisterCredentialsRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context is reconstructed exclusively from allowed browser headers.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRegisterCredentialsRequest) Reset() {
+	*x = BrowserRegisterCredentialsRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRegisterCredentialsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRegisterCredentialsRequest) ProtoMessage() {}
+
+func (x *BrowserRegisterCredentialsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRegisterCredentialsRequest.ProtoReflect.Descriptor instead.
+func (*BrowserRegisterCredentialsRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *BrowserRegisterCredentialsRequest) GetRequest() *RegisterCredentialsRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserRegisterCredentialsRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserRegisterCredentialsResponse is private and must be unwrapped before returning to a browser.
+type BrowserRegisterCredentialsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the original public response.
+	Response *RegisterCredentialsResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRegisterCredentialsResponse) Reset() {
+	*x = BrowserRegisterCredentialsResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRegisterCredentialsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRegisterCredentialsResponse) ProtoMessage() {}
+
+func (x *BrowserRegisterCredentialsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRegisterCredentialsResponse.ProtoReflect.Descriptor instead.
+func (*BrowserRegisterCredentialsResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *BrowserRegisterCredentialsResponse) GetResponse() *RegisterCredentialsResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserRegisterCredentialsResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+// BrowserLoginRequest carries only typed Auth input and browser context.
+type BrowserLoginRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public request without added token fields.
+	Request *LoginRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context is reconstructed exclusively from allowed browser headers.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserLoginRequest) Reset() {
+	*x = BrowserLoginRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserLoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserLoginRequest) ProtoMessage() {}
+
+func (x *BrowserLoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserLoginRequest.ProtoReflect.Descriptor instead.
+func (*BrowserLoginRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *BrowserLoginRequest) GetRequest() *LoginRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserLoginRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserLoginResponse is private and must be unwrapped before returning to a browser.
+type BrowserLoginResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the original public response.
+	Response *LoginResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserLoginResponse) Reset() {
+	*x = BrowserLoginResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserLoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserLoginResponse) ProtoMessage() {}
+
+func (x *BrowserLoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserLoginResponse.ProtoReflect.Descriptor instead.
+func (*BrowserLoginResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BrowserLoginResponse) GetResponse() *LoginResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserLoginResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+// BrowserRefreshSessionRequest carries only typed Auth input and browser context.
+type BrowserRefreshSessionRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public request without added token fields.
+	Request *RefreshSessionRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context is reconstructed exclusively from allowed browser headers.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRefreshSessionRequest) Reset() {
+	*x = BrowserRefreshSessionRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRefreshSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRefreshSessionRequest) ProtoMessage() {}
+
+func (x *BrowserRefreshSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRefreshSessionRequest.ProtoReflect.Descriptor instead.
+func (*BrowserRefreshSessionRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *BrowserRefreshSessionRequest) GetRequest() *RefreshSessionRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserRefreshSessionRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserRefreshSessionResponse is private and must be unwrapped before returning to a browser.
+type BrowserRefreshSessionResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the original public response.
+	Response *RefreshSessionResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRefreshSessionResponse) Reset() {
+	*x = BrowserRefreshSessionResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRefreshSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRefreshSessionResponse) ProtoMessage() {}
+
+func (x *BrowserRefreshSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRefreshSessionResponse.ProtoReflect.Descriptor instead.
+func (*BrowserRefreshSessionResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *BrowserRefreshSessionResponse) GetResponse() *RefreshSessionResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserRefreshSessionResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+// BrowserLogoutRequest carries only typed Auth input and browser context.
+type BrowserLogoutRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public request without added token fields.
+	Request *LogoutRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context is reconstructed exclusively from allowed browser headers.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserLogoutRequest) Reset() {
+	*x = BrowserLogoutRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserLogoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserLogoutRequest) ProtoMessage() {}
+
+func (x *BrowserLogoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserLogoutRequest.ProtoReflect.Descriptor instead.
+func (*BrowserLogoutRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *BrowserLogoutRequest) GetRequest() *LogoutRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserLogoutRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserLogoutResponse is private and must be unwrapped before returning to a browser.
+type BrowserLogoutResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the original public response.
+	Response *LogoutResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserLogoutResponse) Reset() {
+	*x = BrowserLogoutResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserLogoutResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserLogoutResponse) ProtoMessage() {}
+
+func (x *BrowserLogoutResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserLogoutResponse.ProtoReflect.Descriptor instead.
+func (*BrowserLogoutResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *BrowserLogoutResponse) GetResponse() *LogoutResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserLogoutResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+// BrowserLogoutAllRequest carries only typed Auth input and browser context.
+type BrowserLogoutAllRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public request without added token fields.
+	Request *LogoutAllRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context is reconstructed exclusively from allowed browser headers.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserLogoutAllRequest) Reset() {
+	*x = BrowserLogoutAllRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserLogoutAllRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserLogoutAllRequest) ProtoMessage() {}
+
+func (x *BrowserLogoutAllRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserLogoutAllRequest.ProtoReflect.Descriptor instead.
+func (*BrowserLogoutAllRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *BrowserLogoutAllRequest) GetRequest() *LogoutAllRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserLogoutAllRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserLogoutAllResponse is private and must be unwrapped before returning to a browser.
+type BrowserLogoutAllResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the original public response.
+	Response *LogoutAllResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
+	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserLogoutAllResponse) Reset() {
+	*x = BrowserLogoutAllResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserLogoutAllResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserLogoutAllResponse) ProtoMessage() {}
+
+func (x *BrowserLogoutAllResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserLogoutAllResponse.ProtoReflect.Descriptor instead.
+func (*BrowserLogoutAllResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *BrowserLogoutAllResponse) GetResponse() *LogoutAllResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserLogoutAllResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
 
 const file_auth_v1_auth_proto_rawDesc = "" +
@@ -460,13 +1077,58 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\rLogoutRequest\"\x10\n" +
 	"\x0eLogoutResponse\"\x12\n" +
 	"\x10LogoutAllRequest\"\x13\n" +
-	"\x11LogoutAllResponse2\xf9\x02\n" +
+	"\x11LogoutAllResponse\"f\n" +
+	"\x0eBrowserContext\x12\x16\n" +
+	"\x06cookie\x18\x01 \x03(\tR\x06cookie\x12\x16\n" +
+	"\x06origin\x18\x02 \x03(\tR\x06origin\x12$\n" +
+	"\x0esec_fetch_site\x18\x03 \x03(\tR\fsecFetchSite\"\x95\x01\n" +
+	"!BrowserRegisterCredentialsRequest\x12=\n" +
+	"\arequest\x18\x01 \x01(\v2#.auth.v1.RegisterCredentialsRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\x85\x01\n" +
+	"\"BrowserRegisterCredentialsResponse\x12@\n" +
+	"\bresponse\x18\x01 \x01(\v2$.auth.v1.RegisterCredentialsResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"y\n" +
+	"\x13BrowserLoginRequest\x12/\n" +
+	"\arequest\x18\x01 \x01(\v2\x15.auth.v1.LoginRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"i\n" +
+	"\x14BrowserLoginResponse\x122\n" +
+	"\bresponse\x18\x01 \x01(\v2\x16.auth.v1.LoginResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"\x8b\x01\n" +
+	"\x1cBrowserRefreshSessionRequest\x128\n" +
+	"\arequest\x18\x01 \x01(\v2\x1e.auth.v1.RefreshSessionRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"{\n" +
+	"\x1dBrowserRefreshSessionResponse\x12;\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1f.auth.v1.RefreshSessionResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"{\n" +
+	"\x14BrowserLogoutRequest\x120\n" +
+	"\arequest\x18\x01 \x01(\v2\x16.auth.v1.LogoutRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"k\n" +
+	"\x15BrowserLogoutResponse\x123\n" +
+	"\bresponse\x18\x01 \x01(\v2\x17.auth.v1.LogoutResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"\x81\x01\n" +
+	"\x17BrowserLogoutAllRequest\x123\n" +
+	"\arequest\x18\x01 \x01(\v2\x19.auth.v1.LogoutAllRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"q\n" +
+	"\x18BrowserLogoutAllResponse\x126\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1a.auth.v1.LogoutAllResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie2\xf9\x02\n" +
 	"\vAuthService\x12`\n" +
 	"\x13RegisterCredentials\x12#.auth.v1.RegisterCredentialsRequest\x1a$.auth.v1.RegisterCredentialsResponse\x126\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\x12Q\n" +
 	"\x0eRefreshSession\x12\x1e.auth.v1.RefreshSessionRequest\x1a\x1f.auth.v1.RefreshSessionResponse\x129\n" +
 	"\x06Logout\x12\x16.auth.v1.LogoutRequest\x1a\x17.auth.v1.LogoutResponse\x12B\n" +
-	"\tLogoutAll\x12\x19.auth.v1.LogoutAllRequest\x1a\x1a.auth.v1.LogoutAllResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1b\x06proto3"
+	"\tLogoutAll\x12\x19.auth.v1.LogoutAllRequest\x1a\x1a.auth.v1.LogoutAllResponse2\xe9\x03\n" +
+	"\x12AuthBrowserService\x12u\n" +
+	"\x1aBrowserRegisterCredentials\x12*.auth.v1.BrowserRegisterCredentialsRequest\x1a+.auth.v1.BrowserRegisterCredentialsResponse\x12K\n" +
+	"\fBrowserLogin\x12\x1c.auth.v1.BrowserLoginRequest\x1a\x1d.auth.v1.BrowserLoginResponse\x12f\n" +
+	"\x15BrowserRefreshSession\x12%.auth.v1.BrowserRefreshSessionRequest\x1a&.auth.v1.BrowserRefreshSessionResponse\x12N\n" +
+	"\rBrowserLogout\x12\x1d.auth.v1.BrowserLogoutRequest\x1a\x1e.auth.v1.BrowserLogoutResponse\x12W\n" +
+	"\x10BrowserLogoutAll\x12 .auth.v1.BrowserLogoutAllRequest\x1a!.auth.v1.BrowserLogoutAllResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1b\x06proto3"
 
 var (
 	file_auth_v1_auth_proto_rawDescOnce sync.Once
@@ -480,35 +1142,71 @@ func file_auth_v1_auth_proto_rawDescGZIP() []byte {
 	return file_auth_v1_auth_proto_rawDescData
 }
 
-var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_auth_v1_auth_proto_goTypes = []any{
-	(*RegisterCredentialsRequest)(nil),  // 0: auth.v1.RegisterCredentialsRequest
-	(*RegisterCredentialsResponse)(nil), // 1: auth.v1.RegisterCredentialsResponse
-	(*LoginRequest)(nil),                // 2: auth.v1.LoginRequest
-	(*LoginResponse)(nil),               // 3: auth.v1.LoginResponse
-	(*RefreshSessionRequest)(nil),       // 4: auth.v1.RefreshSessionRequest
-	(*RefreshSessionResponse)(nil),      // 5: auth.v1.RefreshSessionResponse
-	(*LogoutRequest)(nil),               // 6: auth.v1.LogoutRequest
-	(*LogoutResponse)(nil),              // 7: auth.v1.LogoutResponse
-	(*LogoutAllRequest)(nil),            // 8: auth.v1.LogoutAllRequest
-	(*LogoutAllResponse)(nil),           // 9: auth.v1.LogoutAllResponse
+	(*RegisterCredentialsRequest)(nil),         // 0: auth.v1.RegisterCredentialsRequest
+	(*RegisterCredentialsResponse)(nil),        // 1: auth.v1.RegisterCredentialsResponse
+	(*LoginRequest)(nil),                       // 2: auth.v1.LoginRequest
+	(*LoginResponse)(nil),                      // 3: auth.v1.LoginResponse
+	(*RefreshSessionRequest)(nil),              // 4: auth.v1.RefreshSessionRequest
+	(*RefreshSessionResponse)(nil),             // 5: auth.v1.RefreshSessionResponse
+	(*LogoutRequest)(nil),                      // 6: auth.v1.LogoutRequest
+	(*LogoutResponse)(nil),                     // 7: auth.v1.LogoutResponse
+	(*LogoutAllRequest)(nil),                   // 8: auth.v1.LogoutAllRequest
+	(*LogoutAllResponse)(nil),                  // 9: auth.v1.LogoutAllResponse
+	(*BrowserContext)(nil),                     // 10: auth.v1.BrowserContext
+	(*BrowserRegisterCredentialsRequest)(nil),  // 11: auth.v1.BrowserRegisterCredentialsRequest
+	(*BrowserRegisterCredentialsResponse)(nil), // 12: auth.v1.BrowserRegisterCredentialsResponse
+	(*BrowserLoginRequest)(nil),                // 13: auth.v1.BrowserLoginRequest
+	(*BrowserLoginResponse)(nil),               // 14: auth.v1.BrowserLoginResponse
+	(*BrowserRefreshSessionRequest)(nil),       // 15: auth.v1.BrowserRefreshSessionRequest
+	(*BrowserRefreshSessionResponse)(nil),      // 16: auth.v1.BrowserRefreshSessionResponse
+	(*BrowserLogoutRequest)(nil),               // 17: auth.v1.BrowserLogoutRequest
+	(*BrowserLogoutResponse)(nil),              // 18: auth.v1.BrowserLogoutResponse
+	(*BrowserLogoutAllRequest)(nil),            // 19: auth.v1.BrowserLogoutAllRequest
+	(*BrowserLogoutAllResponse)(nil),           // 20: auth.v1.BrowserLogoutAllResponse
 }
 var file_auth_v1_auth_proto_depIdxs = []int32{
-	0, // 0: auth.v1.AuthService.RegisterCredentials:input_type -> auth.v1.RegisterCredentialsRequest
-	2, // 1: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
-	4, // 2: auth.v1.AuthService.RefreshSession:input_type -> auth.v1.RefreshSessionRequest
-	6, // 3: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
-	8, // 4: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
-	1, // 5: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
-	3, // 6: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
-	5, // 7: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
-	7, // 8: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
-	9, // 9: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
-	5, // [5:10] is the sub-list for method output_type
-	0, // [0:5] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: auth.v1.BrowserRegisterCredentialsRequest.request:type_name -> auth.v1.RegisterCredentialsRequest
+	10, // 1: auth.v1.BrowserRegisterCredentialsRequest.context:type_name -> auth.v1.BrowserContext
+	1,  // 2: auth.v1.BrowserRegisterCredentialsResponse.response:type_name -> auth.v1.RegisterCredentialsResponse
+	2,  // 3: auth.v1.BrowserLoginRequest.request:type_name -> auth.v1.LoginRequest
+	10, // 4: auth.v1.BrowserLoginRequest.context:type_name -> auth.v1.BrowserContext
+	3,  // 5: auth.v1.BrowserLoginResponse.response:type_name -> auth.v1.LoginResponse
+	4,  // 6: auth.v1.BrowserRefreshSessionRequest.request:type_name -> auth.v1.RefreshSessionRequest
+	10, // 7: auth.v1.BrowserRefreshSessionRequest.context:type_name -> auth.v1.BrowserContext
+	5,  // 8: auth.v1.BrowserRefreshSessionResponse.response:type_name -> auth.v1.RefreshSessionResponse
+	6,  // 9: auth.v1.BrowserLogoutRequest.request:type_name -> auth.v1.LogoutRequest
+	10, // 10: auth.v1.BrowserLogoutRequest.context:type_name -> auth.v1.BrowserContext
+	7,  // 11: auth.v1.BrowserLogoutResponse.response:type_name -> auth.v1.LogoutResponse
+	8,  // 12: auth.v1.BrowserLogoutAllRequest.request:type_name -> auth.v1.LogoutAllRequest
+	10, // 13: auth.v1.BrowserLogoutAllRequest.context:type_name -> auth.v1.BrowserContext
+	9,  // 14: auth.v1.BrowserLogoutAllResponse.response:type_name -> auth.v1.LogoutAllResponse
+	0,  // 15: auth.v1.AuthService.RegisterCredentials:input_type -> auth.v1.RegisterCredentialsRequest
+	2,  // 16: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
+	4,  // 17: auth.v1.AuthService.RefreshSession:input_type -> auth.v1.RefreshSessionRequest
+	6,  // 18: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
+	8,  // 19: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
+	11, // 20: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
+	13, // 21: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
+	15, // 22: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
+	17, // 23: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
+	19, // 24: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
+	1,  // 25: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
+	3,  // 26: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	5,  // 27: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
+	7,  // 28: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	9,  // 29: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
+	12, // 30: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
+	14, // 31: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
+	16, // 32: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
+	18, // 33: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
+	20, // 34: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
+	25, // [25:35] is the sub-list for method output_type
+	15, // [15:25] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_auth_v1_auth_proto_init() }
@@ -522,9 +1220,9 @@ func file_auth_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_v1_auth_proto_rawDesc), len(file_auth_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   21,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_auth_v1_auth_proto_goTypes,
 		DependencyIndexes: file_auth_v1_auth_proto_depIdxs,

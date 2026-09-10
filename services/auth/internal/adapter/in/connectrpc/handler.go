@@ -114,6 +114,9 @@ func (handler *Handler) RegisterCredentials(
 	}
 	password := request.Msg.GetPassword()
 	defer clear(password)
+	if handler.sessions != nil && !handler.validOrigin(request.Header()) {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
+	}
 	if err := handler.registration.Execute(ctx, request.Msg.GetIdentifier(), password); err != nil {
 		if isDomainInputError(err) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(invalidInputMessage))
@@ -278,7 +281,7 @@ func cookieValue(header http.Header, name string) (string, error) {
 	return found, nil
 }
 func (handler *Handler) validOrigin(header http.Header) bool {
-	if len(header.Values("Origin")) != 1 || strings.EqualFold(strings.TrimSpace(header.Get("Sec-Fetch-Site")), "cross-site") {
+	if len(header.Values("Origin")) != 1 || len(header.Values("Sec-Fetch-Site")) > 1 || strings.EqualFold(strings.TrimSpace(header.Get("Sec-Fetch-Site")), "cross-site") {
 		return false
 	}
 	origin := strings.TrimSpace(header.Get("Origin"))

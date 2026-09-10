@@ -232,6 +232,8 @@ enum RouteId {
   ROUTE_ID_AUTH_REVOKE_SESSION = 4;
   // ROUTE_ID_AUTH_SESSION_ASSERTION exchanges external session state for an internal assertion.
   ROUTE_ID_AUTH_SESSION_ASSERTION = 5;
+  // ROUTE_ID_AUTH_LOGOUT_ALL revokes every session of the authenticated subject.
+  ROUTE_ID_AUTH_LOGOUT_ALL = 6;
   // ROUTE_ID_USER_GET_ME reads the current user profile.
   ROUTE_ID_USER_GET_ME = 100;
   // ROUTE_ID_USER_UPDATE_ME updates the current user profile.

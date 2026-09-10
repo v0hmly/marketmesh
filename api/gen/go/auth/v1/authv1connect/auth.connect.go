@@ -23,6 +23,8 @@ const _ = connect.IsAtLeastVersion1_13_0
 const (
 	// AuthServiceName is the fully-qualified name of the AuthService service.
 	AuthServiceName = "auth.v1.AuthService"
+	// AuthBrowserServiceName is the fully-qualified name of the AuthBrowserService service.
+	AuthBrowserServiceName = "auth.v1.AuthBrowserService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -45,6 +47,21 @@ const (
 	AuthServiceLogoutProcedure = "/auth.v1.AuthService/Logout"
 	// AuthServiceLogoutAllProcedure is the fully-qualified name of the AuthService's LogoutAll RPC.
 	AuthServiceLogoutAllProcedure = "/auth.v1.AuthService/LogoutAll"
+	// AuthBrowserServiceBrowserRegisterCredentialsProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserRegisterCredentials RPC.
+	AuthBrowserServiceBrowserRegisterCredentialsProcedure = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
+	// AuthBrowserServiceBrowserLoginProcedure is the fully-qualified name of the AuthBrowserService's
+	// BrowserLogin RPC.
+	AuthBrowserServiceBrowserLoginProcedure = "/auth.v1.AuthBrowserService/BrowserLogin"
+	// AuthBrowserServiceBrowserRefreshSessionProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserRefreshSession RPC.
+	AuthBrowserServiceBrowserRefreshSessionProcedure = "/auth.v1.AuthBrowserService/BrowserRefreshSession"
+	// AuthBrowserServiceBrowserLogoutProcedure is the fully-qualified name of the AuthBrowserService's
+	// BrowserLogout RPC.
+	AuthBrowserServiceBrowserLogoutProcedure = "/auth.v1.AuthBrowserService/BrowserLogout"
+	// AuthBrowserServiceBrowserLogoutAllProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserLogoutAll RPC.
+	AuthBrowserServiceBrowserLogoutAllProcedure = "/auth.v1.AuthBrowserService/BrowserLogoutAll"
 )
 
 // AuthServiceClient is a client for the auth.v1.AuthService service.
@@ -229,4 +246,188 @@ func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[
 
 func (UnimplementedAuthServiceHandler) LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.LogoutAll is not implemented"))
+}
+
+// AuthBrowserServiceClient is a client for the auth.v1.AuthBrowserService service.
+type AuthBrowserServiceClient interface {
+	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
+	BrowserRegisterCredentials(context.Context, *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error)
+	// Login delegates to the same public Auth handler and browser security policy.
+	BrowserLogin(context.Context, *connect.Request[v1.BrowserLoginRequest]) (*connect.Response[v1.BrowserLoginResponse], error)
+	// RefreshSession delegates to the same public Auth handler and browser security policy.
+	BrowserRefreshSession(context.Context, *connect.Request[v1.BrowserRefreshSessionRequest]) (*connect.Response[v1.BrowserRefreshSessionResponse], error)
+	// Logout delegates to the same public Auth handler and browser security policy.
+	BrowserLogout(context.Context, *connect.Request[v1.BrowserLogoutRequest]) (*connect.Response[v1.BrowserLogoutResponse], error)
+	// LogoutAll delegates to the same public Auth handler and browser security policy.
+	BrowserLogoutAll(context.Context, *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error)
+}
+
+// NewAuthBrowserServiceClient constructs a client for the auth.v1.AuthBrowserService service. By
+// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
+// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
+// connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewAuthBrowserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AuthBrowserServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	authBrowserServiceMethods := v1.File_auth_v1_auth_proto.Services().ByName("AuthBrowserService").Methods()
+	return &authBrowserServiceClient{
+		browserRegisterCredentials: connect.NewClient[v1.BrowserRegisterCredentialsRequest, v1.BrowserRegisterCredentialsResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserRegisterCredentialsProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRegisterCredentials")),
+			connect.WithClientOptions(opts...),
+		),
+		browserLogin: connect.NewClient[v1.BrowserLoginRequest, v1.BrowserLoginResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserLoginProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		browserRefreshSession: connect.NewClient[v1.BrowserRefreshSessionRequest, v1.BrowserRefreshSessionResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserRefreshSessionProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRefreshSession")),
+			connect.WithClientOptions(opts...),
+		),
+		browserLogout: connect.NewClient[v1.BrowserLogoutRequest, v1.BrowserLogoutResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserLogoutProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogout")),
+			connect.WithClientOptions(opts...),
+		),
+		browserLogoutAll: connect.NewClient[v1.BrowserLogoutAllRequest, v1.BrowserLogoutAllResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserLogoutAllProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogoutAll")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// authBrowserServiceClient implements AuthBrowserServiceClient.
+type authBrowserServiceClient struct {
+	browserRegisterCredentials *connect.Client[v1.BrowserRegisterCredentialsRequest, v1.BrowserRegisterCredentialsResponse]
+	browserLogin               *connect.Client[v1.BrowserLoginRequest, v1.BrowserLoginResponse]
+	browserRefreshSession      *connect.Client[v1.BrowserRefreshSessionRequest, v1.BrowserRefreshSessionResponse]
+	browserLogout              *connect.Client[v1.BrowserLogoutRequest, v1.BrowserLogoutResponse]
+	browserLogoutAll           *connect.Client[v1.BrowserLogoutAllRequest, v1.BrowserLogoutAllResponse]
+}
+
+// BrowserRegisterCredentials calls auth.v1.AuthBrowserService.BrowserRegisterCredentials.
+func (c *authBrowserServiceClient) BrowserRegisterCredentials(ctx context.Context, req *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error) {
+	return c.browserRegisterCredentials.CallUnary(ctx, req)
+}
+
+// BrowserLogin calls auth.v1.AuthBrowserService.BrowserLogin.
+func (c *authBrowserServiceClient) BrowserLogin(ctx context.Context, req *connect.Request[v1.BrowserLoginRequest]) (*connect.Response[v1.BrowserLoginResponse], error) {
+	return c.browserLogin.CallUnary(ctx, req)
+}
+
+// BrowserRefreshSession calls auth.v1.AuthBrowserService.BrowserRefreshSession.
+func (c *authBrowserServiceClient) BrowserRefreshSession(ctx context.Context, req *connect.Request[v1.BrowserRefreshSessionRequest]) (*connect.Response[v1.BrowserRefreshSessionResponse], error) {
+	return c.browserRefreshSession.CallUnary(ctx, req)
+}
+
+// BrowserLogout calls auth.v1.AuthBrowserService.BrowserLogout.
+func (c *authBrowserServiceClient) BrowserLogout(ctx context.Context, req *connect.Request[v1.BrowserLogoutRequest]) (*connect.Response[v1.BrowserLogoutResponse], error) {
+	return c.browserLogout.CallUnary(ctx, req)
+}
+
+// BrowserLogoutAll calls auth.v1.AuthBrowserService.BrowserLogoutAll.
+func (c *authBrowserServiceClient) BrowserLogoutAll(ctx context.Context, req *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error) {
+	return c.browserLogoutAll.CallUnary(ctx, req)
+}
+
+// AuthBrowserServiceHandler is an implementation of the auth.v1.AuthBrowserService service.
+type AuthBrowserServiceHandler interface {
+	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
+	BrowserRegisterCredentials(context.Context, *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error)
+	// Login delegates to the same public Auth handler and browser security policy.
+	BrowserLogin(context.Context, *connect.Request[v1.BrowserLoginRequest]) (*connect.Response[v1.BrowserLoginResponse], error)
+	// RefreshSession delegates to the same public Auth handler and browser security policy.
+	BrowserRefreshSession(context.Context, *connect.Request[v1.BrowserRefreshSessionRequest]) (*connect.Response[v1.BrowserRefreshSessionResponse], error)
+	// Logout delegates to the same public Auth handler and browser security policy.
+	BrowserLogout(context.Context, *connect.Request[v1.BrowserLogoutRequest]) (*connect.Response[v1.BrowserLogoutResponse], error)
+	// LogoutAll delegates to the same public Auth handler and browser security policy.
+	BrowserLogoutAll(context.Context, *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error)
+}
+
+// NewAuthBrowserServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewAuthBrowserServiceHandler(svc AuthBrowserServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	authBrowserServiceMethods := v1.File_auth_v1_auth_proto.Services().ByName("AuthBrowserService").Methods()
+	authBrowserServiceBrowserRegisterCredentialsHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserRegisterCredentialsProcedure,
+		svc.BrowserRegisterCredentials,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRegisterCredentials")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserLoginHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserLoginProcedure,
+		svc.BrowserLogin,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserRefreshSessionHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserRefreshSessionProcedure,
+		svc.BrowserRefreshSession,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRefreshSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserLogoutHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserLogoutProcedure,
+		svc.BrowserLogout,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogout")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserLogoutAllHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserLogoutAllProcedure,
+		svc.BrowserLogoutAll,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogoutAll")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/auth.v1.AuthBrowserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case AuthBrowserServiceBrowserRegisterCredentialsProcedure:
+			authBrowserServiceBrowserRegisterCredentialsHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserLoginProcedure:
+			authBrowserServiceBrowserLoginHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserRefreshSessionProcedure:
+			authBrowserServiceBrowserRefreshSessionHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserLogoutProcedure:
+			authBrowserServiceBrowserLogoutHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserLogoutAllProcedure:
+			authBrowserServiceBrowserLogoutAllHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedAuthBrowserServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedAuthBrowserServiceHandler struct{}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserRegisterCredentials(context.Context, *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRegisterCredentials is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserLogin(context.Context, *connect.Request[v1.BrowserLoginRequest]) (*connect.Response[v1.BrowserLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserLogin is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserRefreshSession(context.Context, *connect.Request[v1.BrowserRefreshSessionRequest]) (*connect.Response[v1.BrowserRefreshSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRefreshSession is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserLogout(context.Context, *connect.Request[v1.BrowserLogoutRequest]) (*connect.Response[v1.BrowserLogoutResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserLogout is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserLogoutAll(context.Context, *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserLogoutAll is not implemented"))
 }

@@ -31,6 +31,7 @@ type sessionResources struct {
 	redis      *platformredis.Client
 	keys       *sessionkeys.Manager
 	server     *platformgrpc.Server
+	policy     *workloadid.Policy
 	listener   net.Listener
 	components []serviceruntime.Component
 }
@@ -81,6 +82,7 @@ func newSessionResources(ctx context.Context, config config, log *logger.Logger,
 	if err != nil {
 		return nil, err
 	}
+	resources.policy = handler.Policy()
 	resources.server, err = platformgrpc.NewServer(platformgrpc.ServerConfig{
 		Environment: config.environment, ConnectionTimeout: 3 * time.Second, RequestTimeout: config.httpRequestTimeout,
 		KeepaliveTime: 2 * time.Minute, KeepaliveTimeout: 20 * time.Second, MaxReceiveMessageBytes: 16 * 1024, MaxSendMessageBytes: 64 * 1024,
@@ -195,4 +197,16 @@ func sessionRedisConfig(config sessionConfig) (platformredis.Config, error) {
 		Pool:     platformredis.PoolConfig{Size: 10, MinIdleConns: 1, MaxIdleConns: 10, MaxActiveConns: 10, MaxConcurrentDials: 2, ConnMaxIdleTime: 5 * time.Minute, ConnMaxLifetime: 30 * time.Minute},
 		Timeouts: platformredis.TimeoutConfig{Connect: time.Second, Command: 3 * time.Second, Pool: time.Second, Read: 2 * time.Second, Write: 2 * time.Second, Readiness: 2 * time.Second, Shutdown: 5 * time.Second},
 	}, nil
+}
+
+func (resources *sessionResources) registerBrowser(handler *connectadapter.Handler) error {
+	if resources == nil {
+		return nil
+	}
+	bridge, err := internalgrpc.NewBrowser(handler, resources.policy)
+	if err != nil {
+		return err
+	}
+	authv1.RegisterAuthBrowserServiceServer(resources.server.GRPCServer(), bridge)
+	return nil
 }

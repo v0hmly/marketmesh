@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -61,7 +62,7 @@ func run(ctx context.Context, dependencies systemDependencies) error {
 		Service: serviceName, Version: cfg.serviceVersion, Environment: cfg.environment,
 		Level: cfg.logLevel, Output: dependencies.stdout,
 		MaskFields: []string{
-			"authorization", "cookie", "idempotency_key", "payload", "request_id", "token",
+			"authorization", "cookie", "set-cookie", "password", "idempotency_key", "payload", "request_id", "token",
 		},
 	})
 	if err != nil {
@@ -84,6 +85,10 @@ func runService(
 	listen listenFunc,
 ) (resultErr error) {
 	tlsConfig, err := loadServerTLS(cfg.tlsCertificate, cfg.tlsPrivateKey, cfg.tlsClientCA)
+	if err != nil {
+		return err
+	}
+	publicTLS, err := loadPublicTLS(cfg)
 	if err != nil {
 		return err
 	}
@@ -128,6 +133,9 @@ func runService(
 		return fmt.Errorf("creating public HTTP server: %w", err)
 	}
 
+	// This surrounds platform body-limit errors as well as Connect responses.
+	httpServer.Handler = protectAuthResponses(cfg, httpServer.Handler)
+
 	grpcListener, err := listen("tcp", cfg.grpcAddress)
 	if err != nil {
 		return fmt.Errorf("listening for tunnel gRPC: %w", err)
@@ -136,6 +144,9 @@ func runService(
 	if err != nil {
 		_ = grpcListener.Close()
 		return fmt.Errorf("listening for public HTTP: %w", err)
+	}
+	if publicTLS != nil {
+		httpListener = tls.NewListener(httpListener, publicTLS)
 	}
 	listenersOwned := true
 	defer func() {
@@ -203,6 +214,8 @@ func tunnelConfig(
 		},
 	}
 
+	addAuthPolicies(cfg, routes)
+
 	return tunnel.Config{
 		InstanceID: instanceID,
 		Peer: tunnel.PeerPolicy{
@@ -230,7 +243,7 @@ func newHealth(cfg config, registry *tunnel.Registry) (*serviceruntime.Health, e
 			Check: func(context.Context) error {
 				readReady := registry.IsRouteReady(contractv1.RouteId_ROUTE_ID_USER_GET_ME)
 				mutateReady := registry.IsRouteReady(contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME)
-				if !readReady || !mutateReady {
+				if !readReady || !mutateReady || !authRoutesReady(cfg, registry) {
 					return errors.New("required routes are not ready")
 				}
 				return nil
@@ -272,6 +285,9 @@ func publicHandler(
 
 	mux := http.NewServeMux()
 	mux.Handle("/", healthHandler)
+	if err := registerAuthHandler(mux, cfg, registry); err != nil {
+		return nil, err
+	}
 	mux.Handle(e2ev1connect.FakeInternalServiceReadProcedure, readHandler)
 	mux.Handle(e2ev1connect.FakeInternalServiceMutateProcedure, mutateHandler)
 	if err := registerE2ERoutingSnapshot(mux, cfg, registry); err != nil {

@@ -8,6 +8,9 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/v0hmly/marketmesh/platform/logger"
+	public "github.com/v0hmly/marketmesh/services/auth/internal/adapter/in/connectrpc"
+	"io"
 	"math/big"
 	"net"
 	"net/url"
@@ -88,6 +91,20 @@ func TestPrivateRPCMTLSBoundary(t *testing.T) {
 	}
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{serverCert}, ClientCAs: roots, ClientAuth: tls.RequireAndVerifyClientCert})), grpc.UnaryInterceptor(workloadid.UnaryServerInterceptor(handler.Policy())))
 	authv1.RegisterAuthInternalServiceServer(server, handler)
+	log, err := logger.New(logger.Config{Service: "auth", Version: "test", Environment: "test", Output: io.Discard})
+	if err != nil {
+		t.Fatal(err)
+	}
+	credentialsOps := &browserCredentials{}
+	publicHandler, err := public.New(credentialsOps, browserVerifier{}, log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bridge, err := NewBrowser(publicHandler, handler.Policy())
+	if err != nil {
+		t.Fatal(err)
+	}
+	authv1.RegisterAuthBrowserServiceServer(server, bridge)
 	go func() { _ = server.Serve(listener) }()
 	t.Cleanup(server.Stop)
 	client := func(t *testing.T, identity string) authv1.AuthInternalServiceClient {
@@ -105,6 +122,31 @@ func TestPrivateRPCMTLSBoundary(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	t.Run("browser workload contract", func(t *testing.T) {
+		for _, identity := range []string{"", "spiffe://marketmesh.test/dev/gateway-in", "spiffe://marketmesh.test/prod/gateway-out", "spiffe://other.test/dev/gateway-out", "spiffe://marketmesh.test/dev/user-service", "spiffe://marketmesh.test/dev/gateway-out"} {
+			cfg := &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ServerName: "localhost"}
+			if identity != "" {
+				cfg.Certificates = []tls.Certificate{issueCertificate(t, ca, caKey, identity, false)}
+			}
+			conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			c := authv1.NewAuthBrowserServiceClient(conn)
+			_, err = c.BrowserRegisterCredentials(ctx, &authv1.BrowserRegisterCredentialsRequest{Request: &authv1.RegisterCredentialsRequest{Identifier: "name", Password: []byte("secret")}, Context: &authv1.BrowserContext{Origin: []string{"https://app.example"}}})
+			_ = conn.Close()
+			if identity == "spiffe://marketmesh.test/dev/gateway-out" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil {
+				t.Fatal("unauthorized browser call accepted")
+			}
+		}
+		if credentialsOps.calls.Load() != 1 {
+			t.Fatal("unauthorized caller reached registration")
+		}
+	})
 	gateway := client(t, "spiffe://marketmesh.test/dev/gateway-out")
 	consumer := client(t, "spiffe://marketmesh.test/dev/user-service")
 	other := client(t, "spiffe://marketmesh.test/dev/other-service")
@@ -261,4 +303,17 @@ func issueCertificate(t *testing.T, ca *x509.Certificate, caKey ed25519.PrivateK
 		t.Fatal(err)
 	}
 	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: priv}
+}
+
+type browserCredentials struct{ calls atomic.Int32 }
+
+func (b *browserCredentials) Execute(context.Context, string, []byte) error {
+	b.calls.Add(1)
+	return nil
+}
+
+type browserVerifier struct{}
+
+func (browserVerifier) Execute(context.Context, string, []byte) (credential.SubjectID, error) {
+	return credential.SubjectID{1}, nil
 }
