@@ -142,26 +142,26 @@ func streamServerLoggingInterceptor(log *logger.Logger) grpcgo.StreamServerInter
 	}
 }
 
-func unaryServerStatusInterceptor(mapper ErrorCodeMapper) grpcgo.UnaryServerInterceptor {
+func unaryServerStatusInterceptor(mapper ErrorCodeMapper, publicInfo ...PublicErrorInfo) grpcgo.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		request any,
-		_ *grpcgo.UnaryServerInfo,
+		info *grpcgo.UnaryServerInfo,
 		handler grpcgo.UnaryHandler,
 	) (any, error) {
 		response, err := handler(ctx, request)
-		return response, sanitizedStatusError(err, mapper)
+		return response, sanitizedMethodStatusError(err, mapper, info.FullMethod, publicInfo)
 	}
 }
 
-func streamServerStatusInterceptor(mapper ErrorCodeMapper) grpcgo.StreamServerInterceptor {
+func streamServerStatusInterceptor(mapper ErrorCodeMapper, publicInfo ...PublicErrorInfo) grpcgo.StreamServerInterceptor {
 	return func(
 		service any,
 		stream grpcgo.ServerStream,
-		_ *grpcgo.StreamServerInfo,
+		info *grpcgo.StreamServerInfo,
 		handler grpcgo.StreamHandler,
 	) error {
-		return sanitizedStatusError(handler(service, stream), mapper)
+		return sanitizedMethodStatusError(handler(service, stream), mapper, info.FullMethod, publicInfo)
 	}
 }
 

@@ -9,3 +9,10 @@ var (
 	//go:embed 000001_profiles.down.sql
 	ProfilesDown string
 )
+
+var (
+	//go:embed 000002_registration_inbox.up.sql
+	RegistrationInboxUp string
+	//go:embed 000002_registration_inbox.down.sql
+	RegistrationInboxDown string
+)

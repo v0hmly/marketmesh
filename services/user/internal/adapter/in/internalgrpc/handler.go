@@ -13,6 +13,7 @@ import (
 	"github.com/v0hmly/marketmesh/services/user/internal/application/identity"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/updateme"
 	"github.com/v0hmly/marketmesh/services/user/internal/domain/profile"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -110,7 +111,13 @@ func mapError(err error) error {
 	case errors.Is(err, profile.ErrInvalidProfile):
 		return status.Error(codes.InvalidArgument, "invalid profile")
 	case errors.Is(err, profile.ErrNotReady):
-		return status.Error(codes.NotFound, "profile not ready")
+		state, detailErr := status.New(codes.NotFound, "profile not ready").WithDetails(&errdetails.ErrorInfo{
+			Reason: "PROFILE_NOT_READY", Domain: "marketmesh.user",
+		})
+		if detailErr != nil {
+			return status.Error(codes.NotFound, "profile not ready")
+		}
+		return state.Err()
 	case errors.Is(err, profile.ErrConflict):
 		return status.Error(codes.Aborted, "profile version conflict")
 	case errors.Is(err, context.Canceled):

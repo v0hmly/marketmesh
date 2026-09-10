@@ -230,3 +230,32 @@ task auth:registration:integration
 Одноразовый integration стенд включает PostgreSQL primary/recovery replica и настоящий NATS JetStream с mTLS и ограниченными ACL. Файлы сертификатов создаются внутри отдельного именованного тома; host bind mounts и опубликованные порты отсутствуют. Тесты выполняются последовательно, ресурсы удаляются при завершении. Проверяются конкурентная регистрация, атомарный rollback, истечение/перехват lease, повтор после PubAck без mark, дедупликация, запрет чужих subjects и admin API, capture-only → публикация, сбой/восстановление NATS, readiness и graceful shutdown. Переменная `REGISTRATION_TEST_IMAGE` позволяет использовать заранее собранный локальный проверенный тестовый образ в окружении без доступа Docker builder к Go proxy.
 
 Протокольные основания: [JetStream publishing](https://docs.nats.io/learn/jetstream/publishing), [NATS mTLS и mapping сертификата](https://docs.nats.io/learn/security/encryption).
+
+## Восстановление регистраций — MM-50, шаг 04
+
+`cmd/auth-registration-backfill` — отдельная операционная команда владельца Auth. Она сверяет только opaque subject ID credentials с Auth outbox, не читает identifier/password digest и не имеет подключения к базе User. Изменения доходят до User через обычные outbox → JetStream → transactional inbox. Команда не запускается автоматически при старте сервиса.
+
+Перед первым проходом включите `AUTH_REGISTRATION_EVENTS_ENABLED=true`: иначе параллельная регистрация со случайным ID раньше текущего cursor может быть пропущена. Подготовьте consumer User и издателя Auth. Передайте DSN отдельной роли через `MARKETMESH_AUTH_POSTGRES_DSN` средствами управления секретами. Ей нужны SELECT(subject_id) на `auth.credentials`, SELECT на `auth.registration_outbox`; для apply дополнительно INSERT на outbox и UPDATE(published_at,next_attempt_at). Права на credential identifier/digest, DDL, DELETE, владение таблицей или User DB не нужны. Используйте PostgreSQL с проверяемым TLS в развёрнутых окружениях.
+
+Из корня Go workspace:
+
+```bash
+go run ./services/auth/cmd/auth-registration-backfill --limit=100
+go run ./services/auth/cmd/auth-registration-backfill --limit=100 --apply
+```
+
+По умолчанию выполняется dry-run без мутаций. Один вызов обрабатывает одну страницу (1..1000 аккаунтов), выводит JSON с `Scanned`, `Missing`, `Published`, `Inserted`, `Requeued`, `NextCursor`, `Done`. Передайте `--after=<NextCursor>` следующему вызову; при `Done=false` повторяйте до завершения. При ошибке cursor относится к последней полностью обработанной строке; неопределённый результат записи безопасно перепроверяется при повторе. JSON не содержит credentials или payload, но cursor — opaque идентификатор, поэтому храните операционный вывод с ограниченным доступом.
+
+Apply создаёт отсутствующее outbox-событие условной вставкой при существующем Auth subject. Конкурирующие запуски сохраняют одну запись. Для исторического аккаунта время нового восстановленного события соответствует моменту его создания backfill. Уже существующие события остаются неизменными. Полный повтор missing-only прохода безопасен.
+
+Для восстановления после потери сообщений из stream retention предусмотрен отдельный явный режим:
+
+```bash
+go run ./services/auth/cmd/auth-registration-backfill --limit=100 --apply --replay-published
+```
+
+Он переочередит опубликованные события, сохранив **исходные event ID и canonical payload**. Pending записи и активные lease не сбрасываются; сравнение исходного `published_at` защищает от устаревшего результата параллельной сверки. Издатель выполняет обычную доставку, а inbox User предотвращает изменение существующего профиля.
+
+Учитывайте JetStream duplicate window: повтор с тем же ID внутри окна может получить успешный duplicate PubAck без нового сообщения, в том числе если исходное сообщение уже удалено. Для такого восстановления дождитесь окончания настроенного окна после последней публикации выбранных событий и выполните повторный полный проход `--replay-published`. Счётчик `Requeued` или успешный PubAck сами по себе не подтверждают наличие профиля. Проверяйте свежие показатели outbox/durable и [целостность inbox User](../user/README.md#наблюдение-и-сверка); существующие персональные поля никогда не перезаписываются.
+
+Остановка команды оставляет уже созданные/переочереденные события в outbox; продолжение безопасно по cursor либо с начала. Для паузы доставки выключить publisher, сохранив capture и данные. Не очищать outbox/inbox и не применять down-миграции как способ отката backfill. Проверки команды с настоящей БД и доставки профиля входят в `task user:registration:integration`.

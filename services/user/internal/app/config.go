@@ -28,6 +28,7 @@ const (
 
 type config struct {
 	profile        profileConfig
+	registration   registrationConfig
 	serviceVersion string
 	environment    string
 	instanceID     string
@@ -190,6 +191,10 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 
 	result.profile, err = loadProfileConfig(env, result.environment)
+	if err != nil {
+		return config{}, err
+	}
+	result.registration, err = loadRegistrationConfig(env, result.profile)
 	if err != nil {
 		return config{}, err
 	}
