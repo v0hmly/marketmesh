@@ -381,9 +381,21 @@ generate_check() (
   fi
 )
 
+# Git hooks export repository-local variables; -C does not override them.
+# Use Git's documented inventory rather than a partial hard-coded list.
+clear_git_repository_env() {
+  local names
+  local name
+  names="$(git rev-parse --local-env-vars)" || return
+  while IFS= read -r name; do
+    [[ -z "${name}" ]] || unset -v "${name}" || return
+  done <<<"${names}"
+}
+
 # EasyP 0.16.1 resolves imports from the Git repository root in breaking mode.
 # Flatten only the schema subtree into an isolated repository for both revisions.
 breaking_snapshot() (
+  clear_git_repository_env || return
   local source_repo="$1"
   local schema_path="$2"
   local against_ref="$3"
@@ -421,7 +433,56 @@ breaking_snapshot() (
   )
 )
 
+# Runs only inside the synthetic self-test repository after environment cleanup.
+# A real pre-commit hook exercises the variables Git exports in production.
+hook_isolation_test() (
+  local outer_repo="$1"
+  local previous_head expected_tree previous_config
+  mkdir -p "${outer_repo}/hooks"
+  {
+    printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail'
+    printf 'CACHE_DIR=%q\nBIN_DIR=%q\nPROTOC_GEN_ES_BIN=%q\nEASYP_BIN=%q\n' \
+      "${CACHE_DIR}" "${BIN_DIR}" "${PROTOC_GEN_ES_BIN}" "${EASYP_BIN}"
+    declare -f clear_git_repository_env copy_generated breaking_snapshot sha256_file
+    cat <<'HOOK'
+outer_repo="$(pwd)"
+# Git sets GIT_INDEX_FILE for this real hook. Explicitly include the other
+# repository-local paths to cover hooks/tooling that export the full set.
+export GIT_DIR="${outer_repo}/.git"
+export GIT_WORK_TREE="${outer_repo}"
+export GIT_COMMON_DIR="${outer_repo}/.git"
+export GIT_OBJECT_DIRECTORY="${outer_repo}/.git/objects"
+: "${GIT_INDEX_FILE:?Git did not export its hook index}"
+head_before="$(git rev-parse HEAD)"
+refs_before="$(git show-ref)"
+index_before="$(sha256_file "${GIT_INDEX_FILE}")"
+config_before="$(sha256_file "${outer_repo}/.git/config")"
+breaking_snapshot "${outer_repo}" proto baseline
+[[ "$(git rev-parse HEAD)" == "${head_before}" ]]
+[[ "$(git show-ref)" == "${refs_before}" ]]
+[[ "$(sha256_file "${GIT_INDEX_FILE}")" == "${index_before}" ]]
+[[ "$(sha256_file "${outer_repo}/.git/config")" == "${config_before}" ]]
+printf '%s\n' verified >"${outer_repo}/.git/hook-isolation-verified"
+HOOK
+  } >"${outer_repo}/hooks/pre-commit"
+  chmod 0755 "${outer_repo}/hooks/pre-commit"
+  git config core.hooksPath "${outer_repo}/hooks"
+  previous_head="$(git rev-parse HEAD)"
+  previous_config="$(sha256_file "${outer_repo}/.git/config")"
+  printf '%s\n' 'planned self-test commit' >"${outer_repo}/hook-marker.txt"
+  git add hook-marker.txt
+  expected_tree="$(git write-tree)"
+  git commit --quiet -m 'Exercise protobuf hook isolation'
+  [[ -f "${outer_repo}/.git/hook-isolation-verified" ]]
+  [[ "$(git rev-parse HEAD^)" == "${previous_head}" ]]
+  [[ "$(git rev-parse HEAD^{tree})" == "${expected_tree}" ]]
+  [[ "$(git write-tree)" == "${expected_tree}" ]]
+  [[ "$(sha256_file "${outer_repo}/.git/config")" == "${previous_config}" ]]
+  git config core.hooksPath /dev/null
+)
+
 self_test() (
+  clear_git_repository_env || return
   local test_dir
   test_dir="$(mktemp -d "${CACHE_DIR}/self-test.XXXXXX")"
   trap 'rm -rf -- "${test_dir}"' EXIT
@@ -529,6 +590,8 @@ PROTO
     git add easyp.yaml proto
     git commit --quiet -m baseline
     git branch baseline
+
+    hook_isolation_test "${test_dir}"
 
     # Include a new, untracked local dependency in the current schema graph.
     sed 's/message Shared {/message SharedNew {/' proto/toolchain/v1/shared.proto \
