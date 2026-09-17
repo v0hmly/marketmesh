@@ -94,8 +94,10 @@
 | `AUTH_REVOKE_SESSION` | 4 | control/auth |
 | `AUTH_SESSION_ASSERTION` | 5 | control/auth |
 | `AUTH_LOGOUT_ALL` | 6 | control/auth |
-| `USER_GET_ME` | 100 | regular |
-| `USER_UPDATE_ME` | 101 | regular |
+| `USER_GET_ME` (legacy FakeInternal E2E) | 100 | regular |
+| `USER_UPDATE_ME` (legacy FakeInternal E2E) | 101 | regular |
+| `USER_BROWSER_GET_ME` | 102 | regular |
+| `USER_BROWSER_UPDATE_ME` | 103 | regular |
 | `REALTIME_CHAT` | 200 | realtime |
 | `REALTIME_NOTIFICATIONS` | 201 | realtime |
 
@@ -257,3 +259,54 @@ Auth проверяет Origin, интерпретирует cookie и упра�
 в смешанном пуле старых и новых экземпляров нельзя. Для отката сначала
 выключают флаг на обоих шлюзах, затем возвращают прежние бинарные файлы.
 Формат существующих кадров и номера маршрутов 1–5 не меняются; миграций БД нет.
+
+## Публичный профиль User (MM-50, шаг 06; MM-62)
+
+`USER_BROWSER_ENABLED=true` на обоих шлюзах подключает публичные
+`/user.v1.UserService/GetMe` и `UpdateMe`. Маршруты 102/103 имеют собственные
+закрытые `gateway.v1.BrowserGetMeRequest` / `BrowserUpdateMeRequest`: исходный
+User DTO и `auth.v1.BrowserContext`, сформированный из Cookie, Origin и
+Sec-Fetch-Site. Клиентские assertions, Authorization и идентификаторы владельца
+из заголовков не участвуют в авторизации. Запрос и ответ ограничены 16 KiB,
+дедлайн сохраняется на всём пути; UpdateMe не повторяется автоматически.
+
+Gateway Out вызывает закрытый Auth `ExchangeBrowserSession` по mTLS с
+фиксированной audience `user`. Auth применяет ту же проверку точного HTTPS
+Origin, неоднозначных заголовков и cross-site запроса, что и браузерные методы
+Auth. Только Auth извлекает access cookie. Полученное короткоживущее утверждение
+передаётся в User через `marketmesh-session-assertion-bin` в новом наборе
+metadata; cookie не попадает в User. Утверждение не возвращается в туннель,
+браузер или кэш. User проверяет подпись, audience, scopes, владельца и текущее
+состояние сессии через Auth.
+
+Закрытые ответы допускают только два предметных признака: `PROFILE_NOT_READY`
+превращается в публичный NotFound с `google.rpc.ErrorInfo` домена
+`marketmesh.user`, а `VERSION_CONFLICT` — в Aborted. Успех содержит только
+публичный профиль. Произвольные upstream сообщения и details не пересылаются.
+Все внешние ответы User имеют `Cache-Control: no-store`, включая ошибки
+разбора, ограничения размера и дедлайна.
+
+Маршруты 100/101 сохраняют прежний FakeInternal wire format исключительно для
+отдельного E2E режима. В реальном режиме Gateway In разрешает 102/103 и не
+монтирует FakeInternal endpoints; Gateway Out рекламирует только реальные
+профильные маршруты. Несовпадающие режимы не согласуют профильный маршрут и не
+передают browser context тестовому backend. Readiness требует обеих операций
+выбранного режима. E2E routing snapshot несовместим с реальным User режимом.
+
+Перед включением обновите Auth, User и обе стороны туннеля с выключенным
+флагом. Настройте `AUTH_SESSION_AUDIENCES` с ролью `user` и правами
+`user:profile:read`, `user:profile:write`; User использует workload identity
+`user`, Gateway Out — `gateway-out`. На Gateway Out `INTERNAL_*` указывает на
+User с проверенной URI SAN, отдельный `AUTH_*` клиент — на Auth. Публичный TLS
+Gateway In обязателен при любом включённом браузерном API. Старые строгие
+декодеры отвергают новые RouteId, поэтому обновление бинарных файлов должно
+предшествовать включению флага. Для отката сначала отключите пользовательский
+API на шлюзах, затем возвращайте бинарные файлы; БД этим шагом не изменяется.
+
+`task auth:browser:integration` проверяет HTTPS → reverse mTLS tunnel →
+настоящие Auth/User с PostgreSQL primary/replica и Redis. Отдельная User DB
+использует различные RW/RO роли. Тест сначала доказывает `PROFILE_NOT_READY`,
+затем создаёт профиль как явно обозначенную фикстуру для проверки чтения,
+обновления, конкуренции и двух владельцев. Доставка регистрационного события
+проверяется `task user:registration:integration`; полный сценарий событий и UI
+относится к шагу 16 MM-50.

@@ -338,7 +338,9 @@ func routeTrafficClass(route contractv1.RouteId) contractv1.TrafficClass {
 		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL:
 		return contractv1.TrafficClass_TRAFFIC_CLASS_CONTROL_AUTH
 	case contractv1.RouteId_ROUTE_ID_USER_GET_ME,
-		contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME:
+		contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME,
+		contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_ME,
+		contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_ME:
 		return contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR
 	case contractv1.RouteId_ROUTE_ID_REALTIME_CHAT,
 		contractv1.RouteId_ROUTE_ID_REALTIME_NOTIFICATIONS:
@@ -366,6 +368,10 @@ func routeLabel(route contractv1.RouteId) string {
 		return "user_get_me"
 	case contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME:
 		return "user_update_me"
+	case contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_ME:
+		return "user_browser_get_me"
+	case contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_ME:
+		return "user_browser_update_me"
 	case contractv1.RouteId_ROUTE_ID_REALTIME_CHAT:
 		return "realtime_chat"
 	case contractv1.RouteId_ROUTE_ID_REALTIME_NOTIFICATIONS:

@@ -15,7 +15,7 @@ import (
 )
 
 func newAuthClient(ctx context.Context, cfg config, log *logger.Logger, pipeline *telemetry.Telemetry) (*platformgrpc.Client, error) {
-	if !cfg.authBrowserEnabled {
+	if !cfg.authBrowserEnabled && !cfg.userBrowserEnabled {
 		return nil, nil
 	}
 	tlsConfig, err := loadClientTLS(cfg.authCertificate, cfg.authPrivateKey, cfg.authRootCA, cfg.authServerName, cfg.expectedAuthURI)

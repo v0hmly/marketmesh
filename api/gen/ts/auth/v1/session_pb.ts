@@ -4,13 +4,43 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { BrowserContext } from "./auth_pb";
+import { file_auth_v1_auth } from "./auth_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file auth/v1/session.proto.
  */
 export const file_auth_v1_session: GenFile = /*@__PURE__*/
-  fileDesc("ChVhdXRoL3YxL3Nlc3Npb24ucHJvdG8SB2F1dGgudjEiOgoWRXhjaGFuZ2VTZXNzaW9uUmVxdWVzdBIOCgZjb29raWUYASABKAkSEAoIYXVkaWVuY2UYAiABKAkiRQoXRXhjaGFuZ2VTZXNzaW9uUmVzcG9uc2USEQoJYXNzZXJ0aW9uGAEgASgJEhcKD2V4cGlyZXNfYXRfdW5peBgCIAEoAyIrChZWZXJpZnlBc3NlcnRpb25SZXF1ZXN0EhEKCWFzc2VydGlvbhgBIAEoCSJaChdWZXJpZnlBc3NlcnRpb25SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMEhIKCnNlc3Npb25faWQYAiABKAkSFwoPZXhwaXJlc19hdF91bml4GAMgASgDIhcKFUdldFNpZ25pbmdLZXlzUmVxdWVzdCIrChZHZXRTaWduaW5nS2V5c1Jlc3BvbnNlEhEKCWp3a3NfanNvbhgBIAEoCTKUAgoTQXV0aEludGVybmFsU2VydmljZRJUCg9FeGNoYW5nZVNlc3Npb24SHy5hdXRoLnYxLkV4Y2hhbmdlU2Vzc2lvblJlcXVlc3QaIC5hdXRoLnYxLkV4Y2hhbmdlU2Vzc2lvblJlc3BvbnNlElQKD1ZlcmlmeUFzc2VydGlvbhIfLmF1dGgudjEuVmVyaWZ5QXNzZXJ0aW9uUmVxdWVzdBogLmF1dGgudjEuVmVyaWZ5QXNzZXJ0aW9uUmVzcG9uc2USUQoOR2V0U2lnbmluZ0tleXMSHi5hdXRoLnYxLkdldFNpZ25pbmdLZXlzUmVxdWVzdBofLmF1dGgudjEuR2V0U2lnbmluZ0tleXNSZXNwb25zZUI4WjZnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vYXV0aC92MTthdXRodjFiBnByb3RvMw");
+  fileDesc("ChVhdXRoL3YxL3Nlc3Npb24ucHJvdG8SB2F1dGgudjEiWwodRXhjaGFuZ2VCcm93c2VyU2Vzc2lvblJlcXVlc3QSKAoHY29udGV4dBgBIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQSEAoIYXVkaWVuY2UYAiABKAkiOgoWRXhjaGFuZ2VTZXNzaW9uUmVxdWVzdBIOCgZjb29raWUYASABKAkSEAoIYXVkaWVuY2UYAiABKAkiRQoXRXhjaGFuZ2VTZXNzaW9uUmVzcG9uc2USEQoJYXNzZXJ0aW9uGAEgASgJEhcKD2V4cGlyZXNfYXRfdW5peBgCIAEoAyIrChZWZXJpZnlBc3NlcnRpb25SZXF1ZXN0EhEKCWFzc2VydGlvbhgBIAEoCSJaChdWZXJpZnlBc3NlcnRpb25SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMEhIKCnNlc3Npb25faWQYAiABKAkSFwoPZXhwaXJlc19hdF91bml4GAMgASgDIhcKFUdldFNpZ25pbmdLZXlzUmVxdWVzdCIrChZHZXRTaWduaW5nS2V5c1Jlc3BvbnNlEhEKCWp3a3NfanNvbhgBIAEoCSJMCh5FeGNoYW5nZUJyb3dzZXJTZXNzaW9uUmVzcG9uc2USEQoJYXNzZXJ0aW9uGAEgASgJEhcKD2V4cGlyZXNfYXRfdW5peBgCIAEoAzL/AgoTQXV0aEludGVybmFsU2VydmljZRJUCg9FeGNoYW5nZVNlc3Npb24SHy5hdXRoLnYxLkV4Y2hhbmdlU2Vzc2lvblJlcXVlc3QaIC5hdXRoLnYxLkV4Y2hhbmdlU2Vzc2lvblJlc3BvbnNlEmkKFkV4Y2hhbmdlQnJvd3NlclNlc3Npb24SJi5hdXRoLnYxLkV4Y2hhbmdlQnJvd3NlclNlc3Npb25SZXF1ZXN0GicuYXV0aC52MS5FeGNoYW5nZUJyb3dzZXJTZXNzaW9uUmVzcG9uc2USVAoPVmVyaWZ5QXNzZXJ0aW9uEh8uYXV0aC52MS5WZXJpZnlBc3NlcnRpb25SZXF1ZXN0GiAuYXV0aC52MS5WZXJpZnlBc3NlcnRpb25SZXNwb25zZRJRCg5HZXRTaWduaW5nS2V5cxIeLmF1dGgudjEuR2V0U2lnbmluZ0tleXNSZXF1ZXN0Gh8uYXV0aC52MS5HZXRTaWduaW5nS2V5c1Jlc3BvbnNlQjhaNmdpdGh1Yi5jb20vdjBobWx5L21hcmtldG1lc2gvYXBpL2dlbi9nby9hdXRoL3YxO2F1dGh2MWIGcHJvdG8z", [file_auth_v1_auth]);
+
+/**
+ * ExchangeBrowserSessionRequest is private to the authenticated gateway-out workload.
+ *
+ * @generated from message auth.v1.ExchangeBrowserSessionRequest
+ */
+export type ExchangeBrowserSessionRequest = Message<"auth.v1.ExchangeBrowserSessionRequest"> & {
+  /**
+   * Context preserves browser headers for Auth-owned CSRF and cookie validation.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 1;
+   */
+  context?: BrowserContext | undefined;
+
+  /**
+   * Audience is a server-configured service role, never a browser-selected destination.
+   *
+   * @generated from field: string audience = 2;
+   */
+  audience: string;
+};
+
+/**
+ * Describes the message auth.v1.ExchangeBrowserSessionRequest.
+ * Use `create(ExchangeBrowserSessionRequestSchema)` to create a new message.
+ */
+export const ExchangeBrowserSessionRequestSchema: GenMessage<ExchangeBrowserSessionRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_session, 0);
 
 /**
  * ExchangeSessionRequest carries sensitive input that must never be logged or traced.
@@ -38,7 +68,7 @@ export type ExchangeSessionRequest = Message<"auth.v1.ExchangeSessionRequest"> &
  * Use `create(ExchangeSessionRequestSchema)` to create a new message.
  */
 export const ExchangeSessionRequestSchema: GenMessage<ExchangeSessionRequest> = /*@__PURE__*/
-  messageDesc(file_auth_v1_session, 0);
+  messageDesc(file_auth_v1_session, 1);
 
 /**
  * ExchangeSessionResponse is private to internal transport and must never reach the browser or cache.
@@ -66,7 +96,7 @@ export type ExchangeSessionResponse = Message<"auth.v1.ExchangeSessionResponse">
  * Use `create(ExchangeSessionResponseSchema)` to create a new message.
  */
 export const ExchangeSessionResponseSchema: GenMessage<ExchangeSessionResponse> = /*@__PURE__*/
-  messageDesc(file_auth_v1_session, 1);
+  messageDesc(file_auth_v1_session, 2);
 
 /**
  * VerifyAssertionRequest accepts only an internal assertion; no external token is accepted here.
@@ -87,7 +117,7 @@ export type VerifyAssertionRequest = Message<"auth.v1.VerifyAssertionRequest"> &
  * Use `create(VerifyAssertionRequestSchema)` to create a new message.
  */
 export const VerifyAssertionRequestSchema: GenMessage<VerifyAssertionRequest> = /*@__PURE__*/
-  messageDesc(file_auth_v1_session, 2);
+  messageDesc(file_auth_v1_session, 3);
 
 /**
  * VerifyAssertionResponse contains only verified pseudonymous session context.
@@ -122,7 +152,7 @@ export type VerifyAssertionResponse = Message<"auth.v1.VerifyAssertionResponse">
  * Use `create(VerifyAssertionResponseSchema)` to create a new message.
  */
 export const VerifyAssertionResponseSchema: GenMessage<VerifyAssertionResponse> = /*@__PURE__*/
-  messageDesc(file_auth_v1_session, 3);
+  messageDesc(file_auth_v1_session, 4);
 
 /**
  * GetSigningKeysRequest carries no caller-selected URL or key source.
@@ -137,7 +167,7 @@ export type GetSigningKeysRequest = Message<"auth.v1.GetSigningKeysRequest"> & {
  * Use `create(GetSigningKeysRequestSchema)` to create a new message.
  */
 export const GetSigningKeysRequestSchema: GenMessage<GetSigningKeysRequest> = /*@__PURE__*/
-  messageDesc(file_auth_v1_session, 4);
+  messageDesc(file_auth_v1_session, 5);
 
 /**
  * GetSigningKeysResponse carries a JSON Web Key Set with explicit trust deadlines.
@@ -158,7 +188,35 @@ export type GetSigningKeysResponse = Message<"auth.v1.GetSigningKeysResponse"> &
  * Use `create(GetSigningKeysResponseSchema)` to create a new message.
  */
 export const GetSigningKeysResponseSchema: GenMessage<GetSigningKeysResponse> = /*@__PURE__*/
-  messageDesc(file_auth_v1_session, 5);
+  messageDesc(file_auth_v1_session, 6);
+
+/**
+ * ExchangeBrowserSessionResponse remains private to the authenticated gateway-out caller.
+ *
+ * @generated from message auth.v1.ExchangeBrowserSessionResponse
+ */
+export type ExchangeBrowserSessionResponse = Message<"auth.v1.ExchangeBrowserSessionResponse"> & {
+  /**
+   * Assertion is freshly issued for the configured internal audience.
+   *
+   * @generated from field: string assertion = 1;
+   */
+  assertion: string;
+
+  /**
+   * ExpiresAtUnix is the exclusive expiry in whole Unix seconds.
+   *
+   * @generated from field: int64 expires_at_unix = 2;
+   */
+  expiresAtUnix: bigint;
+};
+
+/**
+ * Describes the message auth.v1.ExchangeBrowserSessionResponse.
+ * Use `create(ExchangeBrowserSessionResponseSchema)` to create a new message.
+ */
+export const ExchangeBrowserSessionResponseSchema: GenMessage<ExchangeBrowserSessionResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_session, 7);
 
 /**
  * AuthInternalService is exposed only on Auth's workload-authenticated internal gRPC listener.
@@ -175,6 +233,16 @@ export const AuthInternalService: GenService<{
     methodKind: "unary";
     input: typeof ExchangeSessionRequestSchema;
     output: typeof ExchangeSessionResponseSchema;
+  },
+  /**
+   * ExchangeBrowserSession validates browser origin and cookies before issuing an internal assertion.
+   *
+   * @generated from rpc auth.v1.AuthInternalService.ExchangeBrowserSession
+   */
+  exchangeBrowserSession: {
+    methodKind: "unary";
+    input: typeof ExchangeBrowserSessionRequestSchema;
+    output: typeof ExchangeBrowserSessionResponseSchema;
   },
   /**
    * VerifyAssertion checks both the signature and current revocation state for the calling service.

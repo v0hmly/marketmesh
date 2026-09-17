@@ -2,16 +2,28 @@ syntax = "proto3";
 
 package auth.v1;
 
+import "auth/v1/auth.proto";
+
 option go_package = "github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1";
 
 // AuthInternalService is exposed only on Auth's workload-authenticated internal gRPC listener.
 service AuthInternalService {
   // ExchangeSession accepts an opaque external cookie only from an authorized gateway-out workload.
   rpc ExchangeSession(ExchangeSessionRequest) returns (ExchangeSessionResponse);
+  // ExchangeBrowserSession validates browser origin and cookies before issuing an internal assertion.
+  rpc ExchangeBrowserSession(ExchangeBrowserSessionRequest) returns (ExchangeBrowserSessionResponse);
   // VerifyAssertion checks both the signature and current revocation state for the calling service.
   rpc VerifyAssertion(VerifyAssertionRequest) returns (VerifyAssertionResponse);
   // GetSigningKeys publishes the current, finitely trusted Ed25519 public keys.
   rpc GetSigningKeys(GetSigningKeysRequest) returns (GetSigningKeysResponse);
+}
+
+// ExchangeBrowserSessionRequest is private to the authenticated gateway-out workload.
+message ExchangeBrowserSessionRequest {
+  // Context preserves browser headers for Auth-owned CSRF and cookie validation.
+  BrowserContext context = 1;
+  // Audience is a server-configured service role, never a browser-selected destination.
+  string audience = 2;
 }
 
 // ExchangeSessionRequest carries sensitive input that must never be logged or traced.
@@ -53,4 +65,12 @@ message GetSigningKeysRequest {}
 message GetSigningKeysResponse {
   // JwksJson contains public OKP/Ed25519 keys only; consumers must respect verify_until.
   string jwks_json = 1;
+}
+
+// ExchangeBrowserSessionResponse remains private to the authenticated gateway-out caller.
+message ExchangeBrowserSessionResponse {
+  // Assertion is freshly issued for the configured internal audience.
+  string assertion = 1;
+  // ExpiresAtUnix is the exclusive expiry in whole Unix seconds.
+  int64 expires_at_unix = 2;
 }

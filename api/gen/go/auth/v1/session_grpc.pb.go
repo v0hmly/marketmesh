@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthInternalService_ExchangeSession_FullMethodName = "/auth.v1.AuthInternalService/ExchangeSession"
-	AuthInternalService_VerifyAssertion_FullMethodName = "/auth.v1.AuthInternalService/VerifyAssertion"
-	AuthInternalService_GetSigningKeys_FullMethodName  = "/auth.v1.AuthInternalService/GetSigningKeys"
+	AuthInternalService_ExchangeSession_FullMethodName        = "/auth.v1.AuthInternalService/ExchangeSession"
+	AuthInternalService_ExchangeBrowserSession_FullMethodName = "/auth.v1.AuthInternalService/ExchangeBrowserSession"
+	AuthInternalService_VerifyAssertion_FullMethodName        = "/auth.v1.AuthInternalService/VerifyAssertion"
+	AuthInternalService_GetSigningKeys_FullMethodName         = "/auth.v1.AuthInternalService/GetSigningKeys"
 )
 
 // AuthInternalServiceClient is the client API for AuthInternalService service.
@@ -32,6 +33,8 @@ const (
 type AuthInternalServiceClient interface {
 	// ExchangeSession accepts an opaque external cookie only from an authorized gateway-out workload.
 	ExchangeSession(ctx context.Context, in *ExchangeSessionRequest, opts ...grpc.CallOption) (*ExchangeSessionResponse, error)
+	// ExchangeBrowserSession validates browser origin and cookies before issuing an internal assertion.
+	ExchangeBrowserSession(ctx context.Context, in *ExchangeBrowserSessionRequest, opts ...grpc.CallOption) (*ExchangeBrowserSessionResponse, error)
 	// VerifyAssertion checks both the signature and current revocation state for the calling service.
 	VerifyAssertion(ctx context.Context, in *VerifyAssertionRequest, opts ...grpc.CallOption) (*VerifyAssertionResponse, error)
 	// GetSigningKeys publishes the current, finitely trusted Ed25519 public keys.
@@ -50,6 +53,16 @@ func (c *authInternalServiceClient) ExchangeSession(ctx context.Context, in *Exc
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExchangeSessionResponse)
 	err := c.cc.Invoke(ctx, AuthInternalService_ExchangeSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authInternalServiceClient) ExchangeBrowserSession(ctx context.Context, in *ExchangeBrowserSessionRequest, opts ...grpc.CallOption) (*ExchangeBrowserSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExchangeBrowserSessionResponse)
+	err := c.cc.Invoke(ctx, AuthInternalService_ExchangeBrowserSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +97,8 @@ func (c *authInternalServiceClient) GetSigningKeys(ctx context.Context, in *GetS
 type AuthInternalServiceServer interface {
 	// ExchangeSession accepts an opaque external cookie only from an authorized gateway-out workload.
 	ExchangeSession(context.Context, *ExchangeSessionRequest) (*ExchangeSessionResponse, error)
+	// ExchangeBrowserSession validates browser origin and cookies before issuing an internal assertion.
+	ExchangeBrowserSession(context.Context, *ExchangeBrowserSessionRequest) (*ExchangeBrowserSessionResponse, error)
 	// VerifyAssertion checks both the signature and current revocation state for the calling service.
 	VerifyAssertion(context.Context, *VerifyAssertionRequest) (*VerifyAssertionResponse, error)
 	// GetSigningKeys publishes the current, finitely trusted Ed25519 public keys.
@@ -100,6 +115,9 @@ type UnimplementedAuthInternalServiceServer struct{}
 
 func (UnimplementedAuthInternalServiceServer) ExchangeSession(context.Context, *ExchangeSessionRequest) (*ExchangeSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExchangeSession not implemented")
+}
+func (UnimplementedAuthInternalServiceServer) ExchangeBrowserSession(context.Context, *ExchangeBrowserSessionRequest) (*ExchangeBrowserSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExchangeBrowserSession not implemented")
 }
 func (UnimplementedAuthInternalServiceServer) VerifyAssertion(context.Context, *VerifyAssertionRequest) (*VerifyAssertionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VerifyAssertion not implemented")
@@ -142,6 +160,24 @@ func _AuthInternalService_ExchangeSession_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthInternalServiceServer).ExchangeSession(ctx, req.(*ExchangeSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthInternalService_ExchangeBrowserSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExchangeBrowserSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthInternalServiceServer).ExchangeBrowserSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthInternalService_ExchangeBrowserSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthInternalServiceServer).ExchangeBrowserSession(ctx, req.(*ExchangeBrowserSessionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -192,6 +228,10 @@ var AuthInternalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExchangeSession",
 			Handler:    _AuthInternalService_ExchangeSession_Handler,
+		},
+		{
+			MethodName: "ExchangeBrowserSession",
+			Handler:    _AuthInternalService_ExchangeBrowserSession_Handler,
 		},
 		{
 			MethodName: "VerifyAssertion",

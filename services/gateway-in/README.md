@@ -113,3 +113,36 @@ Chrome использует новый временный профиль и до
 и Gateway Out можно задать через `AUTH_BROWSER_AUTH_BIN` и
 `AUTH_BROWSER_GATEWAY_OUT_BIN` (по умолчанию `/usr/local/bin/auth` и
 `/usr/local/bin/gateway-out`).
+
+## Публичный профиль User
+
+`USER_BROWSER_ENABLED=true` включает HTTPS ConnectRPC методы
+`/user.v1.UserService/GetMe` и `/user.v1.UserService/UpdateMe` через
+отдельные маршруты tunnel 102/103. По умолчанию флаг выключен и сохраняется отдельный
+FakeInternal E2E режим; при включении профиля FakeInternal endpoints не монтируются.
+Режим несовместим с `E2E_ROUTING_SNAPSHOT_ENABLED=true`.
+`PUBLIC_TLS_CERT_FILE` и `PUBLIC_TLS_KEY_FILE` обязательны при включённом Auth
+или User. Readiness требует доступности обоих маршрутов профиля.
+
+Gateway передаёт cookie непрозрачно в приватном контексте вместе с Origin и
+Sec-Fetch-Site. Заголовки Authorization и клиентские assertions не используются.
+Приватный `gateway.v1.UserBrowserService` недоступен браузеру. Ответы, включая
+ошибки внешнего HTTP middleware, имеют `Cache-Control: no-store`; разрешён только
+POST через TLS, запрос и ответ ограничены 16 KiB. UpdateMe использует версию
+профиля для защиты от конкуренции, без transport retry и Idempotency-Key.
+Состояние подготовки профиля возвращается как NotFound с типизированным
+`ErrorInfo` (`marketmesh.user`, `PROFILE_NOT_READY`), конфликт версии — Aborted.
+Произвольные сообщения и детали внутренних ошибок не выходят наружу.
+
+Реальный режим разрешает только профильные маршруты 102/103, а legacy E2E —
+100/101 с прежним wire format. Readiness требует пару маршрутов выбранного режима.
+При несовпадении режимов шлюзов профильные маршруты не согласуются; browser
+context не отправляется fake backend. Перед включением обновите обе стороны
+туннеля до версии, поддерживающей новые RouteId.
+
+`task auth:browser:integration` также запускает реальный User, его отдельную DB
+и RW/RO роли, проверяет подготовку профиля, сохранение, конфликт версии,
+изоляцию двух пользователей и отдельные отказы Auth/User. Бинарный файл User
+можно задать через `USER_BROWSER_USER_BIN` (по умолчанию `/usr/local/bin/user`).
+Тестовые профили явно создаются после проверки состояния подготовки; этот
+стенд не заменяет `task user:registration:integration` для доставки событий.

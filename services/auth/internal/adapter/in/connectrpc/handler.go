@@ -63,7 +63,7 @@ func WithSessions(service SessionLifecycle, config SessionConfig) Option {
 		if service == nil {
 			return errors.New("auth connect: session service must not be nil")
 		}
-		origins, err := normalizeOrigins(config.AllowedOrigins)
+		origins, err := NewBrowserOriginPolicy(config.AllowedOrigins)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ type Handler struct {
 	verification Verification
 	log          *logger.Logger
 	sessions     SessionLifecycle
-	origins      map[string]struct{}
+	origins      *BrowserOriginPolicy
 	clock        func() time.Time
 }
 
@@ -281,6 +281,28 @@ func cookieValue(header http.Header, name string) (string, error) {
 	return found, nil
 }
 func (handler *Handler) validOrigin(header http.Header) bool {
+	return handler.origins.Allow(header)
+}
+
+// BrowserOriginPolicy shares the exact Auth-owned CSRF policy across public and private adapters.
+type BrowserOriginPolicy struct {
+	origins map[string]struct{}
+}
+
+// NewBrowserOriginPolicy accepts only a nonempty allowlist of exact HTTPS origins.
+func NewBrowserOriginPolicy(values []string) (*BrowserOriginPolicy, error) {
+	origins, err := normalizeOrigins(values)
+	if err != nil {
+		return nil, err
+	}
+	return &BrowserOriginPolicy{origins: origins}, nil
+}
+
+// Allow rejects absent, ambiguous and cross-site browser context before session work.
+func (policy *BrowserOriginPolicy) Allow(header http.Header) bool {
+	if policy == nil {
+		return false
+	}
 	if len(header.Values("Origin")) != 1 || len(header.Values("Sec-Fetch-Site")) > 1 || strings.EqualFold(strings.TrimSpace(header.Get("Sec-Fetch-Site")), "cross-site") {
 		return false
 	}
@@ -288,7 +310,7 @@ func (handler *Handler) validOrigin(header http.Header) bool {
 	if origin == "" || origin == "null" {
 		return false
 	}
-	_, ok := handler.origins[origin]
+	_, ok := policy.origins[origin]
 	return ok
 }
 func normalizeOrigins(values []string) (map[string]struct{}, error) {
