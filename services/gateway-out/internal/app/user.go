@@ -131,6 +131,26 @@ func (c *userBrowserClient) Invoke(ctx context.Context, method string, args, rep
 		var err error
 		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.SetDefaultAddress, true)
 		return err
+	case gatewayv1.UserBrowserService_BrowserGetSettings_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserGetSettingsRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserGetSettingsResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserGetSettingsResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeSettings(ctx, c, request.GetContext(), request.GetRequest(), c.user.GetSettings, false)
+		return err
+	case gatewayv1.UserBrowserService_BrowserUpdateSettings_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserUpdateSettingsRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserUpdateSettingsResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserUpdateSettingsResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeSettings(ctx, c, request.GetContext(), request.GetRequest(), c.user.UpdateSettings, true)
+		return err
 	default:
 		return status.Error(codes.PermissionDenied, "route unavailable")
 	}

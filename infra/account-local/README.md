@@ -137,3 +137,10 @@ storefront собирается с `VITE_ACCOUNT_ADDRESSES_ENABLED=true`. Provis
 Браузерный runner доверяет публичному CA контура и в Chromium NSS, и в Node
 (`NODE_EXTRA_CA_CERTS`) для пересылки реальных запросов в тестах потери ответа.
 Проверка TLS остаётся включённой; чужой self-signed сертификат отклоняется.
+
+Настройки MM-69 также включены локально: `USER_SETTINGS_ENABLED`,
+`USER_SETTINGS_BROWSER_ENABLED` на обоих шлюзах и
+`VITE_ACCOUNT_SETTINGS_ENABLED=true` при сборке storefront. Provision применяет
+`000004_settings`, Auth выдаёт отдельные settings scopes; для старых и новых
+профилей исходная тема — системная. Frontdoor обслуживает `/account/settings`
+и только два новых публичных RPC, не закрытые Browser-конверты.

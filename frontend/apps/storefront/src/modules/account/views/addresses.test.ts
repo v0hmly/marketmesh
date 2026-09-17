@@ -8,7 +8,7 @@ import type { SessionController, SessionState } from '../../../shell/session';
 import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import { emptyAddress } from '../address-validation';
-vi.mock('../../../shared/features', () => ({ addressesEnabled: true }));
+vi.mock('../../../shared/features', () => ({ addressesEnabled: true, settingsEnabled: false }));
 const addressValue = (value: Omit<Address, '$typeName'>): Address => ({
   $typeName: 'user.v1.Address',
   ...value,
@@ -70,6 +70,8 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
       updatedAtUnix: 1n,
     }),
     updateProfile: vi.fn(),
+    readSettings: vi.fn(),
+    updateSettings: vi.fn(),
     readAddresses: vi.fn().mockResolvedValue(snapshot()),
     createAddress: vi.fn().mockResolvedValue(snapshot(2n, [address(), address(2, 'Борис')])),
     updateAddress: vi.fn().mockResolvedValue(snapshot(2n)),

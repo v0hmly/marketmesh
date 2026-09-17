@@ -20,6 +20,10 @@ service UserService {
   rpc DeleteAddress(DeleteAddressRequest) returns (DeleteAddressResponse);
   // SetDefaultAddress operates only on the authenticated caller's versioned address book.
   rpc SetDefaultAddress(SetDefaultAddressRequest) returns (SetDefaultAddressResponse);
+  // GetSettings reads the authenticated owner's preferences from the primary.
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
+  // UpdateSettings conditionally changes preferences without changing profile or address versions.
+  rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
 }
 
 // GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -168,4 +172,49 @@ message DeleteAddressResponse {
 message SetDefaultAddressResponse {
   // Book is the authenticated caller's current address book.
   AddressBook book = 1;
+}
+
+// Theme is the closed set of supported display preferences.
+enum Theme {
+  // THEME_UNSPECIFIED is invalid in stored settings and update requests.
+  THEME_UNSPECIFIED = 0;
+  // THEME_SYSTEM follows the device preference and is the default.
+  THEME_SYSTEM = 1;
+  // THEME_LIGHT always uses the light palette.
+  THEME_LIGHT = 2;
+  // THEME_DARK always uses the dark palette.
+  THEME_DARK = 3;
+}
+
+// AccountSettings contains preferences of one authenticated owner.
+message AccountSettings {
+  // SubjectId is the immutable nonzero 16-byte owner identifier.
+  bytes subject_id = 1;
+  // Version is positive and independent of profile and address book versions.
+  uint64 version = 2;
+  // Theme is a supported preference, never unspecified.
+  Theme theme = 3;
+}
+
+// GetSettingsRequest has no caller-selected owner or credentials.
+message GetSettingsRequest {}
+
+// GetSettingsResponse is private and must never be publicly cached.
+message GetSettingsResponse {
+  // Settings is the current primary snapshot.
+  AccountSettings settings = 1;
+}
+
+// UpdateSettingsRequest conditionally replaces the supported preferences.
+message UpdateSettingsRequest {
+  // Theme must be system, light, or dark.
+  Theme theme = 1;
+  // ExpectedVersion must match the last-read settings version.
+  uint64 expected_version = 2;
+}
+
+// UpdateSettingsResponse returns the committed snapshot without reading a replica.
+message UpdateSettingsResponse {
+  // Settings includes the incremented version.
+  AccountSettings settings = 1;
 }

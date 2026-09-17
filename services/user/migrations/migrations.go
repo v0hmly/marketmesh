@@ -23,3 +23,10 @@ var (
 	//go:embed 000003_addresses.down.sql
 	AddressesDown string
 )
+
+var (
+	//go:embed 000004_settings.up.sql
+	SettingsUp string
+	//go:embed 000004_settings.down.sql
+	SettingsDown string
+)

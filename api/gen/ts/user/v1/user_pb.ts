@@ -2,15 +2,15 @@
 // @generated from file user/v1/user.proto (package user.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file user/v1/user.proto.
  */
 export const file_user_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSJOCg9VcGRhdGVNZVJlcXVlc3QSFAoMZGlzcGxheV9uYW1lGAEgASgJEgsKA2JpbxgCIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAMgASgEIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSKDAQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDIp8BCg1BZGRyZXNzRmllbGRzEhEKCXJlY2lwaWVudBgBIAEoCRINCgVwaG9uZRgCIAEoCRIPCgdjb3VudHJ5GAMgASgJEhMKC3Bvc3RhbF9jb2RlGAQgASgJEgwKBGNpdHkYBSABKAkSFAoMc3RyZWV0X2hvdXNlGAYgASgJEhEKCWFwYXJ0bWVudBgHIAEoCRIPCgdjb21tZW50GAggASgJIlkKB0FkZHJlc3MSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSEgoKaXNfZGVmYXVsdBgDIAEoCCJXCgtBZGRyZXNzQm9vaxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSIwoJYWRkcmVzc2VzGAMgAygLMhAudXNlci52MS5BZGRyZXNzIhYKFExpc3RBZGRyZXNzZXNSZXF1ZXN0Il0KFENyZWF0ZUFkZHJlc3NSZXF1ZXN0Eh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgBIAEoBBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMicQoUVXBkYXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAMgASgEIkkKFERlbGV0ZUFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIk0KGFNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgCIAEoBCI7ChVMaXN0QWRkcmVzc2VzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVQ3JlYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFVVwZGF0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVEZWxldGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siPwoZU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vazKiBAoLVXNlclNlcnZpY2USNgoFR2V0TWUSFS51c2VyLnYxLkdldE1lUmVxdWVzdBoWLnVzZXIudjEuR2V0TWVSZXNwb25zZRI/CghVcGRhdGVNZRIYLnVzZXIudjEuVXBkYXRlTWVSZXF1ZXN0GhkudXNlci52MS5VcGRhdGVNZVJlc3BvbnNlEk4KDUxpc3RBZGRyZXNzZXMSHS51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXF1ZXN0Gh4udXNlci52MS5MaXN0QWRkcmVzc2VzUmVzcG9uc2USTgoNQ3JlYXRlQWRkcmVzcxIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRJOCg1VcGRhdGVBZGRyZXNzEh0udXNlci52MS5VcGRhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDURlbGV0ZUFkZHJlc3MSHS51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5EZWxldGVBZGRyZXNzUmVzcG9uc2USWgoRU2V0RGVmYXVsdEFkZHJlc3MSIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBoiLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZUI4WjZnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vdXNlci92MTt1c2VydjFiBnByb3RvMw");
+  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSJOCg9VcGRhdGVNZVJlcXVlc3QSFAoMZGlzcGxheV9uYW1lGAEgASgJEgsKA2JpbxgCIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAMgASgEIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSKDAQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDIp8BCg1BZGRyZXNzRmllbGRzEhEKCXJlY2lwaWVudBgBIAEoCRINCgVwaG9uZRgCIAEoCRIPCgdjb3VudHJ5GAMgASgJEhMKC3Bvc3RhbF9jb2RlGAQgASgJEgwKBGNpdHkYBSABKAkSFAoMc3RyZWV0X2hvdXNlGAYgASgJEhEKCWFwYXJ0bWVudBgHIAEoCRIPCgdjb21tZW50GAggASgJIlkKB0FkZHJlc3MSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSEgoKaXNfZGVmYXVsdBgDIAEoCCJXCgtBZGRyZXNzQm9vaxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSIwoJYWRkcmVzc2VzGAMgAygLMhAudXNlci52MS5BZGRyZXNzIhYKFExpc3RBZGRyZXNzZXNSZXF1ZXN0Il0KFENyZWF0ZUFkZHJlc3NSZXF1ZXN0Eh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgBIAEoBBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMicQoUVXBkYXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAMgASgEIkkKFERlbGV0ZUFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIk0KGFNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgCIAEoBCI7ChVMaXN0QWRkcmVzc2VzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVQ3JlYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFVVwZGF0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVEZWxldGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siPwoZU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayJVCg9BY2NvdW50U2V0dGluZ3MSEgoKc3ViamVjdF9pZBgBIAEoDBIPCgd2ZXJzaW9uGAIgASgEEh0KBXRoZW1lGAMgASgOMg4udXNlci52MS5UaGVtZSIUChJHZXRTZXR0aW5nc1JlcXVlc3QiQQoTR2V0U2V0dGluZ3NSZXNwb25zZRIqCghzZXR0aW5ncxgBIAEoCzIYLnVzZXIudjEuQWNjb3VudFNldHRpbmdzIlAKFVVwZGF0ZVNldHRpbmdzUmVxdWVzdBIdCgV0aGVtZRgBIAEoDjIOLnVzZXIudjEuVGhlbWUSGAoQZXhwZWN0ZWRfdmVyc2lvbhgCIAEoBCJEChZVcGRhdGVTZXR0aW5nc1Jlc3BvbnNlEioKCHNldHRpbmdzGAEgASgLMhgudXNlci52MS5BY2NvdW50U2V0dGluZ3MqUQoFVGhlbWUSFQoRVEhFTUVfVU5TUEVDSUZJRUQQABIQCgxUSEVNRV9TWVNURU0QARIPCgtUSEVNRV9MSUdIVBACEg4KClRIRU1FX0RBUksQAzK/BQoLVXNlclNlcnZpY2USNgoFR2V0TWUSFS51c2VyLnYxLkdldE1lUmVxdWVzdBoWLnVzZXIudjEuR2V0TWVSZXNwb25zZRI/CghVcGRhdGVNZRIYLnVzZXIudjEuVXBkYXRlTWVSZXF1ZXN0GhkudXNlci52MS5VcGRhdGVNZVJlc3BvbnNlEk4KDUxpc3RBZGRyZXNzZXMSHS51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXF1ZXN0Gh4udXNlci52MS5MaXN0QWRkcmVzc2VzUmVzcG9uc2USTgoNQ3JlYXRlQWRkcmVzcxIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRJOCg1VcGRhdGVBZGRyZXNzEh0udXNlci52MS5VcGRhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDURlbGV0ZUFkZHJlc3MSHS51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5EZWxldGVBZGRyZXNzUmVzcG9uc2USWgoRU2V0RGVmYXVsdEFkZHJlc3MSIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBoiLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRJICgtHZXRTZXR0aW5ncxIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0GhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlElEKDlVwZGF0ZVNldHRpbmdzEh4udXNlci52MS5VcGRhdGVTZXR0aW5nc1JlcXVlc3QaHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL3VzZXIvdjE7dXNlcnYxYgZwcm90bzM");
 
 /**
  * GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -540,6 +540,167 @@ export const SetDefaultAddressResponseSchema: GenMessage<SetDefaultAddressRespon
   messageDesc(file_user_v1_user, 17);
 
 /**
+ * AccountSettings contains preferences of one authenticated owner.
+ *
+ * @generated from message user.v1.AccountSettings
+ */
+export type AccountSettings = Message<"user.v1.AccountSettings"> & {
+  /**
+   * SubjectId is the immutable nonzero 16-byte owner identifier.
+   *
+   * @generated from field: bytes subject_id = 1;
+   */
+  subjectId: Uint8Array;
+
+  /**
+   * Version is positive and independent of profile and address book versions.
+   *
+   * @generated from field: uint64 version = 2;
+   */
+  version: bigint;
+
+  /**
+   * Theme is a supported preference, never unspecified.
+   *
+   * @generated from field: user.v1.Theme theme = 3;
+   */
+  theme: Theme;
+};
+
+/**
+ * Describes the message user.v1.AccountSettings.
+ * Use `create(AccountSettingsSchema)` to create a new message.
+ */
+export const AccountSettingsSchema: GenMessage<AccountSettings> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 18);
+
+/**
+ * GetSettingsRequest has no caller-selected owner or credentials.
+ *
+ * @generated from message user.v1.GetSettingsRequest
+ */
+export type GetSettingsRequest = Message<"user.v1.GetSettingsRequest"> & {
+};
+
+/**
+ * Describes the message user.v1.GetSettingsRequest.
+ * Use `create(GetSettingsRequestSchema)` to create a new message.
+ */
+export const GetSettingsRequestSchema: GenMessage<GetSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 19);
+
+/**
+ * GetSettingsResponse is private and must never be publicly cached.
+ *
+ * @generated from message user.v1.GetSettingsResponse
+ */
+export type GetSettingsResponse = Message<"user.v1.GetSettingsResponse"> & {
+  /**
+   * Settings is the current primary snapshot.
+   *
+   * @generated from field: user.v1.AccountSettings settings = 1;
+   */
+  settings?: AccountSettings | undefined;
+};
+
+/**
+ * Describes the message user.v1.GetSettingsResponse.
+ * Use `create(GetSettingsResponseSchema)` to create a new message.
+ */
+export const GetSettingsResponseSchema: GenMessage<GetSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 20);
+
+/**
+ * UpdateSettingsRequest conditionally replaces the supported preferences.
+ *
+ * @generated from message user.v1.UpdateSettingsRequest
+ */
+export type UpdateSettingsRequest = Message<"user.v1.UpdateSettingsRequest"> & {
+  /**
+   * Theme must be system, light, or dark.
+   *
+   * @generated from field: user.v1.Theme theme = 1;
+   */
+  theme: Theme;
+
+  /**
+   * ExpectedVersion must match the last-read settings version.
+   *
+   * @generated from field: uint64 expected_version = 2;
+   */
+  expectedVersion: bigint;
+};
+
+/**
+ * Describes the message user.v1.UpdateSettingsRequest.
+ * Use `create(UpdateSettingsRequestSchema)` to create a new message.
+ */
+export const UpdateSettingsRequestSchema: GenMessage<UpdateSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 21);
+
+/**
+ * UpdateSettingsResponse returns the committed snapshot without reading a replica.
+ *
+ * @generated from message user.v1.UpdateSettingsResponse
+ */
+export type UpdateSettingsResponse = Message<"user.v1.UpdateSettingsResponse"> & {
+  /**
+   * Settings includes the incremented version.
+   *
+   * @generated from field: user.v1.AccountSettings settings = 1;
+   */
+  settings?: AccountSettings | undefined;
+};
+
+/**
+ * Describes the message user.v1.UpdateSettingsResponse.
+ * Use `create(UpdateSettingsResponseSchema)` to create a new message.
+ */
+export const UpdateSettingsResponseSchema: GenMessage<UpdateSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 22);
+
+/**
+ * Theme is the closed set of supported display preferences.
+ *
+ * @generated from enum user.v1.Theme
+ */
+export enum Theme {
+  /**
+   * THEME_UNSPECIFIED is invalid in stored settings and update requests.
+   *
+   * @generated from enum value: THEME_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * THEME_SYSTEM follows the device preference and is the default.
+   *
+   * @generated from enum value: THEME_SYSTEM = 1;
+   */
+  SYSTEM = 1,
+
+  /**
+   * THEME_LIGHT always uses the light palette.
+   *
+   * @generated from enum value: THEME_LIGHT = 2;
+   */
+  LIGHT = 2,
+
+  /**
+   * THEME_DARK always uses the dark palette.
+   *
+   * @generated from enum value: THEME_DARK = 3;
+   */
+  DARK = 3,
+}
+
+/**
+ * Describes the enum user.v1.Theme.
+ */
+export const ThemeSchema: GenEnum<Theme> = /*@__PURE__*/
+  enumDesc(file_user_v1_user, 0);
+
+/**
  * UserService exposes the authenticated caller's account data on the workload-authenticated listener.
  *
  * @generated from service user.v1.UserService
@@ -614,6 +775,26 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof SetDefaultAddressRequestSchema;
     output: typeof SetDefaultAddressResponseSchema;
+  },
+  /**
+   * GetSettings reads the authenticated owner's preferences from the primary.
+   *
+   * @generated from rpc user.v1.UserService.GetSettings
+   */
+  getSettings: {
+    methodKind: "unary";
+    input: typeof GetSettingsRequestSchema;
+    output: typeof GetSettingsResponseSchema;
+  },
+  /**
+   * UpdateSettings conditionally changes preferences without changing profile or address versions.
+   *
+   * @generated from rpc user.v1.UserService.UpdateSettings
+   */
+  updateSettings: {
+    methodKind: "unary";
+    input: typeof UpdateSettingsRequestSchema;
+    output: typeof UpdateSettingsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_user_v1_user, 0);

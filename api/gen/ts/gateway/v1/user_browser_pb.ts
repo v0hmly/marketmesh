@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { BrowserContext } from "../../auth/v1/auth_pb";
 import { file_auth_v1_auth } from "../../auth/v1/auth_pb";
-import type { CreateAddressRequest, CreateAddressResponse, DeleteAddressRequest, DeleteAddressResponse, GetMeRequest, GetMeResponse, ListAddressesRequest, ListAddressesResponse, SetDefaultAddressRequest, SetDefaultAddressResponse, UpdateAddressRequest, UpdateAddressResponse, UpdateMeRequest, UpdateMeResponse } from "../../user/v1/user_pb";
+import type { CreateAddressRequest, CreateAddressResponse, DeleteAddressRequest, DeleteAddressResponse, GetMeRequest, GetMeResponse, GetSettingsRequest, GetSettingsResponse, ListAddressesRequest, ListAddressesResponse, SetDefaultAddressRequest, SetDefaultAddressResponse, UpdateAddressRequest, UpdateAddressResponse, UpdateMeRequest, UpdateMeResponse, UpdateSettingsRequest, UpdateSettingsResponse } from "../../user/v1/user_pb";
 import { file_user_v1_user } from "../../user/v1/user_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file gateway/v1/user_browser.proto.
  */
 export const file_gateway_v1_user_browser: GenFile = /*@__PURE__*/
-  fileDesc("Ch1nYXRld2F5L3YxL3VzZXJfYnJvd3Nlci5wcm90bxIKZ2F0ZXdheS52MSJnChNCcm93c2VyR2V0TWVSZXF1ZXN0EiYKB3JlcXVlc3QYASABKAsyFS51c2VyLnYxLkdldE1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJtChZCcm93c2VyVXBkYXRlTWVSZXF1ZXN0EikKB3JlcXVlc3QYASABKAsyGC51c2VyLnYxLlVwZGF0ZU1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJxChRCcm93c2VyR2V0TWVSZXNwb25zZRIoCghyZXNwb25zZRgBIAEoCzIWLnVzZXIudjEuR2V0TWVSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwoXQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USKwoIcmVzcG9uc2UYASABKAsyGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJMaXN0QWRkcmVzc2VzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5MaXN0QWRkcmVzc2VzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3Nlckxpc3RBZGRyZXNzZXNSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuTGlzdEFkZHJlc3Nlc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ3ChtCcm93c2VyQ3JlYXRlQWRkcmVzc1JlcXVlc3QSLgoHcmVxdWVzdBgBIAEoCzIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQigQEKHEJyb3dzZXJDcmVhdGVBZGRyZXNzUmVzcG9uc2USMAoIcmVzcG9uc2UYASABKAsyHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwobQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0Ei4KB3JlcXVlc3QYASABKAsyHS51c2VyLnYxLlVwZGF0ZUFkZHJlc3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0IoEBChxCcm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEjAKCHJlc3BvbnNlGAEgASgLMh4udXNlci52MS5VcGRhdGVBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJEZWxldGVBZGRyZXNzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5EZWxldGVBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3NlckRlbGV0ZUFkZHJlc3NSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuRGVsZXRlQWRkcmVzc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ/Ch9Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EjIKB3JlcXVlc3QYASABKAsyIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKJAQogQnJvd3NlclNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USNAoIcmVzcG9uc2UYASABKAsyIi51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlKu0BChJVc2VyQnJvd3NlckZhaWx1cmUSJAogVVNFUl9CUk9XU0VSX0ZBSUxVUkVfVU5TUEVDSUZJRUQQABIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9QUk9GSUxFX05PVF9SRUFEWRABEikKJVVTRVJfQlJPV1NFUl9GQUlMVVJFX1ZFUlNJT05fQ09ORkxJQ1QQAhIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9BRERSRVNTX05PVF9GT1VORBADEi4KKlVTRVJfQlJPV1NFUl9GQUlMVVJFX0FERFJFU1NfTElNSVRfUkVBQ0hFRBAEMuYFChJVc2VyQnJvd3NlclNlcnZpY2USUQoMQnJvd3NlckdldE1lEh8uZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXF1ZXN0GiAuZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXNwb25zZRJaCg9Ccm93c2VyVXBkYXRlTWUSIi5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlcXVlc3QaIy5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlc3BvbnNlEmkKFEJyb3dzZXJMaXN0QWRkcmVzc2VzEicuZ2F0ZXdheS52MS5Ccm93c2VyTGlzdEFkZHJlc3Nlc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJMaXN0QWRkcmVzc2VzUmVzcG9uc2USaQoUQnJvd3NlckNyZWF0ZUFkZHJlc3MSJy5nYXRld2F5LnYxLkJyb3dzZXJDcmVhdGVBZGRyZXNzUmVxdWVzdBooLmdhdGV3YXkudjEuQnJvd3NlckNyZWF0ZUFkZHJlc3NSZXNwb25zZRJpChRCcm93c2VyVXBkYXRlQWRkcmVzcxInLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0GiguZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEmkKFEJyb3dzZXJEZWxldGVBZGRyZXNzEicuZ2F0ZXdheS52MS5Ccm93c2VyRGVsZXRlQWRkcmVzc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJEZWxldGVBZGRyZXNzUmVzcG9uc2USdQoYQnJvd3NlclNldERlZmF1bHRBZGRyZXNzEisuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0GiwuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZUI+WjxnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vZ2F0ZXdheS92MTtnYXRld2F5djFiBnByb3RvMw", [file_auth_v1_auth, file_user_v1_user]);
+  fileDesc("Ch1nYXRld2F5L3YxL3VzZXJfYnJvd3Nlci5wcm90bxIKZ2F0ZXdheS52MSJnChNCcm93c2VyR2V0TWVSZXF1ZXN0EiYKB3JlcXVlc3QYASABKAsyFS51c2VyLnYxLkdldE1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJtChZCcm93c2VyVXBkYXRlTWVSZXF1ZXN0EikKB3JlcXVlc3QYASABKAsyGC51c2VyLnYxLlVwZGF0ZU1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJxChRCcm93c2VyR2V0TWVSZXNwb25zZRIoCghyZXNwb25zZRgBIAEoCzIWLnVzZXIudjEuR2V0TWVSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwoXQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USKwoIcmVzcG9uc2UYASABKAsyGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJMaXN0QWRkcmVzc2VzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5MaXN0QWRkcmVzc2VzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3Nlckxpc3RBZGRyZXNzZXNSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuTGlzdEFkZHJlc3Nlc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ3ChtCcm93c2VyQ3JlYXRlQWRkcmVzc1JlcXVlc3QSLgoHcmVxdWVzdBgBIAEoCzIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQigQEKHEJyb3dzZXJDcmVhdGVBZGRyZXNzUmVzcG9uc2USMAoIcmVzcG9uc2UYASABKAsyHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwobQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0Ei4KB3JlcXVlc3QYASABKAsyHS51c2VyLnYxLlVwZGF0ZUFkZHJlc3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0IoEBChxCcm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEjAKCHJlc3BvbnNlGAEgASgLMh4udXNlci52MS5VcGRhdGVBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJEZWxldGVBZGRyZXNzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5EZWxldGVBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3NlckRlbGV0ZUFkZHJlc3NSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuRGVsZXRlQWRkcmVzc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ/Ch9Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EjIKB3JlcXVlc3QYASABKAsyIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKJAQogQnJvd3NlclNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USNAoIcmVzcG9uc2UYASABKAsyIi51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlInMKGUJyb3dzZXJHZXRTZXR0aW5nc1JlcXVlc3QSLAoHcmVxdWVzdBgBIAEoCzIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0In0KGkJyb3dzZXJHZXRTZXR0aW5nc1Jlc3BvbnNlEi4KCHJlc3BvbnNlGAEgASgLMhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ5ChxCcm93c2VyVXBkYXRlU2V0dGluZ3NSZXF1ZXN0Ei8KB3JlcXVlc3QYASABKAsyHi51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKDAQodQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVzcG9uc2USMQoIcmVzcG9uc2UYASABKAsyHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlKu0BChJVc2VyQnJvd3NlckZhaWx1cmUSJAogVVNFUl9CUk9XU0VSX0ZBSUxVUkVfVU5TUEVDSUZJRUQQABIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9QUk9GSUxFX05PVF9SRUFEWRABEikKJVVTRVJfQlJPV1NFUl9GQUlMVVJFX1ZFUlNJT05fQ09ORkxJQ1QQAhIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9BRERSRVNTX05PVF9GT1VORBADEi4KKlVTRVJfQlJPV1NFUl9GQUlMVVJFX0FERFJFU1NfTElNSVRfUkVBQ0hFRBAEMrkHChJVc2VyQnJvd3NlclNlcnZpY2USUQoMQnJvd3NlckdldE1lEh8uZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXF1ZXN0GiAuZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXNwb25zZRJaCg9Ccm93c2VyVXBkYXRlTWUSIi5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlcXVlc3QaIy5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlc3BvbnNlEmkKFEJyb3dzZXJMaXN0QWRkcmVzc2VzEicuZ2F0ZXdheS52MS5Ccm93c2VyTGlzdEFkZHJlc3Nlc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJMaXN0QWRkcmVzc2VzUmVzcG9uc2USaQoUQnJvd3NlckNyZWF0ZUFkZHJlc3MSJy5nYXRld2F5LnYxLkJyb3dzZXJDcmVhdGVBZGRyZXNzUmVxdWVzdBooLmdhdGV3YXkudjEuQnJvd3NlckNyZWF0ZUFkZHJlc3NSZXNwb25zZRJpChRCcm93c2VyVXBkYXRlQWRkcmVzcxInLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0GiguZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEmkKFEJyb3dzZXJEZWxldGVBZGRyZXNzEicuZ2F0ZXdheS52MS5Ccm93c2VyRGVsZXRlQWRkcmVzc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJEZWxldGVBZGRyZXNzUmVzcG9uc2USdQoYQnJvd3NlclNldERlZmF1bHRBZGRyZXNzEisuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0GiwuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRJjChJCcm93c2VyR2V0U2V0dGluZ3MSJS5nYXRld2F5LnYxLkJyb3dzZXJHZXRTZXR0aW5nc1JlcXVlc3QaJi5nYXRld2F5LnYxLkJyb3dzZXJHZXRTZXR0aW5nc1Jlc3BvbnNlEmwKFUJyb3dzZXJVcGRhdGVTZXR0aW5ncxIoLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVxdWVzdBopLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVzcG9uc2VCPlo8Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL2dhdGV3YXkvdjE7Z2F0ZXdheXYxYgZwcm90bzM", [file_auth_v1_auth, file_user_v1_user]);
 
 /**
  * BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
@@ -409,6 +409,118 @@ export const BrowserSetDefaultAddressResponseSchema: GenMessage<BrowserSetDefaul
   messageDesc(file_gateway_v1_user_browser, 13);
 
 /**
+ * BrowserGetSettingsRequest separates typed public input from reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserGetSettingsRequest
+ */
+export type BrowserGetSettingsRequest = Message<"gateway.v1.BrowserGetSettingsRequest"> & {
+  /**
+   * Request contains only the supported public settings input.
+   *
+   * @generated from field: user.v1.GetSettingsRequest request = 1;
+   */
+  request?: GetSettingsRequest | undefined;
+
+  /**
+   * Context carries opaque credentials which never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserGetSettingsRequest.
+ * Use `create(BrowserGetSettingsRequestSchema)` to create a new message.
+ */
+export const BrowserGetSettingsRequestSchema: GenMessage<BrowserGetSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 14);
+
+/**
+ * BrowserGetSettingsResponse carries one successful snapshot or allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserGetSettingsResponse
+ */
+export type BrowserGetSettingsResponse = Message<"gateway.v1.BrowserGetSettingsResponse"> & {
+  /**
+   * Response is present only on success.
+   *
+   * @generated from field: user.v1.GetSettingsResponse response = 1;
+   */
+  response?: GetSettingsResponse | undefined;
+
+  /**
+   * Failure permits only profile pending and version conflict.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserGetSettingsResponse.
+ * Use `create(BrowserGetSettingsResponseSchema)` to create a new message.
+ */
+export const BrowserGetSettingsResponseSchema: GenMessage<BrowserGetSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 15);
+
+/**
+ * BrowserUpdateSettingsRequest separates typed public input from reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserUpdateSettingsRequest
+ */
+export type BrowserUpdateSettingsRequest = Message<"gateway.v1.BrowserUpdateSettingsRequest"> & {
+  /**
+   * Request contains only the supported public settings input.
+   *
+   * @generated from field: user.v1.UpdateSettingsRequest request = 1;
+   */
+  request?: UpdateSettingsRequest | undefined;
+
+  /**
+   * Context carries opaque credentials which never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserUpdateSettingsRequest.
+ * Use `create(BrowserUpdateSettingsRequestSchema)` to create a new message.
+ */
+export const BrowserUpdateSettingsRequestSchema: GenMessage<BrowserUpdateSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 16);
+
+/**
+ * BrowserUpdateSettingsResponse carries one successful snapshot or allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserUpdateSettingsResponse
+ */
+export type BrowserUpdateSettingsResponse = Message<"gateway.v1.BrowserUpdateSettingsResponse"> & {
+  /**
+   * Response is present only on success.
+   *
+   * @generated from field: user.v1.UpdateSettingsResponse response = 1;
+   */
+  response?: UpdateSettingsResponse | undefined;
+
+  /**
+   * Failure permits only profile pending and version conflict.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserUpdateSettingsResponse.
+ * Use `create(BrowserUpdateSettingsResponseSchema)` to create a new message.
+ */
+export const BrowserUpdateSettingsResponseSchema: GenMessage<BrowserUpdateSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 17);
+
+/**
  * UserBrowserFailure is the closed allowlist of domain outcomes preserved across the tunnel.
  *
  * @generated from enum gateway.v1.UserBrowserFailure
@@ -532,6 +644,26 @@ export const UserBrowserService: GenService<{
     methodKind: "unary";
     input: typeof BrowserSetDefaultAddressRequestSchema;
     output: typeof BrowserSetDefaultAddressResponseSchema;
+  },
+  /**
+   * BrowserGetSettings resolves the current owner before reading preferences.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserGetSettings
+   */
+  browserGetSettings: {
+    methodKind: "unary";
+    input: typeof BrowserGetSettingsRequestSchema;
+    output: typeof BrowserGetSettingsResponseSchema;
+  },
+  /**
+   * BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserUpdateSettings
+   */
+  browserUpdateSettings: {
+    methodKind: "unary";
+    input: typeof BrowserUpdateSettingsRequestSchema;
+    output: typeof BrowserUpdateSettingsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_gateway_v1_user_browser, 0);

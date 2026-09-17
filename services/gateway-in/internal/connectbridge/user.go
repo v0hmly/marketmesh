@@ -19,11 +19,11 @@ import (
 
 // NewUserHandler exposes caller-scoped profile methods, never the private browser service.
 func NewUserHandler(invoker Invoker, options ...connect.HandlerOption) (http.Handler, error) {
-	return NewAccountHandler(invoker, false, options...)
+	return NewAccountHandler(invoker, false, false, options...)
 }
 
 // NewAccountHandler enables only the explicitly configured account capabilities.
-func NewAccountHandler(invoker Invoker, addresses bool, options ...connect.HandlerOption) (http.Handler, error) {
+func NewAccountHandler(invoker Invoker, addresses, settings bool, options ...connect.HandlerOption) (http.Handler, error) {
 	if isNilInvoker(invoker) {
 		return nil, errors.New("connect user bridge: invoker is required")
 	}
@@ -52,6 +52,11 @@ func NewAccountHandler(invoker Invoker, addresses bool, options ...connect.Handl
 	}
 	if addresses {
 		if err := mountAddresses(mux, invoker, options); err != nil {
+			return nil, err
+		}
+	}
+	if settings {
+		if err := mountSettings(mux, invoker, options); err != nil {
 			return nil, err
 		}
 	}

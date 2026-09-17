@@ -37,7 +37,7 @@ func TestAddressPublicBridgeRoutes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, _ := proto.Marshal(tc.response)
 			inv := &addressInvoker{userInvoker{fakeInvoker: fakeInvoker{response: tunnel.Response{Payload: payload}}}}
-			handler, err := NewAccountHandler(inv, true)
+			handler, err := NewAccountHandler(inv, true, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -75,7 +75,7 @@ func TestAddressPublicBridgeRoutes(t *testing.T) {
 func TestAddressPublicBridgeDisabledAndBounded(t *testing.T) {
 	inv := &addressInvoker{}
 	for _, enabled := range []bool{false, true} {
-		handler, err := NewAccountHandler(inv, enabled)
+		handler, err := NewAccountHandler(inv, enabled, false)
 		if err != nil {
 			t.Fatal(err)
 		}

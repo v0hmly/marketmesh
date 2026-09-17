@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router';
 import AuthView from '../modules/account/views/AuthView.vue';
+import SettingsView from '../modules/account/views/SettingsView.vue';
 import AddressesView from '../modules/account/views/AddressesView.vue';
-import { addressesEnabled } from '../shared/features';
+import { addressesEnabled, settingsEnabled } from '../shared/features';
 import ProfileView from '../modules/account/views/ProfileView.vue';
 
 export function createStorefrontRouter(history: RouterHistory = createWebHistory()) {
@@ -13,6 +14,9 @@ export function createStorefrontRouter(history: RouterHistory = createWebHistory
       { path: '/register', name: 'register', component: AuthView, props: { mode: 'register' } },
       ...(addressesEnabled
         ? [{ path: '/account/addresses', name: 'addresses', component: AddressesView }]
+        : []),
+      ...(settingsEnabled
+        ? [{ path: '/account/settings', name: 'settings', component: SettingsView }]
         : []),
       { path: '/account', name: 'account', component: ProfileView },
       { path: '/:pathMatch(.*)*', redirect: '/account' },

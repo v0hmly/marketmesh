@@ -341,3 +341,17 @@ ADDRESS_LIMIT_REACHED (ResourceExhausted). Только точные ErrorInfo �
 `marketmesh.user` без metadata проходят наружу; чужой и отсутствующий ID
 неразличимы. Произвольный upstream текст не пересылается. Все ответы — no-store.
 Порядок миграции и включения описан в [Gateway In](../../services/gateway-in/README.md#адресная-книга-mm-68).
+
+## Настройки User (MM-69)
+
+GetSettings/UpdateSettings используют маршруты 109/110 и private Browser-конверты.
+Флаг `USER_SETTINGS_BROWSER_ENABLED` независим от адресов и требует
+`USER_BROWSER_ENABLED`; readiness учитывает оба маршрута. Размеры запроса и ответа
+остаются 16 КиБ, общий предел сообщения этим флагом не расширяется. На каждом
+вызове Auth проверяет сессию, затем User получает только новый assertion.
+
+Настройки содержат subject_id, отдельную положительную версию и enum темы
+system/light/dark. UpdateSettings использует expected_version и возвращает
+подтверждённое состояние; повторов записи нет. Закрытый набор ошибок —
+PROFILE_NOT_READY и VERSION_CONFLICT, без upstream-текста или дополнительных
+metadata. [Включение и откат](../../services/gateway-in/README.md#тема-кабинета-mm-69).

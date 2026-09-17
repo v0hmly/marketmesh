@@ -24,6 +24,10 @@ service UserBrowserService {
   rpc BrowserDeleteAddress(BrowserDeleteAddressRequest) returns (BrowserDeleteAddressResponse);
   // BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
   rpc BrowserSetDefaultAddress(BrowserSetDefaultAddressRequest) returns (BrowserSetDefaultAddressResponse);
+  // BrowserGetSettings resolves the current owner before reading preferences.
+  rpc BrowserGetSettings(BrowserGetSettingsRequest) returns (BrowserGetSettingsResponse);
+  // BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
+  rpc BrowserUpdateSettings(BrowserUpdateSettingsRequest) returns (BrowserUpdateSettingsResponse);
 }
 
 // BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
@@ -149,5 +153,37 @@ message BrowserSetDefaultAddressResponse {
   // Response is present only after a successful operation.
   user.v1.SetDefaultAddressResponse response = 1;
   // Failure preserves only explicitly allowed outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserGetSettingsRequest separates typed public input from reconstructed credentials.
+message BrowserGetSettingsRequest {
+  // Request contains only the supported public settings input.
+  user.v1.GetSettingsRequest request = 1;
+  // Context carries opaque credentials which never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserGetSettingsResponse carries one successful snapshot or allowed failure.
+message BrowserGetSettingsResponse {
+  // Response is present only on success.
+  user.v1.GetSettingsResponse response = 1;
+  // Failure permits only profile pending and version conflict.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserUpdateSettingsRequest separates typed public input from reconstructed credentials.
+message BrowserUpdateSettingsRequest {
+  // Request contains only the supported public settings input.
+  user.v1.UpdateSettingsRequest request = 1;
+  // Context carries opaque credentials which never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserUpdateSettingsResponse carries one successful snapshot or allowed failure.
+message BrowserUpdateSettingsResponse {
+  // Response is present only on success.
+  user.v1.UpdateSettingsResponse response = 1;
+  // Failure permits only profile pending and version conflict.
   UserBrowserFailure failure = 2;
 }

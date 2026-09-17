@@ -47,6 +47,8 @@ function api(): PublicApi {
     refresh: vi.fn(async () => {}),
     logout: vi.fn(async () => {}),
     logoutAll: vi.fn(async () => {}),
+    getSettings: vi.fn(),
+    updateSettings: vi.fn(),
     listAddresses: vi.fn(),
     createAddress: vi.fn(),
     updateAddress: vi.fn(),
@@ -605,6 +607,62 @@ describe('address session isolation', () => {
     vi.mocked(backend.listAddresses).mockRejectedValueOnce(denied()).mockResolvedValue(book());
     await expect(controller.readAddresses(controller.capture())).resolves.toEqual(book());
     expect(backend.listAddresses).toHaveBeenCalledTimes(2);
+    controller.dispose();
+  });
+});
+
+describe('settings session isolation', () => {
+  it('checks the owner, holds the session lock and discards late settings after logout intent', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const gate = deferred<{ subjectId: Uint8Array; version: bigint; theme: 'dark' }>();
+    vi.mocked(backend.getSettings).mockReturnValue(gate.promise);
+    const read = controller.readSettings(controller.capture());
+    const rejected = expect(read).rejects.toBeInstanceOf(GuardMismatchError);
+    await settle();
+    const logout = controller.logout();
+    await settle();
+    expect(backend.logout).not.toHaveBeenCalled();
+    gate.resolve({ subjectId: profile().subjectId, version: 1n, theme: 'dark' });
+    await rejected;
+    await logout;
+    expect(controller.state.value.status).toBe('anonymous');
+    controller.dispose();
+  });
+  it('rejects another owner in settings and invalidates the generation', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    vi.mocked(backend.getSettings).mockResolvedValue({
+      subjectId: profile(2).subjectId,
+      version: 1n,
+      theme: 'dark',
+    });
+    await expect(controller.readSettings(controller.capture())).rejects.toBeInstanceOf(
+      GuardMismatchError,
+    );
+    expect(controller.state.value.status).toBe('uncertain');
+    controller.dispose();
+  });
+  it('never retries a settings mutation and rejects an old form before network', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const guard = controller.capture();
+    vi.mocked(backend.updateSettings).mockRejectedValueOnce(denied());
+    await expect(
+      controller.updateSettings({ theme: 'dark', expectedVersion: 1n }, guard),
+    ).rejects.toMatchObject({ code: Code.Unauthenticated });
+    expect(backend.refresh).not.toHaveBeenCalled();
+    await controller.logout();
+    await expect(
+      controller.updateSettings({ theme: 'dark', expectedVersion: 1n }, guard),
+    ).rejects.toBeInstanceOf(GuardMismatchError);
+    expect(backend.updateSettings).toHaveBeenCalledTimes(1);
     controller.dispose();
   });
 });

@@ -15,7 +15,15 @@ const account = (suffix: string) => ({
 });
 const a = account('a');
 const b = account('b');
-type AccountStage = 'profile' | 'book-initial' | 'book-relogin' | 'book-foreign' | 'maximum';
+type AccountStage =
+  | 'profile'
+  | 'book-initial'
+  | 'book-relogin'
+  | 'book-foreign'
+  | 'maximum'
+  | 'theme-initial'
+  | 'theme-relogin'
+  | 'theme-foreign';
 function step(
   stage: AccountStage,
   action: 'register' | 'login' | 'ready' | 'logout',
@@ -33,7 +41,7 @@ function observeRpc(page: Page) {
   page.on('response', (response) => {
     const path = new URL(response.url()).pathname;
     const match =
-      /^\/(?:auth\.v1\.AuthService\/(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll)|user\.v1\.UserService\/(GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress))$/.exec(
+      /^\/(?:auth\.v1\.AuthService\/(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll)|user\.v1\.UserService\/(GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress|GetSettings|UpdateSettings))$/.exec(
         path,
       );
     if (match && info.annotations.filter((item) => item.type === 'account-rpc').length < 80)
@@ -107,6 +115,7 @@ async function rpc(page: Page, method = 'GetMe', body: Record<string, unknown> =
               fields: Record<string, string>;
             }[];
           };
+          settings?: { subjectId: string; version: string; theme: string };
           profile?: { subjectId: string; version: string; displayName: string; bio: string };
         },
       };
@@ -570,4 +579,138 @@ test('real maximum Unicode address book crosses 64 KiB and enforces the twenty a
   expect(size.bytes > 65_536 && size.bytes < 131_072).toBe(true);
   await page.reload();
   await expect(page.locator('.address-card')).toHaveCount(20);
+});
+
+async function openSettings(page: Page) {
+  await page.getByRole('link', { name: 'Оформление', exact: true }).click();
+  await expect(page.getByRole('group', { name: 'Тема оформления', exact: true })).toBeVisible();
+}
+async function selectTheme(page: Page, label: string) {
+  await page.getByRole('radio', { name: label, exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.getByText('Оформление сохранено.', { exact: true })).toBeVisible();
+}
+test('real themes persist with independent versions, isolated owners, CAS and a lost committed reply', async ({
+  page,
+  context,
+  browser,
+}) => {
+  test.skip(process.env.ACCOUNT_E2E_PHASE !== 'core');
+  const themeA = account('theme-a');
+  const themeB = account('theme-b');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await register(page, themeA, 'theme-initial');
+  await login(page, themeA, 'theme-initial');
+  await ready(page, 'theme-initial');
+  await openSettings(page);
+  await expect(page.getByRole('radio', { name: 'Как в системе', exact: true })).toBeChecked();
+  const initialSettings = await rpc(page, 'GetSettings');
+  const initialProfile = await rpc(page);
+  const initialBook = await rpc(page, 'ListAddresses');
+  expect(initialSettings.status).toBe(200);
+  expect(initialSettings.cache).toContain('no-store');
+  expect(initialSettings.body.settings?.theme).toBe('THEME_SYSTEM');
+  const changedProfile = await rpc(page, 'UpdateMe', {
+    displayName: 'Тема и профиль',
+    bio: 'Независимые версии',
+    expectedVersion: initialProfile.body.profile!.version,
+  });
+  expect(changedProfile.status).toBe(200);
+  const changedBook = await rpc(page, 'CreateAddress', {
+    fields: delivery('Адрес для проверки темы'),
+    expectedBookVersion: initialBook.body.book!.version,
+  });
+  expect(changedBook.status).toBe(200);
+  expect((await rpc(page, 'GetSettings')).body.settings?.version).toBe(
+    initialSettings.body.settings!.version,
+  );
+  await selectTheme(page, 'Тёмная');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  expect((await rpc(page)).body.profile?.version).toBe(changedProfile.body.profile!.version);
+  expect((await rpc(page, 'ListAddresses')).body.book?.version).toBe(
+    changedBook.body.book!.version,
+  );
+  const saved = await rpc(page, 'GetSettings');
+  expect(saved.body.settings?.theme).toBe('THEME_DARK');
+  expect(saved.body.settings?.version !== initialSettings.body.settings!.version).toBe(true);
+  await page.getByRole('link', { name: 'О себе', exact: true }).click();
+  await page.reload();
+  await ready(page, 'theme-initial');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  await confirmedLogout(page, 'theme-relogin');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await login(page, themeA, 'theme-relogin');
+  await ready(page, 'theme-relogin');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  const other = await browser.newContext({
+    baseURL: process.env.BASE_URL,
+    ignoreHTTPSErrors: false,
+  });
+  try {
+    const foreign = await other.newPage();
+    await register(foreign, themeB, 'theme-foreign');
+    await login(foreign, themeB, 'theme-foreign');
+    await ready(foreign, 'theme-foreign');
+    await openSettings(foreign);
+    await expect(foreign.getByRole('radio', { name: 'Как в системе', exact: true })).toBeChecked();
+    await selectTheme(foreign, 'Светлая');
+    const foreignSettings = await rpc(foreign, 'GetSettings');
+    expect(foreignSettings.body.settings?.subjectId !== saved.body.settings!.subjectId).toBe(true);
+    expect(foreignSettings.body.settings?.theme).toBe('THEME_LIGHT');
+    expect((await rpc(page, 'GetSettings')).body.settings?.theme).toBe('THEME_DARK');
+    await confirmedLogout(page, 'theme-foreign');
+    await login(page, themeB, 'theme-foreign');
+    await ready(page, 'theme-foreign');
+    await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+    await confirmedLogout(page, 'theme-relogin');
+    await login(page, themeA, 'theme-relogin');
+    await ready(page, 'theme-relogin');
+    await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  } finally {
+    await other.close();
+  }
+  await openSettings(page);
+  const second = await context.newPage();
+  await second.goto('/account/settings');
+  await expect(second.getByRole('radio', { name: 'Тёмная', exact: true })).toBeChecked();
+  await second.getByRole('radio', { name: 'Светлая', exact: true }).check();
+  await selectTheme(page, 'Как в системе');
+  await second.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(second.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
+  await expect(second.getByRole('radio', { name: 'Светлая', exact: true })).toBeChecked();
+  await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  await expect(second.locator('.settings-latest')).toContainText('Как в системе');
+  await second.getByRole('button', { name: 'Оставить мой выбор для сохранения' }).click();
+  await second.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(second.getByText('Оформление сохранено.', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await expect(page.getByRole('radio', { name: 'Светлая', exact: true })).toBeChecked();
+  let writes = 0;
+  await page.route('**/user.v1.UserService/UpdateSettings', async (route) => {
+    writes++;
+    const committed = await route.fetch();
+    expect(committed.status()).toBe(200);
+    await route.abort('failed');
+  });
+  await page.getByRole('radio', { name: 'Тёмная', exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.getByText('Сохранение не подтверждено.', { exact: false })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  expect(writes).toBe(1);
+  await page.unroute('**/user.v1.UserService/UpdateSettings');
+  await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  await expect(page.locator('.settings-latest')).toContainText('Тёмная');
+  await page.getByRole('button', { name: 'Принять актуальные настройки' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  expect(writes).toBe(1);
+  expect(
+    await page.evaluate(() =>
+      /theme|dark|light/.test(JSON.stringify({ ...localStorage, ...sessionStorage })),
+    ),
+  ).toBe(false);
+  await confirmedLogout(second, 'theme-relogin');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await second.close();
 });

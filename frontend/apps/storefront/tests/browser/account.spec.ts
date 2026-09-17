@@ -1,6 +1,8 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
 import {
+  AccountSettingsSchema,
+  Theme,
   AddressBookSchema,
   AddressSchema,
   ProfileSchema,
@@ -15,6 +17,13 @@ async function browserApi(context: BrowserContext) {
   let accessLive = false;
   let updates = 0;
   let refreshes = 0;
+  let settingsWrites = 0;
+  let loseSettingsReply = false;
+  let settings = create(AccountSettingsSchema, {
+    subjectId: new Uint8Array(16).fill(1),
+    version: 1n,
+    theme: Theme.SYSTEM,
+  });
   let addressWrites = 0;
   let loseCreateReply = false;
   let nextAddress = 0;
@@ -76,6 +85,39 @@ async function browserApi(context: BrowserContext) {
       return;
     }
     const method = new URL(route.request().url()).pathname.split('/').at(-1);
+    if (method === 'GetSettings' || method === 'UpdateSettings') {
+      if (method === 'UpdateSettings') {
+        settingsWrites++;
+        const input = fromBinary(
+          UserService.method.updateSettings.input,
+          route.request().postDataBuffer()!,
+        );
+        if (input.expectedVersion !== settings.version) {
+          await jsonError(route, 'aborted', 409);
+          return;
+        }
+        settings = create(AccountSettingsSchema, {
+          ...settings,
+          theme: input.theme,
+          version: settings.version + 1n,
+        });
+        if (loseSettingsReply) {
+          loseSettingsReply = false;
+          await route.abort('failed');
+          return;
+        }
+      }
+      await route.fulfill({
+        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+        body: Buffer.from(
+          toBinary(
+            UserService.method.getSettings.output,
+            create(UserService.method.getSettings.output, { settings }),
+          ),
+        ),
+      });
+      return;
+    }
     const addressMethods = {
       ListAddresses: UserService.method.listAddresses,
       CreateAddress: UserService.method.createAddress,
@@ -168,6 +210,10 @@ async function browserApi(context: BrowserContext) {
     });
   });
   return {
+    settingsWrites: () => settingsWrites,
+    loseNextSettingsReply() {
+      loseSettingsReply = true;
+    },
     loseNextCreateReply() {
       loseCreateReply = true;
     },
@@ -394,3 +440,107 @@ for (const path of ['/login', '/register']) {
     }
   });
 }
+
+test('account themes apply after confirmation, follow the device, survive reload and remain accessible', async ({
+  page,
+  context,
+}, testInfo) => {
+  const api = await browserApi(context);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await addressLogin(page);
+  await page.getByRole('link', { name: 'Оформление', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Как в системе', exact: true })).toBeChecked();
+  await page.getByRole('radio', { name: 'Тёмная', exact: true }).check();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(api.settingsWrites()).toBe(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.locator('main').focus();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  expect(
+    await page.locator('.skip-link').evaluate((element) => getComputedStyle(element).top),
+  ).toBe('-100px');
+  await page.screenshot({ path: testInfo.outputPath('settings-dark.png'), fullPage: true });
+  await page.getByRole('link', { name: 'О себе', exact: true }).click();
+  await expect(page.getByLabel('Имя', { exact: true })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('link', { name: 'Адреса доставки', exact: true }).click();
+  await page.getByRole('button', { name: 'Добавить адрес', exact: true }).click();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole('link', { name: 'Оформление', exact: true }).click();
+  await page.getByRole('radio', { name: 'Светлая', exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole('radio', { name: 'Как в системе', exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.locator('main').focus();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath('settings-light-mobile.png'), fullPage: true });
+  await page.getByRole('radio', { name: 'Тёмная', exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.locator('main').focus();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: testInfo.outputPath('settings-dark-mobile.png'), fullPage: true });
+});
+
+test('theme conflicts and lost replies require reconciliation, and cross-tab logout resets the shell', async ({
+  page,
+  context,
+}) => {
+  const api = await browserApi(context);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await addressLogin(page);
+  await page.getByRole('link', { name: 'Оформление', exact: true }).click();
+  const second = await context.newPage();
+  await second.goto('/account/settings');
+  await expect(second.getByRole('radio', { name: 'Как в системе', exact: true })).toBeChecked();
+  await second.getByRole('radio', { name: 'Светлая', exact: true }).check();
+  await page.getByRole('radio', { name: 'Тёмная', exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await second.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(second.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
+  await expect(second.getByRole('radio', { name: 'Светлая', exact: true })).toBeChecked();
+  await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  await expect(second.locator('.settings-latest')).toContainText('Тёмная');
+  await second.getByRole('button', { name: 'Оставить мой выбор для сохранения' }).click();
+  await second.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(second.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  api.loseNextSettingsReply();
+  const count = api.settingsWrites();
+  await page.getByRole('radio', { name: 'Тёмная', exact: true }).check();
+  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
+  await expect(page.getByText('Сохранение не подтверждено.', { exact: false })).toBeVisible();
+  expect(api.settingsWrites()).toBe(count + 1);
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  await expect(page.locator('.settings-latest')).toContainText('Тёмная');
+  await page.getByRole('button', { name: 'Принять актуальные настройки' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  expect(api.settingsWrites()).toBe(count + 1);
+  expect(
+    await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage })),
+  ).not.toMatch(/theme|dark|light/);
+  await second.getByRole('button', { name: 'Выйти', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await expect(page.getByRole('radio')).toHaveCount(0);
+});
