@@ -159,7 +159,7 @@ func runService(
 		}
 		managedClients = append(managedClients, client)
 	}
-	pool, err := newTunnelPool(managedClients)
+	pool, err := newTunnelPool(managedClients, cfg.periodicRediscoveryEnabled)
 	if err != nil {
 		return err
 	}

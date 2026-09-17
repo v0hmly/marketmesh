@@ -70,6 +70,13 @@ func TestGenerateIsIdempotentAndSeparatesSecrets(t *testing.T) {
 	if _, err = os.Stat(filepath.Join(root, "ca-key.pem")); !os.IsNotExist(err) {
 		t.Fatal("CA private key persisted")
 	}
+	env, err := os.ReadFile(filepath.Join(root, "gateway-out/env"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(env), "ENVIRONMENT='test'\n") || !strings.Contains(string(env), "TUNNEL_PERIODIC_REDISCOVERY_ENABLED='false'\n") {
+		t.Fatal("fixed test topology must disable periodic redistribution")
+	}
 }
 
 func TestGenerateRejectsPartialAndInvalidInput(t *testing.T) {
