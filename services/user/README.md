@@ -57,7 +57,7 @@ go run ./cmd/user
 - `UpdateMe` полностью заменяет `display_name` и `bio` при совпадении `expected_version`. Пустое значение очищает поле. Отображаемое имя обрезается по краям и ограничено 80 Unicode-символами/320 байтами, текст «О себе» — 1000 символами/4000 байтами. Управляющие символы запрещены; в `bio` допустимы перевод строки и табуляция. Текст не является HTML и требует обычного экранирования при отображении.
 - В запросах нет идентификатора целевого пользователя: владельца определяет только проверенное утверждение Auth. Успешное изменение увеличивает версию и возвращает записанное состояние; конфликт параллельного изменения возвращает `Aborted`, после чего клиент перечитывает профиль.
 - Оба метода читают через RW primary, чтобы сохранять read-after-write. RO подключение указывает на настоящую recovery replica и проверяется при запуске/readiness; сценариев eventual consistency в этом срезе ещё нет.
-- Get/Update не создают профиль. До обработки события регистрации отсутствие строки возвращает `NotFound` (`profile not ready`) с `google.rpc.ErrorInfo`: domain `marketmesh.user`, reason `PROFILE_NOT_READY`, без персональных metadata. Проверка сессии выполняется первой: недействующая сессия даёт `Unauthenticated` без этого detail. Клиент может показать подготовку профиля, сохраняя сессию. Consumer и восстановление описаны ниже; внешняя маршрутизация и интерфейс кабинета выполняются следующими шагами MM-50.
+- Get/Update не создают профиль. До обработки события регистрации отсутствие строки возвращает `NotFound` (`profile not ready`) с `google.rpc.ErrorInfo`: domain `marketmesh.user`, reason `PROFILE_NOT_READY`, без персональных metadata. Проверка сессии выполняется первой: недействующая сессия даёт `Unauthenticated` без этого detail. Клиент может показать подготовку профиля, сохраняя сессию. Consumer и восстановление описаны ниже; внешний HTTPS путь подключается через `USER_BROWSER_ENABLED` на обоих шлюзах (MM-62). Интерфейс кабинета реализуется следующими шагами MM-50.
 
 `domain` содержит инварианты без protobuf/pgx, `application` — отдельные сценарии и порты хранилища, `adapter/out/postgres` — SQL, `adapter/out/authsession` — клиент проверки Auth, `adapter/in/internalgrpc` — преобразование транспорта и ошибок. User не импортирует реализацию Auth и не получает его DSN.
 
@@ -67,7 +67,7 @@ go run ./cmd/user
 
 Шлюз передаёт единственное внутреннее утверждение в бинарной gRPC metadata `marketmesh-session-assertion-bin`. Cookie, `Authorization`, дубли metadata и утверждения сверх 16 KiB отклоняются. User проверяет Ed25519-подпись по ограниченному набору открытых ключей Auth, issuer, audience `user`, тип и срок, затем получает свежую проверку сессии через `AuthInternalService.VerifyAssertion` и сверяет subject/session/expiry. Разрешения методов — `user:profile:read` и `user:profile:write`. Отзыв сессии проверяется при каждом вызове; успех не кэшируется. Недоступность Auth закрывает доступ. Причина синхронной зависимости зафиксирована в [ADR-0005](../../docs/adr/0005-user-session-and-identity-propagation.md).
 
-Ошибки аутентификации дают `Unauthenticated`, недостаточные права — `PermissionDenied`, неверные поля — `InvalidArgument`, ошибки хранилища — безопасный `Unavailable`. Данные профиля, утверждения, DSN и ключи не попадают в сообщения ошибок и журналы. gRPC ответы помечены `cache-control: no-store`; типизированный bridge gateway-in устанавливает HTTP `Cache-Control: no-store` для обеих профильных route ID, включая ошибки разбора запроса. Подключение этих route ID к реальному внешнему API выполняется в MM-50.
+Ошибки аутентификации дают `Unauthenticated`, недостаточные права — `PermissionDenied`, неверные поля — `InvalidArgument`, ошибки хранилища — безопасный `Unavailable`. Данные профиля, утверждения, DSN и ключи не попадают в сообщения ошибок и журналы. gRPC ответы помечены `cache-control: no-store`; типизированный bridge gateway-in устанавливает HTTP `Cache-Control: no-store` для обеих профильных route ID, включая ошибки разбора запроса. Настоящий внешний API использует отдельные browser route ID 102/103 и также устанавливает no-store; legacy 100/101 сохранены для FakeInternal E2E.
 
 ### Настройка runtime
 
@@ -177,3 +177,80 @@ task user:registration:integration
 Стенд запускает реальные Auth registration/publisher и backfill CLI, User runtime, отдельные PostgreSQL primary/replica и NATS с mTLS/ACL. Проверяются доставка, сохранение изменений при повторе, отказ БД/брокера, backfill, состояние подготовки профиля и отмена. Только неизменённая RPC-граница ключей/проверки сессии Auth использует явно обозначенный контрактный stub; полный browser/login путь относится к следующим шагам MM-50. Runtime и CLI собираются под Linux. Файлы PKI создаются в именованном томе; host ports и bind mounts отсутствуют, ресурсы удаляются после проверки. `REGISTRATION_TEST_IMAGE` позволяет подставить локальный проверенный offline test image.
 
 Проверка имеет отдельный build tag `registrationintegration` вместе с `integration`, чтобы обычный `task user:integration` не требовал NATS или Auth binary. Протокольные основания: [NATS consumer configuration](https://github.com/nats-io/nats.docs/blob/master/nats-concepts/jetstream/consumers.md).
+
+## Адресная книга — MM-68
+
+`USER_ADDRESSES_ENABLED=true` включает ListAddresses, CreateAddress, UpdateAddress,
+DeleteAddress и SetDefaultAddress на том же внутреннем listener. По умолчанию флаг
+выключен; включение требует `USER_PROFILE_ENABLED=true`. Выключенный режим сохраняет
+прежние проверки схемы. Workload `gateway-out` и проверенная assertion обязательны;
+области `user:addresses:read` и `user:addresses:write` независимы от профильных.
+Добавьте их в серверный список разрешённых scopes аудитории `user` в Auth.
+
+Книга содержит до 20 адресов, имеет собственный `address_book_version` и возвращается
+целиком из каждой операции. CAS обязателен для записи. Транзакция блокирует строку
+владельца в `users.profiles` до проверки версии, лимита, изменения и формирования
+снимка; ответ выдаётся только после commit. Чтение выполняется одним запросом на
+primary. Каждый SQL изменения адреса ограничен владельцем и ID. Первая запись в
+пустой книге становится основной; удаление основной не назначает замену.
+
+Поля и ограничения описаны в [контракте аккаунта](../../docs/product/account.md).
+ID генерирует сервер из 16 случайных ненулевых байт. Телефон является непроверенным
+контактом получателя; он не меняет Auth. Ни SQL-параметры, ни адресные данные не
+попадают в ошибки. Ответы имеют `Cache-Control: no-store`; внутренний предел запроса
+остаётся 32 KiB, предел ответа при включённой книге — 128 KiB. Шлюз должен принимать
+тот же размер ответа, иначе максимальная книга не пройдёт транспорт.
+
+Ошибки `PROFILE_NOT_READY`, `ADDRESS_NOT_FOUND` и `ADDRESS_LIMIT_REACHED` передаются
+через точный ErrorInfo домена `marketmesh.user` без metadata. Отсутствующий и чужой
+ID дают одинаковый NotFound. Конфликт версии — Aborted. После неизвестного исхода
+записи клиент перечитывает книгу и не повторяет создание автоматически.
+
+Порядок развёртывания: применить `000003_addresses.up.sql`, выдать RW-роли
+`SELECT, INSERT, UPDATE, DELETE ON users.addresses` и RO-роли `SELECT`; существующие
+права `SELECT, UPDATE ON users.profiles` нужны для версии/блокировки. Затем обновить
+runtime, scopes, ограничения шлюзов и включить флаг. Миграция добавляет колонку с
+DEFAULT 1: прежние профили и старый registration consumer продолжают работать.
+Версия и поля профиля не меняются при адресных операциях.
+
+Откат приложения: выключить флаг и вернуть предыдущий runtime, сохранив адреса.
+Down-миграция удаляет адресную книгу и не применяется как обычный откат приложения.
+Интеграционные тесты `internal/adapter/out/postgresaddresses` запускаются с тегом
+`integration` и `MARKETMESH_USER_POSTGRES_DSN` на отдельной пустой тестовой базе;
+они проверяют CAS, owner isolation, rollback, лимит, default и up/down миграцию.
+
+## Тема аккаунта — MM-69
+
+`USER_SETTINGS_ENABLED=true` включает GetSettings и UpdateSettings независимо от
+адресной книги. По умолчанию флаг выключен; включение требует только
+`USER_PROFILE_ENABLED=true`. Допустимы `system`, `light`, `dark`; исходная тема —
+`system`. Протокольный unspecified и неизвестные enum отклоняются. Произвольных
+ключей настроек и дополнительных переключателей нет.
+
+Настройки принадлежат владельцу проверенной assertion. Workload policy разрешает
+точные методы только gateway-out, а scopes `user:settings:read` и
+`user:settings:write` проверяются отдельно от профильных и адресных. Добавьте их
+в серверный список scopes аудитории `user` в Auth. Ответ содержит subject ID,
+тему и положительную независимую settings_version; персональные ответы имеют
+`Cache-Control: no-store`, данные и assertion не журналируются.
+
+UpdateSettings требует последнюю expected_version. Единственный атомарный
+UPDATE RETURNING меняет тему и settings_version, не меняя профиль, его время
+обновления или версию адресной книги. Все чтения идут через primary: ответ после
+записи не зависит от отставания replica. Конфликт возвращает Aborted; отсутствующий
+пока профиль — существующий точный `PROFILE_NOT_READY` домена `marketmesh.user`.
+После неоднозначной сетевой ошибки клиент перечитывает настройку и не повторяет
+запись автоматически.
+
+До включения примените `000004_settings.up.sql`: аддитивные колонки theme и
+settings_version имеют DEFAULT `system` и 1. Старые профили, явные профильные
+SELECT/UPDATE и прежний INSERT только subject_id сохраняют совместимость.
+Достаточны существующие права RW `SELECT, UPDATE ON users.profiles` и RO `SELECT`.
+Сначала миграция, затем runtime/scopes и флаг. При выключенном флаге старый runtime
+не требует новых колонок в readiness; при включённом их наличие проверяется.
+
+Откат приложения — выключить флаг и вернуть прежний runtime, сохранив колонки.
+Down-миграция удаляет предпочтения и не является штатным откатом приложения.
+`task user:integration` включает отдельные тесты settings CAS/изоляции/миграций и
+четыре runtime-режима с реальными primary/replica. Они проверяют чтение при
+остановленной репликации, независимость версий и условную schema-readiness.

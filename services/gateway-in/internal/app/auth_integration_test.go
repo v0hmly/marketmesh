@@ -34,14 +34,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/v0hmly/marketmesh/platform/logger"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 // This exercises a verified HTTPS cookie jar, not a browser engine. Auth and
-// gateway-out are real binaries; only the unrelated legacy User target is a TLS stub.
+// gateway-out and User are real binaries with isolated Auth and User databases.
 func TestIntegrationAuthBrowser(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 	required := func(k string) string {
 		t.Helper()
@@ -70,7 +68,7 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 	edgeCert, edgeKey := pki.issue(t, "gateway-in")
 	outCert, outKey := pki.issue(t, "gateway-out")
 	authCert, authKey := pki.issue(t, "auth")
-	userCert, userKey := pki.issue(t, "user-service")
+	userCert, userKey := pki.issue(t, "user")
 	edgeHTTP, edgeGRPC, authHTTP, authGRPC, outHTTP := authFreeAddress(t), authFreeAddress(t), authFreeAddress(t), authFreeAddress(t), authFreeAddress(t)
 	origin := "https://" + edgeHTTP
 	keyPub, keyPriv, err := ed25519.GenerateKey(rand.Reader)
@@ -90,7 +88,7 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 		"ARGON2_MEMORY_KIB": "8192", "ARGON2_TIME": "1", "ARGON2_PARALLELISM": "1",
 		"AUTH_SESSIONS_ENABLED": "true", "AUTH_REGISTRATION_PUBLISH_ENABLED": "false", "AUTH_SESSION_ISSUER": "auth.marketmesh", "AUTH_SESSION_KEYS_FILE": keysPath, "AUTH_TRUST_DOMAIN": "marketmesh.test",
 		"AUTH_INTERNAL_ADDRESS": authGRPC, "AUTH_INTERNAL_TLS_CERT_FILE": authCert, "AUTH_INTERNAL_TLS_KEY_FILE": authKey, "AUTH_INTERNAL_CLIENT_CA_FILE": pki.caPath,
-		"AUTH_ALLOWED_ORIGINS": origin, "AUTH_SESSION_AUDIENCES": `{"user-service":["profile:read"]}`,
+		"AUTH_ALLOWED_ORIGINS": origin, "AUTH_SESSION_AUDIENCES": `{"user":["user:profile:read","user:profile:write"]}`,
 		"AUTH_REDIS_ADDRESS": required("MARKETMESH_AUTH_REDIS_ADDRESS"), "AUTH_REDIS_PASSWORD": required("MARKETMESH_AUTH_REDIS_PASSWORD"), "AUTH_REDIS_PLAINTEXT_REASON": "isolated disposable integration network",
 	}, logs)
 	authAwait(t, ctx, func() bool {
@@ -101,18 +99,8 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 		_ = c.Close()
 		return true
 	}, "Auth listener", authProcess.check)
-	pair, err := tls.LoadX509KeyPair(userCert, userKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	userListener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	userServer := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}, ClientCAs: pki.roots, ClientAuth: tls.RequireAndVerifyClientCert})))
-	go func() { _ = userServer.Serve(userListener) }()
-	defer userServer.Stop()
-	cfg := config{serviceVersion: "test", environment: "test", instanceID: "auth-browser-edge", dataCenter: "dc-a", httpAddress: edgeHTTP, grpcAddress: edgeGRPC, tlsCertificate: edgeCert, tlsPrivateKey: edgeKey, tlsClientCA: pki.caPath, expectedGatewayOutURI: "spiffe://marketmesh.test/test/gateway-out", requestTimeout: 3 * time.Second, tunnelSessionTimeout: time.Minute, shutdownTimeout: 2 * time.Second, healthTimeout: time.Second, authBrowserEnabled: true, publicTLSCertificate: edgeCert, publicTLSPrivateKey: edgeKey}
+	userDB, userProcess, userAddress := startBrowserUserFixture(t, ctx, db, pki, userCert, userKey, authGRPC, logs)
+	cfg := config{serviceVersion: "test", environment: "test", instanceID: "auth-browser-edge", dataCenter: "dc-a", httpAddress: edgeHTTP, grpcAddress: edgeGRPC, tlsCertificate: edgeCert, tlsPrivateKey: edgeKey, tlsClientCA: pki.caPath, expectedGatewayOutURI: "spiffe://marketmesh.test/test/gateway-out", requestTimeout: 3 * time.Second, tunnelSessionTimeout: time.Minute, shutdownTimeout: 2 * time.Second, healthTimeout: time.Second, authBrowserEnabled: true, userBrowserEnabled: true, publicTLSCertificate: edgeCert, publicTLSPrivateKey: edgeKey}
 	log, err := logger.New(logger.Config{Service: "gateway-in", Version: "test", Environment: "test", Output: logs})
 	if err != nil {
 		t.Fatal(err)
@@ -135,10 +123,10 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 	outProcess := authStartProcess(t, ctx, authFixtureBinary("AUTH_BROWSER_GATEWAY_OUT_BIN", "/usr/local/bin/gateway-out"), map[string]string{
 		"SERVICE_VERSION": "test", "ENVIRONMENT": "test", "SERVICE_INSTANCE_ID": "auth-browser-out", "HTTP_ADDRESS": outHTTP, "SHUTDOWN_TIMEOUT": "2s",
 		"GATEWAY_IN_TARGET": edgeGRPC, "GATEWAY_IN_SERVER_NAME": "localhost", "EXPECTED_GATEWAY_IN_URI": "spiffe://marketmesh.test/test/gateway-in",
-		"INTERNAL_TARGET": userListener.Addr().String(), "INTERNAL_SERVER_NAME": "localhost", "EXPECTED_INTERNAL_URI": "spiffe://marketmesh.test/test/user-service",
+		"INTERNAL_TARGET": userAddress, "INTERNAL_SERVER_NAME": "localhost", "EXPECTED_INTERNAL_URI": "spiffe://marketmesh.test/test/user",
 		"TUNNEL_TLS_CERT_FILE": outCert, "TUNNEL_TLS_KEY_FILE": outKey, "TUNNEL_TLS_ROOT_CA_FILE": pki.caPath,
 		"INTERNAL_TLS_CERT_FILE": outCert, "INTERNAL_TLS_KEY_FILE": outKey, "INTERNAL_TLS_ROOT_CA_FILE": pki.caPath,
-		"AUTH_BROWSER_ENABLED": "true", "AUTH_TARGET": authGRPC, "AUTH_SERVER_NAME": "localhost", "EXPECTED_AUTH_URI": "spiffe://marketmesh.test/test/auth",
+		"AUTH_BROWSER_ENABLED": "true", "USER_BROWSER_ENABLED": "true", "AUTH_TARGET": authGRPC, "AUTH_SERVER_NAME": "localhost", "EXPECTED_AUTH_URI": "spiffe://marketmesh.test/test/auth",
 		"AUTH_TLS_CERT_FILE": outCert, "AUTH_TLS_KEY_FILE": outKey, "AUTH_TLS_ROOT_CA_FILE": pki.caPath,
 	}, logs)
 	transport := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: pki.roots}}
@@ -247,6 +235,7 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 	}
 	ok(first, "RegisterCredentials", payload)
 	cookies(ok(first, "Login", payload))
+	userChecks := exerciseBrowserUser(t, ctx, origin, first, bare, db, userDB, logs)
 	originURL, _ := url.Parse(origin)
 	old := authCookieHeader(jar1.Cookies(originURL))
 	cookies(ok(first, "RefreshSession", nil))
@@ -282,10 +271,19 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 		t.Fatal("private Auth service exposed")
 	}
 	callBrowserProbe(t, ctx, origin, edgeCert)
+	cookies(ok(first, "Login", payload))
+	userChecks.beforeOutage()
 	_ = authProcess.Process.Kill()
+	<-authProcess.done
+	userChecks.outage("Auth")
 	if code, _ = call(first, "Login", payload, []string{origin}, "same-origin", ""); code == 200 {
 		t.Fatal("Auth outage accepted")
 	}
+	authProcess = authRestartProcess(t, ctx, authProcess, logs)
+	authAwait(t, ctx, userChecks.healthy, "User recovered after Auth restart", authProcess.check, userProcess.check)
+	_ = userProcess.Process.Kill()
+	<-userProcess.done
+	userChecks.outage("User")
 	for _, secret := range append(secrets, marker) {
 		if secret != "" && strings.Contains(logs.String(), secret) {
 			t.Fatal("logs leaked browser credential")
@@ -488,4 +486,17 @@ func (p *authFixtureProcess) check() error {
 	default:
 		return nil
 	}
+}
+
+// authRestartProcess preserves the same immutable fixture configuration and keys.
+func authRestartProcess(t *testing.T, ctx context.Context, stopped *authFixtureProcess, logs io.Writer) *authFixtureProcess {
+	t.Helper()
+	env := make(map[string]string)
+	for _, entry := range stopped.Env {
+		key, value, ok := strings.Cut(entry, "=")
+		if ok && key != "PATH" {
+			env[key] = value
+		}
+	}
+	return authStartProcess(t, ctx, stopped.Path, env, logs)
 }

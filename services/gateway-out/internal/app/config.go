@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"time"
 
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
@@ -16,34 +17,39 @@ const (
 )
 
 type config struct {
-	serviceVersion       string
-	environment          string
-	instanceID           string
-	httpAddress          string
-	gatewayInTarget      string
-	gatewayInServerName  string
-	expectedGatewayInURI string
-	internalTarget       string
-	internalServerName   string
-	expectedInternalURI  string
-	tunnelCertificate    string
-	tunnelPrivateKey     string
-	tunnelRootCA         string
-	internalCertificate  string
-	internalPrivateKey   string
-	internalRootCA       string
-	connectTimeout       time.Duration
-	callTimeout          time.Duration
-	shutdownTimeout      time.Duration
-	healthTimeout        time.Duration
-	logLevel             string
-	authBrowserEnabled   bool
-	authTarget           string
-	authServerName       string
-	expectedAuthURI      string
-	authCertificate      string
-	authPrivateKey       string
-	authRootCA           string
+	periodicRediscoveryEnabled bool
+
+	serviceVersion              string
+	environment                 string
+	instanceID                  string
+	httpAddress                 string
+	gatewayInTarget             string
+	gatewayInServerName         string
+	expectedGatewayInURI        string
+	internalTarget              string
+	internalServerName          string
+	expectedInternalURI         string
+	tunnelCertificate           string
+	tunnelPrivateKey            string
+	tunnelRootCA                string
+	internalCertificate         string
+	internalPrivateKey          string
+	internalRootCA              string
+	connectTimeout              time.Duration
+	callTimeout                 time.Duration
+	shutdownTimeout             time.Duration
+	healthTimeout               time.Duration
+	logLevel                    string
+	authBrowserEnabled          bool
+	userSettingsBrowserEnabled  bool
+	userAddressesBrowserEnabled bool
+	userBrowserEnabled          bool
+	authTarget                  string
+	authServerName              string
+	expectedAuthURI             string
+	authCertificate             string
+	authPrivateKey              string
+	authRootCA                  string
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -55,6 +61,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	if result.environment, err = env.RequiredString("ENVIRONMENT"); err != nil {
 		return config{}, err
+	}
+	if result.periodicRediscoveryEnabled, err = env.Bool("TUNNEL_PERIODIC_REDISCOVERY_ENABLED", true); err != nil {
+		return config{}, err
+	}
+	if !result.periodicRediscoveryEnabled && result.environment != "test" {
+		return config{}, errors.New("TUNNEL_PERIODIC_REDISCOVERY_ENABLED=false requires ENVIRONMENT=test")
 	}
 	if result.instanceID, err = env.RequiredString("SERVICE_INSTANCE_ID"); err != nil {
 		return config{}, err
@@ -117,7 +129,22 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	if result.authBrowserEnabled, err = env.Bool("AUTH_BROWSER_ENABLED", false); err != nil {
 		return config{}, err
 	}
-	if result.authBrowserEnabled {
+	if result.userBrowserEnabled, err = env.Bool("USER_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.userSettingsBrowserEnabled, err = env.Bool("USER_SETTINGS_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.userSettingsBrowserEnabled && !result.userBrowserEnabled {
+		return config{}, errors.New("USER_SETTINGS_BROWSER_ENABLED requires USER_BROWSER_ENABLED")
+	}
+	if result.userAddressesBrowserEnabled, err = env.Bool("USER_ADDRESSES_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.userAddressesBrowserEnabled && !result.userBrowserEnabled {
+		return config{}, errors.New("USER_ADDRESSES_BROWSER_ENABLED requires USER_BROWSER_ENABLED")
+	}
+	if result.authBrowserEnabled || result.userBrowserEnabled {
 		for _, item := range []struct {
 			name  string
 			value *string

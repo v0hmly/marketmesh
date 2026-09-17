@@ -103,7 +103,8 @@ install_easyp() {
 }
 
 install_protoc() {
-  if [[ -x "${PROTOC_BIN}" ]] && [[ "$("${PROTOC_BIN}" --version)" == "libprotoc ${PROTOC_VERSION}" ]]; then
+  if [[ -x "${PROTOC_BIN}" ]] && [[ "$("${PROTOC_BIN}" --version)" == "libprotoc ${PROTOC_VERSION}" ]] && \
+    [[ -f "${CACHE_DIR}/protoc/${PROTOC_VERSION}/include/google/protobuf/duration.proto" ]]; then
     return
   fi
 
@@ -335,7 +336,28 @@ generate_to() {
       PROTO_TS_OUT="${ts_out}" \
       "${EASYP_BIN}" --cfg "${REPO_ROOT}/easyp.yaml" generate
   )
+  generate_error_details "${REPO_ROOT}/${ts_out}"
   normalize_generated_text "${REPO_ROOT}/${ts_out}"
+}
+
+# Browser clients decode the standard ErrorInfo emitted by User. Generate its
+# schema from the same checksum-locked googleapis dependency as the Go contract;
+# never infer PROFILE_NOT_READY from a free-form error message or JSON debug data.
+generate_error_details() {
+  local ts_out="$1"
+  local module_version
+  module_version="$(awk '$1 == "github.com/googleapis/googleapis" { print $2 }' "${REPO_ROOT}/easyp.lock")"
+  if [[ "${module_version}" != v*-"${GOOGLEAPIS_REVISION}" || "${module_version}" == *$'\n'* || "${module_version}" == */* ]]; then
+    printf '%s\n' 'Не найдена единственная зафиксированная ревизия googleapis.' >&2
+    return 1
+  fi
+  local module_root="${CACHE_DIR}/easyp/mod/github.com/googleapis/googleapis/${module_version}"
+  "${PROTOC_BIN}" \
+    --proto_path="${module_root}" \
+    --proto_path="${CACHE_DIR}/protoc/${PROTOC_VERSION}/include" \
+    --plugin="protoc-gen-es=${PROTOC_GEN_ES_BIN}" \
+    --es_out="${ts_out}" --es_opt=target=ts \
+    google/rpc/error_details.proto
 }
 
 copy_generated() {
@@ -343,11 +365,11 @@ copy_generated() {
   local destination_dir="$2"
   shift 2
 
-  mkdir -p "${destination_dir}"
+  mkdir -p "${destination_dir}" || return
   while IFS= read -r -d '' source_file; do
     local relative_path="${source_file#"${source_dir}/"}"
-    mkdir -p "${destination_dir}/$(dirname -- "${relative_path}")"
-    cp "${source_file}" "${destination_dir}/${relative_path}"
+    mkdir -p "${destination_dir}/$(dirname -- "${relative_path}")" || return
+    cp "${source_file}" "${destination_dir}/${relative_path}" || return
   done < <(find "${source_dir}" -type f "$@" -print0)
 }
 
@@ -381,7 +403,108 @@ generate_check() (
   fi
 )
 
+# Git hooks export repository-local variables; -C does not override them.
+# Use Git's documented inventory rather than a partial hard-coded list.
+clear_git_repository_env() {
+  local names
+  local name
+  names="$(git rev-parse --local-env-vars)" || return
+  while IFS= read -r name; do
+    [[ -z "${name}" ]] || unset -v "${name}" || return
+  done <<<"${names}"
+}
+
+# EasyP 0.16.1 resolves imports from the Git repository root in breaking mode.
+# Flatten only the schema subtree into an isolated repository for both revisions.
+breaking_snapshot() (
+  clear_git_repository_env || return
+  local source_repo="$1"
+  local schema_path="$2"
+  local against_ref="$3"
+  local snapshot_dir
+  local baseline_sha
+  baseline_sha="$(git -C "${source_repo}" rev-parse --verify "${against_ref}^{commit}")" || return
+  git -C "${source_repo}" cat-file -e "${baseline_sha}:${schema_path}" || return
+  snapshot_dir="$(mktemp -d "${CACHE_DIR}/breaking.XXXXXX")" || return
+  trap 'rm -rf -- "${snapshot_dir}"' EXIT
+
+  printf 'Protobuf breaking baseline: %s (%s), schemas: %s\n' \
+    "${baseline_sha}" "${against_ref}" "${schema_path}"
+  git -C "${source_repo}" archive "${baseline_sha}:${schema_path}" | tar -xf - -C "${snapshot_dir}" || return
+  cp "${source_repo}/easyp.lock" "${snapshot_dir}/" || return
+  # This EasyP version gives the YAML reference precedence over --against.
+  awk '$1 == "against_git_ref:" {$0 = "  against_git_ref: baseline"} {print}' \
+    "${source_repo}/easyp.yaml" >"${snapshot_dir}/easyp.yaml" || return
+  (
+    cd "${snapshot_dir}" || return
+    git -c init.templateDir= init --quiet --initial-branch=snapshot-current || return
+    git config core.hooksPath /dev/null || return
+    git config commit.gpgsign false || return
+    git config tag.gpgsign false || return
+    git config user.name 'MarketMesh protobuf snapshot' || return
+    git config user.email 'protobuf-snapshot@marketmesh.invalid' || return
+    git add --all || return
+    git commit --quiet -m baseline || return
+    git branch baseline || return
+    find . -type f -name '*.proto' -delete || return
+    copy_generated "${source_repo}/${schema_path}" "${snapshot_dir}" -name '*.proto' || return
+    EASYPPATH="${CACHE_DIR}/easyp" \
+      PROTO_TOOLS_BIN="${BIN_DIR}" \
+      PROTOC_GEN_ES_PATH="${PROTOC_GEN_ES_BIN}" \
+      "${EASYP_BIN}" --cfg "${snapshot_dir}/easyp.yaml" breaking --path . --against baseline
+  )
+)
+
+# Runs only inside the synthetic self-test repository after environment cleanup.
+# A real pre-commit hook exercises the variables Git exports in production.
+hook_isolation_test() (
+  local outer_repo="$1"
+  local previous_head expected_tree previous_config
+  mkdir -p "${outer_repo}/hooks"
+  {
+    printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail'
+    printf 'CACHE_DIR=%q\nBIN_DIR=%q\nPROTOC_GEN_ES_BIN=%q\nEASYP_BIN=%q\n' \
+      "${CACHE_DIR}" "${BIN_DIR}" "${PROTOC_GEN_ES_BIN}" "${EASYP_BIN}"
+    declare -f clear_git_repository_env copy_generated breaking_snapshot sha256_file
+    cat <<'HOOK'
+outer_repo="$(pwd)"
+# Git sets GIT_INDEX_FILE for this real hook. Explicitly include the other
+# repository-local paths to cover hooks/tooling that export the full set.
+export GIT_DIR="${outer_repo}/.git"
+export GIT_WORK_TREE="${outer_repo}"
+export GIT_COMMON_DIR="${outer_repo}/.git"
+export GIT_OBJECT_DIRECTORY="${outer_repo}/.git/objects"
+: "${GIT_INDEX_FILE:?Git did not export its hook index}"
+head_before="$(git rev-parse HEAD)"
+refs_before="$(git show-ref)"
+index_before="$(sha256_file "${GIT_INDEX_FILE}")"
+config_before="$(sha256_file "${outer_repo}/.git/config")"
+breaking_snapshot "${outer_repo}" proto baseline
+[[ "$(git rev-parse HEAD)" == "${head_before}" ]]
+[[ "$(git show-ref)" == "${refs_before}" ]]
+[[ "$(sha256_file "${GIT_INDEX_FILE}")" == "${index_before}" ]]
+[[ "$(sha256_file "${outer_repo}/.git/config")" == "${config_before}" ]]
+printf '%s\n' verified >"${outer_repo}/.git/hook-isolation-verified"
+HOOK
+  } >"${outer_repo}/hooks/pre-commit"
+  chmod 0755 "${outer_repo}/hooks/pre-commit"
+  git config core.hooksPath "${outer_repo}/hooks"
+  previous_head="$(git rev-parse HEAD)"
+  previous_config="$(sha256_file "${outer_repo}/.git/config")"
+  printf '%s\n' 'planned self-test commit' >"${outer_repo}/hook-marker.txt"
+  git add hook-marker.txt
+  expected_tree="$(git write-tree)"
+  git commit --quiet -m 'Exercise protobuf hook isolation'
+  [[ -f "${outer_repo}/.git/hook-isolation-verified" ]]
+  [[ "$(git rev-parse HEAD^)" == "${previous_head}" ]]
+  [[ "$(git rev-parse HEAD^{tree})" == "${expected_tree}" ]]
+  [[ "$(git write-tree)" == "${expected_tree}" ]]
+  [[ "$(sha256_file "${outer_repo}/.git/config")" == "${previous_config}" ]]
+  git config core.hooksPath /dev/null
+)
+
 self_test() (
+  clear_git_repository_env || return
   local test_dir
   test_dir="$(mktemp -d "${CACHE_DIR}/self-test.XXXXXX")"
   trap 'rm -rf -- "${test_dir}"' EXIT
@@ -429,6 +552,8 @@ self_test() (
     '' \
     'package toolchain.v1;' \
     '' \
+    'import "toolchain/v1/shared.proto";' \
+    '' \
     'option go_package = "example.com/toolchain/toolchain/v1;toolchainv1";' \
     '' \
     '// ToolchainService verifies every configured code generator.' \
@@ -447,8 +572,25 @@ self_test() (
     'message CheckResponse {' \
     '  // Value is copied from the request.' \
     '  string value = 1;' \
+    '  // Shared exercises imports between local files.' \
+    '  Shared shared = 2;' \
     '}' \
     >"${test_dir}/proto/toolchain/v1/toolchain.proto"
+
+  cat >"${test_dir}/proto/toolchain/v1/shared.proto" <<'PROTO'
+syntax = "proto3";
+
+package toolchain.v1;
+
+option go_package = "example.com/toolchain/toolchain/v1;toolchainv1";
+
+// Shared verifies that breaking checks resolve local imports.
+message Shared {
+  // Value must retain its field number and type.
+  string value = 1;
+}
+PROTO
+  cp "${REPO_ROOT}/easyp.lock" "${test_dir}/easyp.lock"
 
   (
     cd "${test_dir}"
@@ -461,12 +603,32 @@ self_test() (
       "${EASYP_BIN}" generate >/dev/null
     diff -ru gen/first gen/second >/dev/null
 
-    git init --quiet
+    git -c init.templateDir= init --quiet --initial-branch=snapshot-current
+    git config core.hooksPath /dev/null
+    git config commit.gpgsign false
+    git config tag.gpgsign false
     git config user.name 'MarketMesh protobuf self-test'
     git config user.email 'protobuf-self-test@marketmesh.invalid'
     git add easyp.yaml proto
     git commit --quiet -m baseline
-    git tag baseline
+    git branch baseline
+
+    hook_isolation_test "${test_dir}"
+
+    # Include a new, untracked local dependency in the current schema graph.
+    sed 's/message Shared {/message SharedNew {/' proto/toolchain/v1/shared.proto \
+      >proto/toolchain/v1/shared_new.proto
+    awk '
+      {print}
+      $0 == "import \"toolchain/v1/shared.proto\";" {print "import \"toolchain/v1/shared_new.proto\";"}
+      $0 == "  Shared shared = 2;" {print "  // NewShared verifies untracked input.\n  SharedNew new_shared = 3;"}
+    ' proto/toolchain/v1/toolchain.proto >proto/toolchain/v1/toolchain.proto.tmp
+    mv proto/toolchain/v1/toolchain.proto.tmp proto/toolchain/v1/toolchain.proto
+    # Valid cross-file imports must pass before testing a genuine incompatibility.
+    breaking_snapshot "${test_dir}" proto baseline >"${test_dir}/breaking-valid.log" 2>&1 || {
+      cat "${test_dir}/breaking-valid.log" >&2
+      return 1
+    }
 
     awk '{gsub("string value = 1;", "string BadField = 1;"); print}' \
       proto/toolchain/v1/toolchain.proto >proto/toolchain/v1/toolchain.proto.tmp
@@ -480,8 +642,13 @@ self_test() (
     awk '$0 != "  string value = 1;"' \
       proto/toolchain/v1/toolchain.proto >proto/toolchain/v1/toolchain.proto.tmp
     mv proto/toolchain/v1/toolchain.proto.tmp proto/toolchain/v1/toolchain.proto
-    if EASYPPATH="${CACHE_DIR}/easyp" "${EASYP_BIN}" breaking --path proto >/dev/null 2>&1; then
+    if breaking_snapshot "${test_dir}" proto baseline >"${test_dir}/breaking-invalid.log" 2>&1; then
       printf 'EasyP breaking не обнаружил удаление поля v1.\n' >&2
+      return 1
+    fi
+    if ! grep -Eq 'Previously present field "1" with name "value".*was deleted.*BREAKING_CHECK' "${test_dir}/breaking-invalid.log"; then
+      cat "${test_dir}/breaking-invalid.log" >&2
+      printf 'EasyP завершился без доказанного breaking finding об удалении поля.\n' >&2
       return 1
     fi
   )
@@ -534,7 +701,7 @@ main() {
       generate_to api/gen/go api/gen/ts
       ;;
     breaking)
-      run_easyp breaking --path api/proto
+      breaking_snapshot "${REPO_ROOT}" api/proto "${PROTO_BREAKING_REF:-dev}"
       ;;
     generate-check)
       generate_check

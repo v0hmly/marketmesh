@@ -77,7 +77,7 @@ func TestPrivateRPCMTLSBoundary(t *testing.T) {
 		t.Fatal(err)
 	}
 	ops := &operations{keys: keys, record: domain.Record{ID: domain.ID{1}, SubjectID: credential.SubjectID{2}, Version: 1, CreatedAt: now, AccessExpiresAt: now.Add(time.Hour), RefreshExpiresAt: now.Add(time.Hour), ExpiresAt: now.Add(time.Hour)}}
-	handler, err := New(ops, keys, Config{TrustDomain: "marketmesh.test", Environment: "dev", Issuer: "auth.marketmesh", AssertionTTL: time.Minute, Clock: func() time.Time { return now }, Audiences: audiences})
+	handler, err := New(ops, keys, Config{TrustDomain: "marketmesh.test", Environment: "dev", Issuer: "auth.marketmesh", AssertionTTL: time.Minute, Clock: func() time.Time { return now }, Audiences: audiences, AllowedOrigins: []string{"https://app.example"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,6 +180,58 @@ func TestPrivateRPCMTLSBoundary(t *testing.T) {
 		if status.Code(err) != codes.Unauthenticated {
 			t.Fatal(err)
 		}
+	})
+	t.Run("browser exchange enforces origin and workload before session access", func(t *testing.T) {
+		valid := func() *authv1.ExchangeBrowserSessionRequest {
+			return &authv1.ExchangeBrowserSessionRequest{Audience: "user-service", Context: &authv1.BrowserContext{Cookie: []string{"unrelated=value", "__Host-mm-access=opaque-access"}, Origin: []string{"https://app.example"}, SecFetchSite: []string{"same-origin"}}}
+		}
+		before := ops.calls.Load()
+		for _, identity := range []string{"", "spiffe://marketmesh.test/dev/gateway-in", "spiffe://marketmesh.test/prod/gateway-out", "spiffe://other.test/dev/gateway-out", "spiffe://marketmesh.test/dev/user-service"} {
+			if _, err := client(t, identity).ExchangeBrowserSession(ctx, valid()); err == nil {
+				t.Fatal("unauthorized browser exchange accepted")
+			}
+		}
+		for _, mutate := range []func(*authv1.ExchangeBrowserSessionRequest){
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Context = nil },
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Audience = "unknown" },
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Context.Origin = nil },
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Context.Origin = []string{"https://evil.example"} },
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Context.Origin = []string{"null"} },
+			func(r *authv1.ExchangeBrowserSessionRequest) {
+				r.Context.Origin = []string{"https://app.example", "https://app.example"}
+			},
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Context.SecFetchSite = []string{"cross-site"} },
+			func(r *authv1.ExchangeBrowserSessionRequest) {
+				r.Context.SecFetchSite = []string{"same-origin", "same-origin"}
+			},
+			func(r *authv1.ExchangeBrowserSessionRequest) {
+				r.Context.Cookie = []string{"__Host-mm-refresh=opaque-access"}
+			},
+			func(r *authv1.ExchangeBrowserSessionRequest) {
+				r.Context.Cookie = []string{"__Host-mm-access=opaque-access", "__Host-mm-access=opaque-access"}
+			},
+			func(r *authv1.ExchangeBrowserSessionRequest) { r.Context.Cookie = []string{strings.Repeat("a", 8193)} },
+			func(r *authv1.ExchangeBrowserSessionRequest) {
+				r.Context.Cookie = []string{"__Host-mm-access=opaque-access\r\nInjected: yes"}
+			},
+		} {
+			r := valid()
+			mutate(r)
+			if _, err := gateway.ExchangeBrowserSession(ctx, r); status.Code(err) != codes.Unauthenticated {
+				t.Fatalf("invalid browser context: %v", err)
+			}
+		}
+		if ops.calls.Load() != before {
+			t.Fatal("untrusted browser input reached session service")
+		}
+		response, err := gateway.ExchangeBrowserSession(ctx, valid())
+		if err != nil || response.GetAssertion() == "" || response.GetExpiresAtUnix() <= now.Unix() {
+			t.Fatalf("valid browser exchange failed: %v", err)
+		}
+		if _, err := consumer.VerifyAssertion(ctx, &authv1.VerifyAssertionRequest{Assertion: response.GetAssertion()}); err != nil {
+			t.Fatal(err)
+		}
+		ops.checks.Store(0)
 	})
 	exchanged, err := gateway.ExchangeSession(ctx, &authv1.ExchangeSessionRequest{Cookie: "unrelated=value; __Host-mm-access=opaque-access; __Host-mm-refresh=refresh", Audience: "user-service"})
 	if err != nil {

@@ -13,13 +13,17 @@ COPY services/gateway-in/go.mod services/gateway-in/go.sum services/gateway-in/
 RUN cd services/gateway-in && GOWORK=off go mod download
 COPY services/gateway-out/go.mod services/gateway-out/go.sum services/gateway-out/
 RUN cd services/gateway-out && GOWORK=off go mod download
+COPY services/user/go.mod services/user/go.sum services/user/
+RUN cd services/user && GOWORK=off go mod download
 COPY api/gen/go/ api/gen/go/
 COPY api/tunnel/ api/tunnel/
 COPY platform/ platform/
 COPY services/auth/ services/auth/
+COPY services/user/ services/user/
 COPY services/gateway-in/ services/gateway-in/
 COPY services/gateway-out/ services/gateway-out/
 RUN go build -trimpath -o /usr/local/bin/gateway-in ./services/gateway-in/cmd/gateway-in
 RUN go build -trimpath -o /usr/local/bin/auth ./services/auth/cmd/auth
 RUN go build -trimpath -o /usr/local/bin/gateway-out ./services/gateway-out/cmd/gateway-out
+RUN go build -trimpath -o /usr/local/bin/user ./services/user/cmd/user
 CMD ["go", "test", "-race", "-tags=integration,authbrowserintegration", "./services/gateway-in/internal/app", "-run", "TestIntegrationAuthBrowser", "-count=1", "-v"]

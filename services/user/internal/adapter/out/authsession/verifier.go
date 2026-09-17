@@ -103,7 +103,7 @@ func (v *Verifier) Verify(ctx context.Context, token string) (identity.Principal
 	if err != nil || verified == nil || !bytes.Equal(verified.GetSubjectId(), raw) || verified.GetSessionId() != claims.SessionID || verified.GetExpiresAtUnix() != claims.ExpiresAt.Unix() || ctx.Err() != nil || !v.config.Clock().Before(claims.ExpiresAt) {
 		return denied()
 	}
-	return identity.Principal{SubjectID: subject, CanRead: claims.HasScope(readScope), CanWrite: claims.HasScope(writeScope)}, nil
+	return identity.Principal{SubjectID: subject, CanRead: claims.HasScope(readScope), CanWrite: claims.HasScope(writeScope), CanReadAddresses: claims.HasScope("user:addresses:read"), CanWriteAddresses: claims.HasScope("user:addresses:write"), CanReadSettings: claims.HasScope("user:settings:read"), CanWriteSettings: claims.HasScope("user:settings:write")}, nil
 }
 
 type publicKey struct {

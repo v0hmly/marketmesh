@@ -21,6 +21,63 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Theme is the closed set of supported display preferences.
+type Theme int32
+
+const (
+	// THEME_UNSPECIFIED is invalid in stored settings and update requests.
+	Theme_THEME_UNSPECIFIED Theme = 0
+	// THEME_SYSTEM follows the device preference and is the default.
+	Theme_THEME_SYSTEM Theme = 1
+	// THEME_LIGHT always uses the light palette.
+	Theme_THEME_LIGHT Theme = 2
+	// THEME_DARK always uses the dark palette.
+	Theme_THEME_DARK Theme = 3
+)
+
+// Enum value maps for Theme.
+var (
+	Theme_name = map[int32]string{
+		0: "THEME_UNSPECIFIED",
+		1: "THEME_SYSTEM",
+		2: "THEME_LIGHT",
+		3: "THEME_DARK",
+	}
+	Theme_value = map[string]int32{
+		"THEME_UNSPECIFIED": 0,
+		"THEME_SYSTEM":      1,
+		"THEME_LIGHT":       2,
+		"THEME_DARK":        3,
+	}
+)
+
+func (x Theme) Enum() *Theme {
+	p := new(Theme)
+	*p = x
+	return p
+}
+
+func (x Theme) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Theme) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_v1_user_proto_enumTypes[0].Descriptor()
+}
+
+func (Theme) Type() protoreflect.EnumType {
+	return &file_user_v1_user_proto_enumTypes[0]
+}
+
+func (x Theme) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Theme.Descriptor instead.
+func (Theme) EnumDescriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{0}
+}
+
 // GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
 type GetMeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -305,6 +362,987 @@ func (x *Profile) GetUpdatedAtUnix() int64 {
 	return 0
 }
 
+// AddressFields contains private delivery details, never login credentials or verified contacts.
+type AddressFields struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Recipient is required, with at most 120 Unicode characters.
+	Recipient string `protobuf:"bytes,1,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	// Phone is required ASCII formatting with 7–15 digits and at most 32 bytes.
+	Phone string `protobuf:"bytes,2,opt,name=phone,proto3" json:"phone,omitempty"`
+	// Country is a required freeform country name of at most 80 Unicode characters.
+	Country string `protobuf:"bytes,3,opt,name=country,proto3" json:"country,omitempty"`
+	// PostalCode is optional, with at most 20 Unicode characters.
+	PostalCode string `protobuf:"bytes,4,opt,name=postal_code,json=postalCode,proto3" json:"postal_code,omitempty"`
+	// City is required, with at most 120 Unicode characters.
+	City string `protobuf:"bytes,5,opt,name=city,proto3" json:"city,omitempty"`
+	// StreetHouse is required, with at most 240 Unicode characters.
+	StreetHouse string `protobuf:"bytes,6,opt,name=street_house,json=streetHouse,proto3" json:"street_house,omitempty"`
+	// Apartment is optional, with at most 40 Unicode characters.
+	Apartment string `protobuf:"bytes,7,opt,name=apartment,proto3" json:"apartment,omitempty"`
+	// Comment is optional plain text, with at most 500 Unicode characters.
+	Comment       string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddressFields) Reset() {
+	*x = AddressFields{}
+	mi := &file_user_v1_user_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddressFields) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddressFields) ProtoMessage() {}
+
+func (x *AddressFields) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddressFields.ProtoReflect.Descriptor instead.
+func (*AddressFields) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *AddressFields) GetRecipient() string {
+	if x != nil {
+		return x.Recipient
+	}
+	return ""
+}
+
+func (x *AddressFields) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *AddressFields) GetCountry() string {
+	if x != nil {
+		return x.Country
+	}
+	return ""
+}
+
+func (x *AddressFields) GetPostalCode() string {
+	if x != nil {
+		return x.PostalCode
+	}
+	return ""
+}
+
+func (x *AddressFields) GetCity() string {
+	if x != nil {
+		return x.City
+	}
+	return ""
+}
+
+func (x *AddressFields) GetStreetHouse() string {
+	if x != nil {
+		return x.StreetHouse
+	}
+	return ""
+}
+
+func (x *AddressFields) GetApartment() string {
+	if x != nil {
+		return x.Apartment
+	}
+	return ""
+}
+
+func (x *AddressFields) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+// Address is one saved address owned by the book's subject.
+type Address struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// AddressId is a nonzero, random server-generated 16-byte opaque identifier.
+	AddressId []byte `protobuf:"bytes,1,opt,name=address_id,json=addressId,proto3" json:"address_id,omitempty"`
+	// Fields are the saved delivery details.
+	Fields *AddressFields `protobuf:"bytes,2,opt,name=fields,proto3" json:"fields,omitempty"`
+	// IsDefault is true for at most one address in a book.
+	IsDefault     bool `protobuf:"varint,3,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Address) Reset() {
+	*x = Address{}
+	mi := &file_user_v1_user_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Address) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Address) ProtoMessage() {}
+
+func (x *Address) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Address.ProtoReflect.Descriptor instead.
+func (*Address) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Address) GetAddressId() []byte {
+	if x != nil {
+		return x.AddressId
+	}
+	return nil
+}
+
+func (x *Address) GetFields() *AddressFields {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+func (x *Address) GetIsDefault() bool {
+	if x != nil {
+		return x.IsDefault
+	}
+	return false
+}
+
+// AddressBook is a consistent private snapshot returned by all address operations.
+type AddressBook struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// SubjectId is the nonzero 16-byte owner identifier, never chosen by the caller.
+	SubjectId []byte `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	// Version is positive and independent of profile and settings versions.
+	Version uint64 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Addresses contains at most 20 entries in stable order.
+	Addresses     []*Address `protobuf:"bytes,3,rep,name=addresses,proto3" json:"addresses,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddressBook) Reset() {
+	*x = AddressBook{}
+	mi := &file_user_v1_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddressBook) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddressBook) ProtoMessage() {}
+
+func (x *AddressBook) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddressBook.ProtoReflect.Descriptor instead.
+func (*AddressBook) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AddressBook) GetSubjectId() []byte {
+	if x != nil {
+		return x.SubjectId
+	}
+	return nil
+}
+
+func (x *AddressBook) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *AddressBook) GetAddresses() []*Address {
+	if x != nil {
+		return x.Addresses
+	}
+	return nil
+}
+
+// ListAddressesRequest selects the book solely by the verified identity.
+type ListAddressesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAddressesRequest) Reset() {
+	*x = ListAddressesRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAddressesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAddressesRequest) ProtoMessage() {}
+
+func (x *ListAddressesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAddressesRequest.ProtoReflect.Descriptor instead.
+func (*ListAddressesRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{8}
+}
+
+// CreateAddressRequest adds a record without replacing other addresses.
+type CreateAddressRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ExpectedBookVersion is the last-read book version and must be positive.
+	ExpectedBookVersion uint64 `protobuf:"varint,1,opt,name=expected_book_version,json=expectedBookVersion,proto3" json:"expected_book_version,omitempty"`
+	// Fields contains all editable fields of the new address.
+	Fields        *AddressFields `protobuf:"bytes,2,opt,name=fields,proto3" json:"fields,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAddressRequest) Reset() {
+	*x = CreateAddressRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAddressRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAddressRequest) ProtoMessage() {}
+
+func (x *CreateAddressRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAddressRequest.ProtoReflect.Descriptor instead.
+func (*CreateAddressRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CreateAddressRequest) GetExpectedBookVersion() uint64 {
+	if x != nil {
+		return x.ExpectedBookVersion
+	}
+	return 0
+}
+
+func (x *CreateAddressRequest) GetFields() *AddressFields {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+// UpdateAddressRequest replaces all editable fields of an owned address.
+type UpdateAddressRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// AddressId selects an address within the authenticated owner's book only.
+	AddressId []byte `protobuf:"bytes,1,opt,name=address_id,json=addressId,proto3" json:"address_id,omitempty"`
+	// Fields contains all replacement editable fields.
+	Fields *AddressFields `protobuf:"bytes,2,opt,name=fields,proto3" json:"fields,omitempty"`
+	// ExpectedBookVersion prevents a lost concurrent update.
+	ExpectedBookVersion uint64 `protobuf:"varint,3,opt,name=expected_book_version,json=expectedBookVersion,proto3" json:"expected_book_version,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *UpdateAddressRequest) Reset() {
+	*x = UpdateAddressRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateAddressRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateAddressRequest) ProtoMessage() {}
+
+func (x *UpdateAddressRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateAddressRequest.ProtoReflect.Descriptor instead.
+func (*UpdateAddressRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *UpdateAddressRequest) GetAddressId() []byte {
+	if x != nil {
+		return x.AddressId
+	}
+	return nil
+}
+
+func (x *UpdateAddressRequest) GetFields() *AddressFields {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+func (x *UpdateAddressRequest) GetExpectedBookVersion() uint64 {
+	if x != nil {
+		return x.ExpectedBookVersion
+	}
+	return 0
+}
+
+// DeleteAddressRequest removes one owned record; it never selects another default.
+type DeleteAddressRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// AddressId selects an address within the authenticated owner's book only.
+	AddressId []byte `protobuf:"bytes,1,opt,name=address_id,json=addressId,proto3" json:"address_id,omitempty"`
+	// ExpectedBookVersion prevents a lost concurrent update.
+	ExpectedBookVersion uint64 `protobuf:"varint,2,opt,name=expected_book_version,json=expectedBookVersion,proto3" json:"expected_book_version,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *DeleteAddressRequest) Reset() {
+	*x = DeleteAddressRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAddressRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAddressRequest) ProtoMessage() {}
+
+func (x *DeleteAddressRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAddressRequest.ProtoReflect.Descriptor instead.
+func (*DeleteAddressRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DeleteAddressRequest) GetAddressId() []byte {
+	if x != nil {
+		return x.AddressId
+	}
+	return nil
+}
+
+func (x *DeleteAddressRequest) GetExpectedBookVersion() uint64 {
+	if x != nil {
+		return x.ExpectedBookVersion
+	}
+	return 0
+}
+
+// SetDefaultAddressRequest explicitly selects the only default in a nonempty book.
+type SetDefaultAddressRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// AddressId selects an address within the authenticated owner's book only.
+	AddressId []byte `protobuf:"bytes,1,opt,name=address_id,json=addressId,proto3" json:"address_id,omitempty"`
+	// ExpectedBookVersion prevents a lost concurrent update.
+	ExpectedBookVersion uint64 `protobuf:"varint,2,opt,name=expected_book_version,json=expectedBookVersion,proto3" json:"expected_book_version,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SetDefaultAddressRequest) Reset() {
+	*x = SetDefaultAddressRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetDefaultAddressRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetDefaultAddressRequest) ProtoMessage() {}
+
+func (x *SetDefaultAddressRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetDefaultAddressRequest.ProtoReflect.Descriptor instead.
+func (*SetDefaultAddressRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SetDefaultAddressRequest) GetAddressId() []byte {
+	if x != nil {
+		return x.AddressId
+	}
+	return nil
+}
+
+func (x *SetDefaultAddressRequest) GetExpectedBookVersion() uint64 {
+	if x != nil {
+		return x.ExpectedBookVersion
+	}
+	return 0
+}
+
+// ListAddressesResponse returns the complete consistent book after the operation.
+type ListAddressesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Book is the authenticated caller's current address book.
+	Book          *AddressBook `protobuf:"bytes,1,opt,name=book,proto3" json:"book,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAddressesResponse) Reset() {
+	*x = ListAddressesResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAddressesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAddressesResponse) ProtoMessage() {}
+
+func (x *ListAddressesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAddressesResponse.ProtoReflect.Descriptor instead.
+func (*ListAddressesResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ListAddressesResponse) GetBook() *AddressBook {
+	if x != nil {
+		return x.Book
+	}
+	return nil
+}
+
+// CreateAddressResponse returns the complete consistent book after the operation.
+type CreateAddressResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Book is the authenticated caller's current address book.
+	Book          *AddressBook `protobuf:"bytes,1,opt,name=book,proto3" json:"book,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAddressResponse) Reset() {
+	*x = CreateAddressResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAddressResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAddressResponse) ProtoMessage() {}
+
+func (x *CreateAddressResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAddressResponse.ProtoReflect.Descriptor instead.
+func (*CreateAddressResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CreateAddressResponse) GetBook() *AddressBook {
+	if x != nil {
+		return x.Book
+	}
+	return nil
+}
+
+// UpdateAddressResponse returns the complete consistent book after the operation.
+type UpdateAddressResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Book is the authenticated caller's current address book.
+	Book          *AddressBook `protobuf:"bytes,1,opt,name=book,proto3" json:"book,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateAddressResponse) Reset() {
+	*x = UpdateAddressResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateAddressResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateAddressResponse) ProtoMessage() {}
+
+func (x *UpdateAddressResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateAddressResponse.ProtoReflect.Descriptor instead.
+func (*UpdateAddressResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *UpdateAddressResponse) GetBook() *AddressBook {
+	if x != nil {
+		return x.Book
+	}
+	return nil
+}
+
+// DeleteAddressResponse returns the complete consistent book after the operation.
+type DeleteAddressResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Book is the authenticated caller's current address book.
+	Book          *AddressBook `protobuf:"bytes,1,opt,name=book,proto3" json:"book,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteAddressResponse) Reset() {
+	*x = DeleteAddressResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAddressResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAddressResponse) ProtoMessage() {}
+
+func (x *DeleteAddressResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAddressResponse.ProtoReflect.Descriptor instead.
+func (*DeleteAddressResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DeleteAddressResponse) GetBook() *AddressBook {
+	if x != nil {
+		return x.Book
+	}
+	return nil
+}
+
+// SetDefaultAddressResponse returns the complete consistent book after the operation.
+type SetDefaultAddressResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Book is the authenticated caller's current address book.
+	Book          *AddressBook `protobuf:"bytes,1,opt,name=book,proto3" json:"book,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetDefaultAddressResponse) Reset() {
+	*x = SetDefaultAddressResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetDefaultAddressResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetDefaultAddressResponse) ProtoMessage() {}
+
+func (x *SetDefaultAddressResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetDefaultAddressResponse.ProtoReflect.Descriptor instead.
+func (*SetDefaultAddressResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *SetDefaultAddressResponse) GetBook() *AddressBook {
+	if x != nil {
+		return x.Book
+	}
+	return nil
+}
+
+// AccountSettings contains preferences of one authenticated owner.
+type AccountSettings struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// SubjectId is the immutable nonzero 16-byte owner identifier.
+	SubjectId []byte `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	// Version is positive and independent of profile and address book versions.
+	Version uint64 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Theme is a supported preference, never unspecified.
+	Theme         Theme `protobuf:"varint,3,opt,name=theme,proto3,enum=user.v1.Theme" json:"theme,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccountSettings) Reset() {
+	*x = AccountSettings{}
+	mi := &file_user_v1_user_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountSettings) ProtoMessage() {}
+
+func (x *AccountSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountSettings.ProtoReflect.Descriptor instead.
+func (*AccountSettings) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *AccountSettings) GetSubjectId() []byte {
+	if x != nil {
+		return x.SubjectId
+	}
+	return nil
+}
+
+func (x *AccountSettings) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *AccountSettings) GetTheme() Theme {
+	if x != nil {
+		return x.Theme
+	}
+	return Theme_THEME_UNSPECIFIED
+}
+
+// GetSettingsRequest has no caller-selected owner or credentials.
+type GetSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsRequest) Reset() {
+	*x = GetSettingsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsRequest) ProtoMessage() {}
+
+func (x *GetSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsRequest.ProtoReflect.Descriptor instead.
+func (*GetSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{19}
+}
+
+// GetSettingsResponse is private and must never be publicly cached.
+type GetSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Settings is the current primary snapshot.
+	Settings      *AccountSettings `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsResponse) Reset() {
+	*x = GetSettingsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsResponse) ProtoMessage() {}
+
+func (x *GetSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsResponse.ProtoReflect.Descriptor instead.
+func (*GetSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetSettingsResponse) GetSettings() *AccountSettings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
+// UpdateSettingsRequest conditionally replaces the supported preferences.
+type UpdateSettingsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Theme must be system, light, or dark.
+	Theme Theme `protobuf:"varint,1,opt,name=theme,proto3,enum=user.v1.Theme" json:"theme,omitempty"`
+	// ExpectedVersion must match the last-read settings version.
+	ExpectedVersion uint64 `protobuf:"varint,2,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UpdateSettingsRequest) Reset() {
+	*x = UpdateSettingsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSettingsRequest) ProtoMessage() {}
+
+func (x *UpdateSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSettingsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UpdateSettingsRequest) GetTheme() Theme {
+	if x != nil {
+		return x.Theme
+	}
+	return Theme_THEME_UNSPECIFIED
+}
+
+func (x *UpdateSettingsRequest) GetExpectedVersion() uint64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+// UpdateSettingsResponse returns the committed snapshot without reading a replica.
+type UpdateSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Settings includes the incremented version.
+	Settings      *AccountSettings `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSettingsResponse) Reset() {
+	*x = UpdateSettingsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSettingsResponse) ProtoMessage() {}
+
+func (x *UpdateSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSettingsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *UpdateSettingsResponse) GetSettings() *AccountSettings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
@@ -326,10 +1364,84 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x03bio\x18\x03 \x01(\tR\x03bio\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\x04R\aversion\x12&\n" +
 	"\x0fcreated_at_unix\x18\x05 \x01(\x03R\rcreatedAtUnix\x12&\n" +
-	"\x0fupdated_at_unix\x18\x06 \x01(\x03R\rupdatedAtUnix2\x86\x01\n" +
+	"\x0fupdated_at_unix\x18\x06 \x01(\x03R\rupdatedAtUnix\"\xed\x01\n" +
+	"\rAddressFields\x12\x1c\n" +
+	"\trecipient\x18\x01 \x01(\tR\trecipient\x12\x14\n" +
+	"\x05phone\x18\x02 \x01(\tR\x05phone\x12\x18\n" +
+	"\acountry\x18\x03 \x01(\tR\acountry\x12\x1f\n" +
+	"\vpostal_code\x18\x04 \x01(\tR\n" +
+	"postalCode\x12\x12\n" +
+	"\x04city\x18\x05 \x01(\tR\x04city\x12!\n" +
+	"\fstreet_house\x18\x06 \x01(\tR\vstreetHouse\x12\x1c\n" +
+	"\tapartment\x18\a \x01(\tR\tapartment\x12\x18\n" +
+	"\acomment\x18\b \x01(\tR\acomment\"w\n" +
+	"\aAddress\x12\x1d\n" +
+	"\n" +
+	"address_id\x18\x01 \x01(\fR\taddressId\x12.\n" +
+	"\x06fields\x18\x02 \x01(\v2\x16.user.v1.AddressFieldsR\x06fields\x12\x1d\n" +
+	"\n" +
+	"is_default\x18\x03 \x01(\bR\tisDefault\"v\n" +
+	"\vAddressBook\x12\x1d\n" +
+	"\n" +
+	"subject_id\x18\x01 \x01(\fR\tsubjectId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\x12.\n" +
+	"\taddresses\x18\x03 \x03(\v2\x10.user.v1.AddressR\taddresses\"\x16\n" +
+	"\x14ListAddressesRequest\"z\n" +
+	"\x14CreateAddressRequest\x122\n" +
+	"\x15expected_book_version\x18\x01 \x01(\x04R\x13expectedBookVersion\x12.\n" +
+	"\x06fields\x18\x02 \x01(\v2\x16.user.v1.AddressFieldsR\x06fields\"\x99\x01\n" +
+	"\x14UpdateAddressRequest\x12\x1d\n" +
+	"\n" +
+	"address_id\x18\x01 \x01(\fR\taddressId\x12.\n" +
+	"\x06fields\x18\x02 \x01(\v2\x16.user.v1.AddressFieldsR\x06fields\x122\n" +
+	"\x15expected_book_version\x18\x03 \x01(\x04R\x13expectedBookVersion\"i\n" +
+	"\x14DeleteAddressRequest\x12\x1d\n" +
+	"\n" +
+	"address_id\x18\x01 \x01(\fR\taddressId\x122\n" +
+	"\x15expected_book_version\x18\x02 \x01(\x04R\x13expectedBookVersion\"m\n" +
+	"\x18SetDefaultAddressRequest\x12\x1d\n" +
+	"\n" +
+	"address_id\x18\x01 \x01(\fR\taddressId\x122\n" +
+	"\x15expected_book_version\x18\x02 \x01(\x04R\x13expectedBookVersion\"A\n" +
+	"\x15ListAddressesResponse\x12(\n" +
+	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"A\n" +
+	"\x15CreateAddressResponse\x12(\n" +
+	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"A\n" +
+	"\x15UpdateAddressResponse\x12(\n" +
+	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"A\n" +
+	"\x15DeleteAddressResponse\x12(\n" +
+	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"E\n" +
+	"\x19SetDefaultAddressResponse\x12(\n" +
+	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"p\n" +
+	"\x0fAccountSettings\x12\x1d\n" +
+	"\n" +
+	"subject_id\x18\x01 \x01(\fR\tsubjectId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\x12$\n" +
+	"\x05theme\x18\x03 \x01(\x0e2\x0e.user.v1.ThemeR\x05theme\"\x14\n" +
+	"\x12GetSettingsRequest\"K\n" +
+	"\x13GetSettingsResponse\x124\n" +
+	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings\"h\n" +
+	"\x15UpdateSettingsRequest\x12$\n" +
+	"\x05theme\x18\x01 \x01(\x0e2\x0e.user.v1.ThemeR\x05theme\x12)\n" +
+	"\x10expected_version\x18\x02 \x01(\x04R\x0fexpectedVersion\"N\n" +
+	"\x16UpdateSettingsResponse\x124\n" +
+	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings*Q\n" +
+	"\x05Theme\x12\x15\n" +
+	"\x11THEME_UNSPECIFIED\x10\x00\x12\x10\n" +
+	"\fTHEME_SYSTEM\x10\x01\x12\x0f\n" +
+	"\vTHEME_LIGHT\x10\x02\x12\x0e\n" +
+	"\n" +
+	"THEME_DARK\x10\x032\xbf\x05\n" +
 	"\vUserService\x126\n" +
 	"\x05GetMe\x12\x15.user.v1.GetMeRequest\x1a\x16.user.v1.GetMeResponse\x12?\n" +
-	"\bUpdateMe\x12\x18.user.v1.UpdateMeRequest\x1a\x19.user.v1.UpdateMeResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1b\x06proto3"
+	"\bUpdateMe\x12\x18.user.v1.UpdateMeRequest\x1a\x19.user.v1.UpdateMeResponse\x12N\n" +
+	"\rListAddresses\x12\x1d.user.v1.ListAddressesRequest\x1a\x1e.user.v1.ListAddressesResponse\x12N\n" +
+	"\rCreateAddress\x12\x1d.user.v1.CreateAddressRequest\x1a\x1e.user.v1.CreateAddressResponse\x12N\n" +
+	"\rUpdateAddress\x12\x1d.user.v1.UpdateAddressRequest\x1a\x1e.user.v1.UpdateAddressResponse\x12N\n" +
+	"\rDeleteAddress\x12\x1d.user.v1.DeleteAddressRequest\x1a\x1e.user.v1.DeleteAddressResponse\x12Z\n" +
+	"\x11SetDefaultAddress\x12!.user.v1.SetDefaultAddressRequest\x1a\".user.v1.SetDefaultAddressResponse\x12H\n" +
+	"\vGetSettings\x12\x1b.user.v1.GetSettingsRequest\x1a\x1c.user.v1.GetSettingsResponse\x12Q\n" +
+	"\x0eUpdateSettings\x12\x1e.user.v1.UpdateSettingsRequest\x1a\x1f.user.v1.UpdateSettingsResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -343,26 +1455,73 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_user_v1_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_user_v1_user_proto_goTypes = []any{
-	(*GetMeRequest)(nil),     // 0: user.v1.GetMeRequest
-	(*GetMeResponse)(nil),    // 1: user.v1.GetMeResponse
-	(*UpdateMeRequest)(nil),  // 2: user.v1.UpdateMeRequest
-	(*UpdateMeResponse)(nil), // 3: user.v1.UpdateMeResponse
-	(*Profile)(nil),          // 4: user.v1.Profile
+	(Theme)(0),                        // 0: user.v1.Theme
+	(*GetMeRequest)(nil),              // 1: user.v1.GetMeRequest
+	(*GetMeResponse)(nil),             // 2: user.v1.GetMeResponse
+	(*UpdateMeRequest)(nil),           // 3: user.v1.UpdateMeRequest
+	(*UpdateMeResponse)(nil),          // 4: user.v1.UpdateMeResponse
+	(*Profile)(nil),                   // 5: user.v1.Profile
+	(*AddressFields)(nil),             // 6: user.v1.AddressFields
+	(*Address)(nil),                   // 7: user.v1.Address
+	(*AddressBook)(nil),               // 8: user.v1.AddressBook
+	(*ListAddressesRequest)(nil),      // 9: user.v1.ListAddressesRequest
+	(*CreateAddressRequest)(nil),      // 10: user.v1.CreateAddressRequest
+	(*UpdateAddressRequest)(nil),      // 11: user.v1.UpdateAddressRequest
+	(*DeleteAddressRequest)(nil),      // 12: user.v1.DeleteAddressRequest
+	(*SetDefaultAddressRequest)(nil),  // 13: user.v1.SetDefaultAddressRequest
+	(*ListAddressesResponse)(nil),     // 14: user.v1.ListAddressesResponse
+	(*CreateAddressResponse)(nil),     // 15: user.v1.CreateAddressResponse
+	(*UpdateAddressResponse)(nil),     // 16: user.v1.UpdateAddressResponse
+	(*DeleteAddressResponse)(nil),     // 17: user.v1.DeleteAddressResponse
+	(*SetDefaultAddressResponse)(nil), // 18: user.v1.SetDefaultAddressResponse
+	(*AccountSettings)(nil),           // 19: user.v1.AccountSettings
+	(*GetSettingsRequest)(nil),        // 20: user.v1.GetSettingsRequest
+	(*GetSettingsResponse)(nil),       // 21: user.v1.GetSettingsResponse
+	(*UpdateSettingsRequest)(nil),     // 22: user.v1.UpdateSettingsRequest
+	(*UpdateSettingsResponse)(nil),    // 23: user.v1.UpdateSettingsResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
-	4, // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
-	4, // 1: user.v1.UpdateMeResponse.profile:type_name -> user.v1.Profile
-	0, // 2: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
-	2, // 3: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
-	1, // 4: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
-	3, // 5: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	5,  // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
+	5,  // 1: user.v1.UpdateMeResponse.profile:type_name -> user.v1.Profile
+	6,  // 2: user.v1.Address.fields:type_name -> user.v1.AddressFields
+	7,  // 3: user.v1.AddressBook.addresses:type_name -> user.v1.Address
+	6,  // 4: user.v1.CreateAddressRequest.fields:type_name -> user.v1.AddressFields
+	6,  // 5: user.v1.UpdateAddressRequest.fields:type_name -> user.v1.AddressFields
+	8,  // 6: user.v1.ListAddressesResponse.book:type_name -> user.v1.AddressBook
+	8,  // 7: user.v1.CreateAddressResponse.book:type_name -> user.v1.AddressBook
+	8,  // 8: user.v1.UpdateAddressResponse.book:type_name -> user.v1.AddressBook
+	8,  // 9: user.v1.DeleteAddressResponse.book:type_name -> user.v1.AddressBook
+	8,  // 10: user.v1.SetDefaultAddressResponse.book:type_name -> user.v1.AddressBook
+	0,  // 11: user.v1.AccountSettings.theme:type_name -> user.v1.Theme
+	19, // 12: user.v1.GetSettingsResponse.settings:type_name -> user.v1.AccountSettings
+	0,  // 13: user.v1.UpdateSettingsRequest.theme:type_name -> user.v1.Theme
+	19, // 14: user.v1.UpdateSettingsResponse.settings:type_name -> user.v1.AccountSettings
+	1,  // 15: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
+	3,  // 16: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
+	9,  // 17: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
+	10, // 18: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
+	11, // 19: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
+	12, // 20: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
+	13, // 21: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
+	20, // 22: user.v1.UserService.GetSettings:input_type -> user.v1.GetSettingsRequest
+	22, // 23: user.v1.UserService.UpdateSettings:input_type -> user.v1.UpdateSettingsRequest
+	2,  // 24: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
+	4,  // 25: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
+	14, // 26: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
+	15, // 27: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
+	16, // 28: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
+	17, // 29: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
+	18, // 30: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
+	21, // 31: user.v1.UserService.GetSettings:output_type -> user.v1.GetSettingsResponse
+	23, // 32: user.v1.UserService.UpdateSettings:output_type -> user.v1.UpdateSettingsResponse
+	24, // [24:33] is the sub-list for method output_type
+	15, // [15:24] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -375,13 +1534,14 @@ func file_user_v1_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   5,
+			NumEnums:      1,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_user_v1_user_proto_goTypes,
 		DependencyIndexes: file_user_v1_user_proto_depIdxs,
+		EnumInfos:         file_user_v1_user_proto_enumTypes,
 		MessageInfos:      file_user_v1_user_proto_msgTypes,
 	}.Build()
 	File_user_v1_user_proto = out.File

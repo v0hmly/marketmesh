@@ -234,10 +234,28 @@ enum RouteId {
   ROUTE_ID_AUTH_SESSION_ASSERTION = 5;
   // ROUTE_ID_AUTH_LOGOUT_ALL revokes every session of the authenticated subject.
   ROUTE_ID_AUTH_LOGOUT_ALL = 6;
-  // ROUTE_ID_USER_GET_ME reads the current user profile.
+  // ROUTE_ID_USER_GET_ME retains the legacy FakeInternal read codec for isolated E2E.
   ROUTE_ID_USER_GET_ME = 100;
-  // ROUTE_ID_USER_UPDATE_ME updates the current user profile.
+  // ROUTE_ID_USER_UPDATE_ME retains the legacy FakeInternal mutation codec for isolated E2E.
   ROUTE_ID_USER_UPDATE_ME = 101;
+  // ROUTE_ID_USER_BROWSER_GET_ME exchanges a browser session and reads its owner profile.
+  ROUTE_ID_USER_BROWSER_GET_ME = 102;
+  // ROUTE_ID_USER_BROWSER_UPDATE_ME exchanges a browser session and updates its owner profile.
+  ROUTE_ID_USER_BROWSER_UPDATE_ME = 103;
+  // ROUTE_ID_USER_BROWSER_LIST_ADDRESSES is an authenticated owner-scoped address operation.
+  ROUTE_ID_USER_BROWSER_LIST_ADDRESSES = 104;
+  // ROUTE_ID_USER_BROWSER_CREATE_ADDRESS is an authenticated owner-scoped address operation.
+  ROUTE_ID_USER_BROWSER_CREATE_ADDRESS = 105;
+  // ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS is an authenticated owner-scoped address operation.
+  ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS = 106;
+  // ROUTE_ID_USER_BROWSER_DELETE_ADDRESS is an authenticated owner-scoped address operation.
+  ROUTE_ID_USER_BROWSER_DELETE_ADDRESS = 107;
+  // ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS is an authenticated owner-scoped address operation.
+  ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS = 108;
+  // ROUTE_ID_USER_BROWSER_GET_SETTINGS reads owner-scoped settings through Auth.
+  ROUTE_ID_USER_BROWSER_GET_SETTINGS = 109;
+  // ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS changes owner-scoped settings through Auth.
+  ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS = 110;
   // ROUTE_ID_REALTIME_CHAT carries a bounded bidirectional chat stream.
   ROUTE_ID_REALTIME_CHAT = 200;
   // ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.

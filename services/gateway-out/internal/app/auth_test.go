@@ -19,7 +19,7 @@ func TestAuthConfigFailClosed(t *testing.T) {
 		"INTERNAL_TLS_CERT_FILE": "/tls/internal.crt", "INTERNAL_TLS_KEY_FILE": "/tls/internal.key", "INTERNAL_TLS_ROOT_CA_FILE": "/tls/ca.crt",
 	}
 	cfg, err := loadConfig(serviceruntime.MapEnv(base))
-	if err != nil || cfg.authBrowserEnabled {
+	if err != nil || cfg.authBrowserEnabled || cfg.userBrowserEnabled || cfg.userSettingsBrowserEnabled {
 		t.Fatalf("default Auth configuration: %v", err)
 	}
 	required := map[string]string{
@@ -40,6 +40,50 @@ func TestAuthConfigFailClosed(t *testing.T) {
 	if cfg, err := loadConfig(serviceruntime.MapEnv(base)); err != nil || !cfg.authBrowserEnabled || cfg.authTarget != required["AUTH_TARGET"] {
 		t.Fatalf("configured Auth: %v", err)
 	}
+	base["AUTH_BROWSER_ENABLED"] = "false"
+	base["USER_BROWSER_ENABLED"] = "true"
+	for missing, value := range required {
+		delete(base, missing)
+		if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+			t.Fatalf("User browser accepted missing %s", missing)
+		}
+		base[missing] = value
+	}
+	if cfg, err := loadConfig(serviceruntime.MapEnv(base)); err != nil || !cfg.userBrowserEnabled || cfg.authBrowserEnabled {
+		t.Fatalf("User-only configuration: %v", err)
+	}
+	base["USER_ADDRESSES_BROWSER_ENABLED"] = "true"
+	if cfg, err := loadConfig(serviceruntime.MapEnv(base)); err != nil || !cfg.userAddressesBrowserEnabled {
+		t.Fatal("address flag rejected", err)
+	}
+	base["USER_BROWSER_ENABLED"] = "false"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("addresses without profile accepted")
+	}
+	base["USER_ADDRESSES_BROWSER_ENABLED"] = "bad"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("invalid addresses flag accepted")
+	}
+	base["USER_ADDRESSES_BROWSER_ENABLED"] = "false"
+	base["USER_BROWSER_ENABLED"] = "true"
+	base["USER_SETTINGS_BROWSER_ENABLED"] = "true"
+	if cfg, err := loadConfig(serviceruntime.MapEnv(base)); err != nil || !cfg.userSettingsBrowserEnabled {
+		t.Fatal("settings flag rejected", err)
+	}
+	base["USER_BROWSER_ENABLED"] = "false"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("settingses without profile accepted")
+	}
+	base["USER_SETTINGS_BROWSER_ENABLED"] = "bad"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("invalid settingses flag accepted")
+	}
+	base["USER_SETTINGS_BROWSER_ENABLED"] = "false"
+	base["USER_BROWSER_ENABLED"] = "sometimes"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("accepted invalid User flag")
+	}
+	base["USER_BROWSER_ENABLED"] = "false"
 	base["AUTH_BROWSER_ENABLED"] = "sometimes"
 	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
 		t.Fatal("accepted invalid Auth flag")

@@ -72,6 +72,12 @@ func (a *runtimeAuthFixture) VerifyAssertion(ctx context.Context, req *authv1.Ve
 }
 
 func TestIntegrationProfileRuntime(t *testing.T) {
+	t.Run("profile_only", func(t *testing.T) { testIntegrationProfileRuntime(t, false, false) })
+	t.Run("with_addresses", func(t *testing.T) { testIntegrationProfileRuntime(t, true, false) })
+	t.Run("settings_only", func(t *testing.T) { testIntegrationProfileRuntime(t, false, true) })
+	t.Run("addresses_and_settings", func(t *testing.T) { testIntegrationProfileRuntime(t, true, true) })
+}
+func testIntegrationProfileRuntime(t *testing.T, withAddresses, withSettings bool) {
 	dsn := os.Getenv("MARKETMESH_USER_POSTGRES_DSN")
 	if dsn == "" {
 		t.Fatal("MARKETMESH_USER_POSTGRES_DSN required; use disposable integration fixture")
@@ -94,13 +100,32 @@ func TestIntegrationProfileRuntime(t *testing.T) {
 		}
 	}
 	exec(migrations.ProfilesUp)
+	if withSettings {
+		exec(migrations.SettingsUp)
+	}
+	if withAddresses {
+		exec(migrations.AddressesUp)
+	}
 	exec(`CREATE ROLE runtime_user_rw LOGIN PASSWORD 'fixture-rw'; CREATE ROLE runtime_user_ro LOGIN PASSWORD 'fixture-ro'; GRANT USAGE ON SCHEMA users TO runtime_user_rw,runtime_user_ro; GRANT SELECT,UPDATE ON users.profiles TO runtime_user_rw; GRANT SELECT ON users.profiles TO runtime_user_ro`)
 	defer func() {
+		if withSettings {
+			if _, e := db.Exec(context.Background(), migrations.SettingsDown); e != nil {
+				t.Error(e)
+			}
+		}
+		if withAddresses {
+			if _, e := db.Exec(context.Background(), migrations.AddressesDown); e != nil {
+				t.Error(e)
+			}
+		}
 		_, err := db.Exec(context.Background(), `DROP OWNED BY runtime_user_rw,runtime_user_ro; DROP ROLE runtime_user_rw,runtime_user_ro;`+migrations.ProfilesDown)
 		if err != nil {
 			t.Error(err)
 		}
 	}()
+	if withAddresses {
+		exec(`GRANT SELECT,INSERT,UPDATE,DELETE ON users.addresses TO runtime_user_rw; GRANT SELECT ON users.addresses TO runtime_user_ro`)
+	}
 	a, b := make([]byte, 16), make([]byte, 16)
 	a[0] = 1
 	b[0] = 2
@@ -174,6 +199,12 @@ func TestIntegrationProfileRuntime(t *testing.T) {
 	defer func() { authServer.Stop(); _ = authListener.Close(); <-authDone }()
 	certConfig := pki.config(t, "spiffe://marketmesh.test/test/user", []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth})
 	env := profileEnvironment()
+	if withSettings {
+		env["USER_SETTINGS_ENABLED"] = "true"
+	}
+	if withAddresses {
+		env["USER_ADDRESSES_ENABLED"] = "true"
+	}
 	roleDSN := func(endpoint, role, password string) string {
 		u, err := url.Parse(endpoint)
 		if err != nil {
@@ -274,7 +305,7 @@ func TestIntegrationProfileRuntime(t *testing.T) {
 		if sid == "" {
 			t.Fatal("missing fixture session")
 		}
-		token, err := issuer.Issue(sessionassert.IssueParams{Audience: audience, Subject: base64.RawURLEncoding.EncodeToString(subject), SessionID: sid, TTL: 30 * time.Second, AuthTime: session.authTime, ACR: "password", AMR: []string{"pwd"}, Scopes: []string{"user:profile:read", "user:profile:write"}})
+		token, err := issuer.Issue(sessionassert.IssueParams{Audience: audience, Subject: base64.RawURLEncoding.EncodeToString(subject), SessionID: sid, TTL: 30 * time.Second, AuthTime: session.authTime, ACR: "password", AMR: []string{"pwd"}, Scopes: []string{"user:profile:read", "user:profile:write", "user:addresses:read", "user:addresses:write", "user:settings:read", "user:settings:write"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -323,6 +354,76 @@ func TestIntegrationProfileRuntime(t *testing.T) {
 	var replicaVersion int64
 	if err := replica.QueryRow(ctx, `SELECT version FROM users.profiles WHERE subject_id=$1`, a).Scan(&replicaVersion); err != nil || replicaVersion != 1 {
 		t.Fatal("replica did not stay stale", err)
+	}
+	if withAddresses {
+		empty, e := client.ListAddresses(callCtx, &userv1.ListAddressesRequest{})
+		if e != nil || empty.GetBook().GetVersion() != 1 || len(empty.GetBook().GetAddresses()) != 0 {
+			t.Fatal("initial book", e)
+		}
+		saved, e := client.CreateAddress(callCtx, &userv1.CreateAddressRequest{ExpectedBookVersion: 1, Fields: &userv1.AddressFields{Recipient: "private-recipient", Phone: "1234567", Country: "Country", City: "City", StreetHouse: "private-street"}})
+		if e != nil || saved.GetBook().GetVersion() != 2 || len(saved.GetBook().GetAddresses()) != 1 {
+			t.Fatal("address create", e)
+		}
+		fresh, e := client.ListAddresses(callCtx, &userv1.ListAddressesRequest{})
+		if e != nil || fresh.GetBook().GetVersion() != 2 {
+			t.Fatal("address primary read", e)
+		}
+		var stale int64
+		if e = replica.QueryRow(ctx, `SELECT address_book_version FROM users.profiles WHERE subject_id=$1`, a).Scan(&stale); e != nil || stale != 1 {
+			t.Fatal("address replica not stale", e)
+		}
+		foreign := metadata.NewOutgoingContext(ctx, metadata.Pairs(internalgrpc.AssertionMetadata, tokenFor(b, "user")))
+		_, e = client.DeleteAddress(foreign, &userv1.DeleteAddressRequest{ExpectedBookVersion: 1, AddressId: saved.GetBook().GetAddresses()[0].GetAddressId()})
+		if status.Code(e) != codes.NotFound {
+			t.Fatal("address owner guard", e)
+		}
+		if _, e = client.CreateAddress(callCtx, &userv1.CreateAddressRequest{ExpectedBookVersion: 1, Fields: saved.GetBook().GetAddresses()[0].GetFields()}); status.Code(e) != codes.Aborted {
+			t.Fatal("address CAS", e)
+		}
+	} else {
+		if _, e := client.ListAddresses(callCtx, &userv1.ListAddressesRequest{}); status.Code(e) != codes.PermissionDenied {
+			t.Fatal("address flag off", e)
+		}
+	}
+	if withSettings {
+		original, e := client.GetSettings(callCtx, &userv1.GetSettingsRequest{})
+		if e != nil || original.GetSettings().GetVersion() != 1 || original.GetSettings().GetTheme() != userv1.Theme_THEME_SYSTEM {
+			t.Fatal("initial settings", e)
+		}
+		saved, e := client.UpdateSettings(callCtx, &userv1.UpdateSettingsRequest{ExpectedVersion: 1, Theme: userv1.Theme_THEME_DARK})
+		if e != nil || saved.GetSettings().GetVersion() != 2 || saved.GetSettings().GetTheme() != userv1.Theme_THEME_DARK {
+			t.Fatal("settings update", e)
+		}
+		fresh, e := client.GetSettings(callCtx, &userv1.GetSettingsRequest{})
+		if e != nil || fresh.GetSettings().GetVersion() != 2 || fresh.GetSettings().GetTheme() != userv1.Theme_THEME_DARK {
+			t.Fatal("settings primary read", e)
+		}
+		var stale int64
+		if e = replica.QueryRow(ctx, `SELECT settings_version FROM users.profiles WHERE subject_id=$1`, a).Scan(&stale); e != nil || stale != 1 {
+			t.Fatal("settings replica not stale", e)
+		}
+		own, e := client.GetMe(callCtx, &userv1.GetMeRequest{})
+		if e != nil || own.GetProfile().GetVersion() != 2 {
+			t.Fatal("settings altered profile", e)
+		}
+		if withAddresses {
+			book, e := client.ListAddresses(callCtx, &userv1.ListAddressesRequest{})
+			if e != nil || book.GetBook().GetVersion() != 2 {
+				t.Fatal("settings altered book", e)
+			}
+		}
+		if _, e = client.UpdateSettings(callCtx, &userv1.UpdateSettingsRequest{ExpectedVersion: 1, Theme: userv1.Theme_THEME_LIGHT}); status.Code(e) != codes.Aborted {
+			t.Fatal("settings stale CAS", e)
+		}
+		foreign := metadata.NewOutgoingContext(ctx, metadata.Pairs(internalgrpc.AssertionMetadata, tokenFor(b, "user")))
+		other, e := client.GetSettings(foreign, &userv1.GetSettingsRequest{})
+		if e != nil || other.GetSettings().GetVersion() != 1 || other.GetSettings().GetTheme() != userv1.Theme_THEME_SYSTEM || !bytes.Equal(other.GetSettings().GetSubjectId(), b) {
+			t.Fatal("settings owner isolation", e)
+		}
+	} else {
+		if _, e := client.GetSettings(callCtx, &userv1.GetSettingsRequest{}); status.Code(e) != codes.PermissionDenied {
+			t.Fatal("settings flag off", e)
+		}
 	}
 	if _, err := replica.Exec(ctx, `SELECT pg_wal_replay_resume()`); err != nil {
 		t.Fatal(err)
@@ -374,6 +475,18 @@ func TestIntegrationProfileRuntime(t *testing.T) {
 	ready(http.StatusServiceUnavailable)
 	exec(`ALTER TABLE users.profiles_unavailable RENAME TO profiles`)
 	ready(http.StatusNoContent)
+	if withAddresses {
+		exec(`ALTER TABLE users.addresses RENAME TO addresses_unavailable`)
+		ready(http.StatusServiceUnavailable)
+		exec(`ALTER TABLE users.addresses_unavailable RENAME TO addresses`)
+		ready(http.StatusNoContent)
+	}
+	if withSettings {
+		exec(`ALTER TABLE users.profiles RENAME COLUMN settings_version TO settings_version_unavailable`)
+		ready(http.StatusServiceUnavailable)
+		exec(`ALTER TABLE users.profiles RENAME COLUMN settings_version_unavailable TO settings_version`)
+		ready(http.StatusNoContent)
+	}
 	authServer.Stop()
 	ready(http.StatusServiceUnavailable)
 	stop()
@@ -386,7 +499,7 @@ func TestIntegrationProfileRuntime(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("shutdown timed out")
 	}
-	for _, s := range []string{"private-alice", "private-bob", "private-updated", "private-bio", token, "fixture-rw", "fixture-ro"} {
+	for _, s := range []string{"private-alice", "private-bob", "private-updated", "private-bio", "private-recipient", "private-street", token, "fixture-rw", "fixture-ro"} {
 		if strings.Contains(logs.String(), s) {
 			t.Fatal("sensitive runtime log")
 		}

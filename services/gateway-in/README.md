@@ -113,3 +113,81 @@ Chrome использует новый временный профиль и до
 и Gateway Out можно задать через `AUTH_BROWSER_AUTH_BIN` и
 `AUTH_BROWSER_GATEWAY_OUT_BIN` (по умолчанию `/usr/local/bin/auth` и
 `/usr/local/bin/gateway-out`).
+
+## Публичный профиль User
+
+`USER_BROWSER_ENABLED=true` включает HTTPS ConnectRPC методы
+`/user.v1.UserService/GetMe` и `/user.v1.UserService/UpdateMe` через
+отдельные маршруты tunnel 102/103. По умолчанию флаг выключен и сохраняется отдельный
+FakeInternal E2E режим; при включении профиля FakeInternal endpoints не монтируются.
+Режим несовместим с `E2E_ROUTING_SNAPSHOT_ENABLED=true`.
+`PUBLIC_TLS_CERT_FILE` и `PUBLIC_TLS_KEY_FILE` обязательны при включённом Auth
+или User. Readiness требует доступности обоих маршрутов профиля.
+
+Gateway передаёт cookie непрозрачно в приватном контексте вместе с Origin и
+Sec-Fetch-Site. Заголовки Authorization и клиентские assertions не используются.
+Приватный `gateway.v1.UserBrowserService` недоступен браузеру. Ответы, включая
+ошибки внешнего HTTP middleware, имеют `Cache-Control: no-store`; разрешён только
+POST через TLS, запрос и ответ ограничены 16 KiB. UpdateMe использует версию
+профиля для защиты от конкуренции, без transport retry и Idempotency-Key.
+Состояние подготовки профиля возвращается как NotFound с типизированным
+`ErrorInfo` (`marketmesh.user`, `PROFILE_NOT_READY`), конфликт версии — Aborted.
+Произвольные сообщения и детали внутренних ошибок не выходят наружу.
+
+Реальный режим разрешает только профильные маршруты 102/103, а legacy E2E —
+100/101 с прежним wire format. Readiness требует пару маршрутов выбранного режима.
+При несовпадении режимов шлюзов профильные маршруты не согласуются; browser
+context не отправляется fake backend. Перед включением обновите обе стороны
+туннеля до версии, поддерживающей новые RouteId.
+
+`task auth:browser:integration` также запускает реальный User, его отдельную DB
+и RW/RO роли, проверяет подготовку профиля, сохранение, конфликт версии,
+изоляцию двух пользователей и отдельные отказы Auth/User. Бинарный файл User
+можно задать через `USER_BROWSER_USER_BIN` (по умолчанию `/usr/local/bin/user`).
+Тестовые профили явно создаются после проверки состояния подготовки; этот
+стенд не заменяет `task user:registration:integration` для доставки событий.
+
+
+## Адресная книга MM-68
+
+`USER_ADDRESSES_BROWSER_ENABLED=true` требует `USER_BROWSER_ENABLED=true` и
+включает отдельные маршруты 104–108: ListAddresses, CreateAddress, UpdateAddress,
+DeleteAddress и SetDefaultAddress. Флаг по умолчанию выключен. В User требуется
+миграция `000003_addresses`, `USER_ADDRESSES_ENABLED=true` и scopes
+`user:addresses:read`/`user:addresses:write` в конфигурации аудитории Auth.
+
+Включать следует после миграции и обновления User, затем gateway-out и gateway-in;
+storefront показывает раздел только при сборке с `VITE_ACCOUNT_ADDRESSES_ENABLED=true`.
+Новый gateway-in считает адресные маршруты частью readiness. Старый gateway-out
+их не объявляет: смешанная поставка не отправляет адресные запросы в другой codec.
+Запись не повторяется автоматически, адреса и cookie не попадают в metadata или логи.
+
+Запрос каждой операции ограничен 16 КиБ, полный снимок до 20 адресов — 128 КиБ.
+Только при включённом адресном флаге предел сообщения туннеля повышается до 128 КиБ;
+размеры фрейма и окна остаются прежними. Ответ фрагментируется и учитывает flow control.
+Ошибки ADDRESS_NOT_FOUND и ADDRESS_LIMIT_REACHED передаются только как точные
+ErrorInfo домена `marketmesh.user` с ожидаемым кодом и без metadata; чужой адрес
+неотличим от отсутствующего. CAS использует независимую версию книги.
+
+Откат: сначала выключить раздел/маршруты, затем адресный флаг User. Старый код
+профиля совместим с добавленными таблицей и колонкой; down-миграцию не выполнять
+с сохранёнными адресами без отдельного решения о данных.
+
+## Тема кабинета (MM-69)
+
+`USER_SETTINGS_BROWSER_ENABLED=true` требует `USER_BROWSER_ENABLED=true`, но не
+зависит от адресной книги. По умолчанию выключен. GetSettings/UpdateSettings
+используют отдельные private Browser-конверты и маршруты 109/110, оба по 16 КиБ.
+Gateway In считает режим готовым только при наличии обоих маршрутов. На каждом
+запросе Gateway Out получает новый assertion Auth; User принимает только владельца
+проверенной сессии и отдельные scopes `user:settings:read`/`user:settings:write`.
+Мутации автоматически не повторяются. Публичны только PROFILE_NOT_READY и
+VERSION_CONFLICT; темы строго ограничены system/light/dark.
+
+Включение: применить добавочную `000004_settings`, обновить User и оба шлюза с
+выключенными flags, добавить scopes в Auth, затем включить User
+`USER_SETTINGS_ENABLED` и оба gateway flags; после их готовности собрать storefront
+с `VITE_ACCOUNT_SETTINGS_ENABLED=true`. Старые декодеры не знают новых RouteId,
+поэтому включение до обновления всех шлюзов недопустимо. Откат: скрыть настройку
+в storefront, выключить flags шлюзов/User, вернуть бинарные файлы; колонки сохранять.
+Down-миграция удаляет предпочтения и требует отдельного решения по данным.

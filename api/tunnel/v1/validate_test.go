@@ -486,3 +486,24 @@ func TestLogoutAllRouteStaysInControlAuthClass(t *testing.T) {
 		t.Fatal("LogoutAll accepted outside control/auth")
 	}
 }
+
+func TestBrowserProfileRoutesUseRegularTraffic(t *testing.T) {
+	for _, route := range []contractv1.RouteId{contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_ME, contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_ME} {
+		t.Run(route.String(), func(t *testing.T) {
+			hello := validGatewayOutHello()
+			hello.GetHello().RouteIds = []contractv1.RouteId{route}
+			if _, err := codec.DecodeGatewayOutFrame(mustMarshal(t, hello)); err != nil {
+				t.Fatal(err)
+			}
+			open := validOpenFrame()
+			open.GetOpen().RouteId = route
+			if _, err := codec.DecodeGatewayInFrame(mustMarshal(t, open)); err != nil {
+				t.Fatal(err)
+			}
+			open.Header.TrafficClass = contractv1.TrafficClass_TRAFFIC_CLASS_CONTROL_AUTH
+			if _, err := codec.DecodeGatewayInFrame(mustMarshal(t, open)); err == nil {
+				t.Fatal("browser profile accepted in auth class")
+			}
+		})
+	}
+}

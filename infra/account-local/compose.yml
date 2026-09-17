@@ -1,0 +1,173 @@
+x-app: &app
+  image: ${ACCOUNT_LOCAL_IMAGE:-marketmesh-account-local:local}
+  build:
+    context: ../..
+    dockerfile: infra/account-local/Dockerfile
+  init: true
+  restart: "no"
+
+services:
+  auth-db:
+    image: postgres:18.6-bookworm
+    env_file: ${ACCOUNT_LOCAL_STATE}/auth-db/env
+    command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=10"]
+    volumes:
+      - auth-db:/var/lib/postgresql
+      - ./primary-init.sh:/docker-entrypoint-initdb.d/10-account.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U fixture_admin -d auth"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    networks: [internal]
+  auth-replica:
+    image: postgres:18.6-bookworm
+    env_file: ${ACCOUNT_LOCAL_STATE}/auth-replica/env
+    entrypoint: ["bash", "/replica.sh"]
+    volumes:
+      - auth-replica:/var/lib/postgresql
+      - ./replica.sh:/replica.sh:ro
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "gosu postgres psql -U fixture_admin -d auth -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    networks: [internal]
+  user-db:
+    image: postgres:18.6-bookworm
+    env_file: ${ACCOUNT_LOCAL_STATE}/user-db/env
+    command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=10"]
+    volumes:
+      - user-db:/var/lib/postgresql
+      - ./primary-init.sh:/docker-entrypoint-initdb.d/10-account.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U fixture_admin -d user"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    networks: [internal]
+  user-replica:
+    image: postgres:18.6-bookworm
+    env_file: ${ACCOUNT_LOCAL_STATE}/user-replica/env
+    entrypoint: ["bash", "/replica.sh"]
+    volumes:
+      - user-replica:/var/lib/postgresql
+      - ./replica.sh:/replica.sh:ro
+    depends_on:
+      user-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "gosu postgres psql -U fixture_admin -d user -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    networks: [internal]
+  redis:
+    image: redis:8.10.1-alpine3.23
+    user: "0:0"
+    command: ["redis-server", "/secrets/redis.conf"]
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/redis:/secrets:ro
+    networks: [internal]
+  nats:
+    image: nats:2.14.6
+    user: "0:0"
+    command: ["--config", "/secrets/nats.conf"]
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/nats:/secrets:ro
+      - nats-data:/data
+    networks: [internal]
+  provision:
+    <<: *app
+    profiles: [tools]
+    command: ["account-local", "provision"]
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/provision:/secrets:ro
+    networks: [internal]
+  auth:
+    <<: *app
+    command: ["auth"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/auth:/secrets:ro
+    networks: [internal]
+  user:
+    <<: *app
+    command: ["user"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/user:/secrets:ro
+    environment:
+      USER_REGISTRATION_CONSUME_ENABLED: ${ACCOUNT_USER_CONSUME_ENABLED:-true}
+    networks: [internal]
+  gateway-in:
+    <<: *app
+    command: ["gateway-in"]
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/gateway-in:/secrets:ro
+    networks: [dmz]
+  gateway-out:
+    <<: *app
+    command: ["gateway-out"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/gateway-out:/secrets:ro
+    networks: [dmz, internal]
+  frontdoor:
+    <<: *app
+    entrypoint: ["account-local", "frontdoor"]
+    ports:
+      - "127.0.0.1:${ACCOUNT_LOCAL_PORT:-8443}:8443"
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/frontdoor:/secrets:ro
+    networks: [dmz, ingress]
+  browser:
+    profiles: [test]
+    build:
+      context: ../..
+      dockerfile: infra/account-local/Dockerfile.browser
+    environment:
+      BASE_URL: https://frontdoor:8443
+      PUBLIC_CA: /certs/ca.pem
+      ACCOUNT_E2E_RUN_ID: ${ACCOUNT_E2E_RUN_ID:-unset}
+      ACCOUNT_E2E_PHASE: ${ACCOUNT_E2E_PHASE:-core}
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/browser:/certs:ro
+      - ${ACCOUNT_LOCAL_STATE}/artifacts:/artifacts
+    networks: [dmz]
+networks:
+  internal:
+    internal: true
+    labels: &ownership
+      marketmesh.account.workspace: ${ACCOUNT_LOCAL_WORKSPACE}
+  dmz:
+    internal: true
+    labels: *ownership
+  ingress:
+    labels: *ownership
+volumes:
+  auth-db:
+    labels: *ownership
+  auth-replica:
+    labels: *ownership
+  user-db:
+    labels: *ownership
+  user-replica:
+    labels: *ownership
+  nats-data:
+    labels: *ownership

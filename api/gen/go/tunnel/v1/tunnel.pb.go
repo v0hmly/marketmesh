@@ -155,10 +155,28 @@ const (
 	RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION RouteId = 5
 	// ROUTE_ID_AUTH_LOGOUT_ALL revokes every session of the authenticated subject.
 	RouteId_ROUTE_ID_AUTH_LOGOUT_ALL RouteId = 6
-	// ROUTE_ID_USER_GET_ME reads the current user profile.
+	// ROUTE_ID_USER_GET_ME retains the legacy FakeInternal read codec for isolated E2E.
 	RouteId_ROUTE_ID_USER_GET_ME RouteId = 100
-	// ROUTE_ID_USER_UPDATE_ME updates the current user profile.
+	// ROUTE_ID_USER_UPDATE_ME retains the legacy FakeInternal mutation codec for isolated E2E.
 	RouteId_ROUTE_ID_USER_UPDATE_ME RouteId = 101
+	// ROUTE_ID_USER_BROWSER_GET_ME exchanges a browser session and reads its owner profile.
+	RouteId_ROUTE_ID_USER_BROWSER_GET_ME RouteId = 102
+	// ROUTE_ID_USER_BROWSER_UPDATE_ME exchanges a browser session and updates its owner profile.
+	RouteId_ROUTE_ID_USER_BROWSER_UPDATE_ME RouteId = 103
+	// ROUTE_ID_USER_BROWSER_LIST_ADDRESSES is an authenticated owner-scoped address operation.
+	RouteId_ROUTE_ID_USER_BROWSER_LIST_ADDRESSES RouteId = 104
+	// ROUTE_ID_USER_BROWSER_CREATE_ADDRESS is an authenticated owner-scoped address operation.
+	RouteId_ROUTE_ID_USER_BROWSER_CREATE_ADDRESS RouteId = 105
+	// ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS is an authenticated owner-scoped address operation.
+	RouteId_ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS RouteId = 106
+	// ROUTE_ID_USER_BROWSER_DELETE_ADDRESS is an authenticated owner-scoped address operation.
+	RouteId_ROUTE_ID_USER_BROWSER_DELETE_ADDRESS RouteId = 107
+	// ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS is an authenticated owner-scoped address operation.
+	RouteId_ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS RouteId = 108
+	// ROUTE_ID_USER_BROWSER_GET_SETTINGS reads owner-scoped settings through Auth.
+	RouteId_ROUTE_ID_USER_BROWSER_GET_SETTINGS RouteId = 109
+	// ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS changes owner-scoped settings through Auth.
+	RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS RouteId = 110
 	// ROUTE_ID_REALTIME_CHAT carries a bounded bidirectional chat stream.
 	RouteId_ROUTE_ID_REALTIME_CHAT RouteId = 200
 	// ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.
@@ -177,21 +195,39 @@ var (
 		6:   "ROUTE_ID_AUTH_LOGOUT_ALL",
 		100: "ROUTE_ID_USER_GET_ME",
 		101: "ROUTE_ID_USER_UPDATE_ME",
+		102: "ROUTE_ID_USER_BROWSER_GET_ME",
+		103: "ROUTE_ID_USER_BROWSER_UPDATE_ME",
+		104: "ROUTE_ID_USER_BROWSER_LIST_ADDRESSES",
+		105: "ROUTE_ID_USER_BROWSER_CREATE_ADDRESS",
+		106: "ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS",
+		107: "ROUTE_ID_USER_BROWSER_DELETE_ADDRESS",
+		108: "ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS",
+		109: "ROUTE_ID_USER_BROWSER_GET_SETTINGS",
+		110: "ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS",
 		200: "ROUTE_ID_REALTIME_CHAT",
 		201: "ROUTE_ID_REALTIME_NOTIFICATIONS",
 	}
 	RouteId_value = map[string]int32{
-		"ROUTE_ID_UNSPECIFIED":               0,
-		"ROUTE_ID_AUTH_REGISTER_CREDENTIALS": 1,
-		"ROUTE_ID_AUTH_LOGIN":                2,
-		"ROUTE_ID_AUTH_REFRESH_SESSION":      3,
-		"ROUTE_ID_AUTH_REVOKE_SESSION":       4,
-		"ROUTE_ID_AUTH_SESSION_ASSERTION":    5,
-		"ROUTE_ID_AUTH_LOGOUT_ALL":           6,
-		"ROUTE_ID_USER_GET_ME":               100,
-		"ROUTE_ID_USER_UPDATE_ME":            101,
-		"ROUTE_ID_REALTIME_CHAT":             200,
-		"ROUTE_ID_REALTIME_NOTIFICATIONS":    201,
+		"ROUTE_ID_UNSPECIFIED":                      0,
+		"ROUTE_ID_AUTH_REGISTER_CREDENTIALS":        1,
+		"ROUTE_ID_AUTH_LOGIN":                       2,
+		"ROUTE_ID_AUTH_REFRESH_SESSION":             3,
+		"ROUTE_ID_AUTH_REVOKE_SESSION":              4,
+		"ROUTE_ID_AUTH_SESSION_ASSERTION":           5,
+		"ROUTE_ID_AUTH_LOGOUT_ALL":                  6,
+		"ROUTE_ID_USER_GET_ME":                      100,
+		"ROUTE_ID_USER_UPDATE_ME":                   101,
+		"ROUTE_ID_USER_BROWSER_GET_ME":              102,
+		"ROUTE_ID_USER_BROWSER_UPDATE_ME":           103,
+		"ROUTE_ID_USER_BROWSER_LIST_ADDRESSES":      104,
+		"ROUTE_ID_USER_BROWSER_CREATE_ADDRESS":      105,
+		"ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS":      106,
+		"ROUTE_ID_USER_BROWSER_DELETE_ADDRESS":      107,
+		"ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS": 108,
+		"ROUTE_ID_USER_BROWSER_GET_SETTINGS":        109,
+		"ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS":     110,
+		"ROUTE_ID_REALTIME_CHAT":                    200,
+		"ROUTE_ID_REALTIME_NOTIFICATIONS":           201,
 	}
 )
 
@@ -1948,7 +1984,7 @@ const file_tunnel_v1_tunnel_proto_rawDesc = "" +
 	"\x16CAPABILITY_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10CAPABILITY_DRAIN\x10\x01\x12!\n" +
 	"\x1dCAPABILITY_SESSION_REVOCATION\x10\x02\x12\x17\n" +
-	"\x13CAPABILITY_REALTIME\x10\x03*\xe6\x02\n" +
+	"\x13CAPABILITY_REALTIME\x10\x03*\xd7\x05\n" +
 	"\aRouteId\x12\x18\n" +
 	"\x14ROUTE_ID_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"ROUTE_ID_AUTH_REGISTER_CREDENTIALS\x10\x01\x12\x17\n" +
@@ -1958,7 +1994,16 @@ const file_tunnel_v1_tunnel_proto_rawDesc = "" +
 	"\x1fROUTE_ID_AUTH_SESSION_ASSERTION\x10\x05\x12\x1c\n" +
 	"\x18ROUTE_ID_AUTH_LOGOUT_ALL\x10\x06\x12\x18\n" +
 	"\x14ROUTE_ID_USER_GET_ME\x10d\x12\x1b\n" +
-	"\x17ROUTE_ID_USER_UPDATE_ME\x10e\x12\x1b\n" +
+	"\x17ROUTE_ID_USER_UPDATE_ME\x10e\x12 \n" +
+	"\x1cROUTE_ID_USER_BROWSER_GET_ME\x10f\x12#\n" +
+	"\x1fROUTE_ID_USER_BROWSER_UPDATE_ME\x10g\x12(\n" +
+	"$ROUTE_ID_USER_BROWSER_LIST_ADDRESSES\x10h\x12(\n" +
+	"$ROUTE_ID_USER_BROWSER_CREATE_ADDRESS\x10i\x12(\n" +
+	"$ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS\x10j\x12(\n" +
+	"$ROUTE_ID_USER_BROWSER_DELETE_ADDRESS\x10k\x12-\n" +
+	")ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS\x10l\x12&\n" +
+	"\"ROUTE_ID_USER_BROWSER_GET_SETTINGS\x10m\x12)\n" +
+	"%ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS\x10n\x12\x1b\n" +
 	"\x16ROUTE_ID_REALTIME_CHAT\x10\xc8\x01\x12$\n" +
 	"\x1fROUTE_ID_REALTIME_NOTIFICATIONS\x10\xc9\x01*\xa9\x01\n" +
 	"\vMetadataKey\x12\x1c\n" +

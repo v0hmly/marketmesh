@@ -36,6 +36,9 @@ const (
 	// AuthInternalServiceExchangeSessionProcedure is the fully-qualified name of the
 	// AuthInternalService's ExchangeSession RPC.
 	AuthInternalServiceExchangeSessionProcedure = "/auth.v1.AuthInternalService/ExchangeSession"
+	// AuthInternalServiceExchangeBrowserSessionProcedure is the fully-qualified name of the
+	// AuthInternalService's ExchangeBrowserSession RPC.
+	AuthInternalServiceExchangeBrowserSessionProcedure = "/auth.v1.AuthInternalService/ExchangeBrowserSession"
 	// AuthInternalServiceVerifyAssertionProcedure is the fully-qualified name of the
 	// AuthInternalService's VerifyAssertion RPC.
 	AuthInternalServiceVerifyAssertionProcedure = "/auth.v1.AuthInternalService/VerifyAssertion"
@@ -48,6 +51,8 @@ const (
 type AuthInternalServiceClient interface {
 	// ExchangeSession accepts an opaque external cookie only from an authorized gateway-out workload.
 	ExchangeSession(context.Context, *connect.Request[v1.ExchangeSessionRequest]) (*connect.Response[v1.ExchangeSessionResponse], error)
+	// ExchangeBrowserSession validates browser origin and cookies before issuing an internal assertion.
+	ExchangeBrowserSession(context.Context, *connect.Request[v1.ExchangeBrowserSessionRequest]) (*connect.Response[v1.ExchangeBrowserSessionResponse], error)
 	// VerifyAssertion checks both the signature and current revocation state for the calling service.
 	VerifyAssertion(context.Context, *connect.Request[v1.VerifyAssertionRequest]) (*connect.Response[v1.VerifyAssertionResponse], error)
 	// GetSigningKeys publishes the current, finitely trusted Ed25519 public keys.
@@ -71,6 +76,12 @@ func NewAuthInternalServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(authInternalServiceMethods.ByName("ExchangeSession")),
 			connect.WithClientOptions(opts...),
 		),
+		exchangeBrowserSession: connect.NewClient[v1.ExchangeBrowserSessionRequest, v1.ExchangeBrowserSessionResponse](
+			httpClient,
+			baseURL+AuthInternalServiceExchangeBrowserSessionProcedure,
+			connect.WithSchema(authInternalServiceMethods.ByName("ExchangeBrowserSession")),
+			connect.WithClientOptions(opts...),
+		),
 		verifyAssertion: connect.NewClient[v1.VerifyAssertionRequest, v1.VerifyAssertionResponse](
 			httpClient,
 			baseURL+AuthInternalServiceVerifyAssertionProcedure,
@@ -88,14 +99,20 @@ func NewAuthInternalServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // authInternalServiceClient implements AuthInternalServiceClient.
 type authInternalServiceClient struct {
-	exchangeSession *connect.Client[v1.ExchangeSessionRequest, v1.ExchangeSessionResponse]
-	verifyAssertion *connect.Client[v1.VerifyAssertionRequest, v1.VerifyAssertionResponse]
-	getSigningKeys  *connect.Client[v1.GetSigningKeysRequest, v1.GetSigningKeysResponse]
+	exchangeSession        *connect.Client[v1.ExchangeSessionRequest, v1.ExchangeSessionResponse]
+	exchangeBrowserSession *connect.Client[v1.ExchangeBrowserSessionRequest, v1.ExchangeBrowserSessionResponse]
+	verifyAssertion        *connect.Client[v1.VerifyAssertionRequest, v1.VerifyAssertionResponse]
+	getSigningKeys         *connect.Client[v1.GetSigningKeysRequest, v1.GetSigningKeysResponse]
 }
 
 // ExchangeSession calls auth.v1.AuthInternalService.ExchangeSession.
 func (c *authInternalServiceClient) ExchangeSession(ctx context.Context, req *connect.Request[v1.ExchangeSessionRequest]) (*connect.Response[v1.ExchangeSessionResponse], error) {
 	return c.exchangeSession.CallUnary(ctx, req)
+}
+
+// ExchangeBrowserSession calls auth.v1.AuthInternalService.ExchangeBrowserSession.
+func (c *authInternalServiceClient) ExchangeBrowserSession(ctx context.Context, req *connect.Request[v1.ExchangeBrowserSessionRequest]) (*connect.Response[v1.ExchangeBrowserSessionResponse], error) {
+	return c.exchangeBrowserSession.CallUnary(ctx, req)
 }
 
 // VerifyAssertion calls auth.v1.AuthInternalService.VerifyAssertion.
@@ -112,6 +129,8 @@ func (c *authInternalServiceClient) GetSigningKeys(ctx context.Context, req *con
 type AuthInternalServiceHandler interface {
 	// ExchangeSession accepts an opaque external cookie only from an authorized gateway-out workload.
 	ExchangeSession(context.Context, *connect.Request[v1.ExchangeSessionRequest]) (*connect.Response[v1.ExchangeSessionResponse], error)
+	// ExchangeBrowserSession validates browser origin and cookies before issuing an internal assertion.
+	ExchangeBrowserSession(context.Context, *connect.Request[v1.ExchangeBrowserSessionRequest]) (*connect.Response[v1.ExchangeBrowserSessionResponse], error)
 	// VerifyAssertion checks both the signature and current revocation state for the calling service.
 	VerifyAssertion(context.Context, *connect.Request[v1.VerifyAssertionRequest]) (*connect.Response[v1.VerifyAssertionResponse], error)
 	// GetSigningKeys publishes the current, finitely trusted Ed25519 public keys.
@@ -131,6 +150,12 @@ func NewAuthInternalServiceHandler(svc AuthInternalServiceHandler, opts ...conne
 		connect.WithSchema(authInternalServiceMethods.ByName("ExchangeSession")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authInternalServiceExchangeBrowserSessionHandler := connect.NewUnaryHandler(
+		AuthInternalServiceExchangeBrowserSessionProcedure,
+		svc.ExchangeBrowserSession,
+		connect.WithSchema(authInternalServiceMethods.ByName("ExchangeBrowserSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	authInternalServiceVerifyAssertionHandler := connect.NewUnaryHandler(
 		AuthInternalServiceVerifyAssertionProcedure,
 		svc.VerifyAssertion,
@@ -147,6 +172,8 @@ func NewAuthInternalServiceHandler(svc AuthInternalServiceHandler, opts ...conne
 		switch r.URL.Path {
 		case AuthInternalServiceExchangeSessionProcedure:
 			authInternalServiceExchangeSessionHandler.ServeHTTP(w, r)
+		case AuthInternalServiceExchangeBrowserSessionProcedure:
+			authInternalServiceExchangeBrowserSessionHandler.ServeHTTP(w, r)
 		case AuthInternalServiceVerifyAssertionProcedure:
 			authInternalServiceVerifyAssertionHandler.ServeHTTP(w, r)
 		case AuthInternalServiceGetSigningKeysProcedure:
@@ -162,6 +189,10 @@ type UnimplementedAuthInternalServiceHandler struct{}
 
 func (UnimplementedAuthInternalServiceHandler) ExchangeSession(context.Context, *connect.Request[v1.ExchangeSessionRequest]) (*connect.Response[v1.ExchangeSessionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthInternalService.ExchangeSession is not implemented"))
+}
+
+func (UnimplementedAuthInternalServiceHandler) ExchangeBrowserSession(context.Context, *connect.Request[v1.ExchangeBrowserSessionRequest]) (*connect.Response[v1.ExchangeBrowserSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthInternalService.ExchangeBrowserSession is not implemented"))
 }
 
 func (UnimplementedAuthInternalServiceHandler) VerifyAssertion(context.Context, *connect.Request[v1.VerifyAssertionRequest]) (*connect.Response[v1.VerifyAssertionResponse], error) {
