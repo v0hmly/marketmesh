@@ -103,7 +103,8 @@ install_easyp() {
 }
 
 install_protoc() {
-  if [[ -x "${PROTOC_BIN}" ]] && [[ "$("${PROTOC_BIN}" --version)" == "libprotoc ${PROTOC_VERSION}" ]]; then
+  if [[ -x "${PROTOC_BIN}" ]] && [[ "$("${PROTOC_BIN}" --version)" == "libprotoc ${PROTOC_VERSION}" ]] && \
+    [[ -f "${CACHE_DIR}/protoc/${PROTOC_VERSION}/include/google/protobuf/duration.proto" ]]; then
     return
   fi
 
@@ -335,7 +336,28 @@ generate_to() {
       PROTO_TS_OUT="${ts_out}" \
       "${EASYP_BIN}" --cfg "${REPO_ROOT}/easyp.yaml" generate
   )
+  generate_error_details "${REPO_ROOT}/${ts_out}"
   normalize_generated_text "${REPO_ROOT}/${ts_out}"
+}
+
+# Browser clients decode the standard ErrorInfo emitted by User. Generate its
+# schema from the same checksum-locked googleapis dependency as the Go contract;
+# never infer PROFILE_NOT_READY from a free-form error message or JSON debug data.
+generate_error_details() {
+  local ts_out="$1"
+  local module_version
+  module_version="$(awk '$1 == "github.com/googleapis/googleapis" { print $2 }' "${REPO_ROOT}/easyp.lock")"
+  if [[ "${module_version}" != v*-"${GOOGLEAPIS_REVISION}" || "${module_version}" == *$'\n'* || "${module_version}" == */* ]]; then
+    printf '%s\n' 'Не найдена единственная зафиксированная ревизия googleapis.' >&2
+    return 1
+  fi
+  local module_root="${CACHE_DIR}/easyp/mod/github.com/googleapis/googleapis/${module_version}"
+  "${PROTOC_BIN}" \
+    --proto_path="${module_root}" \
+    --proto_path="${CACHE_DIR}/protoc/${PROTOC_VERSION}/include" \
+    --plugin="protoc-gen-es=${PROTOC_GEN_ES_BIN}" \
+    --es_out="${ts_out}" --es_opt=target=ts \
+    google/rpc/error_details.proto
 }
 
 copy_generated() {

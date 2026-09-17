@@ -1,0 +1,40 @@
+{
+  "name": "@marketmesh/storefront",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "prettier --check src scripts tests *.ts *.js *.json *.html README.md && eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:browser": "node scripts/browser-tests.mjs"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.14.0",
+    "@connectrpc/connect": "2.2.0",
+    "@connectrpc/connect-web": "2.2.0",
+    "@marketmesh/api": "workspace:*",
+    "vue": "3.5.42",
+    "vue-router": "4.6.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.5",
+    "@vitejs/plugin-vue": "6.0.9",
+    "@vue/test-utils": "2.5.0",
+    "eslint": "10.10.0",
+    "eslint-plugin-vue": "10.11.0",
+    "jsdom": "30.0.1",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vite": "8.3.0",
+    "vitest": "5.0.1",
+    "vue-eslint-parser": "10.4.1",
+    "vue-tsc": "3.3.11"
+  }
+}

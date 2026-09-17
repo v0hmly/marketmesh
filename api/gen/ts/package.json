@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./auth/v1/auth_pb": "./auth/v1/auth_pb.ts",
+    "./user/v1/user_pb": "./user/v1/user_pb.ts",
+    "./google/rpc/error_details_pb": "./google/rpc/error_details_pb.ts"
+  },
   "dependencies": {
     "@bufbuild/protobuf": "2.14.0"
   }
