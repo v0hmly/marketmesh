@@ -38,6 +38,7 @@ type config struct {
 	healthTimeout        time.Duration
 	logLevel             string
 	authBrowserEnabled   bool
+	userBrowserEnabled   bool
 	authTarget           string
 	authServerName       string
 	expectedAuthURI      string
@@ -117,7 +118,10 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	if result.authBrowserEnabled, err = env.Bool("AUTH_BROWSER_ENABLED", false); err != nil {
 		return config{}, err
 	}
-	if result.authBrowserEnabled {
+	if result.userBrowserEnabled, err = env.Bool("USER_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.authBrowserEnabled || result.userBrowserEnabled {
 		for _, item := range []struct {
 			name  string
 			value *string

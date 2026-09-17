@@ -78,7 +78,7 @@ func newSessionResources(ctx context.Context, config config, log *logger.Logger,
 	if err != nil {
 		return nil, err
 	}
-	handler, err := internalgrpc.New(resources.service, keys, internalgrpc.Config{TrustDomain: cfg.trustDomain, Environment: config.environment, Issuer: cfg.issuer, AssertionTTL: cfg.lifetimes.AssertionTTL, Clock: time.Now, Audiences: cfg.audiences})
+	handler, err := internalgrpc.New(resources.service, keys, internalgrpc.Config{TrustDomain: cfg.trustDomain, Environment: config.environment, Issuer: cfg.issuer, AssertionTTL: cfg.lifetimes.AssertionTTL, Clock: time.Now, Audiences: cfg.audiences, AllowedOrigins: cfg.allowedOrigins})
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ use (
  ./api/gen/go
  ./api/tunnel
  ./platform
+ ./services/user
  ./services/auth
  ./services/gateway-in
  ./services/gateway-out

@@ -30,12 +30,13 @@ type SessionOperations interface {
 
 // Config is server-owned policy for the private assertion service.
 type Config struct {
-	TrustDomain  string
-	Environment  string
-	Issuer       string
-	AssertionTTL time.Duration
-	Clock        func() time.Time
-	Audiences    map[string][]string
+	TrustDomain    string
+	Environment    string
+	Issuer         string
+	AssertionTTL   time.Duration
+	Clock          func() time.Time
+	Audiences      map[string][]string
+	AllowedOrigins []string
 }
 
 // Handler serves the private mTLS-only AuthInternalService.
@@ -45,6 +46,7 @@ type Handler struct {
 	keys    *sessionkeys.Manager
 	config  Config
 	policy  *workloadid.Policy
+	origins *public.BrowserOriginPolicy
 }
 
 // New constructs a fail-closed private handler and its direct-call authorization policy.
@@ -60,7 +62,7 @@ func New(service SessionOperations, keys *sessionkeys.Manager, config Config) (*
 		return nil, errors.New("auth internal grpc: invalid workload domain or environment")
 	}
 	audiences := make(map[string][]string, len(config.Audiences))
-	rules := map[workloadid.Identity][]string{base: {method("ExchangeSession"), method("GetSigningKeys")}}
+	rules := map[workloadid.Identity][]string{base: {method("ExchangeSession"), method("ExchangeBrowserSession"), method("GetSigningKeys")}}
 	rules[base] = append(rules[base], browserMethods()...)
 	for audience, scopes := range config.Audiences {
 		identity := workloadid.Identity{TrustDomain: config.TrustDomain, Environment: config.Environment, Role: audience}
@@ -79,7 +81,14 @@ func New(service SessionOperations, keys *sessionkeys.Manager, config Config) (*
 		return nil, errors.New("auth internal grpc: invalid authorization policy")
 	}
 	config.Audiences = audiences
-	return &Handler{service: service, keys: keys, config: config, policy: policy}, nil
+	var origins *public.BrowserOriginPolicy
+	if len(config.AllowedOrigins) > 0 {
+		origins, err = public.NewBrowserOriginPolicy(config.AllowedOrigins)
+		if err != nil {
+			return nil, errors.New("auth internal grpc: invalid browser origin policy")
+		}
+	}
+	return &Handler{service: service, keys: keys, config: config, policy: policy, origins: origins}, nil
 }
 
 // Policy returns the same policy used by direct handler authorization and gRPC interceptors.
@@ -106,6 +115,34 @@ func (h *Handler) ExchangeSession(ctx context.Context, request *authv1.ExchangeS
 		return nil, operationFailure(err)
 	}
 	return &authv1.ExchangeSessionResponse{Assertion: assertion, ExpiresAtUnix: expiry.Unix()}, nil
+}
+
+// ExchangeBrowserSession authenticates browser context before issuing an internal assertion.
+// The response is private to gateway-out and is never exposed as a tunnel route.
+func (h *Handler) ExchangeBrowserSession(ctx context.Context, request *authv1.ExchangeBrowserSessionRequest) (*authv1.ExchangeBrowserSessionResponse, error) {
+	identity, err := h.authorize(ctx, method("ExchangeBrowserSession"))
+	if err != nil {
+		return nil, err
+	}
+	if identity.Role != "gateway-out" || request == nil {
+		return nil, denied()
+	}
+	if _, ok := h.config.Audiences[request.GetAudience()]; !ok {
+		return nil, denied()
+	}
+	header, err := browserHeader(request.GetContext())
+	if err != nil || !h.origins.Allow(header) {
+		return nil, denied()
+	}
+	access, err := public.AccessTokenFromHeader(header)
+	if err != nil {
+		return nil, denied()
+	}
+	assertion, expiry, err := h.service.Exchange(ctx, access, request.GetAudience())
+	if err != nil {
+		return nil, operationFailure(err)
+	}
+	return &authv1.ExchangeBrowserSessionResponse{Assertion: assertion, ExpiresAtUnix: expiry.Unix()}, nil
 }
 
 func (h *Handler) VerifyAssertion(ctx context.Context, request *authv1.VerifyAssertionRequest) (*authv1.VerifyAssertionResponse, error) {

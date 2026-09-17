@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package gateway.v1;
+
+import "auth/v1/auth.proto";
+import "user/v1/user.proto";
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/gateway/v1;gatewayv1";
+
+// UserBrowserService defines private tunnel envelopes, not an exposed network service.
+// Gateway-out exchanges the browser cookie with Auth, then calls User with an assertion.
+service UserBrowserService {
+  // GetMe resolves the browser session and reads its owner's profile.
+  rpc BrowserGetMe(BrowserGetMeRequest) returns (BrowserGetMeResponse);
+  // UpdateMe resolves the browser session and conditionally updates its owner's profile.
+  rpc BrowserUpdateMe(BrowserUpdateMeRequest) returns (BrowserUpdateMeResponse);
+}
+
+// BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
+message BrowserGetMeRequest {
+  // Request contains no caller-selected identity or credentials.
+  user.v1.GetMeRequest request = 1;
+  // Context contains opaque credentials that must never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserUpdateMeRequest keeps browser context separate from the public domain DTO.
+message BrowserUpdateMeRequest {
+  // Request contains only editable fields and the expected concurrency version.
+  user.v1.UpdateMeRequest request = 1;
+  // Context contains opaque credentials that must never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserGetMeResponse contains either the successful result or one finite failure.
+message BrowserGetMeResponse {
+  // Response is present only for a successful User call.
+  user.v1.GetMeResponse response = 1;
+  // Failure preserves only explicitly allowed domain outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserUpdateMeResponse contains either the committed result or one finite failure.
+message BrowserUpdateMeResponse {
+  // Response is present only for a successful User call.
+  user.v1.UpdateMeResponse response = 1;
+  // Failure preserves only explicitly allowed domain outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// UserBrowserFailure is the closed allowlist of domain outcomes preserved across the tunnel.
+enum UserBrowserFailure {
+  // USER_BROWSER_FAILURE_UNSPECIFIED means no domain failure; a response is required.
+  USER_BROWSER_FAILURE_UNSPECIFIED = 0;
+  // USER_BROWSER_FAILURE_PROFILE_NOT_READY means an authenticated profile is still being prepared.
+  USER_BROWSER_FAILURE_PROFILE_NOT_READY = 1;
+  // USER_BROWSER_FAILURE_VERSION_CONFLICT requires the caller to read and reconcile current data.
+  USER_BROWSER_FAILURE_VERSION_CONFLICT = 2;
+}

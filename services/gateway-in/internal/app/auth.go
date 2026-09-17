@@ -8,6 +8,7 @@ import (
 
 	authv1connect "github.com/v0hmly/marketmesh/api/gen/go/auth/v1/authv1connect"
 	contractv1 "github.com/v0hmly/marketmesh/api/gen/go/tunnel/v1"
+	userv1connect "github.com/v0hmly/marketmesh/api/gen/go/user/v1/userv1connect"
 	"github.com/v0hmly/marketmesh/services/gateway-in/internal/connectbridge"
 	"github.com/v0hmly/marketmesh/services/gateway-in/internal/tunnel"
 )
@@ -57,7 +58,7 @@ func registerAuthHandler(mux *http.ServeMux, cfg config, registry *tunnel.Regist
 }
 
 func loadPublicTLS(cfg config) (*tls.Config, error) {
-	if !cfg.authBrowserEnabled {
+	if !cfg.authBrowserEnabled && !cfg.userBrowserEnabled {
 		return nil, nil
 	}
 	certificate, err := tls.LoadX509KeyPair(cfg.publicTLSCertificate, cfg.publicTLSPrivateKey)
@@ -69,11 +70,12 @@ func loadPublicTLS(cfg config) (*tls.Config, error) {
 }
 
 func protectAuthResponses(cfg config, next http.Handler) http.Handler {
-	if !cfg.authBrowserEnabled {
+	if !cfg.authBrowserEnabled && !cfg.userBrowserEnabled {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/"+authv1connect.AuthServiceName+"/") {
+		if (cfg.authBrowserEnabled && strings.HasPrefix(r.URL.Path, "/"+authv1connect.AuthServiceName+"/")) ||
+			(cfg.userBrowserEnabled && strings.HasPrefix(r.URL.Path, "/"+userv1connect.UserServiceName+"/")) {
 			w.Header().Set("Cache-Control", "no-store")
 		}
 		next.ServeHTTP(w, r)

@@ -12,8 +12,10 @@ import (
 	"os"
 	"time"
 
+	authv1 "github.com/v0hmly/marketmesh/api/gen/go/auth/v1"
 	e2ev1 "github.com/v0hmly/marketmesh/api/gen/go/e2e/v1"
 	contractv1 "github.com/v0hmly/marketmesh/api/gen/go/tunnel/v1"
+	userv1 "github.com/v0hmly/marketmesh/api/gen/go/user/v1"
 	protocolv1 "github.com/v0hmly/marketmesh/api/tunnel/v1"
 	platformgrpc "github.com/v0hmly/marketmesh/platform/grpc"
 	"github.com/v0hmly/marketmesh/platform/httpserver"
@@ -93,7 +95,7 @@ func runService(
 		return err
 	}
 	internalClient, err := platformgrpc.NewClient(ctx, platformgrpc.ClientConfig{
-		Target: cfg.internalTarget, Environment: cfg.environment,
+		Target: cfg.internalTarget, Environment: cfg.environment, DisableRetries: cfg.userBrowserEnabled,
 		ConnectTimeout: cfg.connectTimeout, CallTimeout: cfg.callTimeout,
 		KeepaliveTime: 30 * time.Second, KeepaliveTimeout: 5 * time.Second,
 		MaxReceiveMessageBytes: 64 * 1024, MaxSendMessageBytes: 64 * 1024,
@@ -118,12 +120,16 @@ func runService(
 	}
 	authOwned := true
 	defer func() {
-		if authOwned {
+		if authOwned && authClient != nil {
 			resultErr = errors.Join(resultErr, authClient.Close())
 		}
 	}()
 	clients := tunnel.ClassClients{Regular: internalClient.Connection(), Realtime: internalClient.Connection()}
 	specs := []tunnel.RouteSpec{readRoute(cfg.callTimeout), mutateRoute(cfg.callTimeout)}
+	if cfg.userBrowserEnabled {
+		clients.Regular = &userBrowserClient{auth: authv1.NewAuthInternalServiceClient(authClient.Connection()), user: userv1.NewUserServiceClient(internalClient.Connection())}
+		specs = userRoutes(cfg.callTimeout)
+	}
 	if cfg.authBrowserEnabled {
 		clients.ControlAuth = authClient.Connection()
 		specs = append(specs, authRoutes(cfg.callTimeout)...)
@@ -204,7 +210,7 @@ func runService(
 		internalClientComponent(internalClient),
 		pool.Component(),
 	}
-	if cfg.authBrowserEnabled {
+	if cfg.authBrowserEnabled || cfg.userBrowserEnabled {
 		component := internalClientComponent(authClient)
 		component.Name = "auth-grpc"
 		components = append(components, component)

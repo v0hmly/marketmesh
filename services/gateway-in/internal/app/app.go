@@ -201,17 +201,13 @@ func tunnelConfig(
 		MaxInFlightRequests: 64, MaxMetadataEntries: 8, MaxMetadataValueBytes: 16 * 1024,
 		MaxCreditBytes: 32 * 1024,
 	}
-	routes := map[contractv1.RouteId]tunnel.RoutePolicy{
-		contractv1.RouteId_ROUTE_ID_USER_GET_ME: {
+	routes := make(map[contractv1.RouteId]tunnel.RoutePolicy)
+	for _, route := range profileRouteIDs(cfg) {
+		routes[route] = tunnel.RoutePolicy{
 			TrafficClass:    contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
 			MaxRequestBytes: 16 * 1024, MaxResponseBytes: 16 * 1024,
 			MaxDeadline: cfg.requestTimeout, MaxInFlight: 32,
-		},
-		contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME: {
-			TrafficClass:    contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
-			MaxRequestBytes: 16 * 1024, MaxResponseBytes: 16 * 1024,
-			MaxDeadline: cfg.requestTimeout, MaxInFlight: 32,
-		},
+		}
 	}
 
 	addAuthPolicies(cfg, routes)
@@ -241,9 +237,7 @@ func newHealth(cfg config, registry *tunnel.Registry) (*serviceruntime.Health, e
 		Dependencies: []serviceruntime.CriticalDependency{{
 			Name: "tunnel-routes",
 			Check: func(context.Context) error {
-				readReady := registry.IsRouteReady(contractv1.RouteId_ROUTE_ID_USER_GET_ME)
-				mutateReady := registry.IsRouteReady(contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME)
-				if !readReady || !mutateReady || !authRoutesReady(cfg, registry) {
+				if !profileRoutesReady(cfg, registry) || !authRoutesReady(cfg, registry) {
 					return errors.New("required routes are not ready")
 				}
 				return nil
@@ -261,35 +255,41 @@ func publicHandler(
 	if err != nil {
 		return nil, err
 	}
-	readHandler, err := connectbridge.NewUnaryHandler[e2ev1.ReadRequest, e2ev1.ReadResponse](
-		connectbridge.Config{
-			Procedure: e2ev1connect.FakeInternalServiceReadProcedure,
-			Route:     contractv1.RouteId_ROUTE_ID_USER_GET_ME,
-			Invoker:   registry,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating read bridge: %w", err)
-	}
-	mutateHandler, err := connectbridge.NewUnaryHandler[e2ev1.MutateRequest, e2ev1.MutateResponse](
-		connectbridge.Config{
-			Procedure:             e2ev1connect.FakeInternalServiceMutateProcedure,
-			Route:                 contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME,
-			RequireIdempotencyKey: true,
-			Invoker:               registry,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating mutate bridge: %w", err)
-	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/", healthHandler)
 	if err := registerAuthHandler(mux, cfg, registry); err != nil {
 		return nil, err
 	}
-	mux.Handle(e2ev1connect.FakeInternalServiceReadProcedure, readHandler)
-	mux.Handle(e2ev1connect.FakeInternalServiceMutateProcedure, mutateHandler)
+	if cfg.userBrowserEnabled {
+		if err := registerUserHandler(mux, registry); err != nil {
+			return nil, err
+		}
+	} else {
+		readHandler, err := connectbridge.NewUnaryHandler[e2ev1.ReadRequest, e2ev1.ReadResponse](
+			connectbridge.Config{
+				Procedure: e2ev1connect.FakeInternalServiceReadProcedure,
+				Route:     contractv1.RouteId_ROUTE_ID_USER_GET_ME,
+				Invoker:   registry,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("creating read bridge: %w", err)
+		}
+		mutateHandler, err := connectbridge.NewUnaryHandler[e2ev1.MutateRequest, e2ev1.MutateResponse](
+			connectbridge.Config{
+				Procedure:             e2ev1connect.FakeInternalServiceMutateProcedure,
+				Route:                 contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME,
+				RequireIdempotencyKey: true,
+				Invoker:               registry,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("creating mutate bridge: %w", err)
+		}
+		mux.Handle(e2ev1connect.FakeInternalServiceReadProcedure, readHandler)
+		mux.Handle(e2ev1connect.FakeInternalServiceMutateProcedure, mutateHandler)
+	}
 	if err := registerE2ERoutingSnapshot(mux, cfg, registry); err != nil {
 		return nil, err
 	}

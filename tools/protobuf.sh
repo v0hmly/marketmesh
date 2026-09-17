@@ -343,11 +343,11 @@ copy_generated() {
   local destination_dir="$2"
   shift 2
 
-  mkdir -p "${destination_dir}"
+  mkdir -p "${destination_dir}" || return
   while IFS= read -r -d '' source_file; do
     local relative_path="${source_file#"${source_dir}/"}"
-    mkdir -p "${destination_dir}/$(dirname -- "${relative_path}")"
-    cp "${source_file}" "${destination_dir}/${relative_path}"
+    mkdir -p "${destination_dir}/$(dirname -- "${relative_path}")" || return
+    cp "${source_file}" "${destination_dir}/${relative_path}" || return
   done < <(find "${source_dir}" -type f "$@" -print0)
 }
 
@@ -379,6 +379,46 @@ generate_check() (
     printf 'Сгенерированные API-файлы устарели. Выполните task api:generate.\n' >&2
     return 1
   fi
+)
+
+# EasyP 0.16.1 resolves imports from the Git repository root in breaking mode.
+# Flatten only the schema subtree into an isolated repository for both revisions.
+breaking_snapshot() (
+  local source_repo="$1"
+  local schema_path="$2"
+  local against_ref="$3"
+  local snapshot_dir
+  local baseline_sha
+  baseline_sha="$(git -C "${source_repo}" rev-parse --verify "${against_ref}^{commit}")" || return
+  git -C "${source_repo}" cat-file -e "${baseline_sha}:${schema_path}" || return
+  snapshot_dir="$(mktemp -d "${CACHE_DIR}/breaking.XXXXXX")" || return
+  trap 'rm -rf -- "${snapshot_dir}"' EXIT
+
+  printf 'Protobuf breaking baseline: %s (%s), schemas: %s\n' \
+    "${baseline_sha}" "${against_ref}" "${schema_path}"
+  git -C "${source_repo}" archive "${baseline_sha}:${schema_path}" | tar -xf - -C "${snapshot_dir}" || return
+  cp "${source_repo}/easyp.lock" "${snapshot_dir}/" || return
+  # This EasyP version gives the YAML reference precedence over --against.
+  awk '$1 == "against_git_ref:" {$0 = "  against_git_ref: baseline"} {print}' \
+    "${source_repo}/easyp.yaml" >"${snapshot_dir}/easyp.yaml" || return
+  (
+    cd "${snapshot_dir}" || return
+    git -c init.templateDir= init --quiet --initial-branch=snapshot-current || return
+    git config core.hooksPath /dev/null || return
+    git config commit.gpgsign false || return
+    git config tag.gpgsign false || return
+    git config user.name 'MarketMesh protobuf snapshot' || return
+    git config user.email 'protobuf-snapshot@marketmesh.invalid' || return
+    git add --all || return
+    git commit --quiet -m baseline || return
+    git branch baseline || return
+    find . -type f -name '*.proto' -delete || return
+    copy_generated "${source_repo}/${schema_path}" "${snapshot_dir}" -name '*.proto' || return
+    EASYPPATH="${CACHE_DIR}/easyp" \
+      PROTO_TOOLS_BIN="${BIN_DIR}" \
+      PROTOC_GEN_ES_PATH="${PROTOC_GEN_ES_BIN}" \
+      "${EASYP_BIN}" --cfg "${snapshot_dir}/easyp.yaml" breaking --path . --against baseline
+  )
 )
 
 self_test() (
@@ -429,6 +469,8 @@ self_test() (
     '' \
     'package toolchain.v1;' \
     '' \
+    'import "toolchain/v1/shared.proto";' \
+    '' \
     'option go_package = "example.com/toolchain/toolchain/v1;toolchainv1";' \
     '' \
     '// ToolchainService verifies every configured code generator.' \
@@ -447,8 +489,25 @@ self_test() (
     'message CheckResponse {' \
     '  // Value is copied from the request.' \
     '  string value = 1;' \
+    '  // Shared exercises imports between local files.' \
+    '  Shared shared = 2;' \
     '}' \
     >"${test_dir}/proto/toolchain/v1/toolchain.proto"
+
+  cat >"${test_dir}/proto/toolchain/v1/shared.proto" <<'PROTO'
+syntax = "proto3";
+
+package toolchain.v1;
+
+option go_package = "example.com/toolchain/toolchain/v1;toolchainv1";
+
+// Shared verifies that breaking checks resolve local imports.
+message Shared {
+  // Value must retain its field number and type.
+  string value = 1;
+}
+PROTO
+  cp "${REPO_ROOT}/easyp.lock" "${test_dir}/easyp.lock"
 
   (
     cd "${test_dir}"
@@ -461,12 +520,30 @@ self_test() (
       "${EASYP_BIN}" generate >/dev/null
     diff -ru gen/first gen/second >/dev/null
 
-    git init --quiet
+    git -c init.templateDir= init --quiet --initial-branch=snapshot-current
+    git config core.hooksPath /dev/null
+    git config commit.gpgsign false
+    git config tag.gpgsign false
     git config user.name 'MarketMesh protobuf self-test'
     git config user.email 'protobuf-self-test@marketmesh.invalid'
     git add easyp.yaml proto
     git commit --quiet -m baseline
-    git tag baseline
+    git branch baseline
+
+    # Include a new, untracked local dependency in the current schema graph.
+    sed 's/message Shared {/message SharedNew {/' proto/toolchain/v1/shared.proto \
+      >proto/toolchain/v1/shared_new.proto
+    awk '
+      {print}
+      $0 == "import \"toolchain/v1/shared.proto\";" {print "import \"toolchain/v1/shared_new.proto\";"}
+      $0 == "  Shared shared = 2;" {print "  // NewShared verifies untracked input.\n  SharedNew new_shared = 3;"}
+    ' proto/toolchain/v1/toolchain.proto >proto/toolchain/v1/toolchain.proto.tmp
+    mv proto/toolchain/v1/toolchain.proto.tmp proto/toolchain/v1/toolchain.proto
+    # Valid cross-file imports must pass before testing a genuine incompatibility.
+    breaking_snapshot "${test_dir}" proto baseline >"${test_dir}/breaking-valid.log" 2>&1 || {
+      cat "${test_dir}/breaking-valid.log" >&2
+      return 1
+    }
 
     awk '{gsub("string value = 1;", "string BadField = 1;"); print}' \
       proto/toolchain/v1/toolchain.proto >proto/toolchain/v1/toolchain.proto.tmp
@@ -480,8 +557,13 @@ self_test() (
     awk '$0 != "  string value = 1;"' \
       proto/toolchain/v1/toolchain.proto >proto/toolchain/v1/toolchain.proto.tmp
     mv proto/toolchain/v1/toolchain.proto.tmp proto/toolchain/v1/toolchain.proto
-    if EASYPPATH="${CACHE_DIR}/easyp" "${EASYP_BIN}" breaking --path proto >/dev/null 2>&1; then
+    if breaking_snapshot "${test_dir}" proto baseline >"${test_dir}/breaking-invalid.log" 2>&1; then
       printf 'EasyP breaking не обнаружил удаление поля v1.\n' >&2
+      return 1
+    fi
+    if ! grep -Eq 'Previously present field "1" with name "value".*was deleted.*BREAKING_CHECK' "${test_dir}/breaking-invalid.log"; then
+      cat "${test_dir}/breaking-invalid.log" >&2
+      printf 'EasyP завершился без доказанного breaking finding об удалении поля.\n' >&2
       return 1
     fi
   )
@@ -534,7 +616,7 @@ main() {
       generate_to api/gen/go api/gen/ts
       ;;
     breaking)
-      run_easyp breaking --path api/proto
+      breaking_snapshot "${REPO_ROOT}" api/proto "${PROTO_BREAKING_REF:-dev}"
       ;;
     generate-check)
       generate_check
