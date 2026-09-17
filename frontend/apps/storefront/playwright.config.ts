@@ -15,7 +15,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    env: { VITE_ACCOUNT_ADDRESSES_ENABLED: 'true' },
+    env: { VITE_ACCOUNT_ADDRESSES_ENABLED: 'true', VITE_ACCOUNT_SETTINGS_ENABLED: 'true' },
     command: 'pnpm exec vite --host 127.0.0.1 --port 4174',
     url: 'https://127.0.0.1:4174',
     ignoreHTTPSErrors: true,

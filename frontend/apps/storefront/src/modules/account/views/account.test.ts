@@ -37,6 +37,8 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     })),
     readProfile: vi.fn().mockResolvedValue(profile()),
     updateProfile: vi.fn().mockResolvedValue(profile({ version: 8n })),
+    readSettings: vi.fn(),
+    updateSettings: vi.fn(),
     readAddresses: vi.fn(),
     createAddress: vi.fn(),
     updateAddress: vi.fn(),

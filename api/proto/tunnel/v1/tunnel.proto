@@ -252,6 +252,10 @@ enum RouteId {
   ROUTE_ID_USER_BROWSER_DELETE_ADDRESS = 107;
   // ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS is an authenticated owner-scoped address operation.
   ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS = 108;
+  // ROUTE_ID_USER_BROWSER_GET_SETTINGS reads owner-scoped settings through Auth.
+  ROUTE_ID_USER_BROWSER_GET_SETTINGS = 109;
+  // ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS changes owner-scoped settings through Auth.
+  ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS = 110;
   // ROUTE_ID_REALTIME_CHAT carries a bounded bidirectional chat stream.
   ROUTE_ID_REALTIME_CHAT = 200;
   // ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.

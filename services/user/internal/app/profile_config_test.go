@@ -85,3 +85,25 @@ func TestAddressesRequireProfileAndExplicitFlag(t *testing.T) {
 		t.Fatal("invalid flag accepted")
 	}
 }
+
+func TestSettingsFlagRequiresOnlyProfile(t *testing.T) {
+	v := validEnvironment()
+	v["USER_SETTINGS_ENABLED"] = "true"
+	if _, e := loadConfig(serviceruntime.MapEnv(v)); e == nil {
+		t.Fatal("settings without profile")
+	}
+	v = profileEnvironment()
+	c, e := loadConfig(serviceruntime.MapEnv(v))
+	if e != nil || c.profile.settingsEnabled {
+		t.Fatal("default enabled", e)
+	}
+	v["USER_SETTINGS_ENABLED"] = "true"
+	c, e = loadConfig(serviceruntime.MapEnv(v))
+	if e != nil || !c.profile.settingsEnabled || c.profile.addressesEnabled {
+		t.Fatal("settings require addresses", e)
+	}
+	v["USER_SETTINGS_ENABLED"] = "invalid"
+	if _, e = loadConfig(serviceruntime.MapEnv(v)); e == nil {
+		t.Fatal("invalid flag accepted")
+	}
+}

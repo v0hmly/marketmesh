@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSession } from './shell/context';
+import { settingsEnabled } from './shared/features';
+import { createThemeController } from './shell/theme';
+import { useSession, themeKey } from './shell/context';
 
 const session = useSession();
+const theme = settingsEnabled ? createThemeController(session) : null;
+if (theme) provide(themeKey, theme);
+onBeforeUnmount(() => theme?.dispose());
 const router = useRouter();
 const logoutFailure = ref('');
 const busy = ref(false);
@@ -92,6 +97,12 @@ onMounted(() => {
       <p v-if="logoutFailure" class="notice error session-notice" role="alert">
         {{ logoutFailure }}
       </p>
+      <div v-if="theme?.failed.value && signedIn" class="notice error session-notice" role="status">
+        <p>Не удалось загрузить оформление аккаунта.</p>
+        <button class="button secondary" @click="theme.load()">
+          Повторить загрузку оформления
+        </button>
+      </div>
       <RouterView />
       <section v-if="signedIn" class="session-controls" aria-label="Управление сессией">
         <p>Закончили на этом устройстве?</p>

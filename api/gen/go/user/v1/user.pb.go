@@ -21,6 +21,63 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Theme is the closed set of supported display preferences.
+type Theme int32
+
+const (
+	// THEME_UNSPECIFIED is invalid in stored settings and update requests.
+	Theme_THEME_UNSPECIFIED Theme = 0
+	// THEME_SYSTEM follows the device preference and is the default.
+	Theme_THEME_SYSTEM Theme = 1
+	// THEME_LIGHT always uses the light palette.
+	Theme_THEME_LIGHT Theme = 2
+	// THEME_DARK always uses the dark palette.
+	Theme_THEME_DARK Theme = 3
+)
+
+// Enum value maps for Theme.
+var (
+	Theme_name = map[int32]string{
+		0: "THEME_UNSPECIFIED",
+		1: "THEME_SYSTEM",
+		2: "THEME_LIGHT",
+		3: "THEME_DARK",
+	}
+	Theme_value = map[string]int32{
+		"THEME_UNSPECIFIED": 0,
+		"THEME_SYSTEM":      1,
+		"THEME_LIGHT":       2,
+		"THEME_DARK":        3,
+	}
+)
+
+func (x Theme) Enum() *Theme {
+	p := new(Theme)
+	*p = x
+	return p
+}
+
+func (x Theme) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Theme) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_v1_user_proto_enumTypes[0].Descriptor()
+}
+
+func (Theme) Type() protoreflect.EnumType {
+	return &file_user_v1_user_proto_enumTypes[0]
+}
+
+func (x Theme) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Theme.Descriptor instead.
+func (Theme) EnumDescriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{0}
+}
+
 // GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
 type GetMeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1038,6 +1095,254 @@ func (x *SetDefaultAddressResponse) GetBook() *AddressBook {
 	return nil
 }
 
+// AccountSettings contains preferences of one authenticated owner.
+type AccountSettings struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// SubjectId is the immutable nonzero 16-byte owner identifier.
+	SubjectId []byte `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	// Version is positive and independent of profile and address book versions.
+	Version uint64 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Theme is a supported preference, never unspecified.
+	Theme         Theme `protobuf:"varint,3,opt,name=theme,proto3,enum=user.v1.Theme" json:"theme,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccountSettings) Reset() {
+	*x = AccountSettings{}
+	mi := &file_user_v1_user_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountSettings) ProtoMessage() {}
+
+func (x *AccountSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountSettings.ProtoReflect.Descriptor instead.
+func (*AccountSettings) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *AccountSettings) GetSubjectId() []byte {
+	if x != nil {
+		return x.SubjectId
+	}
+	return nil
+}
+
+func (x *AccountSettings) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *AccountSettings) GetTheme() Theme {
+	if x != nil {
+		return x.Theme
+	}
+	return Theme_THEME_UNSPECIFIED
+}
+
+// GetSettingsRequest has no caller-selected owner or credentials.
+type GetSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsRequest) Reset() {
+	*x = GetSettingsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsRequest) ProtoMessage() {}
+
+func (x *GetSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsRequest.ProtoReflect.Descriptor instead.
+func (*GetSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{19}
+}
+
+// GetSettingsResponse is private and must never be publicly cached.
+type GetSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Settings is the current primary snapshot.
+	Settings      *AccountSettings `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsResponse) Reset() {
+	*x = GetSettingsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsResponse) ProtoMessage() {}
+
+func (x *GetSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsResponse.ProtoReflect.Descriptor instead.
+func (*GetSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetSettingsResponse) GetSettings() *AccountSettings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
+// UpdateSettingsRequest conditionally replaces the supported preferences.
+type UpdateSettingsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Theme must be system, light, or dark.
+	Theme Theme `protobuf:"varint,1,opt,name=theme,proto3,enum=user.v1.Theme" json:"theme,omitempty"`
+	// ExpectedVersion must match the last-read settings version.
+	ExpectedVersion uint64 `protobuf:"varint,2,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UpdateSettingsRequest) Reset() {
+	*x = UpdateSettingsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSettingsRequest) ProtoMessage() {}
+
+func (x *UpdateSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSettingsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UpdateSettingsRequest) GetTheme() Theme {
+	if x != nil {
+		return x.Theme
+	}
+	return Theme_THEME_UNSPECIFIED
+}
+
+func (x *UpdateSettingsRequest) GetExpectedVersion() uint64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+// UpdateSettingsResponse returns the committed snapshot without reading a replica.
+type UpdateSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Settings includes the incremented version.
+	Settings      *AccountSettings `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSettingsResponse) Reset() {
+	*x = UpdateSettingsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSettingsResponse) ProtoMessage() {}
+
+func (x *UpdateSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSettingsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *UpdateSettingsResponse) GetSettings() *AccountSettings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
@@ -1107,7 +1412,26 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x15DeleteAddressResponse\x12(\n" +
 	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"E\n" +
 	"\x19SetDefaultAddressResponse\x12(\n" +
-	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book2\xa2\x04\n" +
+	"\x04book\x18\x01 \x01(\v2\x14.user.v1.AddressBookR\x04book\"p\n" +
+	"\x0fAccountSettings\x12\x1d\n" +
+	"\n" +
+	"subject_id\x18\x01 \x01(\fR\tsubjectId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\x12$\n" +
+	"\x05theme\x18\x03 \x01(\x0e2\x0e.user.v1.ThemeR\x05theme\"\x14\n" +
+	"\x12GetSettingsRequest\"K\n" +
+	"\x13GetSettingsResponse\x124\n" +
+	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings\"h\n" +
+	"\x15UpdateSettingsRequest\x12$\n" +
+	"\x05theme\x18\x01 \x01(\x0e2\x0e.user.v1.ThemeR\x05theme\x12)\n" +
+	"\x10expected_version\x18\x02 \x01(\x04R\x0fexpectedVersion\"N\n" +
+	"\x16UpdateSettingsResponse\x124\n" +
+	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings*Q\n" +
+	"\x05Theme\x12\x15\n" +
+	"\x11THEME_UNSPECIFIED\x10\x00\x12\x10\n" +
+	"\fTHEME_SYSTEM\x10\x01\x12\x0f\n" +
+	"\vTHEME_LIGHT\x10\x02\x12\x0e\n" +
+	"\n" +
+	"THEME_DARK\x10\x032\xbf\x05\n" +
 	"\vUserService\x126\n" +
 	"\x05GetMe\x12\x15.user.v1.GetMeRequest\x1a\x16.user.v1.GetMeResponse\x12?\n" +
 	"\bUpdateMe\x12\x18.user.v1.UpdateMeRequest\x1a\x19.user.v1.UpdateMeResponse\x12N\n" +
@@ -1115,7 +1439,9 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\rCreateAddress\x12\x1d.user.v1.CreateAddressRequest\x1a\x1e.user.v1.CreateAddressResponse\x12N\n" +
 	"\rUpdateAddress\x12\x1d.user.v1.UpdateAddressRequest\x1a\x1e.user.v1.UpdateAddressResponse\x12N\n" +
 	"\rDeleteAddress\x12\x1d.user.v1.DeleteAddressRequest\x1a\x1e.user.v1.DeleteAddressResponse\x12Z\n" +
-	"\x11SetDefaultAddress\x12!.user.v1.SetDefaultAddressRequest\x1a\".user.v1.SetDefaultAddressResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1b\x06proto3"
+	"\x11SetDefaultAddress\x12!.user.v1.SetDefaultAddressRequest\x1a\".user.v1.SetDefaultAddressResponse\x12H\n" +
+	"\vGetSettings\x12\x1b.user.v1.GetSettingsRequest\x1a\x1c.user.v1.GetSettingsResponse\x12Q\n" +
+	"\x0eUpdateSettings\x12\x1e.user.v1.UpdateSettingsRequest\x1a\x1f.user.v1.UpdateSettingsResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -1129,58 +1455,73 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_user_v1_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_user_v1_user_proto_goTypes = []any{
-	(*GetMeRequest)(nil),              // 0: user.v1.GetMeRequest
-	(*GetMeResponse)(nil),             // 1: user.v1.GetMeResponse
-	(*UpdateMeRequest)(nil),           // 2: user.v1.UpdateMeRequest
-	(*UpdateMeResponse)(nil),          // 3: user.v1.UpdateMeResponse
-	(*Profile)(nil),                   // 4: user.v1.Profile
-	(*AddressFields)(nil),             // 5: user.v1.AddressFields
-	(*Address)(nil),                   // 6: user.v1.Address
-	(*AddressBook)(nil),               // 7: user.v1.AddressBook
-	(*ListAddressesRequest)(nil),      // 8: user.v1.ListAddressesRequest
-	(*CreateAddressRequest)(nil),      // 9: user.v1.CreateAddressRequest
-	(*UpdateAddressRequest)(nil),      // 10: user.v1.UpdateAddressRequest
-	(*DeleteAddressRequest)(nil),      // 11: user.v1.DeleteAddressRequest
-	(*SetDefaultAddressRequest)(nil),  // 12: user.v1.SetDefaultAddressRequest
-	(*ListAddressesResponse)(nil),     // 13: user.v1.ListAddressesResponse
-	(*CreateAddressResponse)(nil),     // 14: user.v1.CreateAddressResponse
-	(*UpdateAddressResponse)(nil),     // 15: user.v1.UpdateAddressResponse
-	(*DeleteAddressResponse)(nil),     // 16: user.v1.DeleteAddressResponse
-	(*SetDefaultAddressResponse)(nil), // 17: user.v1.SetDefaultAddressResponse
+	(Theme)(0),                        // 0: user.v1.Theme
+	(*GetMeRequest)(nil),              // 1: user.v1.GetMeRequest
+	(*GetMeResponse)(nil),             // 2: user.v1.GetMeResponse
+	(*UpdateMeRequest)(nil),           // 3: user.v1.UpdateMeRequest
+	(*UpdateMeResponse)(nil),          // 4: user.v1.UpdateMeResponse
+	(*Profile)(nil),                   // 5: user.v1.Profile
+	(*AddressFields)(nil),             // 6: user.v1.AddressFields
+	(*Address)(nil),                   // 7: user.v1.Address
+	(*AddressBook)(nil),               // 8: user.v1.AddressBook
+	(*ListAddressesRequest)(nil),      // 9: user.v1.ListAddressesRequest
+	(*CreateAddressRequest)(nil),      // 10: user.v1.CreateAddressRequest
+	(*UpdateAddressRequest)(nil),      // 11: user.v1.UpdateAddressRequest
+	(*DeleteAddressRequest)(nil),      // 12: user.v1.DeleteAddressRequest
+	(*SetDefaultAddressRequest)(nil),  // 13: user.v1.SetDefaultAddressRequest
+	(*ListAddressesResponse)(nil),     // 14: user.v1.ListAddressesResponse
+	(*CreateAddressResponse)(nil),     // 15: user.v1.CreateAddressResponse
+	(*UpdateAddressResponse)(nil),     // 16: user.v1.UpdateAddressResponse
+	(*DeleteAddressResponse)(nil),     // 17: user.v1.DeleteAddressResponse
+	(*SetDefaultAddressResponse)(nil), // 18: user.v1.SetDefaultAddressResponse
+	(*AccountSettings)(nil),           // 19: user.v1.AccountSettings
+	(*GetSettingsRequest)(nil),        // 20: user.v1.GetSettingsRequest
+	(*GetSettingsResponse)(nil),       // 21: user.v1.GetSettingsResponse
+	(*UpdateSettingsRequest)(nil),     // 22: user.v1.UpdateSettingsRequest
+	(*UpdateSettingsResponse)(nil),    // 23: user.v1.UpdateSettingsResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
-	4,  // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
-	4,  // 1: user.v1.UpdateMeResponse.profile:type_name -> user.v1.Profile
-	5,  // 2: user.v1.Address.fields:type_name -> user.v1.AddressFields
-	6,  // 3: user.v1.AddressBook.addresses:type_name -> user.v1.Address
-	5,  // 4: user.v1.CreateAddressRequest.fields:type_name -> user.v1.AddressFields
-	5,  // 5: user.v1.UpdateAddressRequest.fields:type_name -> user.v1.AddressFields
-	7,  // 6: user.v1.ListAddressesResponse.book:type_name -> user.v1.AddressBook
-	7,  // 7: user.v1.CreateAddressResponse.book:type_name -> user.v1.AddressBook
-	7,  // 8: user.v1.UpdateAddressResponse.book:type_name -> user.v1.AddressBook
-	7,  // 9: user.v1.DeleteAddressResponse.book:type_name -> user.v1.AddressBook
-	7,  // 10: user.v1.SetDefaultAddressResponse.book:type_name -> user.v1.AddressBook
-	0,  // 11: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
-	2,  // 12: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
-	8,  // 13: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
-	9,  // 14: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
-	10, // 15: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
-	11, // 16: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
-	12, // 17: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
-	1,  // 18: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
-	3,  // 19: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
-	13, // 20: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
-	14, // 21: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
-	15, // 22: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
-	16, // 23: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
-	17, // 24: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
-	18, // [18:25] is the sub-list for method output_type
-	11, // [11:18] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	5,  // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
+	5,  // 1: user.v1.UpdateMeResponse.profile:type_name -> user.v1.Profile
+	6,  // 2: user.v1.Address.fields:type_name -> user.v1.AddressFields
+	7,  // 3: user.v1.AddressBook.addresses:type_name -> user.v1.Address
+	6,  // 4: user.v1.CreateAddressRequest.fields:type_name -> user.v1.AddressFields
+	6,  // 5: user.v1.UpdateAddressRequest.fields:type_name -> user.v1.AddressFields
+	8,  // 6: user.v1.ListAddressesResponse.book:type_name -> user.v1.AddressBook
+	8,  // 7: user.v1.CreateAddressResponse.book:type_name -> user.v1.AddressBook
+	8,  // 8: user.v1.UpdateAddressResponse.book:type_name -> user.v1.AddressBook
+	8,  // 9: user.v1.DeleteAddressResponse.book:type_name -> user.v1.AddressBook
+	8,  // 10: user.v1.SetDefaultAddressResponse.book:type_name -> user.v1.AddressBook
+	0,  // 11: user.v1.AccountSettings.theme:type_name -> user.v1.Theme
+	19, // 12: user.v1.GetSettingsResponse.settings:type_name -> user.v1.AccountSettings
+	0,  // 13: user.v1.UpdateSettingsRequest.theme:type_name -> user.v1.Theme
+	19, // 14: user.v1.UpdateSettingsResponse.settings:type_name -> user.v1.AccountSettings
+	1,  // 15: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
+	3,  // 16: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
+	9,  // 17: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
+	10, // 18: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
+	11, // 19: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
+	12, // 20: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
+	13, // 21: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
+	20, // 22: user.v1.UserService.GetSettings:input_type -> user.v1.GetSettingsRequest
+	22, // 23: user.v1.UserService.UpdateSettings:input_type -> user.v1.UpdateSettingsRequest
+	2,  // 24: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
+	4,  // 25: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
+	14, // 26: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
+	15, // 27: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
+	16, // 28: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
+	17, // 29: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
+	18, // 30: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
+	21, // 31: user.v1.UserService.GetSettings:output_type -> user.v1.GetSettingsResponse
+	23, // 32: user.v1.UserService.UpdateSettings:output_type -> user.v1.UpdateSettingsResponse
+	24, // [24:33] is the sub-list for method output_type
+	15, // [15:24] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -1193,13 +1534,14 @@ func file_user_v1_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   18,
+			NumEnums:      1,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_user_v1_user_proto_goTypes,
 		DependencyIndexes: file_user_v1_user_proto_depIdxs,
+		EnumInfos:         file_user_v1_user_proto_enumTypes,
 		MessageInfos:      file_user_v1_user_proto_msgTypes,
 	}.Build()
 	File_user_v1_user_proto = out.File

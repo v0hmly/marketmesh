@@ -854,6 +854,226 @@ func (x *BrowserSetDefaultAddressResponse) GetFailure() UserBrowserFailure {
 	return UserBrowserFailure_USER_BROWSER_FAILURE_UNSPECIFIED
 }
 
+// BrowserGetSettingsRequest separates typed public input from reconstructed credentials.
+type BrowserGetSettingsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request contains only the supported public settings input.
+	Request *v1.GetSettingsRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context carries opaque credentials which never reach User or telemetry.
+	Context       *v11.BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserGetSettingsRequest) Reset() {
+	*x = BrowserGetSettingsRequest{}
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserGetSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserGetSettingsRequest) ProtoMessage() {}
+
+func (x *BrowserGetSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserGetSettingsRequest.ProtoReflect.Descriptor instead.
+func (*BrowserGetSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_v1_user_browser_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BrowserGetSettingsRequest) GetRequest() *v1.GetSettingsRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserGetSettingsRequest) GetContext() *v11.BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserGetSettingsResponse carries one successful snapshot or allowed failure.
+type BrowserGetSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is present only on success.
+	Response *v1.GetSettingsResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// Failure permits only profile pending and version conflict.
+	Failure       UserBrowserFailure `protobuf:"varint,2,opt,name=failure,proto3,enum=gateway.v1.UserBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserGetSettingsResponse) Reset() {
+	*x = BrowserGetSettingsResponse{}
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserGetSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserGetSettingsResponse) ProtoMessage() {}
+
+func (x *BrowserGetSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserGetSettingsResponse.ProtoReflect.Descriptor instead.
+func (*BrowserGetSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_gateway_v1_user_browser_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *BrowserGetSettingsResponse) GetResponse() *v1.GetSettingsResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserGetSettingsResponse) GetFailure() UserBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return UserBrowserFailure_USER_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserUpdateSettingsRequest separates typed public input from reconstructed credentials.
+type BrowserUpdateSettingsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request contains only the supported public settings input.
+	Request *v1.UpdateSettingsRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context carries opaque credentials which never reach User or telemetry.
+	Context       *v11.BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserUpdateSettingsRequest) Reset() {
+	*x = BrowserUpdateSettingsRequest{}
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserUpdateSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserUpdateSettingsRequest) ProtoMessage() {}
+
+func (x *BrowserUpdateSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserUpdateSettingsRequest.ProtoReflect.Descriptor instead.
+func (*BrowserUpdateSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_gateway_v1_user_browser_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *BrowserUpdateSettingsRequest) GetRequest() *v1.UpdateSettingsRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserUpdateSettingsRequest) GetContext() *v11.BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserUpdateSettingsResponse carries one successful snapshot or allowed failure.
+type BrowserUpdateSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is present only on success.
+	Response *v1.UpdateSettingsResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// Failure permits only profile pending and version conflict.
+	Failure       UserBrowserFailure `protobuf:"varint,2,opt,name=failure,proto3,enum=gateway.v1.UserBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserUpdateSettingsResponse) Reset() {
+	*x = BrowserUpdateSettingsResponse{}
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserUpdateSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserUpdateSettingsResponse) ProtoMessage() {}
+
+func (x *BrowserUpdateSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gateway_v1_user_browser_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserUpdateSettingsResponse.ProtoReflect.Descriptor instead.
+func (*BrowserUpdateSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_gateway_v1_user_browser_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *BrowserUpdateSettingsResponse) GetResponse() *v1.UpdateSettingsResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserUpdateSettingsResponse) GetFailure() UserBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return UserBrowserFailure_USER_BROWSER_FAILURE_UNSPECIFIED
+}
+
 var File_gateway_v1_user_browser_proto protoreflect.FileDescriptor
 
 const file_gateway_v1_user_browser_proto_rawDesc = "" +
@@ -901,13 +1121,25 @@ const file_gateway_v1_user_browser_proto_rawDesc = "" +
 	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\x9c\x01\n" +
 	" BrowserSetDefaultAddressResponse\x12>\n" +
 	"\bresponse\x18\x01 \x01(\v2\".user.v1.SetDefaultAddressResponseR\bresponse\x128\n" +
+	"\afailure\x18\x02 \x01(\x0e2\x1e.gateway.v1.UserBrowserFailureR\afailure\"\x85\x01\n" +
+	"\x19BrowserGetSettingsRequest\x125\n" +
+	"\arequest\x18\x01 \x01(\v2\x1b.user.v1.GetSettingsRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\x90\x01\n" +
+	"\x1aBrowserGetSettingsResponse\x128\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1c.user.v1.GetSettingsResponseR\bresponse\x128\n" +
+	"\afailure\x18\x02 \x01(\x0e2\x1e.gateway.v1.UserBrowserFailureR\afailure\"\x8b\x01\n" +
+	"\x1cBrowserUpdateSettingsRequest\x128\n" +
+	"\arequest\x18\x01 \x01(\v2\x1e.user.v1.UpdateSettingsRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\x96\x01\n" +
+	"\x1dBrowserUpdateSettingsResponse\x12;\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1f.user.v1.UpdateSettingsResponseR\bresponse\x128\n" +
 	"\afailure\x18\x02 \x01(\x0e2\x1e.gateway.v1.UserBrowserFailureR\afailure*\xed\x01\n" +
 	"\x12UserBrowserFailure\x12$\n" +
 	" USER_BROWSER_FAILURE_UNSPECIFIED\x10\x00\x12*\n" +
 	"&USER_BROWSER_FAILURE_PROFILE_NOT_READY\x10\x01\x12)\n" +
 	"%USER_BROWSER_FAILURE_VERSION_CONFLICT\x10\x02\x12*\n" +
 	"&USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND\x10\x03\x12.\n" +
-	"*USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED\x10\x042\xe6\x05\n" +
+	"*USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED\x10\x042\xb9\a\n" +
 	"\x12UserBrowserService\x12Q\n" +
 	"\fBrowserGetMe\x12\x1f.gateway.v1.BrowserGetMeRequest\x1a .gateway.v1.BrowserGetMeResponse\x12Z\n" +
 	"\x0fBrowserUpdateMe\x12\".gateway.v1.BrowserUpdateMeRequest\x1a#.gateway.v1.BrowserUpdateMeResponse\x12i\n" +
@@ -915,7 +1147,9 @@ const file_gateway_v1_user_browser_proto_rawDesc = "" +
 	"\x14BrowserCreateAddress\x12'.gateway.v1.BrowserCreateAddressRequest\x1a(.gateway.v1.BrowserCreateAddressResponse\x12i\n" +
 	"\x14BrowserUpdateAddress\x12'.gateway.v1.BrowserUpdateAddressRequest\x1a(.gateway.v1.BrowserUpdateAddressResponse\x12i\n" +
 	"\x14BrowserDeleteAddress\x12'.gateway.v1.BrowserDeleteAddressRequest\x1a(.gateway.v1.BrowserDeleteAddressResponse\x12u\n" +
-	"\x18BrowserSetDefaultAddress\x12+.gateway.v1.BrowserSetDefaultAddressRequest\x1a,.gateway.v1.BrowserSetDefaultAddressResponseB>Z<github.com/v0hmly/marketmesh/api/gen/go/gateway/v1;gatewayv1b\x06proto3"
+	"\x18BrowserSetDefaultAddress\x12+.gateway.v1.BrowserSetDefaultAddressRequest\x1a,.gateway.v1.BrowserSetDefaultAddressResponse\x12c\n" +
+	"\x12BrowserGetSettings\x12%.gateway.v1.BrowserGetSettingsRequest\x1a&.gateway.v1.BrowserGetSettingsResponse\x12l\n" +
+	"\x15BrowserUpdateSettings\x12(.gateway.v1.BrowserUpdateSettingsRequest\x1a).gateway.v1.BrowserUpdateSettingsResponseB>Z<github.com/v0hmly/marketmesh/api/gen/go/gateway/v1;gatewayv1b\x06proto3"
 
 var (
 	file_gateway_v1_user_browser_proto_rawDescOnce sync.Once
@@ -930,7 +1164,7 @@ func file_gateway_v1_user_browser_proto_rawDescGZIP() []byte {
 }
 
 var file_gateway_v1_user_browser_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gateway_v1_user_browser_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_gateway_v1_user_browser_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_gateway_v1_user_browser_proto_goTypes = []any{
 	(UserBrowserFailure)(0),                  // 0: gateway.v1.UserBrowserFailure
 	(*BrowserGetMeRequest)(nil),              // 1: gateway.v1.BrowserGetMeRequest
@@ -947,70 +1181,90 @@ var file_gateway_v1_user_browser_proto_goTypes = []any{
 	(*BrowserDeleteAddressResponse)(nil),     // 12: gateway.v1.BrowserDeleteAddressResponse
 	(*BrowserSetDefaultAddressRequest)(nil),  // 13: gateway.v1.BrowserSetDefaultAddressRequest
 	(*BrowserSetDefaultAddressResponse)(nil), // 14: gateway.v1.BrowserSetDefaultAddressResponse
-	(*v1.GetMeRequest)(nil),                  // 15: user.v1.GetMeRequest
-	(*v11.BrowserContext)(nil),               // 16: auth.v1.BrowserContext
-	(*v1.UpdateMeRequest)(nil),               // 17: user.v1.UpdateMeRequest
-	(*v1.GetMeResponse)(nil),                 // 18: user.v1.GetMeResponse
-	(*v1.UpdateMeResponse)(nil),              // 19: user.v1.UpdateMeResponse
-	(*v1.ListAddressesRequest)(nil),          // 20: user.v1.ListAddressesRequest
-	(*v1.ListAddressesResponse)(nil),         // 21: user.v1.ListAddressesResponse
-	(*v1.CreateAddressRequest)(nil),          // 22: user.v1.CreateAddressRequest
-	(*v1.CreateAddressResponse)(nil),         // 23: user.v1.CreateAddressResponse
-	(*v1.UpdateAddressRequest)(nil),          // 24: user.v1.UpdateAddressRequest
-	(*v1.UpdateAddressResponse)(nil),         // 25: user.v1.UpdateAddressResponse
-	(*v1.DeleteAddressRequest)(nil),          // 26: user.v1.DeleteAddressRequest
-	(*v1.DeleteAddressResponse)(nil),         // 27: user.v1.DeleteAddressResponse
-	(*v1.SetDefaultAddressRequest)(nil),      // 28: user.v1.SetDefaultAddressRequest
-	(*v1.SetDefaultAddressResponse)(nil),     // 29: user.v1.SetDefaultAddressResponse
+	(*BrowserGetSettingsRequest)(nil),        // 15: gateway.v1.BrowserGetSettingsRequest
+	(*BrowserGetSettingsResponse)(nil),       // 16: gateway.v1.BrowserGetSettingsResponse
+	(*BrowserUpdateSettingsRequest)(nil),     // 17: gateway.v1.BrowserUpdateSettingsRequest
+	(*BrowserUpdateSettingsResponse)(nil),    // 18: gateway.v1.BrowserUpdateSettingsResponse
+	(*v1.GetMeRequest)(nil),                  // 19: user.v1.GetMeRequest
+	(*v11.BrowserContext)(nil),               // 20: auth.v1.BrowserContext
+	(*v1.UpdateMeRequest)(nil),               // 21: user.v1.UpdateMeRequest
+	(*v1.GetMeResponse)(nil),                 // 22: user.v1.GetMeResponse
+	(*v1.UpdateMeResponse)(nil),              // 23: user.v1.UpdateMeResponse
+	(*v1.ListAddressesRequest)(nil),          // 24: user.v1.ListAddressesRequest
+	(*v1.ListAddressesResponse)(nil),         // 25: user.v1.ListAddressesResponse
+	(*v1.CreateAddressRequest)(nil),          // 26: user.v1.CreateAddressRequest
+	(*v1.CreateAddressResponse)(nil),         // 27: user.v1.CreateAddressResponse
+	(*v1.UpdateAddressRequest)(nil),          // 28: user.v1.UpdateAddressRequest
+	(*v1.UpdateAddressResponse)(nil),         // 29: user.v1.UpdateAddressResponse
+	(*v1.DeleteAddressRequest)(nil),          // 30: user.v1.DeleteAddressRequest
+	(*v1.DeleteAddressResponse)(nil),         // 31: user.v1.DeleteAddressResponse
+	(*v1.SetDefaultAddressRequest)(nil),      // 32: user.v1.SetDefaultAddressRequest
+	(*v1.SetDefaultAddressResponse)(nil),     // 33: user.v1.SetDefaultAddressResponse
+	(*v1.GetSettingsRequest)(nil),            // 34: user.v1.GetSettingsRequest
+	(*v1.GetSettingsResponse)(nil),           // 35: user.v1.GetSettingsResponse
+	(*v1.UpdateSettingsRequest)(nil),         // 36: user.v1.UpdateSettingsRequest
+	(*v1.UpdateSettingsResponse)(nil),        // 37: user.v1.UpdateSettingsResponse
 }
 var file_gateway_v1_user_browser_proto_depIdxs = []int32{
-	15, // 0: gateway.v1.BrowserGetMeRequest.request:type_name -> user.v1.GetMeRequest
-	16, // 1: gateway.v1.BrowserGetMeRequest.context:type_name -> auth.v1.BrowserContext
-	17, // 2: gateway.v1.BrowserUpdateMeRequest.request:type_name -> user.v1.UpdateMeRequest
-	16, // 3: gateway.v1.BrowserUpdateMeRequest.context:type_name -> auth.v1.BrowserContext
-	18, // 4: gateway.v1.BrowserGetMeResponse.response:type_name -> user.v1.GetMeResponse
+	19, // 0: gateway.v1.BrowserGetMeRequest.request:type_name -> user.v1.GetMeRequest
+	20, // 1: gateway.v1.BrowserGetMeRequest.context:type_name -> auth.v1.BrowserContext
+	21, // 2: gateway.v1.BrowserUpdateMeRequest.request:type_name -> user.v1.UpdateMeRequest
+	20, // 3: gateway.v1.BrowserUpdateMeRequest.context:type_name -> auth.v1.BrowserContext
+	22, // 4: gateway.v1.BrowserGetMeResponse.response:type_name -> user.v1.GetMeResponse
 	0,  // 5: gateway.v1.BrowserGetMeResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	19, // 6: gateway.v1.BrowserUpdateMeResponse.response:type_name -> user.v1.UpdateMeResponse
+	23, // 6: gateway.v1.BrowserUpdateMeResponse.response:type_name -> user.v1.UpdateMeResponse
 	0,  // 7: gateway.v1.BrowserUpdateMeResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	20, // 8: gateway.v1.BrowserListAddressesRequest.request:type_name -> user.v1.ListAddressesRequest
-	16, // 9: gateway.v1.BrowserListAddressesRequest.context:type_name -> auth.v1.BrowserContext
-	21, // 10: gateway.v1.BrowserListAddressesResponse.response:type_name -> user.v1.ListAddressesResponse
+	24, // 8: gateway.v1.BrowserListAddressesRequest.request:type_name -> user.v1.ListAddressesRequest
+	20, // 9: gateway.v1.BrowserListAddressesRequest.context:type_name -> auth.v1.BrowserContext
+	25, // 10: gateway.v1.BrowserListAddressesResponse.response:type_name -> user.v1.ListAddressesResponse
 	0,  // 11: gateway.v1.BrowserListAddressesResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	22, // 12: gateway.v1.BrowserCreateAddressRequest.request:type_name -> user.v1.CreateAddressRequest
-	16, // 13: gateway.v1.BrowserCreateAddressRequest.context:type_name -> auth.v1.BrowserContext
-	23, // 14: gateway.v1.BrowserCreateAddressResponse.response:type_name -> user.v1.CreateAddressResponse
+	26, // 12: gateway.v1.BrowserCreateAddressRequest.request:type_name -> user.v1.CreateAddressRequest
+	20, // 13: gateway.v1.BrowserCreateAddressRequest.context:type_name -> auth.v1.BrowserContext
+	27, // 14: gateway.v1.BrowserCreateAddressResponse.response:type_name -> user.v1.CreateAddressResponse
 	0,  // 15: gateway.v1.BrowserCreateAddressResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	24, // 16: gateway.v1.BrowserUpdateAddressRequest.request:type_name -> user.v1.UpdateAddressRequest
-	16, // 17: gateway.v1.BrowserUpdateAddressRequest.context:type_name -> auth.v1.BrowserContext
-	25, // 18: gateway.v1.BrowserUpdateAddressResponse.response:type_name -> user.v1.UpdateAddressResponse
+	28, // 16: gateway.v1.BrowserUpdateAddressRequest.request:type_name -> user.v1.UpdateAddressRequest
+	20, // 17: gateway.v1.BrowserUpdateAddressRequest.context:type_name -> auth.v1.BrowserContext
+	29, // 18: gateway.v1.BrowserUpdateAddressResponse.response:type_name -> user.v1.UpdateAddressResponse
 	0,  // 19: gateway.v1.BrowserUpdateAddressResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	26, // 20: gateway.v1.BrowserDeleteAddressRequest.request:type_name -> user.v1.DeleteAddressRequest
-	16, // 21: gateway.v1.BrowserDeleteAddressRequest.context:type_name -> auth.v1.BrowserContext
-	27, // 22: gateway.v1.BrowserDeleteAddressResponse.response:type_name -> user.v1.DeleteAddressResponse
+	30, // 20: gateway.v1.BrowserDeleteAddressRequest.request:type_name -> user.v1.DeleteAddressRequest
+	20, // 21: gateway.v1.BrowserDeleteAddressRequest.context:type_name -> auth.v1.BrowserContext
+	31, // 22: gateway.v1.BrowserDeleteAddressResponse.response:type_name -> user.v1.DeleteAddressResponse
 	0,  // 23: gateway.v1.BrowserDeleteAddressResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	28, // 24: gateway.v1.BrowserSetDefaultAddressRequest.request:type_name -> user.v1.SetDefaultAddressRequest
-	16, // 25: gateway.v1.BrowserSetDefaultAddressRequest.context:type_name -> auth.v1.BrowserContext
-	29, // 26: gateway.v1.BrowserSetDefaultAddressResponse.response:type_name -> user.v1.SetDefaultAddressResponse
+	32, // 24: gateway.v1.BrowserSetDefaultAddressRequest.request:type_name -> user.v1.SetDefaultAddressRequest
+	20, // 25: gateway.v1.BrowserSetDefaultAddressRequest.context:type_name -> auth.v1.BrowserContext
+	33, // 26: gateway.v1.BrowserSetDefaultAddressResponse.response:type_name -> user.v1.SetDefaultAddressResponse
 	0,  // 27: gateway.v1.BrowserSetDefaultAddressResponse.failure:type_name -> gateway.v1.UserBrowserFailure
-	1,  // 28: gateway.v1.UserBrowserService.BrowserGetMe:input_type -> gateway.v1.BrowserGetMeRequest
-	2,  // 29: gateway.v1.UserBrowserService.BrowserUpdateMe:input_type -> gateway.v1.BrowserUpdateMeRequest
-	5,  // 30: gateway.v1.UserBrowserService.BrowserListAddresses:input_type -> gateway.v1.BrowserListAddressesRequest
-	7,  // 31: gateway.v1.UserBrowserService.BrowserCreateAddress:input_type -> gateway.v1.BrowserCreateAddressRequest
-	9,  // 32: gateway.v1.UserBrowserService.BrowserUpdateAddress:input_type -> gateway.v1.BrowserUpdateAddressRequest
-	11, // 33: gateway.v1.UserBrowserService.BrowserDeleteAddress:input_type -> gateway.v1.BrowserDeleteAddressRequest
-	13, // 34: gateway.v1.UserBrowserService.BrowserSetDefaultAddress:input_type -> gateway.v1.BrowserSetDefaultAddressRequest
-	3,  // 35: gateway.v1.UserBrowserService.BrowserGetMe:output_type -> gateway.v1.BrowserGetMeResponse
-	4,  // 36: gateway.v1.UserBrowserService.BrowserUpdateMe:output_type -> gateway.v1.BrowserUpdateMeResponse
-	6,  // 37: gateway.v1.UserBrowserService.BrowserListAddresses:output_type -> gateway.v1.BrowserListAddressesResponse
-	8,  // 38: gateway.v1.UserBrowserService.BrowserCreateAddress:output_type -> gateway.v1.BrowserCreateAddressResponse
-	10, // 39: gateway.v1.UserBrowserService.BrowserUpdateAddress:output_type -> gateway.v1.BrowserUpdateAddressResponse
-	12, // 40: gateway.v1.UserBrowserService.BrowserDeleteAddress:output_type -> gateway.v1.BrowserDeleteAddressResponse
-	14, // 41: gateway.v1.UserBrowserService.BrowserSetDefaultAddress:output_type -> gateway.v1.BrowserSetDefaultAddressResponse
-	35, // [35:42] is the sub-list for method output_type
-	28, // [28:35] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	34, // 28: gateway.v1.BrowserGetSettingsRequest.request:type_name -> user.v1.GetSettingsRequest
+	20, // 29: gateway.v1.BrowserGetSettingsRequest.context:type_name -> auth.v1.BrowserContext
+	35, // 30: gateway.v1.BrowserGetSettingsResponse.response:type_name -> user.v1.GetSettingsResponse
+	0,  // 31: gateway.v1.BrowserGetSettingsResponse.failure:type_name -> gateway.v1.UserBrowserFailure
+	36, // 32: gateway.v1.BrowserUpdateSettingsRequest.request:type_name -> user.v1.UpdateSettingsRequest
+	20, // 33: gateway.v1.BrowserUpdateSettingsRequest.context:type_name -> auth.v1.BrowserContext
+	37, // 34: gateway.v1.BrowserUpdateSettingsResponse.response:type_name -> user.v1.UpdateSettingsResponse
+	0,  // 35: gateway.v1.BrowserUpdateSettingsResponse.failure:type_name -> gateway.v1.UserBrowserFailure
+	1,  // 36: gateway.v1.UserBrowserService.BrowserGetMe:input_type -> gateway.v1.BrowserGetMeRequest
+	2,  // 37: gateway.v1.UserBrowserService.BrowserUpdateMe:input_type -> gateway.v1.BrowserUpdateMeRequest
+	5,  // 38: gateway.v1.UserBrowserService.BrowserListAddresses:input_type -> gateway.v1.BrowserListAddressesRequest
+	7,  // 39: gateway.v1.UserBrowserService.BrowserCreateAddress:input_type -> gateway.v1.BrowserCreateAddressRequest
+	9,  // 40: gateway.v1.UserBrowserService.BrowserUpdateAddress:input_type -> gateway.v1.BrowserUpdateAddressRequest
+	11, // 41: gateway.v1.UserBrowserService.BrowserDeleteAddress:input_type -> gateway.v1.BrowserDeleteAddressRequest
+	13, // 42: gateway.v1.UserBrowserService.BrowserSetDefaultAddress:input_type -> gateway.v1.BrowserSetDefaultAddressRequest
+	15, // 43: gateway.v1.UserBrowserService.BrowserGetSettings:input_type -> gateway.v1.BrowserGetSettingsRequest
+	17, // 44: gateway.v1.UserBrowserService.BrowserUpdateSettings:input_type -> gateway.v1.BrowserUpdateSettingsRequest
+	3,  // 45: gateway.v1.UserBrowserService.BrowserGetMe:output_type -> gateway.v1.BrowserGetMeResponse
+	4,  // 46: gateway.v1.UserBrowserService.BrowserUpdateMe:output_type -> gateway.v1.BrowserUpdateMeResponse
+	6,  // 47: gateway.v1.UserBrowserService.BrowserListAddresses:output_type -> gateway.v1.BrowserListAddressesResponse
+	8,  // 48: gateway.v1.UserBrowserService.BrowserCreateAddress:output_type -> gateway.v1.BrowserCreateAddressResponse
+	10, // 49: gateway.v1.UserBrowserService.BrowserUpdateAddress:output_type -> gateway.v1.BrowserUpdateAddressResponse
+	12, // 50: gateway.v1.UserBrowserService.BrowserDeleteAddress:output_type -> gateway.v1.BrowserDeleteAddressResponse
+	14, // 51: gateway.v1.UserBrowserService.BrowserSetDefaultAddress:output_type -> gateway.v1.BrowserSetDefaultAddressResponse
+	16, // 52: gateway.v1.UserBrowserService.BrowserGetSettings:output_type -> gateway.v1.BrowserGetSettingsResponse
+	18, // 53: gateway.v1.UserBrowserService.BrowserUpdateSettings:output_type -> gateway.v1.BrowserUpdateSettingsResponse
+	45, // [45:54] is the sub-list for method output_type
+	36, // [36:45] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_gateway_v1_user_browser_proto_init() }
@@ -1024,7 +1278,7 @@ func file_gateway_v1_user_browser_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gateway_v1_user_browser_proto_rawDesc), len(file_gateway_v1_user_browser_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   14,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

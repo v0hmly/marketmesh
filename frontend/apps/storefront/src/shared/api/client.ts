@@ -1,8 +1,12 @@
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
-import { UserService } from '@marketmesh/api/user/v1/user_pb';
-import type { Profile, PublicApi, AddressBook } from './types';
+import {
+  Theme,
+  type AccountSettings as WireSettings,
+  UserService,
+} from '@marketmesh/api/user/v1/user_pb';
+import type { Profile, PublicApi, AddressBook, AccountSettings, ThemePreference } from './types';
 
 function validProfile(profile: Profile | undefined): Profile {
   if (
@@ -38,6 +42,22 @@ function validBook(book: AddressBook | undefined): AddressBook {
   }
   if (defaults > 1) throw new ConnectError('Invalid default address response', Code.DataLoss);
   return book;
+}
+
+const wireThemes = { system: Theme.SYSTEM, light: Theme.LIGHT, dark: Theme.DARK } as const;
+function validSettings(settings: WireSettings | undefined): AccountSettings {
+  if (
+    !settings ||
+    settings.subjectId.length !== 16 ||
+    settings.subjectId.every((value) => value === 0) ||
+    settings.version < 1n ||
+    settings.version > 9223372036854775807n ||
+    ![Theme.SYSTEM, Theme.LIGHT, Theme.DARK].includes(settings.theme)
+  )
+    throw new ConnectError('Invalid settings response', Code.DataLoss);
+  const theme: ThemePreference =
+    settings.theme === Theme.DARK ? 'dark' : settings.theme === Theme.LIGHT ? 'light' : 'system';
+  return { subjectId: settings.subjectId, version: settings.version, theme };
 }
 
 /** The app and public gateway must share one HTTPS origin. No token APIs exist here. */
@@ -84,6 +104,21 @@ export function createPublicApi(
     },
     async logoutAll() {
       await auth.logoutAll({});
+    },
+    async getSettings() {
+      return validSettings((await user.getSettings({})).settings);
+    },
+    async updateSettings(input) {
+      if (!Object.hasOwn(wireThemes, input.theme))
+        throw new ConnectError('Invalid theme', Code.InvalidArgument);
+      return validSettings(
+        (
+          await user.updateSettings({
+            theme: wireThemes[input.theme],
+            expectedVersion: input.expectedVersion,
+          })
+        ).settings,
+      );
     },
     async listAddresses() {
       return validBook((await user.listAddresses({})).book);

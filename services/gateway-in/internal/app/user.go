@@ -9,7 +9,7 @@ import (
 )
 
 func registerUserHandler(mux *http.ServeMux, cfg config, registry *tunnel.Registry) error {
-	handler, err := connectbridge.NewAccountHandler(registry, cfg.userAddressesBrowserEnabled)
+	handler, err := connectbridge.NewAccountHandler(registry, cfg.userAddressesBrowserEnabled, cfg.userSettingsBrowserEnabled)
 	if err != nil {
 		return err
 	}
@@ -41,9 +41,20 @@ func profileRoutesReady(cfg config, registry routeReadiness) bool {
 			}
 		}
 	}
+	if cfg.userSettingsBrowserEnabled {
+		for _, route := range settingsRouteIDs() {
+			if !registry.IsRouteReady(route) {
+				return false
+			}
+		}
+	}
 	return true
 }
 
 func addressRouteIDs() []contractv1.RouteId {
 	return []contractv1.RouteId{contractv1.RouteId_ROUTE_ID_USER_BROWSER_LIST_ADDRESSES, contractv1.RouteId_ROUTE_ID_USER_BROWSER_CREATE_ADDRESS, contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_ADDRESS, contractv1.RouteId_ROUTE_ID_USER_BROWSER_DELETE_ADDRESS, contractv1.RouteId_ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS}
+}
+
+func settingsRouteIDs() []contractv1.RouteId {
+	return []contractv1.RouteId{contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_SETTINGS, contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS}
 }

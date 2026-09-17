@@ -129,6 +129,9 @@ func runService(
 	if cfg.userBrowserEnabled {
 		clients.Regular = &userBrowserClient{auth: authv1.NewAuthInternalServiceClient(authClient.Connection()), user: userv1.NewUserServiceClient(internalClient.Connection())}
 		specs = userRoutes(cfg.callTimeout)
+		if cfg.userSettingsBrowserEnabled {
+			specs = append(specs, settingsRoutes(cfg.callTimeout)...)
+		}
 		if cfg.userAddressesBrowserEnabled {
 			specs = append(specs, addressRoutes(cfg.callTimeout)...)
 		}

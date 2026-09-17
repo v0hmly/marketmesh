@@ -21,11 +21,11 @@ export default class SafeReporter implements Reporter {
       const safe = test.annotations.filter(
         (item) =>
           (item.type === 'account-step' &&
-            /^(profile|book-initial|book-relogin|book-foreign|maximum):(register|login|ready|logout):(start|done)$/.test(
+            /^(profile|book-initial|book-relogin|book-foreign|maximum|theme-initial|theme-relogin|theme-foreign):(register|login|ready|logout):(start|done)$/.test(
               item.description ?? '',
             )) ||
           (item.type === 'account-rpc' &&
-            /^(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll|GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress):[1-5][0-9]{2}$/.test(
+            /^(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll|GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress|GetSettings|UpdateSettings):[1-5][0-9]{2}$/.test(
               item.description ?? '',
             )),
       );

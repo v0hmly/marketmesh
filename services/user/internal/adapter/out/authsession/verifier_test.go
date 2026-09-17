@@ -289,3 +289,23 @@ func TestAddressScopesAreIndependent(t *testing.T) {
 		}
 	}
 }
+
+func TestSettingsScopesAreIndependent(t *testing.T) {
+	_, v, _, issue, _ := fixture(t)
+	for _, tc := range []struct {
+		scopes      []string
+		read, write bool
+	}{
+		{[]string{readScope, writeScope, "user:addresses:read", "user:addresses:write"}, false, false},
+		{[]string{"user:settings:read"}, true, false},
+		{[]string{"user:settings:write"}, false, true},
+	} {
+		p, e := v.Verify(context.Background(), issue(v.config.Issuer, "user", tc.scopes))
+		if e != nil || p.CanReadSettings != tc.read || p.CanWriteSettings != tc.write {
+			t.Fatal(p, e)
+		}
+		if (tc.read || tc.write) && (p.CanRead || p.CanWrite || p.CanReadAddresses || p.CanWriteAddresses) {
+			t.Fatal("settings scope widened other capabilities")
+		}
+	}
+}

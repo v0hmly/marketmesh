@@ -11,6 +11,17 @@ export interface AddressSelection {
   expectedBookVersion: bigint;
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+export interface AccountSettings {
+  subjectId: Uint8Array;
+  version: bigint;
+  theme: ThemePreference;
+}
+export interface SettingsInput {
+  theme: ThemePreference;
+  expectedVersion: bigint;
+}
+
 export interface ProfileInput {
   displayName: string;
   bio: string;
@@ -26,6 +37,8 @@ export interface PublicApi {
   logoutAll(): Promise<void>;
   getProfile(): Promise<Profile>;
   updateProfile(input: ProfileInput): Promise<Profile>;
+  getSettings(): Promise<AccountSettings>;
+  updateSettings(input: SettingsInput): Promise<AccountSettings>;
   listAddresses(): Promise<AddressBook>;
   createAddress(input: AddressWrite): Promise<AddressBook>;
   updateAddress(input: AddressWrite & AddressSelection): Promise<AddressBook>;

@@ -14,6 +14,8 @@ import (
 )
 
 var publicRPC = map[string]bool{
+	"/user.v1.UserService/GetSettings":         true,
+	"/user.v1.UserService/UpdateSettings":      true,
 	"/auth.v1.AuthService/RegisterCredentials": true, "/auth.v1.AuthService/Login": true,
 	"/auth.v1.AuthService/RefreshSession": true, "/auth.v1.AuthService/Logout": true, "/auth.v1.AuthService/LogoutAll": true,
 	"/user.v1.UserService/GetMe": true, "/user.v1.UserService/UpdateMe": true,
@@ -53,7 +55,7 @@ func frontdoorHandler(files fs.FS, proxy http.Handler) http.Handler {
 		}
 		// Only known client-side routes fall back to index; private/unknown RPC paths never do.
 		switch r.URL.Path {
-		case "/", "/account", "/account/addresses", "/login", "/register":
+		case "/", "/account", "/account/addresses", "/account/settings", "/login", "/register":
 			clone := r.Clone(r.Context())
 			u := *r.URL
 			clone.URL = &u

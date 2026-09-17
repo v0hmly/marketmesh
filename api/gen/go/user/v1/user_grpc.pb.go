@@ -26,6 +26,8 @@ const (
 	UserService_UpdateAddress_FullMethodName     = "/user.v1.UserService/UpdateAddress"
 	UserService_DeleteAddress_FullMethodName     = "/user.v1.UserService/DeleteAddress"
 	UserService_SetDefaultAddress_FullMethodName = "/user.v1.UserService/SetDefaultAddress"
+	UserService_GetSettings_FullMethodName       = "/user.v1.UserService/GetSettings"
+	UserService_UpdateSettings_FullMethodName    = "/user.v1.UserService/UpdateSettings"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -48,6 +50,10 @@ type UserServiceClient interface {
 	DeleteAddress(ctx context.Context, in *DeleteAddressRequest, opts ...grpc.CallOption) (*DeleteAddressResponse, error)
 	// SetDefaultAddress operates only on the authenticated caller's versioned address book.
 	SetDefaultAddress(ctx context.Context, in *SetDefaultAddressRequest, opts ...grpc.CallOption) (*SetDefaultAddressResponse, error)
+	// GetSettings reads the authenticated owner's preferences from the primary.
+	GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error)
+	// UpdateSettings conditionally changes preferences without changing profile or address versions.
+	UpdateSettings(ctx context.Context, in *UpdateSettingsRequest, opts ...grpc.CallOption) (*UpdateSettingsResponse, error)
 }
 
 type userServiceClient struct {
@@ -128,6 +134,26 @@ func (c *userServiceClient) SetDefaultAddress(ctx context.Context, in *SetDefaul
 	return out, nil
 }
 
+func (c *userServiceClient) GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSettingsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateSettings(ctx context.Context, in *UpdateSettingsRequest, opts ...grpc.CallOption) (*UpdateSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateSettingsResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -148,6 +174,10 @@ type UserServiceServer interface {
 	DeleteAddress(context.Context, *DeleteAddressRequest) (*DeleteAddressResponse, error)
 	// SetDefaultAddress operates only on the authenticated caller's versioned address book.
 	SetDefaultAddress(context.Context, *SetDefaultAddressRequest) (*SetDefaultAddressResponse, error)
+	// GetSettings reads the authenticated owner's preferences from the primary.
+	GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error)
+	// UpdateSettings conditionally changes preferences without changing profile or address versions.
+	UpdateSettings(context.Context, *UpdateSettingsRequest) (*UpdateSettingsResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -178,6 +208,12 @@ func (UnimplementedUserServiceServer) DeleteAddress(context.Context, *DeleteAddr
 }
 func (UnimplementedUserServiceServer) SetDefaultAddress(context.Context, *SetDefaultAddressRequest) (*SetDefaultAddressResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetDefaultAddress not implemented")
+}
+func (UnimplementedUserServiceServer) GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSettings not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateSettings(context.Context, *UpdateSettingsRequest) (*UpdateSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSettings not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -326,6 +362,42 @@ func _UserService_SetDefaultAddress_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetSettings(ctx, req.(*GetSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateSettings(ctx, req.(*UpdateSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -360,6 +432,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetDefaultAddress",
 			Handler:    _UserService_SetDefaultAddress_Handler,
+		},
+		{
+			MethodName: "GetSettings",
+			Handler:    _UserService_GetSettings_Handler,
+		},
+		{
+			MethodName: "UpdateSettings",
+			Handler:    _UserService_UpdateSettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

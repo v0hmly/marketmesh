@@ -52,6 +52,11 @@ const (
 	// UserServiceSetDefaultAddressProcedure is the fully-qualified name of the UserService's
 	// SetDefaultAddress RPC.
 	UserServiceSetDefaultAddressProcedure = "/user.v1.UserService/SetDefaultAddress"
+	// UserServiceGetSettingsProcedure is the fully-qualified name of the UserService's GetSettings RPC.
+	UserServiceGetSettingsProcedure = "/user.v1.UserService/GetSettings"
+	// UserServiceUpdateSettingsProcedure is the fully-qualified name of the UserService's
+	// UpdateSettings RPC.
+	UserServiceUpdateSettingsProcedure = "/user.v1.UserService/UpdateSettings"
 )
 
 // UserServiceClient is a client for the user.v1.UserService service.
@@ -70,6 +75,10 @@ type UserServiceClient interface {
 	DeleteAddress(context.Context, *connect.Request[v1.DeleteAddressRequest]) (*connect.Response[v1.DeleteAddressResponse], error)
 	// SetDefaultAddress operates only on the authenticated caller's versioned address book.
 	SetDefaultAddress(context.Context, *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error)
+	// GetSettings reads the authenticated owner's preferences from the primary.
+	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
+	// UpdateSettings conditionally changes preferences without changing profile or address versions.
+	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the user.v1.UserService service. By default, it uses
@@ -125,6 +134,18 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("SetDefaultAddress")),
 			connect.WithClientOptions(opts...),
 		),
+		getSettings: connect.NewClient[v1.GetSettingsRequest, v1.GetSettingsResponse](
+			httpClient,
+			baseURL+UserServiceGetSettingsProcedure,
+			connect.WithSchema(userServiceMethods.ByName("GetSettings")),
+			connect.WithClientOptions(opts...),
+		),
+		updateSettings: connect.NewClient[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse](
+			httpClient,
+			baseURL+UserServiceUpdateSettingsProcedure,
+			connect.WithSchema(userServiceMethods.ByName("UpdateSettings")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -137,6 +158,8 @@ type userServiceClient struct {
 	updateAddress     *connect.Client[v1.UpdateAddressRequest, v1.UpdateAddressResponse]
 	deleteAddress     *connect.Client[v1.DeleteAddressRequest, v1.DeleteAddressResponse]
 	setDefaultAddress *connect.Client[v1.SetDefaultAddressRequest, v1.SetDefaultAddressResponse]
+	getSettings       *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
+	updateSettings    *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
 }
 
 // GetMe calls user.v1.UserService.GetMe.
@@ -174,6 +197,16 @@ func (c *userServiceClient) SetDefaultAddress(ctx context.Context, req *connect.
 	return c.setDefaultAddress.CallUnary(ctx, req)
 }
 
+// GetSettings calls user.v1.UserService.GetSettings.
+func (c *userServiceClient) GetSettings(ctx context.Context, req *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error) {
+	return c.getSettings.CallUnary(ctx, req)
+}
+
+// UpdateSettings calls user.v1.UserService.UpdateSettings.
+func (c *userServiceClient) UpdateSettings(ctx context.Context, req *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error) {
+	return c.updateSettings.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the user.v1.UserService service.
 type UserServiceHandler interface {
 	// GetMe reads the caller's profile with read-after-write consistency.
@@ -190,6 +223,10 @@ type UserServiceHandler interface {
 	DeleteAddress(context.Context, *connect.Request[v1.DeleteAddressRequest]) (*connect.Response[v1.DeleteAddressResponse], error)
 	// SetDefaultAddress operates only on the authenticated caller's versioned address book.
 	SetDefaultAddress(context.Context, *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error)
+	// GetSettings reads the authenticated owner's preferences from the primary.
+	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
+	// UpdateSettings conditionally changes preferences without changing profile or address versions.
+	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -241,6 +278,18 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("SetDefaultAddress")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceGetSettingsHandler := connect.NewUnaryHandler(
+		UserServiceGetSettingsProcedure,
+		svc.GetSettings,
+		connect.WithSchema(userServiceMethods.ByName("GetSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceUpdateSettingsHandler := connect.NewUnaryHandler(
+		UserServiceUpdateSettingsProcedure,
+		svc.UpdateSettings,
+		connect.WithSchema(userServiceMethods.ByName("UpdateSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceGetMeProcedure:
@@ -257,6 +306,10 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceDeleteAddressHandler.ServeHTTP(w, r)
 		case UserServiceSetDefaultAddressProcedure:
 			userServiceSetDefaultAddressHandler.ServeHTTP(w, r)
+		case UserServiceGetSettingsProcedure:
+			userServiceGetSettingsHandler.ServeHTTP(w, r)
+		case UserServiceUpdateSettingsProcedure:
+			userServiceUpdateSettingsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -292,4 +345,12 @@ func (UnimplementedUserServiceHandler) DeleteAddress(context.Context, *connect.R
 
 func (UnimplementedUserServiceHandler) SetDefaultAddress(context.Context, *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.SetDefaultAddress is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.GetSettings is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.UpdateSettings is not implemented"))
 }

@@ -54,6 +54,12 @@ const (
 	// UserBrowserServiceBrowserSetDefaultAddressProcedure is the fully-qualified name of the
 	// UserBrowserService's BrowserSetDefaultAddress RPC.
 	UserBrowserServiceBrowserSetDefaultAddressProcedure = "/gateway.v1.UserBrowserService/BrowserSetDefaultAddress"
+	// UserBrowserServiceBrowserGetSettingsProcedure is the fully-qualified name of the
+	// UserBrowserService's BrowserGetSettings RPC.
+	UserBrowserServiceBrowserGetSettingsProcedure = "/gateway.v1.UserBrowserService/BrowserGetSettings"
+	// UserBrowserServiceBrowserUpdateSettingsProcedure is the fully-qualified name of the
+	// UserBrowserService's BrowserUpdateSettings RPC.
+	UserBrowserServiceBrowserUpdateSettingsProcedure = "/gateway.v1.UserBrowserService/BrowserUpdateSettings"
 )
 
 // UserBrowserServiceClient is a client for the gateway.v1.UserBrowserService service.
@@ -72,6 +78,10 @@ type UserBrowserServiceClient interface {
 	BrowserDeleteAddress(context.Context, *connect.Request[v1.BrowserDeleteAddressRequest]) (*connect.Response[v1.BrowserDeleteAddressResponse], error)
 	// BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
 	BrowserSetDefaultAddress(context.Context, *connect.Request[v1.BrowserSetDefaultAddressRequest]) (*connect.Response[v1.BrowserSetDefaultAddressResponse], error)
+	// BrowserGetSettings resolves the current owner before reading preferences.
+	BrowserGetSettings(context.Context, *connect.Request[v1.BrowserGetSettingsRequest]) (*connect.Response[v1.BrowserGetSettingsResponse], error)
+	// BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
+	BrowserUpdateSettings(context.Context, *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error)
 }
 
 // NewUserBrowserServiceClient constructs a client for the gateway.v1.UserBrowserService service. By
@@ -127,6 +137,18 @@ func NewUserBrowserServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserSetDefaultAddress")),
 			connect.WithClientOptions(opts...),
 		),
+		browserGetSettings: connect.NewClient[v1.BrowserGetSettingsRequest, v1.BrowserGetSettingsResponse](
+			httpClient,
+			baseURL+UserBrowserServiceBrowserGetSettingsProcedure,
+			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserGetSettings")),
+			connect.WithClientOptions(opts...),
+		),
+		browserUpdateSettings: connect.NewClient[v1.BrowserUpdateSettingsRequest, v1.BrowserUpdateSettingsResponse](
+			httpClient,
+			baseURL+UserBrowserServiceBrowserUpdateSettingsProcedure,
+			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserUpdateSettings")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -139,6 +161,8 @@ type userBrowserServiceClient struct {
 	browserUpdateAddress     *connect.Client[v1.BrowserUpdateAddressRequest, v1.BrowserUpdateAddressResponse]
 	browserDeleteAddress     *connect.Client[v1.BrowserDeleteAddressRequest, v1.BrowserDeleteAddressResponse]
 	browserSetDefaultAddress *connect.Client[v1.BrowserSetDefaultAddressRequest, v1.BrowserSetDefaultAddressResponse]
+	browserGetSettings       *connect.Client[v1.BrowserGetSettingsRequest, v1.BrowserGetSettingsResponse]
+	browserUpdateSettings    *connect.Client[v1.BrowserUpdateSettingsRequest, v1.BrowserUpdateSettingsResponse]
 }
 
 // BrowserGetMe calls gateway.v1.UserBrowserService.BrowserGetMe.
@@ -176,6 +200,16 @@ func (c *userBrowserServiceClient) BrowserSetDefaultAddress(ctx context.Context,
 	return c.browserSetDefaultAddress.CallUnary(ctx, req)
 }
 
+// BrowserGetSettings calls gateway.v1.UserBrowserService.BrowserGetSettings.
+func (c *userBrowserServiceClient) BrowserGetSettings(ctx context.Context, req *connect.Request[v1.BrowserGetSettingsRequest]) (*connect.Response[v1.BrowserGetSettingsResponse], error) {
+	return c.browserGetSettings.CallUnary(ctx, req)
+}
+
+// BrowserUpdateSettings calls gateway.v1.UserBrowserService.BrowserUpdateSettings.
+func (c *userBrowserServiceClient) BrowserUpdateSettings(ctx context.Context, req *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error) {
+	return c.browserUpdateSettings.CallUnary(ctx, req)
+}
+
 // UserBrowserServiceHandler is an implementation of the gateway.v1.UserBrowserService service.
 type UserBrowserServiceHandler interface {
 	// GetMe resolves the browser session and reads its owner's profile.
@@ -192,6 +226,10 @@ type UserBrowserServiceHandler interface {
 	BrowserDeleteAddress(context.Context, *connect.Request[v1.BrowserDeleteAddressRequest]) (*connect.Response[v1.BrowserDeleteAddressResponse], error)
 	// BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
 	BrowserSetDefaultAddress(context.Context, *connect.Request[v1.BrowserSetDefaultAddressRequest]) (*connect.Response[v1.BrowserSetDefaultAddressResponse], error)
+	// BrowserGetSettings resolves the current owner before reading preferences.
+	BrowserGetSettings(context.Context, *connect.Request[v1.BrowserGetSettingsRequest]) (*connect.Response[v1.BrowserGetSettingsResponse], error)
+	// BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
+	BrowserUpdateSettings(context.Context, *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error)
 }
 
 // NewUserBrowserServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -243,6 +281,18 @@ func NewUserBrowserServiceHandler(svc UserBrowserServiceHandler, opts ...connect
 		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserSetDefaultAddress")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userBrowserServiceBrowserGetSettingsHandler := connect.NewUnaryHandler(
+		UserBrowserServiceBrowserGetSettingsProcedure,
+		svc.BrowserGetSettings,
+		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserGetSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userBrowserServiceBrowserUpdateSettingsHandler := connect.NewUnaryHandler(
+		UserBrowserServiceBrowserUpdateSettingsProcedure,
+		svc.BrowserUpdateSettings,
+		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserUpdateSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/gateway.v1.UserBrowserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserBrowserServiceBrowserGetMeProcedure:
@@ -259,6 +309,10 @@ func NewUserBrowserServiceHandler(svc UserBrowserServiceHandler, opts ...connect
 			userBrowserServiceBrowserDeleteAddressHandler.ServeHTTP(w, r)
 		case UserBrowserServiceBrowserSetDefaultAddressProcedure:
 			userBrowserServiceBrowserSetDefaultAddressHandler.ServeHTTP(w, r)
+		case UserBrowserServiceBrowserGetSettingsProcedure:
+			userBrowserServiceBrowserGetSettingsHandler.ServeHTTP(w, r)
+		case UserBrowserServiceBrowserUpdateSettingsProcedure:
+			userBrowserServiceBrowserUpdateSettingsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -294,4 +348,12 @@ func (UnimplementedUserBrowserServiceHandler) BrowserDeleteAddress(context.Conte
 
 func (UnimplementedUserBrowserServiceHandler) BrowserSetDefaultAddress(context.Context, *connect.Request[v1.BrowserSetDefaultAddressRequest]) (*connect.Response[v1.BrowserSetDefaultAddressResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserSetDefaultAddress is not implemented"))
+}
+
+func (UnimplementedUserBrowserServiceHandler) BrowserGetSettings(context.Context, *connect.Request[v1.BrowserGetSettingsRequest]) (*connect.Response[v1.BrowserGetSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserGetSettings is not implemented"))
+}
+
+func (UnimplementedUserBrowserServiceHandler) BrowserUpdateSettings(context.Context, *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserUpdateSettings is not implemented"))
 }

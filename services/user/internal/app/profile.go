@@ -19,8 +19,10 @@ import (
 	"github.com/v0hmly/marketmesh/services/user/internal/adapter/out/authsession"
 	userpostgres "github.com/v0hmly/marketmesh/services/user/internal/adapter/out/postgres"
 	"github.com/v0hmly/marketmesh/services/user/internal/adapter/out/postgresaddresses"
+	"github.com/v0hmly/marketmesh/services/user/internal/adapter/out/postgressettings"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/addresses"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/getme"
+	"github.com/v0hmly/marketmesh/services/user/internal/application/settings"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/updateme"
 	grpcgo "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -36,6 +38,7 @@ type profileResources struct {
 	registration     *jetstream.Consumer
 	components       []serviceruntime.Component
 	addressesEnabled bool
+	settingsEnabled  bool
 }
 
 func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipeline *telemetry.Telemetry, listen listenFunc) (*profileResources, error) {
@@ -47,7 +50,7 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if err != nil {
 		return nil, err
 	}
-	r := &profileResources{addressesEnabled: p.addressesEnabled}
+	r := &profileResources{addressesEnabled: p.addressesEnabled, settingsEnabled: p.settingsEnabled}
 	owned := true
 	defer func() {
 		if owned {
@@ -88,6 +91,9 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if p.addressesEnabled {
 		methods = append(methods, addressMethods()...)
 	}
+	if p.settingsEnabled {
+		methods = append(methods, settingsMethods()...)
+	}
 	policy, err := workloadid.NewPolicy(map[workloadid.Identity][]string{
 		{TrustDomain: p.trustDomain, Environment: c.environment, Role: "gateway-out"}: methods,
 	})
@@ -111,6 +117,19 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 			return nil, e
 		}
 	}
+	if p.settingsEnabled {
+		repo, e := postgressettings.New(r.database.RW())
+		if e != nil {
+			return nil, e
+		}
+		useCase, e := settings.New(repo)
+		if e != nil {
+			return nil, e
+		}
+		if e = handler.EnableSettings(useCase); e != nil {
+			return nil, e
+		}
+	}
 	maxSend := 32 * 1024
 	if p.addressesEnabled {
 		maxSend = 128 * 1024
@@ -127,6 +146,11 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 			}{{codes.NotFound, "PROFILE_NOT_READY"}, {codes.NotFound, "ADDRESS_NOT_FOUND"}, {codes.ResourceExhausted, "ADDRESS_LIMIT_REACHED"}} {
 				publicErrors = append(publicErrors, platformgrpc.PublicErrorInfo{Method: method, Code: detail.code, Domain: "marketmesh.user", Reason: detail.reason})
 			}
+		}
+	}
+	if p.settingsEnabled {
+		for _, method := range settingsMethods() {
+			publicErrors = append(publicErrors, platformgrpc.PublicErrorInfo{Method: method, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"})
 		}
 	}
 	workloadAuth := workloadid.UnaryServerInterceptor(policy)
@@ -179,6 +203,16 @@ func (r *profileResources) dependencies() []serviceruntime.CriticalDependency {
 	return append(dependencies, serviceruntime.CriticalDependency{Name: "user-auth-keys", Check: r.verifier.Ready},
 		serviceruntime.CriticalDependency{Name: "user-profile-schema", Check: func(ctx context.Context) error {
 			for _, executor := range []platformpostgres.Executor{r.database.RW(), r.database.RO()} {
+				if r.settingsEnabled {
+					rows, e := executor.Query(ctx, "SELECT subject_id,theme,settings_version FROM users.profiles LIMIT 0")
+					if e != nil {
+						return errors.New("user settings: schema unavailable")
+					}
+					rows.Close()
+					if rows.Err() != nil {
+						return errors.New("user settings: schema check failed")
+					}
+				}
 				if r.addressesEnabled {
 					rows, e := executor.Query(ctx, "SELECT p.address_book_version,a.address_id,a.subject_id,a.recipient,a.phone,a.country,a.postal_code,a.city,a.street_house,a.apartment,a.comment,a.is_default FROM users.profiles p LEFT JOIN users.addresses a ON a.subject_id=p.subject_id LIMIT 0")
 					if e != nil {
@@ -239,4 +273,8 @@ func profilePostgresConfig(c config) platformpostgres.Config {
 
 func addressMethods() []string {
 	return []string{userv1.UserService_ListAddresses_FullMethodName, userv1.UserService_CreateAddress_FullMethodName, userv1.UserService_UpdateAddress_FullMethodName, userv1.UserService_DeleteAddress_FullMethodName, userv1.UserService_SetDefaultAddress_FullMethodName}
+}
+
+func settingsMethods() []string {
+	return []string{userv1.UserService_GetSettings_FullMethodName, userv1.UserService_UpdateSettings_FullMethodName}
 }

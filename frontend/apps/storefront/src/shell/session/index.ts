@@ -7,6 +7,8 @@ import type {
   AddressBook,
   AddressWrite,
   AddressSelection,
+  AccountSettings,
+  SettingsInput,
 } from '../../shared/api/types';
 import { isProfilePending } from '../../shared/api/errors';
 
@@ -63,6 +65,8 @@ export interface SessionController {
   capture(): SessionGuard;
   readProfile(guard?: SessionGuard): Promise<Profile>;
   updateProfile(input: ProfileInput, guard: SessionGuard): Promise<Profile>;
+  readSettings(guard: SessionGuard): Promise<AccountSettings>;
+  updateSettings(input: SettingsInput, guard: SessionGuard): Promise<AccountSettings>;
   readAddresses(guard: SessionGuard): Promise<AddressBook>;
   createAddress(input: AddressWrite, guard: SessionGuard): Promise<AddressBook>;
   updateAddress(input: AddressWrite & AddressSelection, guard: SessionGuard): Promise<AddressBook>;
@@ -503,6 +507,15 @@ export function createSessionController(
       return book;
     });
   }
+  function guardedSettings(guard: SessionGuard, action: () => Promise<AccountSettings>) {
+    return guarded(guard, async () => {
+      const settings = await action();
+      assertGuard(guard, readJournal());
+      if (subject(settings.subjectId) !== guard.subjectId) rejectIdentity(guard.generation);
+      rememberIdentity(guard.generation, subject(settings.subjectId));
+      return settings;
+    });
+  }
   const unsubscribe =
     env?.subscribe((notice) => {
       if (disposed || (notice && notice.operationId === ownOperation)) return;
@@ -617,6 +630,17 @@ export function createSessionController(
         return read();
       }
     },
+    async readSettings(guard) {
+      const read = () => guardedSettings(guard, () => api.getSettings());
+      try {
+        return await read();
+      } catch (error) {
+        if (!unauthenticated(error)) throw error;
+        await bootstrap();
+        return read();
+      }
+    },
+    updateSettings: (input, guard) => guardedSettings(guard, () => api.updateSettings(input)),
     async readAddresses(guard) {
       const read = () => guardedBook(guard, () => api.listAddresses());
       try {

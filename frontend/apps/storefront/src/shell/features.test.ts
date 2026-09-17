@@ -19,3 +19,19 @@ it.each([undefined, 'false', '1', 'true'])(
     ).toBe(flag === 'true');
   },
 );
+
+it.each([undefined, 'false', '1', 'true'])(
+  'keeps settings independent of the address gate for %s',
+  async (flag) => {
+    vi.stubEnv('VITE_ACCOUNT_SETTINGS_ENABLED', flag);
+    vi.stubEnv('VITE_ACCOUNT_ADDRESSES_ENABLED', 'false');
+    vi.resetModules();
+    const { settingsEnabled, addressesEnabled } = await import('../shared/features');
+    const { createStorefrontRouter } = await import('./router');
+    expect(settingsEnabled).toBe(flag === 'true');
+    expect(addressesEnabled).toBe(false);
+    const routes = createStorefrontRouter(createMemoryHistory()).getRoutes();
+    expect(routes.some((route) => route.path === '/account/settings')).toBe(flag === 'true');
+    expect(routes.some((route) => route.path === '/account/addresses')).toBe(false);
+  },
+);

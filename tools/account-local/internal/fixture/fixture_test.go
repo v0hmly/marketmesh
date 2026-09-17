@@ -74,6 +74,9 @@ func TestGenerateIsIdempotentAndSeparatesSecrets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !strings.Contains(string(env), "USER_SETTINGS_BROWSER_ENABLED='true'\n") {
+		t.Fatal("settings fixture flag missing")
+	}
 	if !strings.Contains(string(env), "ENVIRONMENT='test'\n") || !strings.Contains(string(env), "TUNNEL_PERIODIC_REDISCOVERY_ENABLED='false'\n") {
 		t.Fatal("fixed test topology must disable periodic redistribution")
 	}
@@ -109,13 +112,15 @@ func TestFrontdoorRoutesAndBrowserHeaders(t *testing.T) {
 		want         int
 		body         string
 	}{
-		{"/account", "GET", 200, "fixture SPA"}, {"/account/addresses", "GET", 200, "fixture SPA"}, {"/account/unknown", "GET", 404, ""}, {"/register", "GET", 200, "fixture SPA"}, {"/assets/app.js", "GET", 200, "fixture JS"}, {"/robots.txt", "GET", 200, "Disallow"},
+		{"/account", "GET", 200, "fixture SPA"}, {"/account/settings", "GET", 200, "fixture SPA"}, {"/account/addresses", "GET", 200, "fixture SPA"}, {"/account/unknown", "GET", 404, ""}, {"/register", "GET", 200, "fixture SPA"}, {"/assets/app.js", "GET", 200, "fixture JS"}, {"/robots.txt", "GET", 200, "Disallow"},
 		{"/user.v1.UserService/ListAddresses", "POST", 401, ""},
 		{"/user.v1.UserService/CreateAddress", "POST", 401, ""},
 		{"/user.v1.UserService/UpdateAddress", "POST", 401, ""},
 		{"/user.v1.UserService/DeleteAddress", "POST", 401, ""},
 		{"/user.v1.UserService/SetDefaultAddress", "POST", 401, ""},
 		{"/auth.v1.AuthService/Login", "POST", 401, ""},
+		{"/user.v1.UserService/GetSettings", "POST", 401, ""},
+		{"/user.v1.UserService/UpdateSettings", "POST", 401, ""},
 		{"/auth.v1.AuthService/RegisterCredentials", "POST", 401, ""},
 		{"/auth.v1.AuthService/RefreshSession", "POST", 401, ""}, {"/user.v1.UserService/GetMe", "GET", 405, ""}, {"/gateway.v1.UserBrowserService/BrowserGetMe", "POST", 404, ""}, {"/auth.v1.AuthInternalService/ExchangeBrowserSession", "GET", 404, ""}, {"/missing.RPC/Call", "GET", 404, ""}, {"/assets/../secret", "GET", 404, ""},
 	} {
@@ -135,7 +140,7 @@ func TestFrontdoorRoutesAndBrowserHeaders(t *testing.T) {
 			}
 		})
 	}
-	if count != 8 {
+	if count != 10 {
 		t.Fatal("private request forwarded", count)
 	}
 }

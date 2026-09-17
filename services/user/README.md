@@ -218,3 +218,39 @@ Down-миграция удаляет адресную книгу и не при�
 Интеграционные тесты `internal/adapter/out/postgresaddresses` запускаются с тегом
 `integration` и `MARKETMESH_USER_POSTGRES_DSN` на отдельной пустой тестовой базе;
 они проверяют CAS, owner isolation, rollback, лимит, default и up/down миграцию.
+
+## Тема аккаунта — MM-69
+
+`USER_SETTINGS_ENABLED=true` включает GetSettings и UpdateSettings независимо от
+адресной книги. По умолчанию флаг выключен; включение требует только
+`USER_PROFILE_ENABLED=true`. Допустимы `system`, `light`, `dark`; исходная тема —
+`system`. Протокольный unspecified и неизвестные enum отклоняются. Произвольных
+ключей настроек и дополнительных переключателей нет.
+
+Настройки принадлежат владельцу проверенной assertion. Workload policy разрешает
+точные методы только gateway-out, а scopes `user:settings:read` и
+`user:settings:write` проверяются отдельно от профильных и адресных. Добавьте их
+в серверный список scopes аудитории `user` в Auth. Ответ содержит subject ID,
+тему и положительную независимую settings_version; персональные ответы имеют
+`Cache-Control: no-store`, данные и assertion не журналируются.
+
+UpdateSettings требует последнюю expected_version. Единственный атомарный
+UPDATE RETURNING меняет тему и settings_version, не меняя профиль, его время
+обновления или версию адресной книги. Все чтения идут через primary: ответ после
+записи не зависит от отставания replica. Конфликт возвращает Aborted; отсутствующий
+пока профиль — существующий точный `PROFILE_NOT_READY` домена `marketmesh.user`.
+После неоднозначной сетевой ошибки клиент перечитывает настройку и не повторяет
+запись автоматически.
+
+До включения примените `000004_settings.up.sql`: аддитивные колонки theme и
+settings_version имеют DEFAULT `system` и 1. Старые профили, явные профильные
+SELECT/UPDATE и прежний INSERT только subject_id сохраняют совместимость.
+Достаточны существующие права RW `SELECT, UPDATE ON users.profiles` и RO `SELECT`.
+Сначала миграция, затем runtime/scopes и флаг. При выключенном флаге старый runtime
+не требует новых колонок в readiness; при включённом их наличие проверяется.
+
+Откат приложения — выключить флаг и вернуть прежний runtime, сохранив колонки.
+Down-миграция удаляет предпочтения и не является штатным откатом приложения.
+`task user:integration` включает отдельные тесты settings CAS/изоляции/миграций и
+четыре runtime-режима с реальными primary/replica. Они проверяют чтение при
+остановленной репликации, независимость версий и условную schema-readiness.
