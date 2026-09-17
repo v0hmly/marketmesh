@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"time"
 
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
@@ -16,6 +17,8 @@ const (
 )
 
 type config struct {
+	periodicRediscoveryEnabled bool
+
 	serviceVersion       string
 	environment          string
 	instanceID           string
@@ -56,6 +59,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	if result.environment, err = env.RequiredString("ENVIRONMENT"); err != nil {
 		return config{}, err
+	}
+	if result.periodicRediscoveryEnabled, err = env.Bool("TUNNEL_PERIODIC_REDISCOVERY_ENABLED", true); err != nil {
+		return config{}, err
+	}
+	if !result.periodicRediscoveryEnabled && result.environment != "test" {
+		return config{}, errors.New("TUNNEL_PERIODIC_REDISCOVERY_ENABLED=false requires ENVIRONMENT=test")
 	}
 	if result.instanceID, err = env.RequiredString("SERVICE_INSTANCE_ID"); err != nil {
 		return config{}, err

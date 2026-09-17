@@ -28,13 +28,17 @@ type managedTunnel interface {
 // readiness is fail-closed until both paths are observed. Afterwards one path
 // remains available while the other is periodically redistributed so a
 // maxSurge gateway-in Pod can receive a tunnel before an old Pod is stopped.
+// Fixed test topologies may disable periodic redistribution; duplicate-path
+// reconciliation and the clients' own failure recovery remain active.
 type tunnelPool struct {
+	periodicRediscoveryEnabled bool
+
 	clients      []managedTunnel
 	initialReady atomic.Bool
 	nextClient   int
 }
 
-func newTunnelPool(clients []managedTunnel) (*tunnelPool, error) {
+func newTunnelPool(clients []managedTunnel, periodicRediscoveryEnabled bool) (*tunnelPool, error) {
 	if len(clients) != tunnelPoolSize {
 		return nil, errors.New("gateway-out: tunnel pool must contain two clients")
 	}
@@ -44,7 +48,7 @@ func newTunnelPool(clients []managedTunnel) (*tunnelPool, error) {
 		}
 	}
 
-	return &tunnelPool{clients: append([]managedTunnel(nil), clients...)}, nil
+	return &tunnelPool{clients: append([]managedTunnel(nil), clients...), periodicRediscoveryEnabled: periodicRediscoveryEnabled}, nil
 }
 
 func (pool *tunnelPool) Component() serviceruntime.Component {
@@ -58,8 +62,12 @@ func (pool *tunnelPool) Component() serviceruntime.Component {
 			pool.reconcile()
 			ticker := time.NewTicker(tunnelPoolInterval)
 			defer ticker.Stop()
-			rediscovery := time.NewTicker(tunnelRediscoveryInterval)
-			defer rediscovery.Stop()
+			var rediscoveryTicks <-chan time.Time
+			if pool.periodicRediscoveryEnabled {
+				rediscovery := time.NewTicker(tunnelRediscoveryInterval)
+				defer rediscovery.Stop()
+				rediscoveryTicks = rediscovery.C
+			}
 			for {
 				select {
 				case <-ctx.Done():
@@ -68,7 +76,7 @@ func (pool *tunnelPool) Component() serviceruntime.Component {
 					return err
 				case <-ticker.C:
 					pool.reconcile()
-				case <-rediscovery.C:
+				case <-rediscoveryTicks:
 					pool.rediscover()
 				}
 			}
@@ -127,7 +135,7 @@ func (pool *tunnelPool) reconcile() {
 }
 
 func (pool *tunnelPool) rediscover() {
-	if pool == nil || !pool.initialReady.Load() {
+	if pool == nil || !pool.periodicRediscoveryEnabled || !pool.initialReady.Load() {
 		return
 	}
 	pool.clients[pool.nextClient%len(pool.clients)].RequestReconnect()
