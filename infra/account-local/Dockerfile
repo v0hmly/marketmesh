@@ -20,6 +20,7 @@ WORKDIR /workspace
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY frontend/ frontend/
 COPY api/gen/ts/ api/gen/ts/
+ENV VITE_ACCOUNT_ADDRESSES_ENABLED=true
 RUN corepack enable && pnpm install --frozen-lockfile && pnpm --filter @marketmesh/storefront build
 
 FROM alpine:3.23.5@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40

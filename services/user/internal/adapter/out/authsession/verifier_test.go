@@ -271,3 +271,21 @@ func TestAuthMaximumKeyFileFitsJWKSByteLimit(t *testing.T) {
 	}
 	t.Logf("near-limit Auth source produces %d-byte 64-key JWKS", len(largestJWKS))
 }
+
+func TestAddressScopesAreIndependent(t *testing.T) {
+	_, v, _, issue, _ := fixture(t)
+	for _, tc := range []struct {
+		scopes                                               []string
+		profileRead, profileWrite, addressRead, addressWrite bool
+	}{
+		{[]string{readScope, writeScope}, true, true, false, false},
+		{[]string{"user:addresses:read"}, false, false, true, false},
+		{[]string{"user:addresses:write"}, false, false, false, true},
+	} {
+		token := issue(v.config.Issuer, "user", tc.scopes)
+		p, e := v.Verify(context.Background(), token)
+		if e != nil || p.CanRead != tc.profileRead || p.CanWrite != tc.profileWrite || p.CanReadAddresses != tc.addressRead || p.CanWriteAddresses != tc.addressWrite {
+			t.Fatal(p, e)
+		}
+	}
+}

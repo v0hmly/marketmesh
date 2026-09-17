@@ -210,6 +210,13 @@ func tunnelConfig(
 		}
 	}
 
+	if cfg.userAddressesBrowserEnabled {
+		limits.MaxMessageBytes = 128 * 1024
+		for _, route := range addressRouteIDs() {
+			routes[route] = tunnel.RoutePolicy{TrafficClass: contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR, MaxRequestBytes: 16 * 1024, MaxResponseBytes: 128 * 1024, MaxDeadline: cfg.requestTimeout, MaxInFlight: 32}
+		}
+	}
+
 	addAuthPolicies(cfg, routes)
 
 	return tunnel.Config{
@@ -262,7 +269,7 @@ func publicHandler(
 		return nil, err
 	}
 	if cfg.userBrowserEnabled {
-		if err := registerUserHandler(mux, registry); err != nil {
+		if err := registerUserHandler(mux, cfg, registry); err != nil {
 			return nil, err
 		}
 	} else {

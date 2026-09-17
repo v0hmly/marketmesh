@@ -98,6 +98,11 @@
 | `USER_UPDATE_ME` (legacy FakeInternal E2E) | 101 | regular |
 | `USER_BROWSER_GET_ME` | 102 | regular |
 | `USER_BROWSER_UPDATE_ME` | 103 | regular |
+| `USER_BROWSER_LIST_ADDRESSES` | 104 | regular |
+| `USER_BROWSER_CREATE_ADDRESS` | 105 | regular |
+| `USER_BROWSER_UPDATE_ADDRESS` | 106 | regular |
+| `USER_BROWSER_DELETE_ADDRESS` | 107 | regular |
+| `USER_BROWSER_SET_DEFAULT_ADDRESS` | 108 | regular |
 | `REALTIME_CHAT` | 200 | realtime |
 | `REALTIME_NOTIFICATIONS` | 201 | realtime |
 
@@ -310,3 +315,29 @@ API на шлюзах, затем возвращайте бинарные фай
 обновления, конкуренции и двух владельцев. Доставка регистрационного события
 проверяется `task user:registration:integration`; полный сценарий событий и UI
 относится к шагу 16 MM-50.
+
+
+## Адресная книга User (MM-68)
+
+Маршруты 104–108 используют отдельные типизированные Browser-конверты для
+ListAddresses/CreateAddress/UpdateAddress/DeleteAddress/SetDefaultAddress.
+Все операции определяют владельца через тот же свежий Auth assertion;
+идентификатор адреса выбирает запись только внутри книги этого владельца.
+Изменения используют независимый `expected_book_version`, не повторяются
+автоматически и возвращают полный согласованный снимок с subject_id.
+
+Новый флаг `USER_ADDRESSES_BROWSER_ENABLED` на обоих шлюзах требует включённого
+`USER_BROWSER_ENABLED`. При его выключении адресных маршрутов нет. Readiness
+Gateway In требует все пять новых маршрутов. Обновление бинарных файлов с новыми
+RouteId предшествует включению флага; старый decoder не принимает неизвестные enum.
+
+Запрос ограничен 16 КиБ, ответ — 128 КиБ: 20 записей с допустимым Unicode превышают
+прежние 64 КиБ сообщения туннеля. При включении адресов обе стороны согласуют
+128 КиБ сообщения; фрейм 64 КиБ, data 16 КиБ и flow-control window 32 КиБ сохраняются.
+Profile и Auth по-прежнему имеют собственный предел ответа 16 КиБ.
+
+К закрытому allowlist добавлены ADDRESS_NOT_FOUND (NotFound) и
+ADDRESS_LIMIT_REACHED (ResourceExhausted). Только точные ErrorInfo домена
+`marketmesh.user` без metadata проходят наружу; чужой и отсутствующий ID
+неразличимы. Произвольный upstream текст не пересылается. Все ответы — no-store.
+Порядок миграции и включения описан в [Gateway In](../../services/gateway-in/README.md#адресная-книга-mm-68).

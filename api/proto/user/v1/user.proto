@@ -4,12 +4,22 @@ package user.v1;
 
 option go_package = "github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1";
 
-// UserService exposes the authenticated caller's profile on the internal workload-authenticated listener.
+// UserService exposes the authenticated caller's account data on the workload-authenticated listener.
 service UserService {
   // GetMe reads the caller's profile with read-after-write consistency.
   rpc GetMe(GetMeRequest) returns (GetMeResponse);
   // UpdateMe replaces editable fields only when the expected profile version still matches.
   rpc UpdateMe(UpdateMeRequest) returns (UpdateMeResponse);
+  // ListAddresses operates only on the authenticated caller's versioned address book.
+  rpc ListAddresses(ListAddressesRequest) returns (ListAddressesResponse);
+  // CreateAddress operates only on the authenticated caller's versioned address book.
+  rpc CreateAddress(CreateAddressRequest) returns (CreateAddressResponse);
+  // UpdateAddress operates only on the authenticated caller's versioned address book.
+  rpc UpdateAddress(UpdateAddressRequest) returns (UpdateAddressResponse);
+  // DeleteAddress operates only on the authenticated caller's versioned address book.
+  rpc DeleteAddress(DeleteAddressRequest) returns (DeleteAddressResponse);
+  // SetDefaultAddress operates only on the authenticated caller's versioned address book.
+  rpc SetDefaultAddress(SetDefaultAddressRequest) returns (SetDefaultAddressResponse);
 }
 
 // GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -51,4 +61,111 @@ message Profile {
   int64 created_at_unix = 5;
   // UpdatedAtUnix is the last profile update time in whole Unix seconds.
   int64 updated_at_unix = 6;
+}
+
+// AddressFields contains private delivery details, never login credentials or verified contacts.
+message AddressFields {
+  // Recipient is required, with at most 120 Unicode characters.
+  string recipient = 1;
+  // Phone is required ASCII formatting with 7–15 digits and at most 32 bytes.
+  string phone = 2;
+  // Country is a required freeform country name of at most 80 Unicode characters.
+  string country = 3;
+  // PostalCode is optional, with at most 20 Unicode characters.
+  string postal_code = 4;
+  // City is required, with at most 120 Unicode characters.
+  string city = 5;
+  // StreetHouse is required, with at most 240 Unicode characters.
+  string street_house = 6;
+  // Apartment is optional, with at most 40 Unicode characters.
+  string apartment = 7;
+  // Comment is optional plain text, with at most 500 Unicode characters.
+  string comment = 8;
+}
+
+// Address is one saved address owned by the book's subject.
+message Address {
+  // AddressId is a nonzero, random server-generated 16-byte opaque identifier.
+  bytes address_id = 1;
+  // Fields are the saved delivery details.
+  AddressFields fields = 2;
+  // IsDefault is true for at most one address in a book.
+  bool is_default = 3;
+}
+
+// AddressBook is a consistent private snapshot returned by all address operations.
+message AddressBook {
+  // SubjectId is the nonzero 16-byte owner identifier, never chosen by the caller.
+  bytes subject_id = 1;
+  // Version is positive and independent of profile and settings versions.
+  uint64 version = 2;
+  // Addresses contains at most 20 entries in stable order.
+  repeated Address addresses = 3;
+}
+
+// ListAddressesRequest selects the book solely by the verified identity.
+message ListAddressesRequest {}
+
+// CreateAddressRequest adds a record without replacing other addresses.
+message CreateAddressRequest {
+  // ExpectedBookVersion is the last-read book version and must be positive.
+  uint64 expected_book_version = 1;
+  // Fields contains all editable fields of the new address.
+  AddressFields fields = 2;
+}
+
+// UpdateAddressRequest replaces all editable fields of an owned address.
+message UpdateAddressRequest {
+  // AddressId selects an address within the authenticated owner's book only.
+  bytes address_id = 1;
+  // Fields contains all replacement editable fields.
+  AddressFields fields = 2;
+  // ExpectedBookVersion prevents a lost concurrent update.
+  uint64 expected_book_version = 3;
+}
+
+// DeleteAddressRequest removes one owned record; it never selects another default.
+message DeleteAddressRequest {
+  // AddressId selects an address within the authenticated owner's book only.
+  bytes address_id = 1;
+  // ExpectedBookVersion prevents a lost concurrent update.
+  uint64 expected_book_version = 2;
+}
+
+// SetDefaultAddressRequest explicitly selects the only default in a nonempty book.
+message SetDefaultAddressRequest {
+  // AddressId selects an address within the authenticated owner's book only.
+  bytes address_id = 1;
+  // ExpectedBookVersion prevents a lost concurrent update.
+  uint64 expected_book_version = 2;
+}
+
+// ListAddressesResponse returns the complete consistent book after the operation.
+message ListAddressesResponse {
+  // Book is the authenticated caller's current address book.
+  AddressBook book = 1;
+}
+
+// CreateAddressResponse returns the complete consistent book after the operation.
+message CreateAddressResponse {
+  // Book is the authenticated caller's current address book.
+  AddressBook book = 1;
+}
+
+// UpdateAddressResponse returns the complete consistent book after the operation.
+message UpdateAddressResponse {
+  // Book is the authenticated caller's current address book.
+  AddressBook book = 1;
+}
+
+// DeleteAddressResponse returns the complete consistent book after the operation.
+message DeleteAddressResponse {
+  // Book is the authenticated caller's current address book.
+  AddressBook book = 1;
+}
+
+// SetDefaultAddressResponse returns the complete consistent book after the operation.
+message SetDefaultAddressResponse {
+  // Book is the authenticated caller's current address book.
+  AddressBook book = 1;
 }

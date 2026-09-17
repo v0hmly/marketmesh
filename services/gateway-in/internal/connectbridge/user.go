@@ -19,6 +19,11 @@ import (
 
 // NewUserHandler exposes caller-scoped profile methods, never the private browser service.
 func NewUserHandler(invoker Invoker, options ...connect.HandlerOption) (http.Handler, error) {
+	return NewAccountHandler(invoker, false, options...)
+}
+
+// NewAccountHandler enables only the explicitly configured account capabilities.
+func NewAccountHandler(invoker Invoker, addresses bool, options ...connect.HandlerOption) (http.Handler, error) {
 	if isNilInvoker(invoker) {
 		return nil, errors.New("connect user bridge: invoker is required")
 	}
@@ -44,6 +49,11 @@ func NewUserHandler(invoker Invoker, options ...connect.HandlerOption) (http.Han
 			return response.GetResponse(), response.GetFailure(), err
 		}, options); err != nil {
 		return nil, err
+	}
+	if addresses {
+		if err := mountAddresses(mux, invoker, options); err != nil {
+			return nil, err
+		}
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
@@ -119,9 +129,23 @@ func userFailure(failure gatewayv1.UserBrowserFailure) error {
 		}
 		result.AddDetail(detail)
 		return result
+	case gatewayv1.UserBrowserFailure_USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND:
+		return addressFailure(connect.CodeNotFound, "ADDRESS_NOT_FOUND")
+	case gatewayv1.UserBrowserFailure_USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED:
+		return addressFailure(connect.CodeResourceExhausted, "ADDRESS_LIMIT_REACHED")
 	case gatewayv1.UserBrowserFailure_USER_BROWSER_FAILURE_VERSION_CONFLICT:
-		return connect.NewError(connect.CodeAborted, errors.New("profile version conflict"))
+		return connect.NewError(connect.CodeAborted, errors.New("version conflict"))
 	default:
 		return publicError(connect.CodeInternal)
 	}
+}
+
+func addressFailure(code connect.Code, reason string) error {
+	result := connect.NewError(code, errors.New("address operation failed"))
+	detail, err := connect.NewErrorDetail(&errdetails.ErrorInfo{Domain: "marketmesh.user", Reason: reason})
+	if err != nil {
+		return publicError(connect.CodeInternal)
+	}
+	result.AddDetail(detail)
+	return result
 }

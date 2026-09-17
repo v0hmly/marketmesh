@@ -2,7 +2,7 @@ import { create, toBinary } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { ErrorInfoSchema } from '@marketmesh/api/google/rpc/error_details_pb';
 import { describe, expect, it } from 'vitest';
-import { isProfilePending } from './errors';
+import { isAddressError, isProfilePending } from './errors';
 
 function pending(domain = 'marketmesh.user', reason = 'PROFILE_NOT_READY', metadata = {}) {
   const error = new ConnectError('untrusted message', Code.NotFound);
@@ -43,5 +43,31 @@ describe('profile provisioning signal', () => {
     const denied = new ConnectError('no', Code.PermissionDenied);
     denied.details = pending().details;
     expect(isProfilePending(denied)).toBe(false);
+  });
+});
+
+describe('address error signals', () => {
+  it('requires exact reason, domain, status and unique metadata-free details', () => {
+    const absent = pending('marketmesh.user', 'ADDRESS_NOT_FOUND');
+    expect(isAddressError(absent, 'ADDRESS_NOT_FOUND')).toBe(true);
+    expect(isProfilePending(absent)).toBe(false);
+    expect(
+      isAddressError(new ConnectError('ADDRESS_NOT_FOUND', Code.NotFound), 'ADDRESS_NOT_FOUND'),
+    ).toBe(false);
+    expect(isAddressError(pending('other', 'ADDRESS_NOT_FOUND'), 'ADDRESS_NOT_FOUND')).toBe(false);
+    expect(
+      isAddressError(
+        pending('marketmesh.user', 'ADDRESS_NOT_FOUND', { id: 'x' }),
+        'ADDRESS_NOT_FOUND',
+      ),
+    ).toBe(false);
+    const limit = new ConnectError('limit', Code.ResourceExhausted);
+    limit.details = pending('marketmesh.user', 'ADDRESS_LIMIT_REACHED').details;
+    expect(isAddressError(limit, 'ADDRESS_LIMIT_REACHED')).toBe(true);
+    expect(
+      isAddressError(pending('marketmesh.user', 'ADDRESS_LIMIT_REACHED'), 'ADDRESS_LIMIT_REACHED'),
+    ).toBe(false);
+    absent.details.push(...absent.details);
+    expect(isAddressError(absent, 'ADDRESS_NOT_FOUND')).toBe(false);
   });
 });

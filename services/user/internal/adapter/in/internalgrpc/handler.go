@@ -35,10 +35,11 @@ type Verifier interface {
 }
 type Handler struct {
 	userv1.UnimplementedUserServiceServer
-	get      GetUseCase
-	update   UpdateUseCase
-	verifier Verifier
-	policy   *workloadid.Policy
+	addresses AddressUseCase
+	get       GetUseCase
+	update    UpdateUseCase
+	verifier  Verifier
+	policy    *workloadid.Policy
 }
 
 func New(get GetUseCase, update UpdateUseCase, verifier Verifier, policy *workloadid.Policy, log *logger.Logger) (*Handler, error) {

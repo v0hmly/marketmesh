@@ -873,3 +873,76 @@ main:focus {
     transition: none !important;
   }
 }
+
+.account-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.account-nav a {
+  text-decoration: none;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+}
+.account-nav .account-link-active {
+  border-bottom-color: var(--green);
+}
+.address-content {
+  max-width: 900px;
+}
+.address-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.address-toolbar .subtle {
+  margin: 0;
+}
+.address-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+}
+.address-card,
+.address-empty {
+  padding: 26px;
+  overflow-wrap: anywhere;
+}
+.address-card > p {
+  margin-top: 12px;
+}
+.address-card .button-row {
+  margin-top: 20px;
+}
+.address-editor {
+  margin-top: 28px;
+}
+.address-content .reconcile-panel > p,
+.address-content .reconcile-panel > button,
+.address-content .reconcile-panel > .button-row {
+  margin-top: 16px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 720px) {
+  .address-toolbar {
+    align-items: start;
+    flex-direction: column;
+  }
+  .address-card {
+    padding: 22px;
+  }
+}

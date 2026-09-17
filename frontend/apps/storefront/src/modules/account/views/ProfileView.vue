@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AccountNav from '../components/AccountNav.vue';
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import { Code, ConnectError } from '@connectrpc/connect';
@@ -263,6 +264,7 @@ onBeforeRouteLeave(
 
 <template>
   <section aria-labelledby="profile-title">
+    <AccountNav />
     <div class="page-heading">
       <div>
         <span class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>

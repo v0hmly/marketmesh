@@ -177,3 +177,44 @@ task user:registration:integration
 Стенд запускает реальные Auth registration/publisher и backfill CLI, User runtime, отдельные PostgreSQL primary/replica и NATS с mTLS/ACL. Проверяются доставка, сохранение изменений при повторе, отказ БД/брокера, backfill, состояние подготовки профиля и отмена. Только неизменённая RPC-граница ключей/проверки сессии Auth использует явно обозначенный контрактный stub; полный browser/login путь относится к следующим шагам MM-50. Runtime и CLI собираются под Linux. Файлы PKI создаются в именованном томе; host ports и bind mounts отсутствуют, ресурсы удаляются после проверки. `REGISTRATION_TEST_IMAGE` позволяет подставить локальный проверенный offline test image.
 
 Проверка имеет отдельный build tag `registrationintegration` вместе с `integration`, чтобы обычный `task user:integration` не требовал NATS или Auth binary. Протокольные основания: [NATS consumer configuration](https://github.com/nats-io/nats.docs/blob/master/nats-concepts/jetstream/consumers.md).
+
+## Адресная книга — MM-68
+
+`USER_ADDRESSES_ENABLED=true` включает ListAddresses, CreateAddress, UpdateAddress,
+DeleteAddress и SetDefaultAddress на том же внутреннем listener. По умолчанию флаг
+выключен; включение требует `USER_PROFILE_ENABLED=true`. Выключенный режим сохраняет
+прежние проверки схемы. Workload `gateway-out` и проверенная assertion обязательны;
+области `user:addresses:read` и `user:addresses:write` независимы от профильных.
+Добавьте их в серверный список разрешённых scopes аудитории `user` в Auth.
+
+Книга содержит до 20 адресов, имеет собственный `address_book_version` и возвращается
+целиком из каждой операции. CAS обязателен для записи. Транзакция блокирует строку
+владельца в `users.profiles` до проверки версии, лимита, изменения и формирования
+снимка; ответ выдаётся только после commit. Чтение выполняется одним запросом на
+primary. Каждый SQL изменения адреса ограничен владельцем и ID. Первая запись в
+пустой книге становится основной; удаление основной не назначает замену.
+
+Поля и ограничения описаны в [контракте аккаунта](../../docs/product/account.md).
+ID генерирует сервер из 16 случайных ненулевых байт. Телефон является непроверенным
+контактом получателя; он не меняет Auth. Ни SQL-параметры, ни адресные данные не
+попадают в ошибки. Ответы имеют `Cache-Control: no-store`; внутренний предел запроса
+остаётся 32 KiB, предел ответа при включённой книге — 128 KiB. Шлюз должен принимать
+тот же размер ответа, иначе максимальная книга не пройдёт транспорт.
+
+Ошибки `PROFILE_NOT_READY`, `ADDRESS_NOT_FOUND` и `ADDRESS_LIMIT_REACHED` передаются
+через точный ErrorInfo домена `marketmesh.user` без metadata. Отсутствующий и чужой
+ID дают одинаковый NotFound. Конфликт версии — Aborted. После неизвестного исхода
+записи клиент перечитывает книгу и не повторяет создание автоматически.
+
+Порядок развёртывания: применить `000003_addresses.up.sql`, выдать RW-роли
+`SELECT, INSERT, UPDATE, DELETE ON users.addresses` и RO-роли `SELECT`; существующие
+права `SELECT, UPDATE ON users.profiles` нужны для версии/блокировки. Затем обновить
+runtime, scopes, ограничения шлюзов и включить флаг. Миграция добавляет колонку с
+DEFAULT 1: прежние профили и старый registration consumer продолжают работать.
+Версия и поля профиля не меняются при адресных операциях.
+
+Откат приложения: выключить флаг и вернуть предыдущий runtime, сохранив адреса.
+Down-миграция удаляет адресную книгу и не применяется как обычный откат приложения.
+Интеграционные тесты `internal/adapter/out/postgresaddresses` запускаются с тегом
+`integration` и `MARKETMESH_USER_POSTGRES_DSN` на отдельной пустой тестовой базе;
+они проверяют CAS, owner isolation, rollback, лимит, default и up/down миграцию.

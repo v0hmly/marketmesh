@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { BrowserContext } from "../../auth/v1/auth_pb";
 import { file_auth_v1_auth } from "../../auth/v1/auth_pb";
-import type { GetMeRequest, GetMeResponse, UpdateMeRequest, UpdateMeResponse } from "../../user/v1/user_pb";
+import type { CreateAddressRequest, CreateAddressResponse, DeleteAddressRequest, DeleteAddressResponse, GetMeRequest, GetMeResponse, ListAddressesRequest, ListAddressesResponse, SetDefaultAddressRequest, SetDefaultAddressResponse, UpdateAddressRequest, UpdateAddressResponse, UpdateMeRequest, UpdateMeResponse } from "../../user/v1/user_pb";
 import { file_user_v1_user } from "../../user/v1/user_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file gateway/v1/user_browser.proto.
  */
 export const file_gateway_v1_user_browser: GenFile = /*@__PURE__*/
-  fileDesc("Ch1nYXRld2F5L3YxL3VzZXJfYnJvd3Nlci5wcm90bxIKZ2F0ZXdheS52MSJnChNCcm93c2VyR2V0TWVSZXF1ZXN0EiYKB3JlcXVlc3QYASABKAsyFS51c2VyLnYxLkdldE1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJtChZCcm93c2VyVXBkYXRlTWVSZXF1ZXN0EikKB3JlcXVlc3QYASABKAsyGC51c2VyLnYxLlVwZGF0ZU1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJxChRCcm93c2VyR2V0TWVSZXNwb25zZRIoCghyZXNwb25zZRgBIAEoCzIWLnVzZXIudjEuR2V0TWVSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwoXQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USKwoIcmVzcG9uc2UYASABKAsyGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlKpEBChJVc2VyQnJvd3NlckZhaWx1cmUSJAogVVNFUl9CUk9XU0VSX0ZBSUxVUkVfVU5TUEVDSUZJRUQQABIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9QUk9GSUxFX05PVF9SRUFEWRABEikKJVVTRVJfQlJPV1NFUl9GQUlMVVJFX1ZFUlNJT05fQ09ORkxJQ1QQAjLDAQoSVXNlckJyb3dzZXJTZXJ2aWNlElEKDEJyb3dzZXJHZXRNZRIfLmdhdGV3YXkudjEuQnJvd3NlckdldE1lUmVxdWVzdBogLmdhdGV3YXkudjEuQnJvd3NlckdldE1lUmVzcG9uc2USWgoPQnJvd3NlclVwZGF0ZU1lEiIuZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlTWVSZXF1ZXN0GiMuZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlTWVSZXNwb25zZUI+WjxnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vZ2F0ZXdheS92MTtnYXRld2F5djFiBnByb3RvMw", [file_auth_v1_auth, file_user_v1_user]);
+  fileDesc("Ch1nYXRld2F5L3YxL3VzZXJfYnJvd3Nlci5wcm90bxIKZ2F0ZXdheS52MSJnChNCcm93c2VyR2V0TWVSZXF1ZXN0EiYKB3JlcXVlc3QYASABKAsyFS51c2VyLnYxLkdldE1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJtChZCcm93c2VyVXBkYXRlTWVSZXF1ZXN0EikKB3JlcXVlc3QYASABKAsyGC51c2VyLnYxLlVwZGF0ZU1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJxChRCcm93c2VyR2V0TWVSZXNwb25zZRIoCghyZXNwb25zZRgBIAEoCzIWLnVzZXIudjEuR2V0TWVSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwoXQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USKwoIcmVzcG9uc2UYASABKAsyGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJMaXN0QWRkcmVzc2VzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5MaXN0QWRkcmVzc2VzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3Nlckxpc3RBZGRyZXNzZXNSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuTGlzdEFkZHJlc3Nlc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ3ChtCcm93c2VyQ3JlYXRlQWRkcmVzc1JlcXVlc3QSLgoHcmVxdWVzdBgBIAEoCzIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQigQEKHEJyb3dzZXJDcmVhdGVBZGRyZXNzUmVzcG9uc2USMAoIcmVzcG9uc2UYASABKAsyHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwobQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0Ei4KB3JlcXVlc3QYASABKAsyHS51c2VyLnYxLlVwZGF0ZUFkZHJlc3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0IoEBChxCcm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEjAKCHJlc3BvbnNlGAEgASgLMh4udXNlci52MS5VcGRhdGVBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJEZWxldGVBZGRyZXNzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5EZWxldGVBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3NlckRlbGV0ZUFkZHJlc3NSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuRGVsZXRlQWRkcmVzc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ/Ch9Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EjIKB3JlcXVlc3QYASABKAsyIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKJAQogQnJvd3NlclNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USNAoIcmVzcG9uc2UYASABKAsyIi51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlKu0BChJVc2VyQnJvd3NlckZhaWx1cmUSJAogVVNFUl9CUk9XU0VSX0ZBSUxVUkVfVU5TUEVDSUZJRUQQABIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9QUk9GSUxFX05PVF9SRUFEWRABEikKJVVTRVJfQlJPV1NFUl9GQUlMVVJFX1ZFUlNJT05fQ09ORkxJQ1QQAhIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9BRERSRVNTX05PVF9GT1VORBADEi4KKlVTRVJfQlJPV1NFUl9GQUlMVVJFX0FERFJFU1NfTElNSVRfUkVBQ0hFRBAEMuYFChJVc2VyQnJvd3NlclNlcnZpY2USUQoMQnJvd3NlckdldE1lEh8uZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXF1ZXN0GiAuZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXNwb25zZRJaCg9Ccm93c2VyVXBkYXRlTWUSIi5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlcXVlc3QaIy5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlc3BvbnNlEmkKFEJyb3dzZXJMaXN0QWRkcmVzc2VzEicuZ2F0ZXdheS52MS5Ccm93c2VyTGlzdEFkZHJlc3Nlc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJMaXN0QWRkcmVzc2VzUmVzcG9uc2USaQoUQnJvd3NlckNyZWF0ZUFkZHJlc3MSJy5nYXRld2F5LnYxLkJyb3dzZXJDcmVhdGVBZGRyZXNzUmVxdWVzdBooLmdhdGV3YXkudjEuQnJvd3NlckNyZWF0ZUFkZHJlc3NSZXNwb25zZRJpChRCcm93c2VyVXBkYXRlQWRkcmVzcxInLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0GiguZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEmkKFEJyb3dzZXJEZWxldGVBZGRyZXNzEicuZ2F0ZXdheS52MS5Ccm93c2VyRGVsZXRlQWRkcmVzc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJEZWxldGVBZGRyZXNzUmVzcG9uc2USdQoYQnJvd3NlclNldERlZmF1bHRBZGRyZXNzEisuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0GiwuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZUI+WjxnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vZ2F0ZXdheS92MTtnYXRld2F5djFiBnByb3RvMw", [file_auth_v1_auth, file_user_v1_user]);
 
 /**
  * BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
@@ -129,6 +129,286 @@ export const BrowserUpdateMeResponseSchema: GenMessage<BrowserUpdateMeResponse> 
   messageDesc(file_gateway_v1_user_browser, 3);
 
 /**
+ * BrowserListAddressesRequest contains typed public input and separately reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserListAddressesRequest
+ */
+export type BrowserListAddressesRequest = Message<"gateway.v1.BrowserListAddressesRequest"> & {
+  /**
+   * Request contains no caller-selected identity or credentials.
+   *
+   * @generated from field: user.v1.ListAddressesRequest request = 1;
+   */
+  request?: ListAddressesRequest | undefined;
+
+  /**
+   * Context contains opaque credentials that never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserListAddressesRequest.
+ * Use `create(BrowserListAddressesRequestSchema)` to create a new message.
+ */
+export const BrowserListAddressesRequestSchema: GenMessage<BrowserListAddressesRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 4);
+
+/**
+ * BrowserListAddressesResponse contains one successful snapshot or an allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserListAddressesResponse
+ */
+export type BrowserListAddressesResponse = Message<"gateway.v1.BrowserListAddressesResponse"> & {
+  /**
+   * Response is present only after a successful operation.
+   *
+   * @generated from field: user.v1.ListAddressesResponse response = 1;
+   */
+  response?: ListAddressesResponse | undefined;
+
+  /**
+   * Failure preserves only explicitly allowed outcomes, never upstream messages.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserListAddressesResponse.
+ * Use `create(BrowserListAddressesResponseSchema)` to create a new message.
+ */
+export const BrowserListAddressesResponseSchema: GenMessage<BrowserListAddressesResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 5);
+
+/**
+ * BrowserCreateAddressRequest contains typed public input and separately reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserCreateAddressRequest
+ */
+export type BrowserCreateAddressRequest = Message<"gateway.v1.BrowserCreateAddressRequest"> & {
+  /**
+   * Request contains no caller-selected identity or credentials.
+   *
+   * @generated from field: user.v1.CreateAddressRequest request = 1;
+   */
+  request?: CreateAddressRequest | undefined;
+
+  /**
+   * Context contains opaque credentials that never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserCreateAddressRequest.
+ * Use `create(BrowserCreateAddressRequestSchema)` to create a new message.
+ */
+export const BrowserCreateAddressRequestSchema: GenMessage<BrowserCreateAddressRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 6);
+
+/**
+ * BrowserCreateAddressResponse contains one successful snapshot or an allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserCreateAddressResponse
+ */
+export type BrowserCreateAddressResponse = Message<"gateway.v1.BrowserCreateAddressResponse"> & {
+  /**
+   * Response is present only after a successful operation.
+   *
+   * @generated from field: user.v1.CreateAddressResponse response = 1;
+   */
+  response?: CreateAddressResponse | undefined;
+
+  /**
+   * Failure preserves only explicitly allowed outcomes, never upstream messages.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserCreateAddressResponse.
+ * Use `create(BrowserCreateAddressResponseSchema)` to create a new message.
+ */
+export const BrowserCreateAddressResponseSchema: GenMessage<BrowserCreateAddressResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 7);
+
+/**
+ * BrowserUpdateAddressRequest contains typed public input and separately reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserUpdateAddressRequest
+ */
+export type BrowserUpdateAddressRequest = Message<"gateway.v1.BrowserUpdateAddressRequest"> & {
+  /**
+   * Request contains no caller-selected identity or credentials.
+   *
+   * @generated from field: user.v1.UpdateAddressRequest request = 1;
+   */
+  request?: UpdateAddressRequest | undefined;
+
+  /**
+   * Context contains opaque credentials that never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserUpdateAddressRequest.
+ * Use `create(BrowserUpdateAddressRequestSchema)` to create a new message.
+ */
+export const BrowserUpdateAddressRequestSchema: GenMessage<BrowserUpdateAddressRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 8);
+
+/**
+ * BrowserUpdateAddressResponse contains one successful snapshot or an allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserUpdateAddressResponse
+ */
+export type BrowserUpdateAddressResponse = Message<"gateway.v1.BrowserUpdateAddressResponse"> & {
+  /**
+   * Response is present only after a successful operation.
+   *
+   * @generated from field: user.v1.UpdateAddressResponse response = 1;
+   */
+  response?: UpdateAddressResponse | undefined;
+
+  /**
+   * Failure preserves only explicitly allowed outcomes, never upstream messages.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserUpdateAddressResponse.
+ * Use `create(BrowserUpdateAddressResponseSchema)` to create a new message.
+ */
+export const BrowserUpdateAddressResponseSchema: GenMessage<BrowserUpdateAddressResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 9);
+
+/**
+ * BrowserDeleteAddressRequest contains typed public input and separately reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserDeleteAddressRequest
+ */
+export type BrowserDeleteAddressRequest = Message<"gateway.v1.BrowserDeleteAddressRequest"> & {
+  /**
+   * Request contains no caller-selected identity or credentials.
+   *
+   * @generated from field: user.v1.DeleteAddressRequest request = 1;
+   */
+  request?: DeleteAddressRequest | undefined;
+
+  /**
+   * Context contains opaque credentials that never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserDeleteAddressRequest.
+ * Use `create(BrowserDeleteAddressRequestSchema)` to create a new message.
+ */
+export const BrowserDeleteAddressRequestSchema: GenMessage<BrowserDeleteAddressRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 10);
+
+/**
+ * BrowserDeleteAddressResponse contains one successful snapshot or an allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserDeleteAddressResponse
+ */
+export type BrowserDeleteAddressResponse = Message<"gateway.v1.BrowserDeleteAddressResponse"> & {
+  /**
+   * Response is present only after a successful operation.
+   *
+   * @generated from field: user.v1.DeleteAddressResponse response = 1;
+   */
+  response?: DeleteAddressResponse | undefined;
+
+  /**
+   * Failure preserves only explicitly allowed outcomes, never upstream messages.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserDeleteAddressResponse.
+ * Use `create(BrowserDeleteAddressResponseSchema)` to create a new message.
+ */
+export const BrowserDeleteAddressResponseSchema: GenMessage<BrowserDeleteAddressResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 11);
+
+/**
+ * BrowserSetDefaultAddressRequest contains typed public input and separately reconstructed credentials.
+ *
+ * @generated from message gateway.v1.BrowserSetDefaultAddressRequest
+ */
+export type BrowserSetDefaultAddressRequest = Message<"gateway.v1.BrowserSetDefaultAddressRequest"> & {
+  /**
+   * Request contains no caller-selected identity or credentials.
+   *
+   * @generated from field: user.v1.SetDefaultAddressRequest request = 1;
+   */
+  request?: SetDefaultAddressRequest | undefined;
+
+  /**
+   * Context contains opaque credentials that never reach User or telemetry.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserSetDefaultAddressRequest.
+ * Use `create(BrowserSetDefaultAddressRequestSchema)` to create a new message.
+ */
+export const BrowserSetDefaultAddressRequestSchema: GenMessage<BrowserSetDefaultAddressRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 12);
+
+/**
+ * BrowserSetDefaultAddressResponse contains one successful snapshot or an allowed failure.
+ *
+ * @generated from message gateway.v1.BrowserSetDefaultAddressResponse
+ */
+export type BrowserSetDefaultAddressResponse = Message<"gateway.v1.BrowserSetDefaultAddressResponse"> & {
+  /**
+   * Response is present only after a successful operation.
+   *
+   * @generated from field: user.v1.SetDefaultAddressResponse response = 1;
+   */
+  response?: SetDefaultAddressResponse | undefined;
+
+  /**
+   * Failure preserves only explicitly allowed outcomes, never upstream messages.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserSetDefaultAddressResponse.
+ * Use `create(BrowserSetDefaultAddressResponseSchema)` to create a new message.
+ */
+export const BrowserSetDefaultAddressResponseSchema: GenMessage<BrowserSetDefaultAddressResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 13);
+
+/**
  * UserBrowserFailure is the closed allowlist of domain outcomes preserved across the tunnel.
  *
  * @generated from enum gateway.v1.UserBrowserFailure
@@ -154,6 +434,20 @@ export enum UserBrowserFailure {
    * @generated from enum value: USER_BROWSER_FAILURE_VERSION_CONFLICT = 2;
    */
   VERSION_CONFLICT = 2,
+
+  /**
+   * USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND hides both foreign and absent address identifiers.
+   *
+   * @generated from enum value: USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND = 3;
+   */
+  ADDRESS_NOT_FOUND = 3,
+
+  /**
+   * USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED means the owner already has 20 saved addresses.
+   *
+   * @generated from enum value: USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED = 4;
+   */
+  ADDRESS_LIMIT_REACHED = 4,
 }
 
 /**
@@ -188,6 +482,56 @@ export const UserBrowserService: GenService<{
     methodKind: "unary";
     input: typeof BrowserUpdateMeRequestSchema;
     output: typeof BrowserUpdateMeResponseSchema;
+  },
+  /**
+   * BrowserListAddresses exchanges the browser session before the owner-scoped operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserListAddresses
+   */
+  browserListAddresses: {
+    methodKind: "unary";
+    input: typeof BrowserListAddressesRequestSchema;
+    output: typeof BrowserListAddressesResponseSchema;
+  },
+  /**
+   * BrowserCreateAddress exchanges the browser session before the owner-scoped operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserCreateAddress
+   */
+  browserCreateAddress: {
+    methodKind: "unary";
+    input: typeof BrowserCreateAddressRequestSchema;
+    output: typeof BrowserCreateAddressResponseSchema;
+  },
+  /**
+   * BrowserUpdateAddress exchanges the browser session before the owner-scoped operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserUpdateAddress
+   */
+  browserUpdateAddress: {
+    methodKind: "unary";
+    input: typeof BrowserUpdateAddressRequestSchema;
+    output: typeof BrowserUpdateAddressResponseSchema;
+  },
+  /**
+   * BrowserDeleteAddress exchanges the browser session before the owner-scoped operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserDeleteAddress
+   */
+  browserDeleteAddress: {
+    methodKind: "unary";
+    input: typeof BrowserDeleteAddressRequestSchema;
+    output: typeof BrowserDeleteAddressResponseSchema;
+  },
+  /**
+   * BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserSetDefaultAddress
+   */
+  browserSetDefaultAddress: {
+    methodKind: "unary";
+    input: typeof BrowserSetDefaultAddressRequestSchema;
+    output: typeof BrowserSetDefaultAddressResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_gateway_v1_user_browser, 0);

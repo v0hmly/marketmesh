@@ -2,7 +2,7 @@ import { Code, ConnectError, createClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
 import { UserService } from '@marketmesh/api/user/v1/user_pb';
-import type { Profile, PublicApi } from './types';
+import type { Profile, PublicApi, AddressBook } from './types';
 
 function validProfile(profile: Profile | undefined): Profile {
   if (
@@ -15,6 +15,29 @@ function validProfile(profile: Profile | undefined): Profile {
     throw new ConnectError('Invalid profile response', Code.DataLoss);
   }
   return profile;
+}
+
+function validBook(book: AddressBook | undefined): AddressBook {
+  const validId = (id: Uint8Array) => id.length === 16 && id.some((value) => value !== 0);
+  const ids = new Set<string>();
+  if (
+    !book ||
+    !validId(book.subjectId) ||
+    book.version < 1n ||
+    book.version > 9223372036854775807n ||
+    book.addresses.length > 20
+  )
+    throw new ConnectError('Invalid address book response', Code.DataLoss);
+  let defaults = 0;
+  for (const address of book.addresses) {
+    const key = Array.from(address.addressId).join(',');
+    if (!validId(address.addressId) || !address.fields || ids.has(key))
+      throw new ConnectError('Invalid address response', Code.DataLoss);
+    ids.add(key);
+    if (address.isDefault) defaults++;
+  }
+  if (defaults > 1) throw new ConnectError('Invalid default address response', Code.DataLoss);
+  return book;
 }
 
 /** The app and public gateway must share one HTTPS origin. No token APIs exist here. */
@@ -61,6 +84,21 @@ export function createPublicApi(
     },
     async logoutAll() {
       await auth.logoutAll({});
+    },
+    async listAddresses() {
+      return validBook((await user.listAddresses({})).book);
+    },
+    async createAddress(input) {
+      return validBook((await user.createAddress(input)).book);
+    },
+    async updateAddress(input) {
+      return validBook((await user.updateAddress(input)).book);
+    },
+    async deleteAddress(input) {
+      return validBook((await user.deleteAddress(input)).book);
+    },
+    async setDefaultAddress(input) {
+      return validBook((await user.setDefaultAddress(input)).book);
     },
     async getProfile() {
       return validProfile((await user.getMe({})).profile);

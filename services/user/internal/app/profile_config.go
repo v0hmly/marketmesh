@@ -14,6 +14,7 @@ import (
 
 type profileConfig struct {
 	enabled                                        bool
+	addressesEnabled                               bool
 	address, trustDomain                           string
 	certificateFile, keyFile, clientCAFile         string
 	authTarget, authServerName, authCAFile, issuer string
@@ -27,7 +28,17 @@ func loadProfileConfig(env serviceruntime.Env, environment string) (profileConfi
 	var c profileConfig
 	var err error
 	c.enabled, err = env.Bool("USER_PROFILE_ENABLED", false)
-	if err != nil || !c.enabled {
+	if err != nil {
+		return c, err
+	}
+	c.addressesEnabled, err = env.Bool("USER_ADDRESSES_ENABLED", false)
+	if err != nil {
+		return c, err
+	}
+	if c.addressesEnabled && !c.enabled {
+		return c, errors.New("USER_ADDRESSES_ENABLED requires USER_PROFILE_ENABLED")
+	}
+	if !c.enabled {
 		return c, err
 	}
 	for _, item := range []struct {

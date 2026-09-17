@@ -18,26 +18,27 @@ const (
 )
 
 type config struct {
-	serviceVersion        string
-	environment           string
-	instanceID            string
-	dataCenter            string
-	httpAddress           string
-	grpcAddress           string
-	tlsCertificate        string
-	tlsPrivateKey         string
-	tlsClientCA           string
-	expectedGatewayOutURI string
-	requestTimeout        time.Duration
-	tunnelSessionTimeout  time.Duration
-	shutdownTimeout       time.Duration
-	healthTimeout         time.Duration
-	logLevel              string
-	e2eRoutingSnapshot    bool
-	authBrowserEnabled    bool
-	userBrowserEnabled    bool
-	publicTLSCertificate  string
-	publicTLSPrivateKey   string
+	serviceVersion              string
+	environment                 string
+	instanceID                  string
+	dataCenter                  string
+	httpAddress                 string
+	grpcAddress                 string
+	tlsCertificate              string
+	tlsPrivateKey               string
+	tlsClientCA                 string
+	expectedGatewayOutURI       string
+	requestTimeout              time.Duration
+	tunnelSessionTimeout        time.Duration
+	shutdownTimeout             time.Duration
+	healthTimeout               time.Duration
+	logLevel                    string
+	e2eRoutingSnapshot          bool
+	authBrowserEnabled          bool
+	userAddressesBrowserEnabled bool
+	userBrowserEnabled          bool
+	publicTLSCertificate        string
+	publicTLSPrivateKey         string
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -104,6 +105,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	if result.userBrowserEnabled, err = env.Bool("USER_BROWSER_ENABLED", false); err != nil {
 		return config{}, err
+	}
+	if result.userAddressesBrowserEnabled, err = env.Bool("USER_ADDRESSES_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.userAddressesBrowserEnabled && !result.userBrowserEnabled {
+		return config{}, errors.New("USER_ADDRESSES_BROWSER_ENABLED requires USER_BROWSER_ENABLED")
 	}
 	if result.userBrowserEnabled && result.e2eRoutingSnapshot {
 		return config{}, errors.New("USER_BROWSER_ENABLED is incompatible with E2E_ROUTING_SNAPSHOT_ENABLED")
