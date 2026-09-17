@@ -50,6 +50,8 @@ task api:verify # проверить protobuf workflow и контракты
 task verify     # выполнить обязательный локальный набор проверок workspace
 task infra:up   # запустить локальную инфраструктуру
 task infra:smoke # проверить PostgreSQL, DMZ и observability pipeline
+task account:up # запустить кабинет с настоящими Auth и User
+task account:test # проверить полный сценарий аккаунта в Chromium
 task observability:up # запустить только observability-стек
 task observability:smoke # проверить связанный trace и log
 task observability:outage # проверить bounded queues при недоступных backends
@@ -68,7 +70,9 @@ pnpm typecheck
 
 Эквивалентные команды Task: `task frontend:build`, `task frontend:test`, `task frontend:lint`, `task frontend:typecheck` и `task frontend:verify`.
 
-Пока frontend-пакеты не созданы, эти команды завершаются без выполнения вложенных скриптов.
+Vue-приложение кабинета и его проверки описаны в
+[storefront](frontend/apps/storefront/README.md). Полный HTTPS-запуск с Auth,
+User и браузерными E2E — в [локальном окружении кабинета](infra/account-local/README.md).
 
 Локальная инфраструктура PostgreSQL, Redis, SeaweedFS, Alloy, Tempo, Loki и
 Grafana описана в

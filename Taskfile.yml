@@ -6,6 +6,7 @@ vars:
   WORKSPACE_TOOL: ./tools/go-workspace.sh
   PROTOBUF_TOOL: ./tools/protobuf.sh
   INFRA_TOOL: ./infra/compose/scripts/local.sh
+  ACCOUNT_LOCAL_TOOL: ./infra/account-local/local.sh
   E2E_TOPOLOGY_TOOL: go run ./tools/e2e-topology
   TASKBOARD_TOOL: ./tools/taskboard.sh
   TASKBOARD_PROJECT: "01M1BNBBHNN26MRG0XAXVR5K5M"
@@ -424,6 +425,36 @@ tasks:
     desc: Удалить только контейнеры и volumes observability
     cmds:
       - "{{.INFRA_TOOL}} observability-clean"
+
+  account:up:
+    desc: Запустить локальный HTTPS storefront с настоящими Auth/User и событиями регистрации
+    cmds:
+      - "{{.ACCOUNT_LOCAL_TOOL}} up"
+
+  account:status:
+    desc: Показать состояние локального контура аккаунта
+    cmds:
+      - "{{.ACCOUNT_LOCAL_TOOL}} status"
+
+  account:probe:
+    desc: Проверить агрегированные счётчики outbox, inbox и доставки профилей без персональных данных
+    cmds:
+      - "{{.ACCOUNT_LOCAL_TOOL}} probe"
+
+  account:down:
+    desc: Остановить локальный контур аккаунта с сохранением данных
+    cmds:
+      - "{{.ACCOUNT_LOCAL_TOOL}} down"
+
+  account:reset:
+    desc: Удалить данные и сертификаты только выбранного локального контура аккаунта
+    cmds:
+      - "{{.ACCOUNT_LOCAL_TOOL}} reset"
+
+  account:test:
+    desc: Проверить настоящий browser→Auth→JetStream→User сценарий в изолированном контуре
+    cmds:
+      - "{{.ACCOUNT_LOCAL_TOOL}} test"
 
   frontend:build:
     desc: Собрать все frontend-пакеты

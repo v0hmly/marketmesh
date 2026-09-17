@@ -18,7 +18,7 @@ MarketMesh объединяет независимо развёртываемы�
 
 Использовать один Git-монорепозиторий и зарегистрированный в репозитории файл `go.work`. Отдельный Go-модуль создаётся для каждого развёртываемого сервиса, для платформенных библиотек в целом и для сгенерированных Go-контрактов.
 
-Начальный набор модулей:
+Набор модулей:
 
 | Каталог | Путь модуля | Назначение |
 | --- | --- | --- |
@@ -29,6 +29,8 @@ MarketMesh объединяет независимо развёртываемы�
 | `platform` | `github.com/v0hmly/marketmesh/platform` | Общие технические библиотеки, включая logger и telemetry |
 | `api/gen/go` | `github.com/v0hmly/marketmesh/api/gen/go` | Только сгенерированный Go-код контрактов |
 | `api/tunnel` | `github.com/v0hmly/marketmesh/api/tunnel` | Строгий общий декодер и структурная валидация туннельного контракта |
+| `e2e/tunnel` | `github.com/v0hmly/marketmesh/e2e/tunnel` | Изолированные сквозные проверки туннеля |
+| `tools/account-local` | `github.com/v0hmly/marketmesh/tools/account-local` | Проверяемый локальный контур аккаунта: конфигурация, provision и HTTPS frontdoor |
 | `tools/e2e-topology` | `github.com/v0hmly/marketmesh/tools/e2e-topology` | Изолированная автоматизация disposable Kubernetes topology и её проверок |
 
 `go.work` разрешает локальные зависимости без директив `replace` в `go.mod`. Директива `replace` на локальный путь в регистрируемом `go.mod` запрещена. Каждый модуль обязан собираться и тестироваться как в workspace, так и с `GOWORK=off` после появления межмодульных зависимостей и зафиксированных версий.
@@ -49,6 +51,7 @@ marketmesh/
 │   ├── apps/
 │   └── packages/
 ├── infra/
+│   ├── account-local/
 │   ├── compose/
 │   └── kubernetes/
 ├── platform/
@@ -58,6 +61,7 @@ marketmesh/
 │   ├── gateway-in/
 │   └── gateway-out/
 ├── tools/
+│   ├── account-local/
 │   └── e2e-topology/
 ├── docs/
 ├── go.work
