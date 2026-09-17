@@ -1,6 +1,15 @@
-import type { Profile } from '@marketmesh/api/user/v1/user_pb';
+import type { Profile, Address, AddressBook, AddressFields } from '@marketmesh/api/user/v1/user_pb';
 
-export type { Profile };
+export type { Profile, Address, AddressBook, AddressFields };
+export type AddressInput = Omit<AddressFields, '$typeName'>;
+export interface AddressWrite {
+  fields: AddressInput;
+  expectedBookVersion: bigint;
+}
+export interface AddressSelection {
+  addressId: Uint8Array;
+  expectedBookVersion: bigint;
+}
 
 export interface ProfileInput {
   displayName: string;
@@ -17,4 +26,9 @@ export interface PublicApi {
   logoutAll(): Promise<void>;
   getProfile(): Promise<Profile>;
   updateProfile(input: ProfileInput): Promise<Profile>;
+  listAddresses(): Promise<AddressBook>;
+  createAddress(input: AddressWrite): Promise<AddressBook>;
+  updateAddress(input: AddressWrite & AddressSelection): Promise<AddressBook>;
+  deleteAddress(input: AddressSelection): Promise<AddressBook>;
+  setDefaultAddress(input: AddressSelection): Promise<AddressBook>;
 }

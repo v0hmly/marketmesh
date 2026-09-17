@@ -23,6 +23,7 @@ func (f exchangeFunc) ExchangeBrowserSession(ctx context.Context, r *authv1.Exch
 }
 
 type userStub struct {
+	userv1.UserServiceClient
 	get    func(context.Context, *userv1.GetMeRequest) (*userv1.GetMeResponse, error)
 	update func(context.Context, *userv1.UpdateMeRequest) (*userv1.UpdateMeResponse, error)
 }

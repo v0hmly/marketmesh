@@ -14,6 +14,16 @@ service UserBrowserService {
   rpc BrowserGetMe(BrowserGetMeRequest) returns (BrowserGetMeResponse);
   // UpdateMe resolves the browser session and conditionally updates its owner's profile.
   rpc BrowserUpdateMe(BrowserUpdateMeRequest) returns (BrowserUpdateMeResponse);
+  // BrowserListAddresses exchanges the browser session before the owner-scoped operation.
+  rpc BrowserListAddresses(BrowserListAddressesRequest) returns (BrowserListAddressesResponse);
+  // BrowserCreateAddress exchanges the browser session before the owner-scoped operation.
+  rpc BrowserCreateAddress(BrowserCreateAddressRequest) returns (BrowserCreateAddressResponse);
+  // BrowserUpdateAddress exchanges the browser session before the owner-scoped operation.
+  rpc BrowserUpdateAddress(BrowserUpdateAddressRequest) returns (BrowserUpdateAddressResponse);
+  // BrowserDeleteAddress exchanges the browser session before the owner-scoped operation.
+  rpc BrowserDeleteAddress(BrowserDeleteAddressRequest) returns (BrowserDeleteAddressResponse);
+  // BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
+  rpc BrowserSetDefaultAddress(BrowserSetDefaultAddressRequest) returns (BrowserSetDefaultAddressResponse);
 }
 
 // BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
@@ -56,4 +66,88 @@ enum UserBrowserFailure {
   USER_BROWSER_FAILURE_PROFILE_NOT_READY = 1;
   // USER_BROWSER_FAILURE_VERSION_CONFLICT requires the caller to read and reconcile current data.
   USER_BROWSER_FAILURE_VERSION_CONFLICT = 2;
+  // USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND hides both foreign and absent address identifiers.
+  USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND = 3;
+  // USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED means the owner already has 20 saved addresses.
+  USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED = 4;
+}
+
+// BrowserListAddressesRequest contains typed public input and separately reconstructed credentials.
+message BrowserListAddressesRequest {
+  // Request contains no caller-selected identity or credentials.
+  user.v1.ListAddressesRequest request = 1;
+  // Context contains opaque credentials that never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserListAddressesResponse contains one successful snapshot or an allowed failure.
+message BrowserListAddressesResponse {
+  // Response is present only after a successful operation.
+  user.v1.ListAddressesResponse response = 1;
+  // Failure preserves only explicitly allowed outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserCreateAddressRequest contains typed public input and separately reconstructed credentials.
+message BrowserCreateAddressRequest {
+  // Request contains no caller-selected identity or credentials.
+  user.v1.CreateAddressRequest request = 1;
+  // Context contains opaque credentials that never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserCreateAddressResponse contains one successful snapshot or an allowed failure.
+message BrowserCreateAddressResponse {
+  // Response is present only after a successful operation.
+  user.v1.CreateAddressResponse response = 1;
+  // Failure preserves only explicitly allowed outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserUpdateAddressRequest contains typed public input and separately reconstructed credentials.
+message BrowserUpdateAddressRequest {
+  // Request contains no caller-selected identity or credentials.
+  user.v1.UpdateAddressRequest request = 1;
+  // Context contains opaque credentials that never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserUpdateAddressResponse contains one successful snapshot or an allowed failure.
+message BrowserUpdateAddressResponse {
+  // Response is present only after a successful operation.
+  user.v1.UpdateAddressResponse response = 1;
+  // Failure preserves only explicitly allowed outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserDeleteAddressRequest contains typed public input and separately reconstructed credentials.
+message BrowserDeleteAddressRequest {
+  // Request contains no caller-selected identity or credentials.
+  user.v1.DeleteAddressRequest request = 1;
+  // Context contains opaque credentials that never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserDeleteAddressResponse contains one successful snapshot or an allowed failure.
+message BrowserDeleteAddressResponse {
+  // Response is present only after a successful operation.
+  user.v1.DeleteAddressResponse response = 1;
+  // Failure preserves only explicitly allowed outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserSetDefaultAddressRequest contains typed public input and separately reconstructed credentials.
+message BrowserSetDefaultAddressRequest {
+  // Request contains no caller-selected identity or credentials.
+  user.v1.SetDefaultAddressRequest request = 1;
+  // Context contains opaque credentials that never reach User or telemetry.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserSetDefaultAddressResponse contains one successful snapshot or an allowed failure.
+message BrowserSetDefaultAddressResponse {
+  // Response is present only after a successful operation.
+  user.v1.SetDefaultAddressResponse response = 1;
+  // Failure preserves only explicitly allowed outcomes, never upstream messages.
+  UserBrowserFailure failure = 2;
 }

@@ -98,7 +98,7 @@ func runService(
 		Target: cfg.internalTarget, Environment: cfg.environment, DisableRetries: cfg.userBrowserEnabled,
 		ConnectTimeout: cfg.connectTimeout, CallTimeout: cfg.callTimeout,
 		KeepaliveTime: 30 * time.Second, KeepaliveTimeout: 5 * time.Second,
-		MaxReceiveMessageBytes: 64 * 1024, MaxSendMessageBytes: 64 * 1024,
+		MaxReceiveMessageBytes: userMessageLimit(cfg), MaxSendMessageBytes: 64 * 1024,
 		Security: platformgrpc.ClientSecurity{
 			TLSConfig: internalTLS, RequireClientCertificate: true,
 		},
@@ -129,6 +129,9 @@ func runService(
 	if cfg.userBrowserEnabled {
 		clients.Regular = &userBrowserClient{auth: authv1.NewAuthInternalServiceClient(authClient.Connection()), user: userv1.NewUserServiceClient(internalClient.Connection())}
 		specs = userRoutes(cfg.callTimeout)
+		if cfg.userAddressesBrowserEnabled {
+			specs = append(specs, addressRoutes(cfg.callTimeout)...)
+		}
 	}
 	if cfg.authBrowserEnabled {
 		clients.ControlAuth = authClient.Connection()
@@ -279,7 +282,7 @@ func tunnelConfig(
 		PingInterval: 30 * time.Second, PingTimeout: 5 * time.Second,
 		DrainTimeout: cfg.shutdownTimeout,
 		Limits: tunnel.ReceiveLimits{
-			MaxFrameBytes: 64 * 1024, MaxDataBytes: 16 * 1024, MaxMessageBytes: 64 * 1024,
+			MaxFrameBytes: 64 * 1024, MaxDataBytes: 16 * 1024, MaxMessageBytes: uint32(userMessageLimit(cfg)),
 			MaxInFlightRequests: 64, MaxMetadataEntries: 8,
 			MaxMetadataValueBytes: 16 * 1024, MaxCreditBytes: 32 * 1024,
 		},
@@ -349,4 +352,11 @@ func closeListener(listener net.Listener) error {
 		return fmt.Errorf("closing listener: %w", err)
 	}
 	return nil
+}
+
+func userMessageLimit(cfg config) int {
+	if cfg.userAddressesBrowserEnabled {
+		return 128 * 1024
+	}
+	return 64 * 1024
 }

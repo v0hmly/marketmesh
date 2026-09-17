@@ -19,35 +19,36 @@ const (
 type config struct {
 	periodicRediscoveryEnabled bool
 
-	serviceVersion       string
-	environment          string
-	instanceID           string
-	httpAddress          string
-	gatewayInTarget      string
-	gatewayInServerName  string
-	expectedGatewayInURI string
-	internalTarget       string
-	internalServerName   string
-	expectedInternalURI  string
-	tunnelCertificate    string
-	tunnelPrivateKey     string
-	tunnelRootCA         string
-	internalCertificate  string
-	internalPrivateKey   string
-	internalRootCA       string
-	connectTimeout       time.Duration
-	callTimeout          time.Duration
-	shutdownTimeout      time.Duration
-	healthTimeout        time.Duration
-	logLevel             string
-	authBrowserEnabled   bool
-	userBrowserEnabled   bool
-	authTarget           string
-	authServerName       string
-	expectedAuthURI      string
-	authCertificate      string
-	authPrivateKey       string
-	authRootCA           string
+	serviceVersion              string
+	environment                 string
+	instanceID                  string
+	httpAddress                 string
+	gatewayInTarget             string
+	gatewayInServerName         string
+	expectedGatewayInURI        string
+	internalTarget              string
+	internalServerName          string
+	expectedInternalURI         string
+	tunnelCertificate           string
+	tunnelPrivateKey            string
+	tunnelRootCA                string
+	internalCertificate         string
+	internalPrivateKey          string
+	internalRootCA              string
+	connectTimeout              time.Duration
+	callTimeout                 time.Duration
+	shutdownTimeout             time.Duration
+	healthTimeout               time.Duration
+	logLevel                    string
+	authBrowserEnabled          bool
+	userAddressesBrowserEnabled bool
+	userBrowserEnabled          bool
+	authTarget                  string
+	authServerName              string
+	expectedAuthURI             string
+	authCertificate             string
+	authPrivateKey              string
+	authRootCA                  string
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -129,6 +130,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	if result.userBrowserEnabled, err = env.Bool("USER_BROWSER_ENABLED", false); err != nil {
 		return config{}, err
+	}
+	if result.userAddressesBrowserEnabled, err = env.Bool("USER_ADDRESSES_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.userAddressesBrowserEnabled && !result.userBrowserEnabled {
+		return config{}, errors.New("USER_ADDRESSES_BROWSER_ENABLED requires USER_BROWSER_ENABLED")
 	}
 	if result.authBrowserEnabled || result.userBrowserEnabled {
 		for _, item := range []struct {

@@ -10,9 +10,27 @@ import type {
 // Real-stack runs deliberately report only static test names and source locations.
 export default class SafeReporter implements Reporter {
   onTestEnd(test: TestCase, result: TestResult) {
+    const locations = new Set<string>();
     for (const error of result.errors) {
-      const location = error.stack?.match(/account\.spec\.ts:\d+:\d+/)?.[0];
-      if (location) process.stdout.write(`Assertion location: ${location}\n`);
+      for (const location of error.stack?.match(/account\.spec\.ts:\d+:\d+/g) ?? []) {
+        if (locations.size < 5) locations.add(location);
+      }
+    }
+    for (const location of locations) process.stdout.write(`Assertion location: ${location}\n`);
+    if (result.errors.length) {
+      const safe = test.annotations.filter(
+        (item) =>
+          (item.type === 'account-step' &&
+            /^(profile|book-initial|book-relogin|book-foreign|maximum):(register|login|ready|logout):(start|done)$/.test(
+              item.description ?? '',
+            )) ||
+          (item.type === 'account-rpc' &&
+            /^(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll|GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress):[1-5][0-9]{2}$/.test(
+              item.description ?? '',
+            )),
+      );
+      for (const item of safe.slice(-30))
+        process.stdout.write(`Account diagnostic: ${item.description}\n`);
     }
     process.stdout.write(
       `${result.status}: ${test.title} (${test.location.file.split('/').pop()}:${test.location.line})\n`,

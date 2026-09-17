@@ -16,3 +16,10 @@ var (
 	//go:embed 000002_registration_inbox.down.sql
 	RegistrationInboxDown string
 )
+
+var (
+	//go:embed 000003_addresses.up.sql
+	AddressesUp string
+	//go:embed 000003_addresses.down.sql
+	AddressesDown string
+)

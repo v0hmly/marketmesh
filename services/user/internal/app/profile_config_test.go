@@ -63,3 +63,25 @@ func TestProfileConfigRejectsUnsafeValuesWithoutSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestAddressesRequireProfileAndExplicitFlag(t *testing.T) {
+	v := validEnvironment()
+	v["USER_ADDRESSES_ENABLED"] = "true"
+	if _, e := loadConfig(serviceruntime.MapEnv(v)); e == nil {
+		t.Fatal("addresses enabled without profile")
+	}
+	v = profileEnvironment()
+	c, e := loadConfig(serviceruntime.MapEnv(v))
+	if e != nil || c.profile.addressesEnabled {
+		t.Fatal(e)
+	}
+	v["USER_ADDRESSES_ENABLED"] = "true"
+	c, e = loadConfig(serviceruntime.MapEnv(v))
+	if e != nil || !c.profile.addressesEnabled {
+		t.Fatal(e)
+	}
+	v["USER_ADDRESSES_ENABLED"] = "sometimes"
+	if _, e = loadConfig(serviceruntime.MapEnv(v)); e == nil {
+		t.Fatal("invalid flag accepted")
+	}
+}

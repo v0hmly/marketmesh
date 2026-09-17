@@ -1,6 +1,13 @@
 import { shallowRef, readonly, type Ref } from 'vue';
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { PublicApi, Profile, ProfileInput } from '../../shared/api/types';
+import type {
+  PublicApi,
+  Profile,
+  ProfileInput,
+  AddressBook,
+  AddressWrite,
+  AddressSelection,
+} from '../../shared/api/types';
 import { isProfilePending } from '../../shared/api/errors';
 
 export type SessionStatus =
@@ -56,6 +63,11 @@ export interface SessionController {
   capture(): SessionGuard;
   readProfile(guard?: SessionGuard): Promise<Profile>;
   updateProfile(input: ProfileInput, guard: SessionGuard): Promise<Profile>;
+  readAddresses(guard: SessionGuard): Promise<AddressBook>;
+  createAddress(input: AddressWrite, guard: SessionGuard): Promise<AddressBook>;
+  updateAddress(input: AddressWrite & AddressSelection, guard: SessionGuard): Promise<AddressBook>;
+  deleteAddress(input: AddressSelection, guard: SessionGuard): Promise<AddressBook>;
+  setDefaultAddress(input: AddressSelection, guard: SessionGuard): Promise<AddressBook>;
   dispose(): void;
 }
 export class GuardMismatchError extends Error {
@@ -482,6 +494,15 @@ export function createSessionController(
       return result;
     });
   }
+  function guardedBook(guard: SessionGuard, action: () => Promise<AddressBook>) {
+    return guarded(guard, async () => {
+      const book = await action();
+      assertGuard(guard, readJournal());
+      if (subject(book.subjectId) !== guard.subjectId) rejectIdentity(guard.generation);
+      rememberIdentity(guard.generation, subject(book.subjectId));
+      return book;
+    });
+  }
   const unsubscribe =
     env?.subscribe((notice) => {
       if (disposed || (notice && notice.operationId === ownOperation)) return;
@@ -596,6 +617,20 @@ export function createSessionController(
         return read();
       }
     },
+    async readAddresses(guard) {
+      const read = () => guardedBook(guard, () => api.listAddresses());
+      try {
+        return await read();
+      } catch (error) {
+        if (!unauthenticated(error)) throw error;
+        await bootstrap();
+        return read();
+      }
+    },
+    createAddress: (input, guard) => guardedBook(guard, () => api.createAddress(input)),
+    updateAddress: (input, guard) => guardedBook(guard, () => api.updateAddress(input)),
+    deleteAddress: (input, guard) => guardedBook(guard, () => api.deleteAddress(input)),
+    setDefaultAddress: (input, guard) => guardedBook(guard, () => api.setDefaultAddress(input)),
     updateProfile: (input, guard) =>
       guarded(guard, async () => {
         const profile = await api.updateProfile(input);

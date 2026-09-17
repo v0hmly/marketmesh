@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file user/v1/user.proto.
  */
 export const file_user_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSJOCg9VcGRhdGVNZVJlcXVlc3QSFAoMZGlzcGxheV9uYW1lGAEgASgJEgsKA2JpbxgCIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAMgASgEIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSKDAQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDMoYBCgtVc2VyU2VydmljZRI2CgVHZXRNZRIVLnVzZXIudjEuR2V0TWVSZXF1ZXN0GhYudXNlci52MS5HZXRNZVJlc3BvbnNlEj8KCFVwZGF0ZU1lEhgudXNlci52MS5VcGRhdGVNZVJlcXVlc3QaGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL3VzZXIvdjE7dXNlcnYxYgZwcm90bzM");
+  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSJOCg9VcGRhdGVNZVJlcXVlc3QSFAoMZGlzcGxheV9uYW1lGAEgASgJEgsKA2JpbxgCIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAMgASgEIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSKDAQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDIp8BCg1BZGRyZXNzRmllbGRzEhEKCXJlY2lwaWVudBgBIAEoCRINCgVwaG9uZRgCIAEoCRIPCgdjb3VudHJ5GAMgASgJEhMKC3Bvc3RhbF9jb2RlGAQgASgJEgwKBGNpdHkYBSABKAkSFAoMc3RyZWV0X2hvdXNlGAYgASgJEhEKCWFwYXJ0bWVudBgHIAEoCRIPCgdjb21tZW50GAggASgJIlkKB0FkZHJlc3MSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSEgoKaXNfZGVmYXVsdBgDIAEoCCJXCgtBZGRyZXNzQm9vaxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSIwoJYWRkcmVzc2VzGAMgAygLMhAudXNlci52MS5BZGRyZXNzIhYKFExpc3RBZGRyZXNzZXNSZXF1ZXN0Il0KFENyZWF0ZUFkZHJlc3NSZXF1ZXN0Eh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgBIAEoBBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMicQoUVXBkYXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAMgASgEIkkKFERlbGV0ZUFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIk0KGFNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgCIAEoBCI7ChVMaXN0QWRkcmVzc2VzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVQ3JlYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFVVwZGF0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVEZWxldGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siPwoZU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vazKiBAoLVXNlclNlcnZpY2USNgoFR2V0TWUSFS51c2VyLnYxLkdldE1lUmVxdWVzdBoWLnVzZXIudjEuR2V0TWVSZXNwb25zZRI/CghVcGRhdGVNZRIYLnVzZXIudjEuVXBkYXRlTWVSZXF1ZXN0GhkudXNlci52MS5VcGRhdGVNZVJlc3BvbnNlEk4KDUxpc3RBZGRyZXNzZXMSHS51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXF1ZXN0Gh4udXNlci52MS5MaXN0QWRkcmVzc2VzUmVzcG9uc2USTgoNQ3JlYXRlQWRkcmVzcxIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRJOCg1VcGRhdGVBZGRyZXNzEh0udXNlci52MS5VcGRhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDURlbGV0ZUFkZHJlc3MSHS51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5EZWxldGVBZGRyZXNzUmVzcG9uc2USWgoRU2V0RGVmYXVsdEFkZHJlc3MSIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBoiLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZUI4WjZnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vdXNlci92MTt1c2VydjFiBnByb3RvMw");
 
 /**
  * GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -161,7 +161,386 @@ export const ProfileSchema: GenMessage<Profile> = /*@__PURE__*/
   messageDesc(file_user_v1_user, 4);
 
 /**
- * UserService exposes the authenticated caller's profile on the internal workload-authenticated listener.
+ * AddressFields contains private delivery details, never login credentials or verified contacts.
+ *
+ * @generated from message user.v1.AddressFields
+ */
+export type AddressFields = Message<"user.v1.AddressFields"> & {
+  /**
+   * Recipient is required, with at most 120 Unicode characters.
+   *
+   * @generated from field: string recipient = 1;
+   */
+  recipient: string;
+
+  /**
+   * Phone is required ASCII formatting with 7–15 digits and at most 32 bytes.
+   *
+   * @generated from field: string phone = 2;
+   */
+  phone: string;
+
+  /**
+   * Country is a required freeform country name of at most 80 Unicode characters.
+   *
+   * @generated from field: string country = 3;
+   */
+  country: string;
+
+  /**
+   * PostalCode is optional, with at most 20 Unicode characters.
+   *
+   * @generated from field: string postal_code = 4;
+   */
+  postalCode: string;
+
+  /**
+   * City is required, with at most 120 Unicode characters.
+   *
+   * @generated from field: string city = 5;
+   */
+  city: string;
+
+  /**
+   * StreetHouse is required, with at most 240 Unicode characters.
+   *
+   * @generated from field: string street_house = 6;
+   */
+  streetHouse: string;
+
+  /**
+   * Apartment is optional, with at most 40 Unicode characters.
+   *
+   * @generated from field: string apartment = 7;
+   */
+  apartment: string;
+
+  /**
+   * Comment is optional plain text, with at most 500 Unicode characters.
+   *
+   * @generated from field: string comment = 8;
+   */
+  comment: string;
+};
+
+/**
+ * Describes the message user.v1.AddressFields.
+ * Use `create(AddressFieldsSchema)` to create a new message.
+ */
+export const AddressFieldsSchema: GenMessage<AddressFields> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 5);
+
+/**
+ * Address is one saved address owned by the book's subject.
+ *
+ * @generated from message user.v1.Address
+ */
+export type Address = Message<"user.v1.Address"> & {
+  /**
+   * AddressId is a nonzero, random server-generated 16-byte opaque identifier.
+   *
+   * @generated from field: bytes address_id = 1;
+   */
+  addressId: Uint8Array;
+
+  /**
+   * Fields are the saved delivery details.
+   *
+   * @generated from field: user.v1.AddressFields fields = 2;
+   */
+  fields?: AddressFields | undefined;
+
+  /**
+   * IsDefault is true for at most one address in a book.
+   *
+   * @generated from field: bool is_default = 3;
+   */
+  isDefault: boolean;
+};
+
+/**
+ * Describes the message user.v1.Address.
+ * Use `create(AddressSchema)` to create a new message.
+ */
+export const AddressSchema: GenMessage<Address> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 6);
+
+/**
+ * AddressBook is a consistent private snapshot returned by all address operations.
+ *
+ * @generated from message user.v1.AddressBook
+ */
+export type AddressBook = Message<"user.v1.AddressBook"> & {
+  /**
+   * SubjectId is the nonzero 16-byte owner identifier, never chosen by the caller.
+   *
+   * @generated from field: bytes subject_id = 1;
+   */
+  subjectId: Uint8Array;
+
+  /**
+   * Version is positive and independent of profile and settings versions.
+   *
+   * @generated from field: uint64 version = 2;
+   */
+  version: bigint;
+
+  /**
+   * Addresses contains at most 20 entries in stable order.
+   *
+   * @generated from field: repeated user.v1.Address addresses = 3;
+   */
+  addresses: Address[];
+};
+
+/**
+ * Describes the message user.v1.AddressBook.
+ * Use `create(AddressBookSchema)` to create a new message.
+ */
+export const AddressBookSchema: GenMessage<AddressBook> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 7);
+
+/**
+ * ListAddressesRequest selects the book solely by the verified identity.
+ *
+ * @generated from message user.v1.ListAddressesRequest
+ */
+export type ListAddressesRequest = Message<"user.v1.ListAddressesRequest"> & {
+};
+
+/**
+ * Describes the message user.v1.ListAddressesRequest.
+ * Use `create(ListAddressesRequestSchema)` to create a new message.
+ */
+export const ListAddressesRequestSchema: GenMessage<ListAddressesRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 8);
+
+/**
+ * CreateAddressRequest adds a record without replacing other addresses.
+ *
+ * @generated from message user.v1.CreateAddressRequest
+ */
+export type CreateAddressRequest = Message<"user.v1.CreateAddressRequest"> & {
+  /**
+   * ExpectedBookVersion is the last-read book version and must be positive.
+   *
+   * @generated from field: uint64 expected_book_version = 1;
+   */
+  expectedBookVersion: bigint;
+
+  /**
+   * Fields contains all editable fields of the new address.
+   *
+   * @generated from field: user.v1.AddressFields fields = 2;
+   */
+  fields?: AddressFields | undefined;
+};
+
+/**
+ * Describes the message user.v1.CreateAddressRequest.
+ * Use `create(CreateAddressRequestSchema)` to create a new message.
+ */
+export const CreateAddressRequestSchema: GenMessage<CreateAddressRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 9);
+
+/**
+ * UpdateAddressRequest replaces all editable fields of an owned address.
+ *
+ * @generated from message user.v1.UpdateAddressRequest
+ */
+export type UpdateAddressRequest = Message<"user.v1.UpdateAddressRequest"> & {
+  /**
+   * AddressId selects an address within the authenticated owner's book only.
+   *
+   * @generated from field: bytes address_id = 1;
+   */
+  addressId: Uint8Array;
+
+  /**
+   * Fields contains all replacement editable fields.
+   *
+   * @generated from field: user.v1.AddressFields fields = 2;
+   */
+  fields?: AddressFields | undefined;
+
+  /**
+   * ExpectedBookVersion prevents a lost concurrent update.
+   *
+   * @generated from field: uint64 expected_book_version = 3;
+   */
+  expectedBookVersion: bigint;
+};
+
+/**
+ * Describes the message user.v1.UpdateAddressRequest.
+ * Use `create(UpdateAddressRequestSchema)` to create a new message.
+ */
+export const UpdateAddressRequestSchema: GenMessage<UpdateAddressRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 10);
+
+/**
+ * DeleteAddressRequest removes one owned record; it never selects another default.
+ *
+ * @generated from message user.v1.DeleteAddressRequest
+ */
+export type DeleteAddressRequest = Message<"user.v1.DeleteAddressRequest"> & {
+  /**
+   * AddressId selects an address within the authenticated owner's book only.
+   *
+   * @generated from field: bytes address_id = 1;
+   */
+  addressId: Uint8Array;
+
+  /**
+   * ExpectedBookVersion prevents a lost concurrent update.
+   *
+   * @generated from field: uint64 expected_book_version = 2;
+   */
+  expectedBookVersion: bigint;
+};
+
+/**
+ * Describes the message user.v1.DeleteAddressRequest.
+ * Use `create(DeleteAddressRequestSchema)` to create a new message.
+ */
+export const DeleteAddressRequestSchema: GenMessage<DeleteAddressRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 11);
+
+/**
+ * SetDefaultAddressRequest explicitly selects the only default in a nonempty book.
+ *
+ * @generated from message user.v1.SetDefaultAddressRequest
+ */
+export type SetDefaultAddressRequest = Message<"user.v1.SetDefaultAddressRequest"> & {
+  /**
+   * AddressId selects an address within the authenticated owner's book only.
+   *
+   * @generated from field: bytes address_id = 1;
+   */
+  addressId: Uint8Array;
+
+  /**
+   * ExpectedBookVersion prevents a lost concurrent update.
+   *
+   * @generated from field: uint64 expected_book_version = 2;
+   */
+  expectedBookVersion: bigint;
+};
+
+/**
+ * Describes the message user.v1.SetDefaultAddressRequest.
+ * Use `create(SetDefaultAddressRequestSchema)` to create a new message.
+ */
+export const SetDefaultAddressRequestSchema: GenMessage<SetDefaultAddressRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 12);
+
+/**
+ * ListAddressesResponse returns the complete consistent book after the operation.
+ *
+ * @generated from message user.v1.ListAddressesResponse
+ */
+export type ListAddressesResponse = Message<"user.v1.ListAddressesResponse"> & {
+  /**
+   * Book is the authenticated caller's current address book.
+   *
+   * @generated from field: user.v1.AddressBook book = 1;
+   */
+  book?: AddressBook | undefined;
+};
+
+/**
+ * Describes the message user.v1.ListAddressesResponse.
+ * Use `create(ListAddressesResponseSchema)` to create a new message.
+ */
+export const ListAddressesResponseSchema: GenMessage<ListAddressesResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 13);
+
+/**
+ * CreateAddressResponse returns the complete consistent book after the operation.
+ *
+ * @generated from message user.v1.CreateAddressResponse
+ */
+export type CreateAddressResponse = Message<"user.v1.CreateAddressResponse"> & {
+  /**
+   * Book is the authenticated caller's current address book.
+   *
+   * @generated from field: user.v1.AddressBook book = 1;
+   */
+  book?: AddressBook | undefined;
+};
+
+/**
+ * Describes the message user.v1.CreateAddressResponse.
+ * Use `create(CreateAddressResponseSchema)` to create a new message.
+ */
+export const CreateAddressResponseSchema: GenMessage<CreateAddressResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 14);
+
+/**
+ * UpdateAddressResponse returns the complete consistent book after the operation.
+ *
+ * @generated from message user.v1.UpdateAddressResponse
+ */
+export type UpdateAddressResponse = Message<"user.v1.UpdateAddressResponse"> & {
+  /**
+   * Book is the authenticated caller's current address book.
+   *
+   * @generated from field: user.v1.AddressBook book = 1;
+   */
+  book?: AddressBook | undefined;
+};
+
+/**
+ * Describes the message user.v1.UpdateAddressResponse.
+ * Use `create(UpdateAddressResponseSchema)` to create a new message.
+ */
+export const UpdateAddressResponseSchema: GenMessage<UpdateAddressResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 15);
+
+/**
+ * DeleteAddressResponse returns the complete consistent book after the operation.
+ *
+ * @generated from message user.v1.DeleteAddressResponse
+ */
+export type DeleteAddressResponse = Message<"user.v1.DeleteAddressResponse"> & {
+  /**
+   * Book is the authenticated caller's current address book.
+   *
+   * @generated from field: user.v1.AddressBook book = 1;
+   */
+  book?: AddressBook | undefined;
+};
+
+/**
+ * Describes the message user.v1.DeleteAddressResponse.
+ * Use `create(DeleteAddressResponseSchema)` to create a new message.
+ */
+export const DeleteAddressResponseSchema: GenMessage<DeleteAddressResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 16);
+
+/**
+ * SetDefaultAddressResponse returns the complete consistent book after the operation.
+ *
+ * @generated from message user.v1.SetDefaultAddressResponse
+ */
+export type SetDefaultAddressResponse = Message<"user.v1.SetDefaultAddressResponse"> & {
+  /**
+   * Book is the authenticated caller's current address book.
+   *
+   * @generated from field: user.v1.AddressBook book = 1;
+   */
+  book?: AddressBook | undefined;
+};
+
+/**
+ * Describes the message user.v1.SetDefaultAddressResponse.
+ * Use `create(SetDefaultAddressResponseSchema)` to create a new message.
+ */
+export const SetDefaultAddressResponseSchema: GenMessage<SetDefaultAddressResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 17);
+
+/**
+ * UserService exposes the authenticated caller's account data on the workload-authenticated listener.
  *
  * @generated from service user.v1.UserService
  */
@@ -185,6 +564,56 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof UpdateMeRequestSchema;
     output: typeof UpdateMeResponseSchema;
+  },
+  /**
+   * ListAddresses operates only on the authenticated caller's versioned address book.
+   *
+   * @generated from rpc user.v1.UserService.ListAddresses
+   */
+  listAddresses: {
+    methodKind: "unary";
+    input: typeof ListAddressesRequestSchema;
+    output: typeof ListAddressesResponseSchema;
+  },
+  /**
+   * CreateAddress operates only on the authenticated caller's versioned address book.
+   *
+   * @generated from rpc user.v1.UserService.CreateAddress
+   */
+  createAddress: {
+    methodKind: "unary";
+    input: typeof CreateAddressRequestSchema;
+    output: typeof CreateAddressResponseSchema;
+  },
+  /**
+   * UpdateAddress operates only on the authenticated caller's versioned address book.
+   *
+   * @generated from rpc user.v1.UserService.UpdateAddress
+   */
+  updateAddress: {
+    methodKind: "unary";
+    input: typeof UpdateAddressRequestSchema;
+    output: typeof UpdateAddressResponseSchema;
+  },
+  /**
+   * DeleteAddress operates only on the authenticated caller's versioned address book.
+   *
+   * @generated from rpc user.v1.UserService.DeleteAddress
+   */
+  deleteAddress: {
+    methodKind: "unary";
+    input: typeof DeleteAddressRequestSchema;
+    output: typeof DeleteAddressResponseSchema;
+  },
+  /**
+   * SetDefaultAddress operates only on the authenticated caller's versioned address book.
+   *
+   * @generated from rpc user.v1.UserService.SetDefaultAddress
+   */
+  setDefaultAddress: {
+    methodKind: "unary";
+    input: typeof SetDefaultAddressRequestSchema;
+    output: typeof SetDefaultAddressResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_user_v1_user, 0);

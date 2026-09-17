@@ -37,6 +37,11 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     })),
     readProfile: vi.fn().mockResolvedValue(profile()),
     updateProfile: vi.fn().mockResolvedValue(profile({ version: 8n })),
+    readAddresses: vi.fn(),
+    createAddress: vi.fn(),
+    updateAddress: vi.fn(),
+    deleteAddress: vi.fn(),
+    setDefaultAddress: vi.fn(),
     dispose: vi.fn(),
   };
   return { session, state };
@@ -68,6 +73,48 @@ function button(wrapper: VueWrapper, text: string) {
 }
 
 describe('account forms', () => {
+  it.each(['/login', '/register'])(
+    'blocks credentials until delayed bootstrap settles on %s',
+    async (path) => {
+      const { session, state } = fixture('unknown');
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      vi.mocked(session.bootstrap).mockImplementation(async () => {
+        await gate;
+        state.value = { status: 'checking', generation: 'g2', subjectId: null };
+        await Promise.resolve();
+        state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
+      });
+      const router = createStorefrontRouter(createMemoryHistory());
+      await router.push(path);
+      await router.isReady();
+      const wrapper = mount(App, {
+        global: { plugins: [router], provide: { [sessionKey as symbol]: session } },
+      });
+      mounted.push(wrapper);
+      await flushPromises();
+      expect(session.bootstrap).toHaveBeenCalledTimes(1);
+      expect(wrapper.find('#identifier').attributes('disabled')).toBeDefined();
+      expect(wrapper.find('#password').attributes('disabled')).toBeDefined();
+      await wrapper.find('form').trigger('submit');
+      expect(session.login).not.toHaveBeenCalled();
+      expect(session.register).not.toHaveBeenCalled();
+      release();
+      await flushPromises();
+      expect(wrapper.find('#identifier').attributes('disabled')).toBeUndefined();
+      await wrapper.find('#identifier').setValue('alice');
+      await wrapper.find('#password').setValue('long passphrase');
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+      expect(path === '/login' ? session.login : session.register).toHaveBeenCalledTimes(1);
+      expect(
+        vi.mocked(path === '/login' ? session.login : session.register).mock.calls[0]?.[0],
+      ).toBe('alice');
+    },
+  );
+
   it('labels credentials, clears passwords after sending, and keeps registration response generic', async () => {
     const { session } = fixture('anonymous');
     let bytes: Uint8Array | undefined;

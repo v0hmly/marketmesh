@@ -81,6 +81,56 @@ func (c *userBrowserClient) Invoke(ctx context.Context, method string, args, rep
 		}
 		response.Response = result
 		return nil
+	case gatewayv1.UserBrowserService_BrowserListAddresses_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserListAddressesRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserListAddressesResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserListAddressesResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.ListAddresses, false)
+		return err
+	case gatewayv1.UserBrowserService_BrowserCreateAddress_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserCreateAddressRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserCreateAddressResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserCreateAddressResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.CreateAddress, true)
+		return err
+	case gatewayv1.UserBrowserService_BrowserUpdateAddress_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserUpdateAddressRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserUpdateAddressResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserUpdateAddressResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.UpdateAddress, true)
+		return err
+	case gatewayv1.UserBrowserService_BrowserDeleteAddress_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserDeleteAddressRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserDeleteAddressResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserDeleteAddressResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.DeleteAddress, true)
+		return err
+	case gatewayv1.UserBrowserService_BrowserSetDefaultAddress_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserSetDefaultAddressRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserSetDefaultAddressResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserSetDefaultAddressResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.SetDefaultAddress, true)
+		return err
 	default:
 		return status.Error(codes.PermissionDenied, "route unavailable")
 	}

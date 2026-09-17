@@ -18,6 +18,8 @@ import (
 	"github.com/v0hmly/marketmesh/services/user/internal/adapter/in/jetstream"
 	"github.com/v0hmly/marketmesh/services/user/internal/adapter/out/authsession"
 	userpostgres "github.com/v0hmly/marketmesh/services/user/internal/adapter/out/postgres"
+	"github.com/v0hmly/marketmesh/services/user/internal/adapter/out/postgresaddresses"
+	"github.com/v0hmly/marketmesh/services/user/internal/application/addresses"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/getme"
 	"github.com/v0hmly/marketmesh/services/user/internal/application/updateme"
 	grpcgo "google.golang.org/grpc"
@@ -26,13 +28,14 @@ import (
 )
 
 type profileResources struct {
-	database     *platformpostgres.Database
-	client       *platformgrpc.Client
-	server       *platformgrpc.Server
-	listener     net.Listener
-	verifier     *authsession.Verifier
-	registration *jetstream.Consumer
-	components   []serviceruntime.Component
+	database         *platformpostgres.Database
+	client           *platformgrpc.Client
+	server           *platformgrpc.Server
+	listener         net.Listener
+	verifier         *authsession.Verifier
+	registration     *jetstream.Consumer
+	components       []serviceruntime.Component
+	addressesEnabled bool
 }
 
 func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipeline *telemetry.Telemetry, listen listenFunc) (*profileResources, error) {
@@ -44,7 +47,7 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if err != nil {
 		return nil, err
 	}
-	r := &profileResources{}
+	r := &profileResources{addressesEnabled: p.addressesEnabled}
 	owned := true
 	defer func() {
 		if owned {
@@ -81,8 +84,12 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if err != nil {
 		return nil, err
 	}
+	methods := []string{userv1.UserService_GetMe_FullMethodName, userv1.UserService_UpdateMe_FullMethodName}
+	if p.addressesEnabled {
+		methods = append(methods, addressMethods()...)
+	}
 	policy, err := workloadid.NewPolicy(map[workloadid.Identity][]string{
-		{TrustDomain: p.trustDomain, Environment: c.environment, Role: "gateway-out"}: {userv1.UserService_GetMe_FullMethodName, userv1.UserService_UpdateMe_FullMethodName},
+		{TrustDomain: p.trustDomain, Environment: c.environment, Role: "gateway-out"}: methods,
 	})
 	if err != nil {
 		return nil, err
@@ -91,15 +98,43 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if err != nil {
 		return nil, err
 	}
+	if p.addressesEnabled {
+		repo, e := postgresaddresses.New(r.database.RW(), r.database)
+		if e != nil {
+			return nil, e
+		}
+		useCase, e := addresses.New(repo)
+		if e != nil {
+			return nil, e
+		}
+		if e = handler.EnableAddresses(useCase); e != nil {
+			return nil, e
+		}
+	}
+	maxSend := 32 * 1024
+	if p.addressesEnabled {
+		maxSend = 128 * 1024
+	}
+	publicErrors := []platformgrpc.PublicErrorInfo{
+		{Method: userv1.UserService_GetMe_FullMethodName, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"},
+		{Method: userv1.UserService_UpdateMe_FullMethodName, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"},
+	}
+	if p.addressesEnabled {
+		for _, method := range addressMethods() {
+			for _, detail := range []struct {
+				code   codes.Code
+				reason string
+			}{{codes.NotFound, "PROFILE_NOT_READY"}, {codes.NotFound, "ADDRESS_NOT_FOUND"}, {codes.ResourceExhausted, "ADDRESS_LIMIT_REACHED"}} {
+				publicErrors = append(publicErrors, platformgrpc.PublicErrorInfo{Method: method, Code: detail.code, Domain: "marketmesh.user", Reason: detail.reason})
+			}
+		}
+	}
 	workloadAuth := workloadid.UnaryServerInterceptor(policy)
 	r.server, err = platformgrpc.NewServer(platformgrpc.ServerConfig{
 		Environment: c.environment, ConnectionTimeout: p.connectTimeout, RequestTimeout: p.requestTimeout,
-		KeepaliveTime: 2 * time.Minute, KeepaliveTimeout: 20 * time.Second, MaxReceiveMessageBytes: 32 * 1024, MaxSendMessageBytes: 32 * 1024,
+		KeepaliveTime: 2 * time.Minute, KeepaliveTimeout: 20 * time.Second, MaxReceiveMessageBytes: 32 * 1024, MaxSendMessageBytes: maxSend,
 		Security: platformgrpc.ServerSecurity{TLSConfig: serverTLS, RequireClientCertificate: true}, Logger: log, Telemetry: pipeline,
-		PublicErrorInfo: []platformgrpc.PublicErrorInfo{
-			{Method: userv1.UserService_GetMe_FullMethodName, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"},
-			{Method: userv1.UserService_UpdateMe_FullMethodName, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"},
-		},
+		PublicErrorInfo: publicErrors,
 		UnaryAuthentication: func(ctx context.Context, req any, info *grpcgo.UnaryServerInfo, next grpcgo.UnaryHandler) (any, error) {
 			_ = grpcgo.SetHeader(ctx, metadata.Pairs("cache-control", "no-store"))
 			return workloadAuth(ctx, req, info, next)
@@ -144,6 +179,17 @@ func (r *profileResources) dependencies() []serviceruntime.CriticalDependency {
 	return append(dependencies, serviceruntime.CriticalDependency{Name: "user-auth-keys", Check: r.verifier.Ready},
 		serviceruntime.CriticalDependency{Name: "user-profile-schema", Check: func(ctx context.Context) error {
 			for _, executor := range []platformpostgres.Executor{r.database.RW(), r.database.RO()} {
+				if r.addressesEnabled {
+					rows, e := executor.Query(ctx, "SELECT p.address_book_version,a.address_id,a.subject_id,a.recipient,a.phone,a.country,a.postal_code,a.city,a.street_house,a.apartment,a.comment,a.is_default FROM users.profiles p LEFT JOIN users.addresses a ON a.subject_id=p.subject_id LIMIT 0")
+					if e != nil {
+						return errors.New("user address: schema unavailable")
+					}
+					rows.Close()
+					if rows.Err() != nil {
+						return errors.New("user address: schema check failed")
+					}
+				}
+
 				rows, err := executor.Query(ctx, "SELECT subject_id, display_name, bio, version, created_at, updated_at FROM users.profiles LIMIT 0")
 				if err != nil {
 					return errors.New("user profile: schema unavailable")
@@ -189,4 +235,8 @@ func profilePostgresConfig(c config) platformpostgres.Config {
 		}
 	}
 	return platformpostgres.Config{ApplicationName: "user/" + c.instanceID, RW: pool(p.rwDSN), RO: pool(p.roDSN)}
+}
+
+func addressMethods() []string {
+	return []string{userv1.UserService_ListAddresses_FullMethodName, userv1.UserService_CreateAddress_FullMethodName, userv1.UserService_UpdateAddress_FullMethodName, userv1.UserService_DeleteAddress_FullMethodName, userv1.UserService_SetDefaultAddress_FullMethodName}
 }

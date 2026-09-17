@@ -19,8 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserBrowserService_BrowserGetMe_FullMethodName    = "/gateway.v1.UserBrowserService/BrowserGetMe"
-	UserBrowserService_BrowserUpdateMe_FullMethodName = "/gateway.v1.UserBrowserService/BrowserUpdateMe"
+	UserBrowserService_BrowserGetMe_FullMethodName             = "/gateway.v1.UserBrowserService/BrowserGetMe"
+	UserBrowserService_BrowserUpdateMe_FullMethodName          = "/gateway.v1.UserBrowserService/BrowserUpdateMe"
+	UserBrowserService_BrowserListAddresses_FullMethodName     = "/gateway.v1.UserBrowserService/BrowserListAddresses"
+	UserBrowserService_BrowserCreateAddress_FullMethodName     = "/gateway.v1.UserBrowserService/BrowserCreateAddress"
+	UserBrowserService_BrowserUpdateAddress_FullMethodName     = "/gateway.v1.UserBrowserService/BrowserUpdateAddress"
+	UserBrowserService_BrowserDeleteAddress_FullMethodName     = "/gateway.v1.UserBrowserService/BrowserDeleteAddress"
+	UserBrowserService_BrowserSetDefaultAddress_FullMethodName = "/gateway.v1.UserBrowserService/BrowserSetDefaultAddress"
 )
 
 // UserBrowserServiceClient is the client API for UserBrowserService service.
@@ -34,6 +39,16 @@ type UserBrowserServiceClient interface {
 	BrowserGetMe(ctx context.Context, in *BrowserGetMeRequest, opts ...grpc.CallOption) (*BrowserGetMeResponse, error)
 	// UpdateMe resolves the browser session and conditionally updates its owner's profile.
 	BrowserUpdateMe(ctx context.Context, in *BrowserUpdateMeRequest, opts ...grpc.CallOption) (*BrowserUpdateMeResponse, error)
+	// BrowserListAddresses exchanges the browser session before the owner-scoped operation.
+	BrowserListAddresses(ctx context.Context, in *BrowserListAddressesRequest, opts ...grpc.CallOption) (*BrowserListAddressesResponse, error)
+	// BrowserCreateAddress exchanges the browser session before the owner-scoped operation.
+	BrowserCreateAddress(ctx context.Context, in *BrowserCreateAddressRequest, opts ...grpc.CallOption) (*BrowserCreateAddressResponse, error)
+	// BrowserUpdateAddress exchanges the browser session before the owner-scoped operation.
+	BrowserUpdateAddress(ctx context.Context, in *BrowserUpdateAddressRequest, opts ...grpc.CallOption) (*BrowserUpdateAddressResponse, error)
+	// BrowserDeleteAddress exchanges the browser session before the owner-scoped operation.
+	BrowserDeleteAddress(ctx context.Context, in *BrowserDeleteAddressRequest, opts ...grpc.CallOption) (*BrowserDeleteAddressResponse, error)
+	// BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
+	BrowserSetDefaultAddress(ctx context.Context, in *BrowserSetDefaultAddressRequest, opts ...grpc.CallOption) (*BrowserSetDefaultAddressResponse, error)
 }
 
 type userBrowserServiceClient struct {
@@ -64,6 +79,56 @@ func (c *userBrowserServiceClient) BrowserUpdateMe(ctx context.Context, in *Brow
 	return out, nil
 }
 
+func (c *userBrowserServiceClient) BrowserListAddresses(ctx context.Context, in *BrowserListAddressesRequest, opts ...grpc.CallOption) (*BrowserListAddressesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserListAddressesResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserListAddresses_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userBrowserServiceClient) BrowserCreateAddress(ctx context.Context, in *BrowserCreateAddressRequest, opts ...grpc.CallOption) (*BrowserCreateAddressResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserCreateAddressResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserCreateAddress_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userBrowserServiceClient) BrowserUpdateAddress(ctx context.Context, in *BrowserUpdateAddressRequest, opts ...grpc.CallOption) (*BrowserUpdateAddressResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserUpdateAddressResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserUpdateAddress_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userBrowserServiceClient) BrowserDeleteAddress(ctx context.Context, in *BrowserDeleteAddressRequest, opts ...grpc.CallOption) (*BrowserDeleteAddressResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserDeleteAddressResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserDeleteAddress_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userBrowserServiceClient) BrowserSetDefaultAddress(ctx context.Context, in *BrowserSetDefaultAddressRequest, opts ...grpc.CallOption) (*BrowserSetDefaultAddressResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserSetDefaultAddressResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserSetDefaultAddress_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserBrowserServiceServer is the server API for UserBrowserService service.
 // All implementations must embed UnimplementedUserBrowserServiceServer
 // for forward compatibility.
@@ -75,6 +140,16 @@ type UserBrowserServiceServer interface {
 	BrowserGetMe(context.Context, *BrowserGetMeRequest) (*BrowserGetMeResponse, error)
 	// UpdateMe resolves the browser session and conditionally updates its owner's profile.
 	BrowserUpdateMe(context.Context, *BrowserUpdateMeRequest) (*BrowserUpdateMeResponse, error)
+	// BrowserListAddresses exchanges the browser session before the owner-scoped operation.
+	BrowserListAddresses(context.Context, *BrowserListAddressesRequest) (*BrowserListAddressesResponse, error)
+	// BrowserCreateAddress exchanges the browser session before the owner-scoped operation.
+	BrowserCreateAddress(context.Context, *BrowserCreateAddressRequest) (*BrowserCreateAddressResponse, error)
+	// BrowserUpdateAddress exchanges the browser session before the owner-scoped operation.
+	BrowserUpdateAddress(context.Context, *BrowserUpdateAddressRequest) (*BrowserUpdateAddressResponse, error)
+	// BrowserDeleteAddress exchanges the browser session before the owner-scoped operation.
+	BrowserDeleteAddress(context.Context, *BrowserDeleteAddressRequest) (*BrowserDeleteAddressResponse, error)
+	// BrowserSetDefaultAddress exchanges the browser session before the owner-scoped operation.
+	BrowserSetDefaultAddress(context.Context, *BrowserSetDefaultAddressRequest) (*BrowserSetDefaultAddressResponse, error)
 	mustEmbedUnimplementedUserBrowserServiceServer()
 }
 
@@ -90,6 +165,21 @@ func (UnimplementedUserBrowserServiceServer) BrowserGetMe(context.Context, *Brow
 }
 func (UnimplementedUserBrowserServiceServer) BrowserUpdateMe(context.Context, *BrowserUpdateMeRequest) (*BrowserUpdateMeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BrowserUpdateMe not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserListAddresses(context.Context, *BrowserListAddressesRequest) (*BrowserListAddressesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserListAddresses not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserCreateAddress(context.Context, *BrowserCreateAddressRequest) (*BrowserCreateAddressResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserCreateAddress not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserUpdateAddress(context.Context, *BrowserUpdateAddressRequest) (*BrowserUpdateAddressResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserUpdateAddress not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserDeleteAddress(context.Context, *BrowserDeleteAddressRequest) (*BrowserDeleteAddressResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserDeleteAddress not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserSetDefaultAddress(context.Context, *BrowserSetDefaultAddressRequest) (*BrowserSetDefaultAddressResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserSetDefaultAddress not implemented")
 }
 func (UnimplementedUserBrowserServiceServer) mustEmbedUnimplementedUserBrowserServiceServer() {}
 func (UnimplementedUserBrowserServiceServer) testEmbeddedByValue()                            {}
@@ -148,6 +238,96 @@ func _UserBrowserService_BrowserUpdateMe_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserBrowserService_BrowserListAddresses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserListAddressesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserListAddresses(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserListAddresses_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserListAddresses(ctx, req.(*BrowserListAddressesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserBrowserService_BrowserCreateAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserCreateAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserCreateAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserCreateAddress_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserCreateAddress(ctx, req.(*BrowserCreateAddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserBrowserService_BrowserUpdateAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserUpdateAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserUpdateAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserUpdateAddress_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserUpdateAddress(ctx, req.(*BrowserUpdateAddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserBrowserService_BrowserDeleteAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserDeleteAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserDeleteAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserDeleteAddress_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserDeleteAddress(ctx, req.(*BrowserDeleteAddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserBrowserService_BrowserSetDefaultAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserSetDefaultAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserSetDefaultAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserSetDefaultAddress_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserSetDefaultAddress(ctx, req.(*BrowserSetDefaultAddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserBrowserService_ServiceDesc is the grpc.ServiceDesc for UserBrowserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -162,6 +342,26 @@ var UserBrowserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BrowserUpdateMe",
 			Handler:    _UserBrowserService_BrowserUpdateMe_Handler,
+		},
+		{
+			MethodName: "BrowserListAddresses",
+			Handler:    _UserBrowserService_BrowserListAddresses_Handler,
+		},
+		{
+			MethodName: "BrowserCreateAddress",
+			Handler:    _UserBrowserService_BrowserCreateAddress_Handler,
+		},
+		{
+			MethodName: "BrowserUpdateAddress",
+			Handler:    _UserBrowserService_BrowserUpdateAddress_Handler,
+		},
+		{
+			MethodName: "BrowserDeleteAddress",
+			Handler:    _UserBrowserService_BrowserDeleteAddress_Handler,
+		},
+		{
+			MethodName: "BrowserSetDefaultAddress",
+			Handler:    _UserBrowserService_BrowserSetDefaultAddress_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

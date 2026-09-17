@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { PublicApi, Profile } from '../../shared/api/types';
+import type { PublicApi, Profile, AddressBook } from '../../shared/api/types';
 import {
   createSessionController,
   GuardMismatchError,
@@ -47,6 +47,11 @@ function api(): PublicApi {
     refresh: vi.fn(async () => {}),
     logout: vi.fn(async () => {}),
     logoutAll: vi.fn(async () => {}),
+    listAddresses: vi.fn(),
+    createAddress: vi.fn(),
+    updateAddress: vi.fn(),
+    deleteAddress: vi.fn(),
+    setDefaultAddress: vi.fn(),
     getProfile: vi.fn(async () => profile()),
     updateProfile: vi.fn(async () => profile()),
   };
@@ -505,4 +510,101 @@ describe('shell session coordination', () => {
       b.dispose();
     },
   );
+});
+
+const book = (id = 1): AddressBook => ({
+  $typeName: 'user.v1.AddressBook',
+  subjectId: new Uint8Array(16).fill(id),
+  version: 1n,
+  addresses: [],
+});
+describe('address session isolation', () => {
+  it('guards every address mutation before network and never retries unknown outcomes', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const owner = controller.capture();
+    const input = {
+      expectedBookVersion: 1n,
+      addressId: new Uint8Array(16).fill(1),
+      fields: {
+        recipient: '',
+        phone: '',
+        country: '',
+        postalCode: '',
+        city: '',
+        streetHouse: '',
+        apartment: '',
+        comment: '',
+      },
+    };
+    for (const method of [
+      'createAddress',
+      'updateAddress',
+      'deleteAddress',
+      'setDefaultAddress',
+    ] as const) {
+      vi.mocked(backend[method]).mockRejectedValueOnce(denied());
+      await expect(controller[method](input, owner)).rejects.toMatchObject({
+        code: Code.Unauthenticated,
+      });
+      expect(backend[method]).toHaveBeenCalledTimes(1);
+    }
+    expect(backend.refresh).not.toHaveBeenCalled();
+    await controller.logout();
+    for (const method of [
+      'createAddress',
+      'updateAddress',
+      'deleteAddress',
+      'setDefaultAddress',
+    ] as const) {
+      await expect(controller[method](input, owner)).rejects.toBeInstanceOf(GuardMismatchError);
+      expect(backend[method]).toHaveBeenCalledTimes(1);
+    }
+    controller.dispose();
+  });
+  it('rejects a wrong book owner and keeps the generation invalidated', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    vi.mocked(backend.listAddresses).mockResolvedValue(book(2));
+    await expect(controller.readAddresses(controller.capture())).rejects.toBeInstanceOf(
+      GuardMismatchError,
+    );
+    expect(controller.state.value.status).toBe('uncertain');
+    await controller.bootstrap();
+    expect(controller.state.value.status).toBe('uncertain');
+    controller.dispose();
+  });
+  it('holds address requests under a shared lock and rejects their reply after logout intent', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const pending = deferred<ReturnType<typeof book>>();
+    vi.mocked(backend.listAddresses).mockReturnValue(pending.promise);
+    const reading = controller.readAddresses(controller.capture());
+    const rejected = expect(reading).rejects.toBeInstanceOf(GuardMismatchError);
+    await settle();
+    const logout = controller.logout();
+    await settle();
+    expect(backend.logout).not.toHaveBeenCalled();
+    pending.resolve(book());
+    await rejected;
+    await logout;
+    expect(controller.state.value.status).toBe('anonymous');
+    controller.dispose();
+  });
+  it('recovers authentication only for a read and rechecks its original owner', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    vi.mocked(backend.listAddresses).mockRejectedValueOnce(denied()).mockResolvedValue(book());
+    await expect(controller.readAddresses(controller.capture())).resolves.toEqual(book());
+    expect(backend.listAddresses).toHaveBeenCalledTimes(2);
+    controller.dispose();
+  });
 });

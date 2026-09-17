@@ -37,6 +37,21 @@ const (
 	UserServiceGetMeProcedure = "/user.v1.UserService/GetMe"
 	// UserServiceUpdateMeProcedure is the fully-qualified name of the UserService's UpdateMe RPC.
 	UserServiceUpdateMeProcedure = "/user.v1.UserService/UpdateMe"
+	// UserServiceListAddressesProcedure is the fully-qualified name of the UserService's ListAddresses
+	// RPC.
+	UserServiceListAddressesProcedure = "/user.v1.UserService/ListAddresses"
+	// UserServiceCreateAddressProcedure is the fully-qualified name of the UserService's CreateAddress
+	// RPC.
+	UserServiceCreateAddressProcedure = "/user.v1.UserService/CreateAddress"
+	// UserServiceUpdateAddressProcedure is the fully-qualified name of the UserService's UpdateAddress
+	// RPC.
+	UserServiceUpdateAddressProcedure = "/user.v1.UserService/UpdateAddress"
+	// UserServiceDeleteAddressProcedure is the fully-qualified name of the UserService's DeleteAddress
+	// RPC.
+	UserServiceDeleteAddressProcedure = "/user.v1.UserService/DeleteAddress"
+	// UserServiceSetDefaultAddressProcedure is the fully-qualified name of the UserService's
+	// SetDefaultAddress RPC.
+	UserServiceSetDefaultAddressProcedure = "/user.v1.UserService/SetDefaultAddress"
 )
 
 // UserServiceClient is a client for the user.v1.UserService service.
@@ -45,6 +60,16 @@ type UserServiceClient interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 	// UpdateMe replaces editable fields only when the expected profile version still matches.
 	UpdateMe(context.Context, *connect.Request[v1.UpdateMeRequest]) (*connect.Response[v1.UpdateMeResponse], error)
+	// ListAddresses operates only on the authenticated caller's versioned address book.
+	ListAddresses(context.Context, *connect.Request[v1.ListAddressesRequest]) (*connect.Response[v1.ListAddressesResponse], error)
+	// CreateAddress operates only on the authenticated caller's versioned address book.
+	CreateAddress(context.Context, *connect.Request[v1.CreateAddressRequest]) (*connect.Response[v1.CreateAddressResponse], error)
+	// UpdateAddress operates only on the authenticated caller's versioned address book.
+	UpdateAddress(context.Context, *connect.Request[v1.UpdateAddressRequest]) (*connect.Response[v1.UpdateAddressResponse], error)
+	// DeleteAddress operates only on the authenticated caller's versioned address book.
+	DeleteAddress(context.Context, *connect.Request[v1.DeleteAddressRequest]) (*connect.Response[v1.DeleteAddressResponse], error)
+	// SetDefaultAddress operates only on the authenticated caller's versioned address book.
+	SetDefaultAddress(context.Context, *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the user.v1.UserService service. By default, it uses
@@ -70,13 +95,48 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("UpdateMe")),
 			connect.WithClientOptions(opts...),
 		),
+		listAddresses: connect.NewClient[v1.ListAddressesRequest, v1.ListAddressesResponse](
+			httpClient,
+			baseURL+UserServiceListAddressesProcedure,
+			connect.WithSchema(userServiceMethods.ByName("ListAddresses")),
+			connect.WithClientOptions(opts...),
+		),
+		createAddress: connect.NewClient[v1.CreateAddressRequest, v1.CreateAddressResponse](
+			httpClient,
+			baseURL+UserServiceCreateAddressProcedure,
+			connect.WithSchema(userServiceMethods.ByName("CreateAddress")),
+			connect.WithClientOptions(opts...),
+		),
+		updateAddress: connect.NewClient[v1.UpdateAddressRequest, v1.UpdateAddressResponse](
+			httpClient,
+			baseURL+UserServiceUpdateAddressProcedure,
+			connect.WithSchema(userServiceMethods.ByName("UpdateAddress")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteAddress: connect.NewClient[v1.DeleteAddressRequest, v1.DeleteAddressResponse](
+			httpClient,
+			baseURL+UserServiceDeleteAddressProcedure,
+			connect.WithSchema(userServiceMethods.ByName("DeleteAddress")),
+			connect.WithClientOptions(opts...),
+		),
+		setDefaultAddress: connect.NewClient[v1.SetDefaultAddressRequest, v1.SetDefaultAddressResponse](
+			httpClient,
+			baseURL+UserServiceSetDefaultAddressProcedure,
+			connect.WithSchema(userServiceMethods.ByName("SetDefaultAddress")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // userServiceClient implements UserServiceClient.
 type userServiceClient struct {
-	getMe    *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
-	updateMe *connect.Client[v1.UpdateMeRequest, v1.UpdateMeResponse]
+	getMe             *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
+	updateMe          *connect.Client[v1.UpdateMeRequest, v1.UpdateMeResponse]
+	listAddresses     *connect.Client[v1.ListAddressesRequest, v1.ListAddressesResponse]
+	createAddress     *connect.Client[v1.CreateAddressRequest, v1.CreateAddressResponse]
+	updateAddress     *connect.Client[v1.UpdateAddressRequest, v1.UpdateAddressResponse]
+	deleteAddress     *connect.Client[v1.DeleteAddressRequest, v1.DeleteAddressResponse]
+	setDefaultAddress *connect.Client[v1.SetDefaultAddressRequest, v1.SetDefaultAddressResponse]
 }
 
 // GetMe calls user.v1.UserService.GetMe.
@@ -89,12 +149,47 @@ func (c *userServiceClient) UpdateMe(ctx context.Context, req *connect.Request[v
 	return c.updateMe.CallUnary(ctx, req)
 }
 
+// ListAddresses calls user.v1.UserService.ListAddresses.
+func (c *userServiceClient) ListAddresses(ctx context.Context, req *connect.Request[v1.ListAddressesRequest]) (*connect.Response[v1.ListAddressesResponse], error) {
+	return c.listAddresses.CallUnary(ctx, req)
+}
+
+// CreateAddress calls user.v1.UserService.CreateAddress.
+func (c *userServiceClient) CreateAddress(ctx context.Context, req *connect.Request[v1.CreateAddressRequest]) (*connect.Response[v1.CreateAddressResponse], error) {
+	return c.createAddress.CallUnary(ctx, req)
+}
+
+// UpdateAddress calls user.v1.UserService.UpdateAddress.
+func (c *userServiceClient) UpdateAddress(ctx context.Context, req *connect.Request[v1.UpdateAddressRequest]) (*connect.Response[v1.UpdateAddressResponse], error) {
+	return c.updateAddress.CallUnary(ctx, req)
+}
+
+// DeleteAddress calls user.v1.UserService.DeleteAddress.
+func (c *userServiceClient) DeleteAddress(ctx context.Context, req *connect.Request[v1.DeleteAddressRequest]) (*connect.Response[v1.DeleteAddressResponse], error) {
+	return c.deleteAddress.CallUnary(ctx, req)
+}
+
+// SetDefaultAddress calls user.v1.UserService.SetDefaultAddress.
+func (c *userServiceClient) SetDefaultAddress(ctx context.Context, req *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error) {
+	return c.setDefaultAddress.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the user.v1.UserService service.
 type UserServiceHandler interface {
 	// GetMe reads the caller's profile with read-after-write consistency.
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 	// UpdateMe replaces editable fields only when the expected profile version still matches.
 	UpdateMe(context.Context, *connect.Request[v1.UpdateMeRequest]) (*connect.Response[v1.UpdateMeResponse], error)
+	// ListAddresses operates only on the authenticated caller's versioned address book.
+	ListAddresses(context.Context, *connect.Request[v1.ListAddressesRequest]) (*connect.Response[v1.ListAddressesResponse], error)
+	// CreateAddress operates only on the authenticated caller's versioned address book.
+	CreateAddress(context.Context, *connect.Request[v1.CreateAddressRequest]) (*connect.Response[v1.CreateAddressResponse], error)
+	// UpdateAddress operates only on the authenticated caller's versioned address book.
+	UpdateAddress(context.Context, *connect.Request[v1.UpdateAddressRequest]) (*connect.Response[v1.UpdateAddressResponse], error)
+	// DeleteAddress operates only on the authenticated caller's versioned address book.
+	DeleteAddress(context.Context, *connect.Request[v1.DeleteAddressRequest]) (*connect.Response[v1.DeleteAddressResponse], error)
+	// SetDefaultAddress operates only on the authenticated caller's versioned address book.
+	SetDefaultAddress(context.Context, *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -116,12 +211,52 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UpdateMe")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceListAddressesHandler := connect.NewUnaryHandler(
+		UserServiceListAddressesProcedure,
+		svc.ListAddresses,
+		connect.WithSchema(userServiceMethods.ByName("ListAddresses")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceCreateAddressHandler := connect.NewUnaryHandler(
+		UserServiceCreateAddressProcedure,
+		svc.CreateAddress,
+		connect.WithSchema(userServiceMethods.ByName("CreateAddress")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceUpdateAddressHandler := connect.NewUnaryHandler(
+		UserServiceUpdateAddressProcedure,
+		svc.UpdateAddress,
+		connect.WithSchema(userServiceMethods.ByName("UpdateAddress")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceDeleteAddressHandler := connect.NewUnaryHandler(
+		UserServiceDeleteAddressProcedure,
+		svc.DeleteAddress,
+		connect.WithSchema(userServiceMethods.ByName("DeleteAddress")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceSetDefaultAddressHandler := connect.NewUnaryHandler(
+		UserServiceSetDefaultAddressProcedure,
+		svc.SetDefaultAddress,
+		connect.WithSchema(userServiceMethods.ByName("SetDefaultAddress")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceGetMeProcedure:
 			userServiceGetMeHandler.ServeHTTP(w, r)
 		case UserServiceUpdateMeProcedure:
 			userServiceUpdateMeHandler.ServeHTTP(w, r)
+		case UserServiceListAddressesProcedure:
+			userServiceListAddressesHandler.ServeHTTP(w, r)
+		case UserServiceCreateAddressProcedure:
+			userServiceCreateAddressHandler.ServeHTTP(w, r)
+		case UserServiceUpdateAddressProcedure:
+			userServiceUpdateAddressHandler.ServeHTTP(w, r)
+		case UserServiceDeleteAddressProcedure:
+			userServiceDeleteAddressHandler.ServeHTTP(w, r)
+		case UserServiceSetDefaultAddressProcedure:
+			userServiceSetDefaultAddressHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -137,4 +272,24 @@ func (UnimplementedUserServiceHandler) GetMe(context.Context, *connect.Request[v
 
 func (UnimplementedUserServiceHandler) UpdateMe(context.Context, *connect.Request[v1.UpdateMeRequest]) (*connect.Response[v1.UpdateMeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.UpdateMe is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) ListAddresses(context.Context, *connect.Request[v1.ListAddressesRequest]) (*connect.Response[v1.ListAddressesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.ListAddresses is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) CreateAddress(context.Context, *connect.Request[v1.CreateAddressRequest]) (*connect.Response[v1.CreateAddressResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.CreateAddress is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) UpdateAddress(context.Context, *connect.Request[v1.UpdateAddressRequest]) (*connect.Response[v1.UpdateAddressResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.UpdateAddress is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) DeleteAddress(context.Context, *connect.Request[v1.DeleteAddressRequest]) (*connect.Response[v1.DeleteAddressResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.DeleteAddress is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) SetDefaultAddress(context.Context, *connect.Request[v1.SetDefaultAddressRequest]) (*connect.Response[v1.SetDefaultAddressResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.SetDefaultAddress is not implemented"))
 }

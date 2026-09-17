@@ -163,3 +163,46 @@ func TestMixedProfileCodecsFailClosedInBothDirections(t *testing.T) {
 		}
 	}
 }
+
+func TestAddressFlagPoliciesAndReadiness(t *testing.T) {
+	log, err := logger.New(logger.Config{Service: "gateway-in", Version: "test", Environment: "test", Output: io.Discard})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, enabled := range []bool{false, true} {
+		cfg := config{userBrowserEnabled: true, userAddressesBrowserEnabled: enabled, instanceID: "test", expectedGatewayOutURI: "spiffe://test/gateway-out", dataCenter: "dc-a", requestTimeout: time.Second, healthTimeout: time.Second}
+		config := tunnelConfig(cfg, log, telemetry.NewNoop())
+		server, err := tunnel.New(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ready := readyRouteSet{}
+		for _, id := range profileRouteIDs(cfg) {
+			ready[id] = true
+		}
+		if profileRoutesReady(cfg, ready) == enabled {
+			t.Fatal("partial route readiness accepted")
+		}
+		for _, id := range addressRouteIDs() {
+			policy, allowed := server.Registry().RoutePolicy(id)
+			if allowed != enabled {
+				t.Fatal("address gate mismatch")
+			}
+			if allowed && (policy.MaxRequestBytes != 16*1024 || policy.MaxResponseBytes != 128*1024) {
+				t.Fatal("address limits mismatch")
+			}
+			ready[id] = true
+		}
+		if !profileRoutesReady(cfg, ready) {
+			t.Fatal("complete route set unavailable")
+		}
+	}
+	for _, value := range []string{"true", "bad", "false"} {
+		env := validEnvironment()
+		env["USER_ADDRESSES_BROWSER_ENABLED"] = value
+		cfg, err := loadConfig(serviceruntime.MapEnv(env))
+		if (err != nil) != (value != "false") {
+			t.Fatal("invalid dependency accepted", cfg, err)
+		}
+	}
+}

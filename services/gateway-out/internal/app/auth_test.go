@@ -52,6 +52,19 @@ func TestAuthConfigFailClosed(t *testing.T) {
 	if cfg, err := loadConfig(serviceruntime.MapEnv(base)); err != nil || !cfg.userBrowserEnabled || cfg.authBrowserEnabled {
 		t.Fatalf("User-only configuration: %v", err)
 	}
+	base["USER_ADDRESSES_BROWSER_ENABLED"] = "true"
+	if cfg, err := loadConfig(serviceruntime.MapEnv(base)); err != nil || !cfg.userAddressesBrowserEnabled {
+		t.Fatal("address flag rejected", err)
+	}
+	base["USER_BROWSER_ENABLED"] = "false"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("addresses without profile accepted")
+	}
+	base["USER_ADDRESSES_BROWSER_ENABLED"] = "bad"
+	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
+		t.Fatal("invalid addresses flag accepted")
+	}
+	base["USER_ADDRESSES_BROWSER_ENABLED"] = "false"
 	base["USER_BROWSER_ENABLED"] = "sometimes"
 	if _, err := loadConfig(serviceruntime.MapEnv(base)); err == nil {
 		t.Fatal("accepted invalid User flag")

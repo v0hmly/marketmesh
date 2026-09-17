@@ -20,7 +20,9 @@ const isRegister = computed(() => props.mode === 'register');
 const disabled = computed(
   () =>
     submitting.value ||
-    ['checking', 'switching', 'signingOut', 'unsupported'].includes(session.state.value.status),
+    ['unknown', 'checking', 'switching', 'signingOut', 'unsupported'].includes(
+      session.state.value.status,
+    ),
 );
 
 watch(
@@ -101,7 +103,18 @@ async function submit() {
       <p v-if="registered && !isRegister" class="notice success" role="status">
         Запрос обработан. Теперь войдите с вашим логином и паролем.
       </p>
-      <form novalidate :aria-busy="submitting" @submit.prevent="submit">
+      <p
+        v-if="['unknown', 'checking'].includes(session.state.value.status)"
+        role="status"
+        class="subtle"
+      >
+        Проверяем сессию перед вводом данных…
+      </p>
+      <form
+        novalidate
+        :aria-busy="submitting || ['unknown', 'checking'].includes(session.state.value.status)"
+        @submit.prevent="submit"
+      >
         <div class="field">
           <label for="identifier">Логин</label>
           <input
