@@ -8,7 +8,7 @@ import (
 	"time"
 
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
-	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/argon2id"
+	passwordbcrypt "github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/bcrypt"
 )
 
 const (
@@ -79,7 +79,7 @@ type config struct {
 	postgresHealthCheckPeriod     time.Duration
 	postgresPingTimeout           time.Duration
 
-	argon2       argon2id.Config
+	bcryptCost   int
 	sessions     sessionConfig
 	registration registrationConfig
 }
@@ -196,28 +196,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 		return config{}, err
 	}
 
-	defaults := argon2id.DefaultConfig()
-	memory, err := positiveUint32(env, "ARGON2_MEMORY_KIB", defaults.Memory)
-	if err != nil {
+	if result.bcryptCost, err = env.PositiveInt("BCRYPT_COST", passwordbcrypt.DefaultCost); err != nil {
 		return config{}, err
 	}
-	timeCost, err := positiveUint32(env, "ARGON2_TIME", defaults.Time)
-	if err != nil {
-		return config{}, err
+	if result.bcryptCost < passwordbcrypt.MinCost || result.bcryptCost > passwordbcrypt.MaxCost {
+		return config{}, errors.New("environment variable BCRYPT_COST must be between 10 and 14")
 	}
-	parallelism, err := positiveUint8(env, "ARGON2_PARALLELISM", defaults.Parallelism)
-	if err != nil {
-		return config{}, err
-	}
-	saltLength, err := positiveUint32(env, "ARGON2_SALT_BYTES", defaults.SaltLength)
-	if err != nil {
-		return config{}, err
-	}
-	keyLength, err := positiveUint32(env, "ARGON2_KEY_BYTES", defaults.KeyLength)
-	if err != nil {
-		return config{}, err
-	}
-	result.argon2 = argon2id.Config{Memory: memory, Time: timeCost, Parallelism: parallelism, SaltLength: saltLength, KeyLength: keyLength}
 	result.sessions, err = loadSessionConfig(env, result.environment)
 	if err != nil {
 		return config{}, err
@@ -255,32 +239,6 @@ func nonNegativeInt32(env serviceruntime.Env, name string, fallback int) (int32,
 	}
 	if value < 0 {
 		return 0, fmt.Errorf("environment variable %s must be between zero and %d", name, math.MaxInt32)
-	}
-	return value, nil
-}
-
-func positiveUint32(env serviceruntime.Env, name string, fallback uint32) (uint32, error) {
-	raw, err := env.String(name, strconv.FormatUint(uint64(fallback), 10))
-	if err != nil {
-		return 0, err
-	}
-	var value uint32
-	count, scanErr := fmt.Sscanf(raw, "%d", &value)
-	if scanErr != nil || count != 1 || value == 0 || strconv.FormatUint(uint64(value), 10) != raw {
-		return 0, fmt.Errorf("environment variable %s must be a positive 32-bit integer", name)
-	}
-	return value, nil
-}
-
-func positiveUint8(env serviceruntime.Env, name string, fallback uint8) (uint8, error) {
-	raw, err := env.String(name, strconv.FormatUint(uint64(fallback), 10))
-	if err != nil {
-		return 0, err
-	}
-	var value uint8
-	count, scanErr := fmt.Sscanf(raw, "%d", &value)
-	if scanErr != nil || count != 1 || value == 0 || strconv.FormatUint(uint64(value), 10) != raw {
-		return 0, fmt.Errorf("environment variable %s must be a positive 8-bit integer", name)
 	}
 	return value, nil
 }

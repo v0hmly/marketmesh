@@ -27,6 +27,7 @@ import (
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
 	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/registrationwire"
 	"github.com/v0hmly/marketmesh/services/auth/migrations"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestIntegrationRegistrationRuntimeCaptureRecoveryAndPrivacy(t *testing.T) {
@@ -116,7 +117,7 @@ func TestIntegrationRegistrationRuntimeCaptureRecoveryAndPrivacy(t *testing.T) {
 		"HTTP_ADDRESS": "127.0.0.1:0", "POSTGRES_QUERY_TIMEOUT": "500ms", "HEALTH_CHECK_TIMEOUT": "500ms", "SHUTDOWN_TIMEOUT": "3s",
 		"AUTH_EVENTS_CONNECT_TIMEOUT": "200ms", "AUTH_EVENTS_PUBLISH_TIMEOUT": "500ms", "AUTH_EVENTS_POLL_INTERVAL": "25ms", "AUTH_EVENTS_LEASE_DURATION": "5s", "AUTH_EVENTS_RETRY_INITIAL": "50ms", "AUTH_EVENTS_RETRY_MAX": "200ms",
 		// Exercise the real password hasher with inexpensive test-only parameters.
-		"ARGON2_MEMORY_KIB": "8192", "ARGON2_TIME": "1", "ARGON2_PARALLELISM": "1",
+		"BCRYPT_COST": "10",
 	} {
 		env[key] = value
 	}
@@ -185,7 +186,7 @@ func TestIntegrationRegistrationRuntimeCaptureRecoveryAndPrivacy(t *testing.T) {
 	register := func(base, identifier string) {
 		t.Helper()
 		client := authv1connect.NewAuthServiceClient(httpClient, base)
-		request := connect.NewRequest(&authv1.RegisterCredentialsRequest{Identifier: identifier, Password: []byte("fixture-private-password")})
+		request := connect.NewRequest(&authv1.RegisterCredentialsRequest{Identifier: identifier, Password: []byte("Mm72!abc")})
 		request.Header().Set("traceparent", "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01")
 		if _, err := client.RegisterCredentials(ctx, request); err != nil {
 			t.Fatal("registration RPC failed", err)
@@ -206,6 +207,16 @@ func TestIntegrationRegistrationRuntimeCaptureRecoveryAndPrivacy(t *testing.T) {
 	register(base, "private-capture@example.com")
 	if count(`SELECT count(*) FROM auth.credentials`) != 1 || count(`SELECT count(*) FROM auth.registration_outbox WHERE published_at IS NULL AND attempts=0`) != 1 {
 		t.Fatal("capture/duplicate invariant failed")
+	}
+	var storedDigest string
+	if err := db.QueryRow(ctx, `SELECT password_digest FROM auth.credentials`).Scan(&storedDigest); err != nil {
+		t.Fatal(err)
+	}
+	if cost, err := bcrypt.Cost([]byte(storedDigest)); err != nil || cost != 10 {
+		t.Fatalf("stored bcrypt cost = %d, error = %v", cost, err)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(storedDigest), []byte("Mm72!abc")); err != nil {
+		t.Fatal("stored digest does not verify the eight-character password")
 	}
 	info, err := js.StreamInfo("AUTH_REGISTRATION", nats.Context(ctx))
 	if err != nil || info.State.Msgs != 0 {
@@ -253,7 +264,7 @@ func TestIntegrationRegistrationRuntimeCaptureRecoveryAndPrivacy(t *testing.T) {
 		if err := db.QueryRow(ctx, `SELECT payload FROM auth.registration_outbox WHERE event_id=$1`, event.ID[:]).Scan(&stored); err != nil || !bytes.Equal(stored, message.Data) {
 			t.Fatal("published bytes differ from durable fact", err)
 		}
-		for _, secret := range []string{"private-capture@example.com", "private-outage@example.com", "fixture-private-password", "argon2id"} {
+		for _, secret := range []string{"private-capture@example.com", "private-outage@example.com", "Mm72!abc", "$2a$"} {
 			if bytes.Contains(message.Data, []byte(secret)) {
 				t.Fatal("private credential material in event")
 			}
@@ -264,7 +275,7 @@ func TestIntegrationRegistrationRuntimeCaptureRecoveryAndPrivacy(t *testing.T) {
 		t.Fatal("duplicate registered a second fact")
 	}
 	stopPublishing()
-	for _, secret := range []string{"private-capture@example.com", "private-outage@example.com", "fixture-private-password", "fixture-registration-rw", "fixture-registration-ro", "BEGIN PRIVATE KEY"} {
+	for _, secret := range []string{"private-capture@example.com", "private-outage@example.com", "Mm72!abc", storedDigest, "fixture-registration-rw", "fixture-registration-ro", "BEGIN PRIVATE KEY"} {
 		if strings.Contains(logs.String(), secret) {
 			t.Fatal("private runtime log")
 		}

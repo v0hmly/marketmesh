@@ -51,8 +51,14 @@ export function validateCredentials(
     errors.identifier = 'Укажите логин без пробелов и управляющих символов.';
   }
   const size = utf8.encode(password).length;
-  if (!wellFormed(password) || size < 12 || size > 1024) {
-    errors.password = 'Пароль должен содержать от 12 до 1024 байт UTF-8. Попробуйте длинную фразу.';
+  const characters = Array.from(password).length;
+  if (!wellFormed(password) || characters < 8 || characters > 64) {
+    errors.password = 'Пароль должен содержать от 8 до 64 символов.';
+  } else if (password.includes('\u0000')) {
+    errors.password = 'Пароль содержит недопустимый символ.';
+  } else if (size > 72) {
+    errors.password =
+      'Пароль слишком длинный: кириллица и эмодзи занимают больше места. Сократите его.';
   }
   return errors;
 }

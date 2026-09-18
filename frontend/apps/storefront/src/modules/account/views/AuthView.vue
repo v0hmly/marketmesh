@@ -147,8 +147,9 @@ async function submit() {
             required
             :disabled="disabled"
             :aria-invalid="Boolean(errors.password)"
-            :aria-describedby="errors.password ? 'password-error' : undefined"
+            :aria-describedby="errors.password ? 'password-help password-error' : 'password-help'"
           />
+          <span id="password-help" class="field-help">От 8 до 64 символов.</span>
           <span v-if="errors.password" id="password-error" class="field-error">{{
             errors.password
           }}</span>

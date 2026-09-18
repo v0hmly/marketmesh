@@ -75,6 +75,24 @@ function button(wrapper: VueWrapper, text: string) {
 }
 
 describe('account forms', () => {
+  it.each(['/login', '/register'])('enforces the password policy on %s', async (path) => {
+    const { session } = fixture('anonymous');
+    const { wrapper } = await open(session, path);
+    await wrapper.find('#identifier').setValue('alice');
+    expect(wrapper.find('#password-help').text()).toContain('От 8 до 64 символов');
+    for (const password of ['1234567', 'a'.repeat(65), 'я'.repeat(37)]) {
+      await wrapper.find('#password').setValue(password);
+      await wrapper.find('form').trigger('submit');
+      expect(wrapper.find('#password-error').exists()).toBe(true);
+      expect(session.login).not.toHaveBeenCalled();
+      expect(session.register).not.toHaveBeenCalled();
+    }
+    await wrapper.find('#password').setValue('12345678');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(path === '/login' ? session.login : session.register).toHaveBeenCalledTimes(1);
+  });
+
   it.each(['/login', '/register'])(
     'blocks credentials until delayed bootstrap settles on %s',
     async (path) => {
