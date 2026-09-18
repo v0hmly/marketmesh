@@ -214,9 +214,7 @@ func TestIntegrationRegistrationDelivery(t *testing.T) {
 			"AUTH_EVENTS_PUBLISH_TIMEOUT":       "500ms",
 			"AUTH_EVENTS_RETRY_INITIAL":         "50ms",
 			"AUTH_EVENTS_RETRY_MAX":             "200ms",
-			"ARGON2_MEMORY_KIB":                 "8192",
-			"ARGON2_TIME":                       "1",
-			"ARGON2_PARALLELISM":                "1",
+			"BCRYPT_COST":                       "10",
 		}
 		if publish {
 			env["AUTH_REGISTRATION_PUBLISH_ENABLED"] = "true"

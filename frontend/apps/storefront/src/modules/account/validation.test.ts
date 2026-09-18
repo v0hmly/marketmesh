@@ -23,8 +23,30 @@ describe('existing User field boundaries', () => {
   });
   it('checks password bytes without trimming or retaining secrets', () => {
     expect(validateCredentials('alice', 'short').password).toBeTruthy();
-    expect(validateCredentials('алиса', '😀😀😀')).toEqual({});
+    expect(validateCredentials('алиса', '😀'.repeat(8))).toEqual({});
     expect(validateCredentials('a b', 'long password').identifier).toBeTruthy();
     expect(validateCredentials(' alice ', 'long password')).toEqual({});
+  });
+});
+
+describe('password policy', () => {
+  it.each([
+    ['seven ASCII', '1234567', false],
+    ['eight ASCII', '12345678', true],
+    ['64 ASCII', 'a'.repeat(64), true],
+    ['65 ASCII', 'a'.repeat(65), false],
+    ['seven Cyrillic', 'я'.repeat(7), false],
+    ['eight Cyrillic', 'я'.repeat(8), true],
+    ['72 UTF-8 bytes', 'я'.repeat(36), true],
+    ['74 UTF-8 bytes', 'я'.repeat(37), false],
+    ['18 emoji', '😀'.repeat(18), true],
+    ['19 emoji', '😀'.repeat(19), false],
+    ['combining marks', 'e\u0301'.repeat(4), true],
+    ['spaces', '  abcdef  ', true],
+    ['malformed Unicode', '12345678\ud800', false],
+    ['NUL in repeated password', '12345678\u000012345678', false],
+    ['only NUL', '\u0000'.repeat(8), false],
+  ])('validates %s consistently with Auth', (_name, password, valid) => {
+    expect(!validateCredentials('alice', password).password).toBe(valid);
   });
 });

@@ -75,6 +75,44 @@ func TestPasswordAndDigestBounds(t *testing.T) {
 	}
 }
 
+func TestPasswordCountsCodePointsAndUTF8Bytes(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		value string
+		valid bool
+	}{
+		{name: "seven ASCII", value: "1234567"},
+		{name: "eight ASCII", value: "12345678", valid: true},
+		{name: "64 ASCII", value: strings.Repeat("a", 64), valid: true},
+		{name: "65 ASCII", value: strings.Repeat("a", 65)},
+		{name: "seven Cyrillic", value: strings.Repeat("я", 7)},
+		{name: "eight Cyrillic", value: strings.Repeat("я", 8), valid: true},
+		{name: "72 UTF8 bytes", value: strings.Repeat("я", 36), valid: true},
+		{name: "74 UTF8 bytes", value: strings.Repeat("я", 37)},
+		{name: "eight emoji", value: strings.Repeat("😀", 8), valid: true},
+		{name: "18 emoji", value: strings.Repeat("😀", 18), valid: true},
+		{name: "19 emoji", value: strings.Repeat("😀", 19)},
+		{name: "combining marks count separately", value: strings.Repeat("e\u0301", 4), valid: true},
+		{name: "spaces are not trimmed", value: "  abcdef  ", valid: true},
+		{name: "invalid UTF8", value: "12345678\xff"},
+		{name: "NUL in repeated password", value: "12345678\x0012345678"},
+		{name: "only NUL", value: strings.Repeat("\x00", 8)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			password, err := credential.NewPassword([]byte(test.value))
+			if test.valid {
+				if err != nil || string(password.Bytes()) != test.value {
+					t.Fatalf("password changed or rejected: %v", err)
+				}
+				password.Destroy()
+			} else if !errors.Is(err, credential.ErrInvalidPassword) {
+				t.Fatalf("invalid password error = %v", err)
+			}
+		})
+	}
+}
+
 func TestSubjectIDCopiesAndValidates(t *testing.T) {
 	t.Parallel()
 

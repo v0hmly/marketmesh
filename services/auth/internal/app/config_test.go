@@ -21,6 +21,9 @@ func TestLoadConfigUsesBoundedDefaultsAndSecrets(t *testing.T) {
 	if config.postgresMaxConns != defaultPostgresMaxConns || config.postgresQueryTimeout != defaultPostgresQueryTimeout {
 		t.Fatalf("PostgreSQL defaults = max %d, timeout %v", config.postgresMaxConns, config.postgresQueryTimeout)
 	}
+	if config.bcryptCost != 12 {
+		t.Fatalf("bcrypt default cost = %d", config.bcryptCost)
+	}
 	if !config.postgresRWDSN.Present() || !config.postgresRODSN.Present() {
 		t.Fatal("PostgreSQL DSNs were not represented as secrets")
 	}
@@ -42,7 +45,7 @@ func TestLoadConfigErrorsNeverContainSecretValues(t *testing.T) {
 	}
 }
 
-func TestLoadConfigRejectsUnboundedPoolsAndArgonIntegerRanges(t *testing.T) {
+func TestLoadConfigRejectsUnboundedPoolsAndBcryptCost(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -52,7 +55,8 @@ func TestLoadConfigRejectsUnboundedPoolsAndArgonIntegerRanges(t *testing.T) {
 	}{
 		{name: "negative minimum", key: "POSTGRES_MIN_CONNS", value: "-1"},
 		{name: "pool overflow", key: "POSTGRES_MAX_CONNS", value: "2147483648"},
-		{name: "argon parallelism overflow", key: "ARGON2_PARALLELISM", value: "256"},
+		{name: "bcrypt below minimum", key: "BCRYPT_COST", value: "9"},
+		{name: "bcrypt above maximum", key: "BCRYPT_COST", value: "15"},
 	}
 	for _, test := range tests {
 		test := test
@@ -95,10 +99,8 @@ func TestLoadConfigRejectsInvalidTypedValues(t *testing.T) {
 		{name: "idle", key: "POSTGRES_MAX_CONN_IDLE_TIME", value: "0s"},
 		{name: "health period", key: "POSTGRES_HEALTH_CHECK_PERIOD", value: "0s"},
 		{name: "ping timeout", key: "POSTGRES_PING_TIMEOUT", value: "0s"},
-		{name: "argon memory", key: "ARGON2_MEMORY_KIB", value: "0"},
-		{name: "argon time", key: "ARGON2_TIME", value: "0"},
-		{name: "argon salt", key: "ARGON2_SALT_BYTES", value: "0"},
-		{name: "argon key", key: "ARGON2_KEY_BYTES", value: "0"},
+		{name: "bcrypt zero", key: "BCRYPT_COST", value: "0"},
+		{name: "bcrypt invalid", key: "BCRYPT_COST", value: "invalid"},
 	}
 	for _, test := range tests {
 		test := test
@@ -122,6 +124,7 @@ func TestLoadConfigAcceptsOverrides(t *testing.T) {
 	values["HTTP_WRITE_TIMEOUT"] = "3s"
 	values["HTTP_IDLE_TIMEOUT"] = "4s"
 	values["HTTP_REQUEST_TIMEOUT"] = "5s"
+	values["BCRYPT_COST"] = "10"
 	values["POSTGRES_MAX_CONNS"] = "7"
 	values["POSTGRES_MIN_CONNS"] = "1"
 	values["POSTGRES_MIN_IDLE_CONNS"] = "1"
@@ -133,7 +136,7 @@ func TestLoadConfigAcceptsOverrides(t *testing.T) {
 	if loaded.httpAddress != "127.0.0.1:9999" || loaded.httpReadHeaderTimeout != time.Second ||
 		loaded.httpReadTimeout != 2*time.Second || loaded.httpWriteTimeout != 3*time.Second ||
 		loaded.httpIdleTimeout != 4*time.Second || loaded.httpRequestTimeout != 5*time.Second || loaded.postgresMaxConns != 7 || loaded.postgresMinConns != 1 ||
-		loaded.postgresMinIdleConns != 1 || loaded.telemetryTraceRatio != 0.25 {
+		loaded.postgresMinIdleConns != 1 || loaded.telemetryTraceRatio != 0.25 || loaded.bcryptCost != 10 {
 		t.Fatalf("loadConfig() overrides = %+v", loaded)
 	}
 }

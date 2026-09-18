@@ -11,7 +11,11 @@ import { createServer } from 'node:https';
 const run = process.env.ACCOUNT_E2E_RUN_ID!;
 const account = (suffix: string) => ({
   identifier: `mm64-${run}-${suffix}`,
-  password: `Mm64!${createHash('sha256').update(`${run}:${suffix}`).digest('hex')}`,
+  // Exercise both agreed ASCII boundaries through the real registration/login flow.
+  password: createHash('sha256')
+    .update(`${run}:${suffix}`)
+    .digest('hex')
+    .slice(0, suffix === 'a' ? 8 : 64),
 });
 const a = account('a');
 const b = account('b');

@@ -17,8 +17,8 @@ import (
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
 	"github.com/v0hmly/marketmesh/platform/telemetry"
 	connectadapter "github.com/v0hmly/marketmesh/services/auth/internal/adapter/in/connectrpc"
-	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/argon2id"
 	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/audit"
+	passwordbcrypt "github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/bcrypt"
 	postgresadapter "github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/postgres"
 	"github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/randomid"
 	registrationeventadapter "github.com/v0hmly/marketmesh/services/auth/internal/adapter/out/registrationevent"
@@ -95,7 +95,7 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 			resultErr = errors.Join(resultErr, pipeline.Shutdown(shutdownCtx))
 		}
 	}()
-	hasher, err := argon2id.New(config.argon2)
+	hasher, err := passwordbcrypt.New(config.bcryptCost)
 	if err != nil {
 		return fmt.Errorf("creating password hasher: %w", err)
 	}

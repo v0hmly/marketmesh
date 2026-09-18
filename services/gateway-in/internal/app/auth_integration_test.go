@@ -85,7 +85,7 @@ func TestIntegrationAuthBrowser(t *testing.T) {
 	authProcess := authStartProcess(t, ctx, authFixtureBinary("AUTH_BROWSER_AUTH_BIN", "/usr/local/bin/auth"), map[string]string{
 		"SERVICE_VERSION": "test", "ENVIRONMENT": "test", "SERVICE_INSTANCE_ID": "auth-browser-fixture", "HTTP_ADDRESS": authHTTP, "SHUTDOWN_TIMEOUT": "2s",
 		"POSTGRES_RW_DSN": required("MARKETMESH_AUTH_POSTGRES_DSN"), "POSTGRES_RO_DSN": required("MARKETMESH_AUTH_POSTGRES_RO_DSN"),
-		"ARGON2_MEMORY_KIB": "8192", "ARGON2_TIME": "1", "ARGON2_PARALLELISM": "1",
+		"BCRYPT_COST":           "10",
 		"AUTH_SESSIONS_ENABLED": "true", "AUTH_REGISTRATION_PUBLISH_ENABLED": "false", "AUTH_SESSION_ISSUER": "auth.marketmesh", "AUTH_SESSION_KEYS_FILE": keysPath, "AUTH_TRUST_DOMAIN": "marketmesh.test",
 		"AUTH_INTERNAL_ADDRESS": authGRPC, "AUTH_INTERNAL_TLS_CERT_FILE": authCert, "AUTH_INTERNAL_TLS_KEY_FILE": authKey, "AUTH_INTERNAL_CLIENT_CA_FILE": pki.caPath,
 		"AUTH_ALLOWED_ORIGINS": origin, "AUTH_SESSION_AUDIENCES": `{"user":["user:profile:read","user:profile:write"]}`,

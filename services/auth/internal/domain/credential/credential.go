@@ -2,6 +2,7 @@
 package credential
 
 import (
+	"bytes"
 	"errors"
 	"strings"
 	"unicode"
@@ -11,8 +12,9 @@ import (
 const (
 	minIdentifierBytes = 3
 	maxIdentifierBytes = 254
-	minPasswordBytes   = 12
-	maxPasswordBytes   = 1024
+	minPasswordRunes   = 8
+	maxPasswordRunes   = 64
+	maxPasswordBytes   = 72
 	maxDigestBytes     = 512
 	SubjectIDBytes     = 16
 )
@@ -63,7 +65,10 @@ type Password struct {
 
 // NewPassword validates a raw password and makes a defensive copy.
 func NewPassword(value []byte) (Password, error) {
-	if len(value) < minPasswordBytes || len(value) > maxPasswordBytes || !utf8.Valid(value) {
+	if len(value) > maxPasswordBytes || !utf8.Valid(value) || bytes.IndexByte(value, 0) >= 0 {
+		return Password{}, ErrInvalidPassword
+	}
+	if length := utf8.RuneCount(value); length < minPasswordRunes || length > maxPasswordRunes {
 		return Password{}, ErrInvalidPassword
 	}
 
