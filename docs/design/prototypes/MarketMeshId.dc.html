@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>MarketMesh ID</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button, a.side-link { text-decoration: none; }
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1900px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; gap: 40px; padding: 44px 56px;">
+
+  <aside style="width: 268px; flex-shrink: 0; display: flex; flex-direction: column; gap: 28px;">
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <nav aria-label="Разделы личного кабинета" style="display: flex; flex-direction: column; gap: 2px;">
+      <a class="side-link" href="AccountOrders.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Заказы<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">4</span></a>
+      <a class="side-link" href="AccountFavorites.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Избранное<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">6</span></a>
+      <a class="side-link" href="AccountReviews.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Отзывы<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">2</span></a>
+      <a class="side-link" href="BuyerAddresses.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Адреса доставки</a>
+      <a class="side-link" href="MarketMeshId.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; font-weight: 600; color: var(--text-link); background: var(--surface-tint);">MarketMesh ID</a>
+    </nav>
+
+    <div class="field">
+      <label for="theme-pick">Тема оформления</label>
+      <span class="select-wrap">
+        <select class="ctl" id="theme-pick" value="{{theme}}" onChange="{{onThemeChange}}">
+          <option value="system">Системная</option>
+          <option value="light">Светлая</option>
+          <option value="dark">Тёмная</option>
+        </select>
+      </span>
+    </div>
+
+    <button type="button" class="button text-button" style="align-self: flex-start;" onClick="{{onSignOut}}">Выйти из аккаунта</button>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 28px;">
+
+    <div>
+      <h1 style="margin: 0 0 10px; font-family: var(--font-serif); font-weight: 400; font-size: 2.6rem; line-height: 1.2; letter-spacing: -0.04em;">MarketMesh ID</h1>
+      <p class="lede" style="margin: 0;">Один аккаунт для покупок, магазина и поддержки. Здесь ваши данные, вход и устройства, с которых вы заходили.</p>
+    </div>
+
+    <sc-if value="{{showFeedback}}" hint-placeholder-val="{{false}}">
+      <div class="notice success" role="status">{{feedbackText}}</div>
+    </sc-if>
+
+    <div class="card identity-card" style="max-width: none; display: flex; align-items: center; gap: 24px; padding: 26px 28px;">
+      <div class="initials" aria-hidden="true" style="margin-bottom: 0;">{{initials}}</div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+        <h2 style="margin: 0; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">{{fullName}}</h2>
+        <span style="font-size: 0.875rem; color: var(--text-secondary);">MarketMesh ID · <span style="font-family: var(--font-mono);">MM-4821-0093</span></span>
+        <span style="font-size: 0.875rem; color: var(--text-secondary);">Вы с нами с 22 октября 2019 года</span>
+      </div>
+      <div class="privacy-note" style="margin-top: 0; padding-top: 0; border-top: 0; max-width: 280px;">
+        <span aria-hidden="true">↳</span>
+        <p style="margin: 0;">Личные данные видите только вы. Публичными делитесь сами.</p>
+      </div>
+    </div>
+
+    <section class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 22px;" aria-labelledby="personal-title">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;">
+        <div>
+          <h2 id="personal-title" style="margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">Личные данные</h2>
+          <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Нужны для заказов и поддержки. Другим покупателям они не видны.</p>
+        </div>
+        <sc-if value="{{notEditing}}" hint-placeholder-val="{{true}}">
+          <button type="button" class="button secondary" onClick="{{onEdit}}">Изменить данные</button>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{notEditing}}" hint-placeholder-val="{{true}}">
+        <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 40px;">
+          <sc-for list="{{rows}}" as="row" hint-placeholder-count="7">
+            <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle);">
+              <dt style="margin: 0; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">{{row.label}}</dt>
+              <dd style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1rem; color: {{row.color}};">{{row.value}}</span>
+                <sc-if value="{{row.verified}}" hint-placeholder-val="{{false}}">
+                  <span class="draft-badge">Подтверждён</span>
+                </sc-if>
+              </dd>
+            </div>
+          </sc-for>
+        </dl>
+      </sc-if>
+
+      <sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+        <form novalidate onSubmit="{{onSave}}" aria-busy="{{ariaBusy}}" style="display: flex; flex-direction: column; gap: 22px;">
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px;">
+            <div class="field">
+              <label for="id-first">Имя</label>
+              <input class="ctl" type="text" id="id-first" maxlength="80" value="{{draftFirst}}" onChange="{{onFirstChange}}" aria-invalid="{{firstInvalid}}" aria-describedby="{{firstDescribedBy}}">
+              <sc-if value="{{showFirstError}}" hint-placeholder-val="{{false}}">
+                <div class="field-error" id="id-first-error">Введите имя — оно нужно мастеру и видно в ваших отзывах.</div>
+              </sc-if>
+            </div>
+            <div class="field">
+              <label for="id-last">Фамилия</label>
+              <input class="ctl" type="text" id="id-last" maxlength="80" value="{{draftLast}}" onChange="{{onLastChange}}" aria-describedby="id-last-help">
+              <div class="field-help" id="id-last-help">Необязательно. В отзывах не показывается.</div>
+            </div>
+            <div class="field">
+              <label for="id-city">Город проживания</label>
+              <input class="ctl" type="text" id="id-city" maxlength="120" value="{{draftCity}}" onChange="{{onCityChange}}" aria-describedby="id-city-help">
+              <div class="field-help" id="id-city-help">Подставим в доставку и покажем в отзывах.</div>
+            </div>
+            <div class="field">
+              <label for="id-birth">Дата рождения</label>
+              <input class="ctl" type="date" id="id-birth" value="{{draftBirth}}" onChange="{{onBirthChange}}" aria-invalid="{{birthInvalid}}" aria-describedby="{{birthDescribedBy}}">
+              <div class="field-help" id="id-birth-help">Нужна для изделий с возрастным ограничением.</div>
+              <sc-if value="{{showBirthError}}" hint-placeholder-val="{{false}}">
+                <div class="field-error" id="id-birth-error">Проверьте дату: она не может быть в будущем.</div>
+              </sc-if>
+            </div>
+            <div class="field">
+              <label for="id-gender">Пол</label>
+              <span class="select-wrap">
+                <select class="ctl" id="id-gender" value="{{draftGender}}" onChange="{{onGenderChange}}" aria-describedby="id-gender-help">
+                  <option value="">Не указывать</option>
+                  <option value="female">Женский</option>
+                  <option value="male">Мужской</option>
+                </select>
+              </span>
+              <div class="field-help" id="id-gender-help">Необязательно. Влияет только на подборки.</div>
+            </div>
+            <div class="field">
+              <label for="id-phone">Телефон</label>
+              <input class="ctl" type="tel" id="id-phone" maxlength="32" value="{{draftPhone}}" onChange="{{onPhoneChange}}" aria-invalid="{{phoneInvalid}}" aria-describedby="{{phoneDescribedBy}}">
+              <div class="field-help" id="id-phone-help">7–15 цифр. Новый номер нужно подтвердить кодом.</div>
+              <sc-if value="{{showPhoneError}}" hint-placeholder-val="{{false}}">
+                <div class="field-error" id="id-phone-error">Проверьте номер: нужно от 7 до 15 цифр.</div>
+              </sc-if>
+            </div>
+            <div class="field">
+              <label for="id-email">Почта</label>
+              <input class="ctl" type="email" id="id-email" maxlength="254" value="{{draftEmail}}" onChange="{{onEmailChange}}" aria-invalid="{{emailInvalid}}" aria-describedby="{{emailDescribedBy}}">
+              <div class="field-help" id="id-email-help">Логин для входа и адрес, куда приходит код.</div>
+              <sc-if value="{{showEmailError}}" hint-placeholder-val="{{false}}">
+                <div class="field-error" id="id-email-error">Не похоже на настоящий адрес почты. Проверьте написание.</div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+            <span class="field-help">Телефон и почту нужно будет подтвердить, если вы их меняете.</span>
+            <div style="display: flex; gap: 14px;">
+              <button type="button" class="button secondary" onClick="{{onCancel}}" disabled="{{saving}}">Отменить</button>
+              <button type="submit" class="button primary" disabled="{{saving}}">
+                <span>{{saveLabel}}</span>
+                <sc-if value="{{showArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+              </button>
+            </div>
+          </div>
+        </form>
+      </sc-if>
+    </section>
+
+    <section class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 22px;" aria-labelledby="public-title">
+      <div>
+        <h2 id="public-title" style="margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">Публичные данные</h2>
+        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Это видят другие покупатели рядом с вашими отзывами. Показывается только то, что заполнено в личных данных.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start;">
+
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 16px;">
+          <sc-for list="{{publicRows}}" as="row" hint-placeholder-count="3">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle);">
+              <dt style="margin: 0; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">{{row.label}}</dt>
+              <dd style="margin: 0; font-size: 1rem; text-align: right; color: {{row.color}};">{{row.value}}</dd>
+            </div>
+          </sc-for>
+
+          <label class="theme-choice">
+            <input type="checkbox" checked="{{showAge}}" onChange="{{onToggleAge}}" aria-describedby="age-switch-help">
+            <span>Показывать возраст в отзывах<small id="age-switch-help">{{ageSwitchHint}}</small></span>
+          </label>
+        </dl>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <span class="eyebrow">Так вас увидят в отзыве</span>
+          <div style="padding: 20px 22px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); background: var(--surface-tint); display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-round); background: var(--surface-avatar); color: var(--on-surface-avatar); font-family: var(--font-serif); font-size: 1rem;">{{publicInitial}}</span>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 0.875rem; font-weight: 600;">{{publicLine}}</span>
+                <span style="font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">2 СЕНТЯБРЯ</span>
+              </div>
+            </div>
+            <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">«Глазурь ровная, ручка удобно ложится в ладонь. Пришла в плотной коробке с бумагой, ни одного скола.»</p>
+          </div>
+          <p style="margin: 0; font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Фамилия, телефон, почта и пол в отзывах не показываются никогда.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 20px;" aria-labelledby="security-title">
+      <div>
+        <h2 id="security-title" style="margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">Вход и безопасность</h2>
+        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Вход подтверждается кодом на почту {{email}} — это работает всегда и не отключается.</p>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 1rem; font-weight: 600;">Пароль</span>
+          <span style="font-size: 0.875rem; color: var(--text-secondary);">Изменён 14 июня 2026 года</span>
+        </div>
+        <button type="button" class="button secondary" onClick="{{onChangePassword}}">Сменить пароль</button>
+      </div>
+    </section>
+
+    <section class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 20px;" aria-labelledby="sessions-title">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+        <div>
+          <h2 id="sessions-title" style="margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">Сеансы и устройства</h2>
+          <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Вы заходили в аккаунт с этих устройств. Город определяется по IP и может быть неточным.</p>
+        </div>
+        <button type="button" class="button secondary" onClick="{{onCloseOthers}}" disabled="{{closeOthersDisabled}}">Завершить все, кроме текущего</button>
+      </div>
+
+      <sc-if value="{{cooldown}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">Вы вошли с нового устройства. До 22 сентября, 11:54 чужие сеансы завершать нельзя — так мы защищаем аккаунт, если устройство не ваше.</div>
+      </sc-if>
+
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px;">
+        <sc-for list="{{sessions}}" as="session" hint-placeholder-count="4">
+          <li style="display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); background: var(--surface-raised);">
+            <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 1rem;">{{session.device}}</span>
+                <sc-if value="{{session.current}}" hint-placeholder-val="{{true}}">
+                  <span class="draft-badge">Текущий сеанс</span>
+                </sc-if>
+              </div>
+              <span style="font-size: 0.875rem; color: var(--text-secondary);">{{session.meta}}</span>
+            </div>
+            <sc-if value="{{session.canClose}}" hint-placeholder-val="{{false}}">
+              <button type="button" class="button text-button" onClick="{{session.onClose}}" disabled="{{closeOthersDisabled}}">Завершить</button>
+            </sc-if>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+
+    <section class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 16px; border-color: var(--border-error); background: var(--surface-error);" aria-labelledby="danger-title">
+      <h2 id="danger-title" style="margin: 0; font-size: 1.15rem; font-weight: 600; color: var(--on-surface-error);">Удаление аккаунта</h2>
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.8; color: var(--on-surface-error);">Заказы, избранное, отзывы и адреса будут удалены без возможности восстановления. У вас будет 30 дней, чтобы передумать: всё это время аккаунт заморожен, а войти в него нельзя.</p>
+      <button type="button" class="button secondary" style="align-self: flex-start;" onClick="{{onAskDelete}}" disabled="{{deleteDisabled}}">Удалить аккаунт</button>
+      <sc-if value="{{cooldown}}" hint-placeholder-val="{{false}}">
+        <p style="margin: 0; font-size: 0.73rem; line-height: 1.6; color: var(--on-surface-error);">Пока действует защита нового устройства, удалить аккаунт нельзя.</p>
+      </sc-if>
+    </section>
+
+  </main>
+
+  <sc-if value="{{confirmingDelete}}" hint-placeholder-val="{{false}}">
+    <div class="dialog-scrim">
+      <div class="card dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title">
+        <h2 id="delete-dialog-title">Удалить аккаунт MarketMesh ID?</h2>
+        <p>Мы заморозим аккаунт на 30 дней и пришлём письмо со ссылкой на отмену. После этого срока восстановить заказы, отзывы и адреса будет нельзя.</p>
+        <div class="field">
+          <label for="delete-confirm">Введите слово «удалить», чтобы подтвердить</label>
+          <input class="ctl" type="text" id="delete-confirm" value="{{deleteWord}}" onChange="{{onDeleteWordChange}}" aria-describedby="delete-confirm-help">
+          <div class="field-help" id="delete-confirm-help">Так мы убеждаемся, что кнопку нажали не случайно.</div>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="button secondary" onClick="{{onCancelDelete}}">Оставить аккаунт</button>
+          <button type="button" class="button primary" onClick="{{onConfirmDelete}}" disabled="{{confirmDisabled}}">Удалить аккаунт</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"cooldown":{"editor":"boolean","default":false,"section":"Демо: защита нового устройства"},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      theme: 'system',
+      feedback: '',
+      editing: false,
+      saving: false,
+      attempted: false,
+      showAge: true,
+      confirmingDelete: false,
+      deleteWord: '',
+      profile: {
+        first: 'Вера',
+        last: 'Ильина',
+        birth: '1989-03-12',
+        gender: 'female',
+        phone: '+7 921 000-11-22',
+        email: 'vera.ilina@example.com',
+        city: 'Санкт-Петербург'
+      },
+      draft: null,
+      sessions: [
+        { id: 's1', device: 'macOS · Chrome', meta: 'Сегодня в 11:54 · Санкт-Петербург · 94.126.153.22', current: true },
+        { id: 's2', device: 'iPhone 15 · приложение MarketMesh 3.4.1', meta: '7 июня 2026 в 22:50 · Санкт-Петербург · 217.150.201.144', current: false },
+        { id: 's3', device: 'macOS · Safari', meta: '8 декабря 2025 в 16:20 · Москва · 89.20.39.32', current: false },
+        { id: 's4', device: 'Windows · Chrome', meta: '9 ноября 2025 в 11:15 · Нижний Новгород · 217.150.201.133', current: false }
+      ]
+    };
+    this.onThemeChange = this.onThemeChange.bind(this);
+    this.onSignOut = this.onSignOut.bind(this);
+    this.onEdit = this.onEdit.bind(this);
+    this.onCancel = this.onCancel.bind(this);
+    this.onSave = this.onSave.bind(this);
+    this.onToggleAge = this.onToggleAge.bind(this);
+    this.onChangePassword = this.onChangePassword.bind(this);
+    this.onCloseOthers = this.onCloseOthers.bind(this);
+    this.onAskDelete = this.onAskDelete.bind(this);
+    this.onCancelDelete = this.onCancelDelete.bind(this);
+    this.onConfirmDelete = this.onConfirmDelete.bind(this);
+    this.onDeleteWordChange = this.onDeleteWordChange.bind(this);
+    this.onFirstChange = this.draftField('first');
+    this.onLastChange = this.draftField('last');
+    this.onBirthChange = this.draftField('birth');
+    this.onGenderChange = this.draftField('gender');
+    this.onPhoneChange = this.draftField('phone');
+    this.onEmailChange = this.draftField('email');
+    this.onCityChange = this.draftField('city');
+  }
+
+  draftField(key) {
+    return (e) => {
+      const draft = Object.assign({}, this.state.draft || this.state.profile);
+      draft[key] = e.target.value;
+      this.setState({ draft: draft });
+    };
+  }
+
+  onThemeChange(e) {
+    this.setState({ theme: e.target.value, feedback: 'Тема сохранена и применится на всех ваших устройствах.' });
+  }
+
+  onSignOut() {
+    this.setState({ feedback: 'Сеанс на этом устройстве завершён.' });
+  }
+
+  onEdit() {
+    this.setState({ editing: true, draft: Object.assign({}, this.state.profile), attempted: false, feedback: '' });
+  }
+
+  onCancel() {
+    this.setState({ editing: false, draft: null, attempted: false });
+  }
+
+  ageOf(birth) {
+    if (!birth) return null;
+    const parts = birth.split('-');
+    if (parts.length !== 3) return null;
+    const now = new Date();
+    let age = now.getFullYear() - Number(parts[0]);
+    const month = now.getMonth() + 1 - Number(parts[1]);
+    if (month < 0 || (month === 0 && now.getDate() < Number(parts[2]))) age = age - 1;
+    return age >= 0 && age < 130 ? age : null;
+  }
+
+  yearWord(age) {
+    const tail = age % 10;
+    const hundred = age % 100;
+    if (hundred >= 11 && hundred <= 14) return 'лет';
+    if (tail === 1) return 'год';
+    if (tail >= 2 && tail <= 4) return 'года';
+    return 'лет';
+  }
+
+  birthLabel(birth) {
+    if (!birth) return 'Не указана';
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const p = birth.split('-');
+    if (p.length !== 3) return birth;
+    const m = months[Number(p[1]) - 1] || '';
+    return Number(p[2]) + ' ' + m + ' ' + p[0] + ' года';
+  }
+
+  genderLabel(g) {
+    if (g === 'female') return 'Женский';
+    if (g === 'male') return 'Мужской';
+    return 'Не указан';
+  }
+
+  errorsOf(d) {
+    const digits = (d.phone || '').replace(/\D/g, '');
+    const future = d.birth ? new Date(d.birth).getTime() > Date.now() : false;
+    return {
+      first: !(d.first || '').trim(),
+      phone: digits.length < 7 || digits.length > 15,
+      email: !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((d.email || '').trim()),
+      birth: future
+    };
+  }
+
+  onSave(e) {
+    e.preventDefault();
+    if (this.state.saving) return;
+    const d = this.state.draft || this.state.profile;
+    const errs = this.errorsOf(d);
+    if (errs.first || errs.phone || errs.email || errs.birth) {
+      this.setState({ attempted: true });
+      return;
+    }
+    this.setState({ saving: true });
+    setTimeout(() => {
+      const changedEmail = d.email !== this.state.profile.email;
+      this.setState({
+        saving: false,
+        editing: false,
+        profile: d,
+        draft: null,
+        attempted: false,
+        feedback: changedEmail
+          ? 'Данные сохранены. На новый адрес отправлено письмо — подтвердите его, чтобы входить и получать коды по нему.'
+          : 'Данные сохранены.'
+      });
+    }, 900);
+  }
+
+  onToggleAge(e) {
+    const on = e.target.checked;
+    this.setState({
+      showAge: on,
+      feedback: on ? 'Возраст теперь виден в ваших отзывах.' : 'Возраст скрыт. В отзывах останутся имя и город.'
+    });
+  }
+
+  onChangePassword() {
+    this.setState({ feedback: 'Отправили письмо со ссылкой на смену пароля.' });
+  }
+
+  onCloseOthers() {
+    this.setState({
+      sessions: this.state.sessions.filter((s) => s.current),
+      feedback: 'Все сеансы, кроме текущего, завершены.'
+    });
+  }
+
+  onAskDelete() {
+    this.setState({ confirmingDelete: true, deleteWord: '' });
+  }
+
+  onCancelDelete() {
+    this.setState({ confirmingDelete: false, deleteWord: '' });
+  }
+
+  onDeleteWordChange(e) {
+    this.setState({ deleteWord: e.target.value });
+  }
+
+  onConfirmDelete() {
+    this.setState({
+      confirmingDelete: false,
+      deleteWord: '',
+      feedback: 'Аккаунт заморожен и будет удалён через 30 дней. Ссылка на отмену отправлена на почту.'
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const cooldown = !!this.props.cooldown;
+    const p = s.profile;
+    const d = s.draft || p;
+    const errs = this.errorsOf(d);
+    const show = s.attempted;
+
+    const initials = ((p.first || ' ')[0] + (p.last || ' ')[0]).trim().toUpperCase();
+    const age = this.ageOf(p.birth);
+    const ageText = age === null ? null : age + ' ' + this.yearWord(age);
+
+    const grey = 'var(--text-secondary)';
+    const ink = 'var(--text-primary)';
+
+    const rows = [
+      { label: 'ИМЯ', value: p.first || 'Не указано', color: p.first ? ink : grey, verified: false },
+      { label: 'ФАМИЛИЯ', value: p.last || 'Не указана', color: p.last ? ink : grey, verified: false },
+      { label: 'ДАТА РОЖДЕНИЯ', value: this.birthLabel(p.birth), color: p.birth ? ink : grey, verified: false },
+      { label: 'ПОЛ', value: this.genderLabel(p.gender), color: p.gender ? ink : grey, verified: false },
+      { label: 'ТЕЛЕФОН', value: p.phone, color: ink, verified: true },
+      { label: 'ПОЧТА', value: p.email, color: ink, verified: true },
+      { label: 'ГОРОД', value: p.city || 'Не указан', color: p.city ? ink : grey, verified: false }
+    ];
+
+    const publicRows = [
+      { label: 'ИМЯ', value: p.first || 'Не заполнено — не показывается', color: p.first ? ink : grey },
+      { label: 'ГОРОД', value: p.city || 'Не заполнен — не показывается', color: p.city ? ink : grey },
+      {
+        label: 'ВОЗРАСТ',
+        value: ageText === null ? 'Дата рождения не указана' : (s.showAge ? ageText : 'Скрыт'),
+        color: ageText !== null && s.showAge ? ink : grey
+      }
+    ];
+
+    const publicParts = [p.first, p.city];
+    if (s.showAge && ageText !== null) publicParts.push(ageText);
+    const publicLine = publicParts.filter(Boolean).join(', ') || 'Покупатель MarketMesh';
+
+    const sessions = s.sessions.map((x) => ({
+      device: x.device,
+      meta: x.meta,
+      current: x.current,
+      canClose: !x.current,
+      onClose: () => this.setState({
+        sessions: s.sessions.filter((y) => y.id !== x.id),
+        feedback: 'Сеанс «' + x.device + '» завершён.'
+      })
+    }));
+
+    return {
+      theme: s.theme,
+      onThemeChange: this.onThemeChange,
+      onSignOut: this.onSignOut,
+
+      initials: initials || '—',
+      fullName: [p.first, p.last].filter(Boolean).join(' ') || 'Без имени',
+      email: p.email,
+
+      showFeedback: !!s.feedback,
+      feedbackText: s.feedback,
+
+      rows: rows,
+      editing: s.editing,
+      notEditing: !s.editing,
+      onEdit: this.onEdit,
+      onCancel: this.onCancel,
+      onSave: this.onSave,
+      draftFirst: d.first,
+      draftLast: d.last,
+      draftBirth: d.birth,
+      draftGender: d.gender,
+      draftPhone: d.phone,
+      draftEmail: d.email,
+      draftCity: d.city,
+      onFirstChange: this.onFirstChange,
+      onLastChange: this.onLastChange,
+      onBirthChange: this.onBirthChange,
+      onGenderChange: this.onGenderChange,
+      onPhoneChange: this.onPhoneChange,
+      onEmailChange: this.onEmailChange,
+      onCityChange: this.onCityChange,
+      showFirstError: show && errs.first,
+      showPhoneError: show && errs.phone,
+      showEmailError: show && errs.email,
+      showBirthError: show && errs.birth,
+      firstInvalid: show && errs.first ? 'true' : 'false',
+      phoneInvalid: show && errs.phone ? 'true' : 'false',
+      emailInvalid: show && errs.email ? 'true' : 'false',
+      birthInvalid: show && errs.birth ? 'true' : 'false',
+      firstDescribedBy: show && errs.first ? 'id-first-error' : '',
+      phoneDescribedBy: show && errs.phone ? 'id-phone-help id-phone-error' : 'id-phone-help',
+      emailDescribedBy: show && errs.email ? 'id-email-help id-email-error' : 'id-email-help',
+      birthDescribedBy: show && errs.birth ? 'id-birth-help id-birth-error' : 'id-birth-help',
+      saving: s.saving,
+      saveLabel: s.saving ? 'Сохраняем…' : 'Сохранить',
+      showArrow: !s.saving,
+      ariaBusy: s.saving ? 'true' : 'false',
+
+      publicRows: publicRows,
+      showAge: s.showAge,
+      onToggleAge: this.onToggleAge,
+      ageSwitchHint: ageText === null
+        ? 'Пока дата рождения не указана, показывать нечего.'
+        : 'Сейчас другие покупатели видят: ' + (s.showAge ? ageText : 'без возраста') + '.',
+      publicInitial: (p.first || '—')[0].toUpperCase(),
+      publicLine: publicLine,
+
+      onChangePassword: this.onChangePassword,
+
+      cooldown: cooldown,
+      sessions: sessions,
+      closeOthersDisabled: cooldown || sessions.length <= 1,
+      onCloseOthers: this.onCloseOthers,
+
+      deleteDisabled: cooldown,
+      onAskDelete: this.onAskDelete,
+      confirmingDelete: s.confirmingDelete,
+      deleteWord: s.deleteWord,
+      onDeleteWordChange: this.onDeleteWordChange,
+      confirmDisabled: s.deleteWord.trim().toLowerCase() !== 'удалить',
+      onCancelDelete: this.onCancelDelete,
+      onConfirmDelete: this.onConfirmDelete
+    };
+  }
+}
+</script>
+</body>
+</html>

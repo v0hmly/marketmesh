@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Вход</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+</style>
+</helmet>
+<div style="width: 1280px; height: 980px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; padding: 96px 24px;">
+  <div style="width: 100%; max-width: 410px; display: flex; flex-direction: column; gap: 32px;">
+
+    <sc-if value="{{isCredentialsStep}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 3.1rem; line-height: 1.2; letter-spacing: -0.03em;">Рады вас видеть.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.8; color: var(--text-secondary);">Войдите, чтобы продолжить с того места, где остановились.</p>
+    </div>
+
+    <form class="card auth-card" novalidate onSubmit="{{onSubmit}}" aria-busy="{{ariaBusy}}">
+
+      <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">{{noticeText}}</div>
+      </sc-if>
+
+      <sc-if value="{{isSuccess}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; align-items: center; gap: 12px;" role="status">
+          <span class="loading-dot" aria-hidden="true"></span>
+          <span>Вход выполнен. Переходим в личный кабинет…</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showFields}}" hint-placeholder-val="{{true}}">
+      <div class="field">
+        <label for="login-email">Почта</label>
+        <input class="ctl" type="email" id="login-email" name="email" autocomplete="username" value="{{email}}" onChange="{{onEmailChange}}" aria-invalid="{{emailInvalid}}" aria-describedby="{{emailDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <sc-if value="{{showEmailError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="login-email-error">{{emailErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <label for="login-password">Пароль</label>
+        <input class="ctl" type="password" id="login-password" name="password" autocomplete="current-password" value="{{password}}" onChange="{{onPasswordChange}}" aria-invalid="{{passwordInvalid}}" aria-describedby="{{passwordDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <sc-if value="{{showPasswordError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="login-password-error">{{passwordErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <button type="submit" class="button primary wide" disabled="{{fieldsDisabled}}">
+        <span>{{submitLabel}}</span>
+        <sc-if value="{{showArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+      </button>
+      </sc-if>
+    </form>
+
+    <p style="margin: 0; text-align: center; font-size: 0.875rem; color: var(--text-secondary);">Нет аккаунта? <a href="Register.dc.html">Зарегистрироваться</a></p>
+    </sc-if>
+
+    <sc-if value="{{isCodeStep}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 3.1rem; line-height: 1.2; letter-spacing: -0.03em;">Подтвердите вход.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.8; color: var(--text-secondary);">У вас включено подтверждение входа. Мы отправили код из шести цифр на {{email}}.</p>
+    </div>
+
+    <form class="card auth-card" novalidate onSubmit="{{onCodeSubmit}}" aria-busy="{{codeAriaBusy}}">
+
+      <sc-if value="{{showCodeNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">{{codeNoticeText}}</div>
+      </sc-if>
+
+      <sc-if value="{{showResentNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice success" role="status">Новый код отправлен на почту. Прежний код больше не подойдёт.</div>
+      </sc-if>
+
+      <sc-if value="{{isCodeSuccess}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; align-items: center; gap: 12px;" role="status">
+          <span class="loading-dot" aria-hidden="true"></span>
+          <span>Вход подтверждён. Переходим в личный кабинет…</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showCodeFields}}" hint-placeholder-val="{{true}}">
+      <div class="field">
+        <label for="login-code">Код из письма</label>
+        <input class="ctl" type="text" id="login-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="{{code}}" onChange="{{onCodeChange}}" aria-invalid="{{codeInvalid}}" aria-describedby="{{codeDescribedBy}}" disabled="{{codeFieldsDisabled}}">
+        <div class="field-help" id="login-code-help">Шесть цифр. Код действует [СРОК ДЕЙСТВИЯ КОДА].</div>
+        <sc-if value="{{showCodeError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="login-code-error">{{codeErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <button type="submit" class="button primary wide" disabled="{{codeFieldsDisabled}}">
+        <span>{{codeSubmitLabel}}</span>
+        <sc-if value="{{showCodeArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+      </button>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
+        <button type="button" class="button secondary" onClick="{{onResendCode}}" disabled="{{resendDisabled}}">{{resendLabel}}</button>
+        <button type="button" class="button text-button" onClick="{{onBackToCredentials}}" disabled="{{codeFieldsDisabled}}">Изменить почту</button>
+      </div>
+      </sc-if>
+    </form>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"demoOutcome":{"editor":"enum","default":"success","options":["success","twoFactor","wrongCredentials","serverError"],"section":"Демо: ответ сервера"},"demoCodeOutcome":{"editor":"enum","default":"success","options":["success","wrongCode","expiredCode","serverError"],"section":"Демо: проверка кода"},"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      email: '',
+      password: '',
+      attempted: false,
+      status: 'idle',
+      failedAttempts: 0,
+      serverError: null,
+      step: 'credentials',
+      code: '',
+      codeAttempted: false,
+      codeStatus: 'idle',
+      codeFailedAttempts: 0,
+      codeError: null,
+      resending: false,
+      codeResent: false
+    };
+    this.onEmailChange = this.onEmailChange.bind(this);
+    this.onPasswordChange = this.onPasswordChange.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+    this.onCodeChange = this.onCodeChange.bind(this);
+    this.onCodeSubmit = this.onCodeSubmit.bind(this);
+    this.onResendCode = this.onResendCode.bind(this);
+    this.onBackToCredentials = this.onBackToCredentials.bind(this);
+  }
+
+  getEmailError(rawEmail) {
+    const email = (rawEmail || '').trim();
+    if (!email) return 'Введите адрес почты, чтобы продолжить.';
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) return 'Не похоже на настоящий адрес почты. Проверьте написание — например, name@example.com.';
+    return null;
+  }
+
+  getPasswordError(password) {
+    if (!password) return 'Введите пароль, чтобы продолжить.';
+    return null;
+  }
+
+  getCodeError(code) {
+    if (!code) return 'Введите код из письма.';
+    if (code.length !== 6) return 'Код состоит из шести цифр.';
+    return null;
+  }
+
+  onEmailChange(e) {
+    this.setState({ email: e.target.value, serverError: null });
+  }
+
+  onPasswordChange(e) {
+    this.setState({ password: e.target.value, serverError: null });
+  }
+
+  onSubmit(e) {
+    e.preventDefault();
+    if (this.state.status === 'submitting' || this.state.status === 'locked' || this.state.status === 'success') return;
+
+    const emailErr = this.getEmailError(this.state.email);
+    const passwordErr = this.getPasswordError(this.state.password);
+    this.setState({ attempted: true, serverError: null });
+    if (emailErr || passwordErr) return;
+
+    this.setState({ status: 'submitting' });
+    const outcome = this.props.demoOutcome || 'success';
+
+    setTimeout(() => {
+      if (outcome === 'success') {
+        this.setState({ status: 'success' });
+      } else if (outcome === 'twoFactor') {
+        this.setState({
+          status: 'idle',
+          step: 'code',
+          code: '',
+          codeAttempted: false,
+          codeStatus: 'idle',
+          codeFailedAttempts: 0,
+          codeError: null,
+          codeResent: false
+        });
+      } else if (outcome === 'wrongCredentials') {
+        const attempts = this.state.failedAttempts + 1;
+        if (attempts >= 5) {
+          this.setState({ status: 'locked', failedAttempts: attempts, serverError: 'locked' });
+        } else {
+          this.setState({ status: 'idle', failedAttempts: attempts, serverError: 'wrongCredentials' });
+        }
+      } else {
+        this.setState({ status: 'idle', serverError: 'serverError' });
+      }
+    }, 900);
+  }
+
+  onCodeChange(e) {
+    const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 6);
+    this.setState({ code: digits, codeError: null, codeResent: false });
+  }
+
+  onCodeSubmit(e) {
+    e.preventDefault();
+    if (this.state.codeStatus === 'submitting' || this.state.codeStatus === 'success' || this.state.resending) return;
+
+    const codeErr = this.getCodeError(this.state.code);
+    this.setState({ codeAttempted: true, codeError: null, codeResent: false });
+    if (codeErr) return;
+
+    this.setState({ codeStatus: 'submitting' });
+    const outcome = this.props.demoCodeOutcome || 'success';
+
+    setTimeout(() => {
+      if (outcome === 'success') {
+        this.setState({ codeStatus: 'success' });
+      } else if (outcome === 'wrongCode') {
+        const attempts = this.state.codeFailedAttempts + 1;
+        if (attempts >= 3) {
+          this.setState({ codeStatus: 'idle', codeFailedAttempts: attempts, codeError: 'tooMany', code: '', codeAttempted: false });
+        } else {
+          this.setState({ codeStatus: 'idle', codeFailedAttempts: attempts, codeError: 'wrongCode' });
+        }
+      } else if (outcome === 'expiredCode') {
+        this.setState({ codeStatus: 'idle', codeError: 'expired' });
+      } else {
+        this.setState({ codeStatus: 'idle', codeError: 'serverError' });
+      }
+    }, 900);
+  }
+
+  onResendCode() {
+    if (this.state.resending || this.state.codeStatus === 'submitting' || this.state.codeStatus === 'success') return;
+    this.setState({ resending: true, codeResent: false, codeError: null });
+    setTimeout(() => {
+      this.setState({
+        resending: false,
+        codeResent: true,
+        code: '',
+        codeAttempted: false,
+        codeFailedAttempts: 0
+      });
+    }, 700);
+  }
+
+  onBackToCredentials() {
+    this.setState({
+      step: 'credentials',
+      code: '',
+      codeAttempted: false,
+      codeStatus: 'idle',
+      codeFailedAttempts: 0,
+      codeError: null,
+      codeResent: false,
+      resending: false,
+      attempted: false,
+      serverError: null,
+      status: 'idle'
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const emailErr = s.attempted ? this.getEmailError(s.email) : null;
+    const passwordErr = s.attempted ? this.getPasswordError(s.password) : null;
+    const isSubmitting = s.status === 'submitting';
+    const isLocked = s.status === 'locked';
+    const isSuccess = s.status === 'success';
+    const fieldsDisabled = isSubmitting || isLocked || isSuccess;
+
+    const noticeMap = {
+      wrongCredentials: 'Почта или пароль указаны неверно. Проверьте данные и попробуйте снова.',
+      serverError: 'Не удалось подключиться к серверу. Проверьте соединение и попробуйте ещё раз.',
+      locked: 'Слишком много неудачных попыток. Вход временно заблокирован — попробуйте снова через 15 минут.'
+    };
+
+    let submitLabel = 'Войти';
+    if (isSubmitting) submitLabel = 'Входим…';
+    else if (isLocked) submitLabel = 'Вход заблокирован';
+
+    const emailIds = [];
+    if (emailErr) emailIds.push('login-email-error');
+    const passwordIds = [];
+    if (passwordErr) passwordIds.push('login-password-error');
+
+    const codeErrClient = s.codeAttempted ? this.getCodeError(s.code) : null;
+    const isCodeSubmitting = s.codeStatus === 'submitting';
+    const isCodeSuccess = s.codeStatus === 'success';
+    const codeFieldsDisabled = isCodeSubmitting || isCodeSuccess || s.resending;
+
+    const codeNoticeMap = {
+      wrongCode: 'Код неверный. Проверьте письмо и введите код ещё раз.',
+      tooMany: 'Слишком много попыток с этим кодом. Запросите новый код.',
+      expired: 'Срок действия кода истёк. Запросите новый код.',
+      serverError: 'Не удалось проверить код. Проверьте соединение и попробуйте ещё раз.'
+    };
+
+    const codeIds = ['login-code-help'];
+    if (codeErrClient) codeIds.push('login-code-error');
+
+    let codeSubmitLabel = 'Подтвердить вход';
+    if (isCodeSubmitting) codeSubmitLabel = 'Проверяем код…';
+
+    return {
+      email: s.email,
+      password: s.password,
+      code: s.code,
+      onEmailChange: this.onEmailChange,
+      onPasswordChange: this.onPasswordChange,
+      onSubmit: this.onSubmit,
+      onCodeChange: this.onCodeChange,
+      onCodeSubmit: this.onCodeSubmit,
+      onResendCode: this.onResendCode,
+      onBackToCredentials: this.onBackToCredentials,
+
+      isCredentialsStep: s.step === 'credentials',
+      isCodeStep: s.step === 'code',
+
+      showEmailError: !!emailErr,
+      emailErrorText: emailErr || '',
+      showPasswordError: !!passwordErr,
+      passwordErrorText: passwordErr || '',
+      emailInvalid: emailErr ? 'true' : 'false',
+      passwordInvalid: passwordErr ? 'true' : 'false',
+      emailDescribedBy: emailIds.join(' '),
+      passwordDescribedBy: passwordIds.join(' '),
+      fieldsDisabled: fieldsDisabled,
+      showArrow: !isSubmitting && !isLocked,
+      submitLabel: submitLabel,
+      showNotice: !!s.serverError && !isSuccess,
+      noticeText: s.serverError ? noticeMap[s.serverError] : '',
+      isSuccess: isSuccess,
+      showFields: !isSuccess,
+      ariaBusy: isSubmitting ? 'true' : 'false',
+
+      showCodeError: !!codeErrClient,
+      codeErrorText: codeErrClient || '',
+      codeInvalid: codeErrClient ? 'true' : 'false',
+      codeDescribedBy: codeIds.join(' '),
+      codeFieldsDisabled: codeFieldsDisabled,
+      showCodeArrow: !isCodeSubmitting,
+      codeSubmitLabel: codeSubmitLabel,
+      showCodeNotice: !!s.codeError && !isCodeSuccess,
+      codeNoticeText: s.codeError ? codeNoticeMap[s.codeError] : '',
+      showResentNotice: s.codeResent && !isCodeSuccess,
+      isCodeSuccess: isCodeSuccess,
+      showCodeFields: !isCodeSuccess,
+      resendDisabled: s.resending || isCodeSubmitting || isCodeSuccess,
+      resendLabel: s.resending ? 'Отправляем код…' : 'Отправить код ещё раз',
+      codeAriaBusy: isCodeSubmitting ? 'true' : 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>

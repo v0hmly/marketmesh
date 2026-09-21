@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет — заказы</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button, a.side-link { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 1400px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; gap: 40px; padding: 44px 56px;">
+
+  <aside style="width: 268px; flex-shrink: 0; display: flex; flex-direction: column; gap: 28px;">
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <nav aria-label="Разделы личного кабинета" style="display: flex; flex-direction: column; gap: 2px;">
+      <a class="side-link" href="AccountOrders.dc.html" aria-current="page" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; font-weight: 600; color: var(--text-link); background: var(--surface-tint);">Заказы<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">4</span></a>
+      <a class="side-link" href="AccountFavorites.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Избранное<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">6</span></a>
+      <a class="side-link" href="AccountReviews.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Отзывы<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">2</span></a>
+      <a class="side-link" href="BuyerAddresses.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Адреса доставки</a>
+      <a class="side-link" href="MarketMeshId.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">MarketMesh ID</a>
+    </nav>
+
+    <div class="field">
+      <label for="theme-pick">Тема оформления</label>
+      <span class="select-wrap">
+        <select class="ctl" id="theme-pick" value="{{theme}}" onChange="{{onThemeChange}}">
+          <option value="system">Системная</option>
+          <option value="light">Светлая</option>
+          <option value="dark">Тёмная</option>
+        </select>
+      </span>
+    </div>
+
+    <button type="button" class="button text-button" style="align-self: flex-start;" onClick="{{onSignOut}}">Выйти из аккаунта</button>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 28px;">
+
+    <div>
+      <h1 style="margin: 0 0 10px; font-family: var(--font-serif); font-weight: 400; font-size: 2.6rem; line-height: 1.2; letter-spacing: -0.04em;">Заказы</h1>
+      <p class="lede" style="margin: 0;">Всё, что вы заказали: состав, получение и следующий шаг по каждому заказу.</p>
+    </div>
+
+    <sc-if value="{{showFeedback}}" hint-placeholder-val="{{false}}">
+      <div class="notice success" role="status">{{feedbackText}}</div>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;" role="group" aria-label="Фильтр заказов">
+      <sc-for list="{{filters}}" as="filter" hint-placeholder-count="5">
+        <button type="button" class="button secondary" style="border-color: {{filter.borderColor}}; background: {{filter.background}};" onClick="{{filter.onSelect}}" aria-pressed="{{filter.pressed}}">{{filter.label}}</button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+      <p class="card" style="margin: 0; padding: 30px; font-size: 0.875rem; color: var(--text-secondary);">{{emptyText}}</p>
+    </sc-if>
+
+    <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 20px;">
+      <sc-for list="{{orders}}" as="order" hint-placeholder-count="3">
+        <li class="card" style="padding: 28px 30px; display: flex; flex-direction: column; gap: 22px;">
+
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+              <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600;">Заказ {{order.number}}</h2>
+              <span class="draft-badge">{{order.statusLabel}}</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 20px;">
+              <span style="font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">{{order.placed}}</span>
+              <span style="font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums;">{{order.total}}</span>
+            </div>
+          </div>
+
+          <sc-if value="{{order.hasTracker}}" hint-placeholder-val="{{true}}">
+            <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+              <sc-for list="{{order.steps}}" as="step" hint-placeholder-count="4">
+                <li style="display: flex; flex-direction: column; gap: 8px;">
+                  <span style="height: 4px; border-radius: 999px; background: {{step.barColor}};"></span>
+                  <span style="font-size: 0.73rem; line-height: 1.5; color: {{step.textColor}};">{{step.label}}</span>
+                </li>
+              </sc-for>
+            </ol>
+          </sc-if>
+
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px;">
+            <sc-for list="{{order.items}}" as="line" hint-placeholder-count="2">
+              <li style="display: flex; align-items: center; gap: 16px;">
+                <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; flex-shrink: 0; border: 1px solid var(--border-subtle); border-radius: var(--r-md); background: var(--surface-tint); font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">ФОТО</span>
+                <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                  <span style="font-size: 0.875rem;">{{line.title}}</span>
+                  <span style="font-size: 0.73rem; color: var(--text-secondary);">{{line.meta}}</span>
+                </span>
+                <span style="font-size: 0.875rem; font-variant-numeric: tabular-nums; white-space: nowrap;">{{line.amount}}</span>
+              </li>
+            </sc-for>
+          </ul>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid var(--border-subtle);">
+            <span style="font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">{{order.delivery}}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+              <sc-if value="{{order.hasPrimary}}" hint-placeholder-val="{{true}}">
+                <button type="button" class="button secondary" onClick="{{order.onPrimary}}">{{order.primaryLabel}}</button>
+              </sc-if>
+              <button type="button" class="button text-button" onClick="{{order.onRepeat}}">Повторить заказ</button>
+            </div>
+          </div>
+
+          <sc-if value="{{order.showCode}}" hint-placeholder-val="{{false}}">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border-radius: var(--r-md); background: var(--surface-tint);">
+              <span style="font-size: 0.875rem;">Код получения в пункте выдачи</span>
+              <span style="font-family: var(--font-mono); font-size: 1.55rem; letter-spacing: 0.18em; font-variant-numeric: tabular-nums;">{{order.code}}</span>
+            </div>
+          </sc-if>
+        </li>
+      </sc-for>
+    </ul>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      filter: 'all',
+      feedback: '',
+      theme: 'system',
+      revealed: [],
+      orders: [
+        {
+          id: 'o1', number: '№ 1482-0091', placed: 'ОФОРМЛЕН 18 СЕНТЯБРЯ', total: '7 500 ₽',
+          status: 'shipping', step: 2,
+          delivery: 'Доставка до двери · Санкт-Петербург, набережная реки Мойки, 12 · ожидается 24 сентября',
+          items: [
+            { title: 'Льняное полотенце с мережкой', meta: 'Мастерская «Тихий лён» · 2 шт.', amount: '3 600 ₽' },
+            { title: 'Шарф крупной вязки', meta: 'Мастерская «Северные петли» · 1 шт.', amount: '3 900 ₽' }
+          ]
+        },
+        {
+          id: 'o2', number: '№ 1471-0088', placed: 'ОФОРМЛЕН 12 СЕНТЯБРЯ', total: '2 400 ₽',
+          status: 'ready', step: 3, code: '481 902',
+          delivery: 'Пункт выдачи · Санкт-Петербург, Гороховая, 38 · хранится до 26 сентября',
+          items: [
+            { title: 'Кружка «Пена», объём 300 мл', meta: 'Мастерская «Глина и соль» · 1 шт.', amount: '2 400 ₽' }
+          ]
+        },
+        {
+          id: 'o3', number: '№ 1402-0075', placed: 'ПОЛУЧЕН 29 АВГУСТА', total: '5 900 ₽',
+          status: 'done',
+          delivery: 'Получен в пункте выдачи · Санкт-Петербург, Гороховая, 38',
+          items: [
+            { title: 'Набор открыток «Север»', meta: 'Мастерская «Бумага и снег» · 1 шт.', amount: '900 ₽' },
+            { title: 'Плед из шерсти мериноса', meta: 'Мастерская «Северные петли» · 1 шт.', amount: '5 000 ₽' }
+          ]
+        },
+        {
+          id: 'o4', number: '№ 1388-0064', placed: 'ОТМЕНЁН 14 АВГУСТА', total: '1 800 ₽',
+          status: 'cancelled',
+          delivery: 'Отменён покупателем · деньги возвращены 15 августа',
+          items: [
+            { title: 'Керамическая тарелка «Волна»', meta: 'Мастерская «Глина и соль» · 1 шт.', amount: '1 800 ₽' }
+          ]
+        }
+      ]
+    };
+    this.onThemeChange = this.onThemeChange.bind(this);
+    this.onSignOut = this.onSignOut.bind(this);
+  }
+
+  onThemeChange(e) {
+    this.setState({ theme: e.target.value, feedback: 'Тема сохранена и применится на всех ваших устройствах.' });
+  }
+
+  onSignOut() {
+    this.setState({ feedback: 'Сеанс на этом устройстве завершён.' });
+  }
+
+  meta(status) {
+    if (status === 'shipping') return { label: 'В пути', primary: 'Отследить', message: 'Заказ в пути: посылка прошла сортировочный центр.' };
+    if (status === 'ready') return { label: 'Готов к получению', primary: 'Показать код', message: '' };
+    if (status === 'cancelled') return { label: 'Отменён', primary: '', message: '' };
+    return { label: 'Получен', primary: 'Оставить отзыв', message: 'Открыли форму отзыва в разделе «Отзывы».' };
+  }
+
+  renderVals() {
+    const s = this.state;
+
+    const filterDefs = [
+      { value: 'all', label: 'Все' },
+      { value: 'shipping', label: 'В пути' },
+      { value: 'ready', label: 'Готовы к получению' },
+      { value: 'done', label: 'Получены' },
+      { value: 'cancelled', label: 'Отменённые' }
+    ];
+
+    const filters = filterDefs.map((f) => ({
+      label: f.label,
+      pressed: s.filter === f.value ? 'true' : 'false',
+      borderColor: s.filter === f.value ? 'var(--text-link)' : 'var(--border-control)',
+      background: s.filter === f.value ? 'var(--surface-tint)' : 'var(--action-secondary)',
+      onSelect: () => this.setState({ filter: f.value })
+    }));
+
+    const stepNames = ['Собран', 'Передан в доставку', 'В пути', 'Готов к получению'];
+
+    const orders = s.orders
+      .filter((o) => s.filter === 'all' || o.status === s.filter)
+      .map((o) => {
+        const m = this.meta(o.status);
+        const active = o.status === 'shipping' || o.status === 'ready';
+        return {
+          number: o.number,
+          placed: o.placed,
+          total: o.total,
+          statusLabel: m.label,
+          delivery: o.delivery,
+          items: o.items,
+          hasTracker: active,
+          steps: stepNames.map((name, i) => ({
+            label: name,
+            barColor: i <= (o.step || 0) ? 'var(--action-primary)' : 'var(--border-subtle)',
+            textColor: i <= (o.step || 0) ? 'var(--text-primary)' : 'var(--text-secondary)'
+          })),
+          hasPrimary: !!m.primary,
+          primaryLabel: m.primary,
+          showCode: o.status === 'ready' && s.revealed.indexOf(o.id) !== -1,
+          code: o.code,
+          onPrimary: () => {
+            if (o.status === 'ready') {
+              this.setState({ revealed: s.revealed.concat([o.id]), feedback: 'Покажите код сотруднику пункта выдачи.' });
+              return;
+            }
+            this.setState({ feedback: m.message });
+          },
+          onRepeat: () => this.setState({ feedback: 'Товары из заказа ' + o.number + ' добавлены в корзину.' })
+        };
+      });
+
+    const emptyMap = {
+      all: 'Заказов пока нет.',
+      shipping: 'В пути ничего нет.',
+      ready: 'Нет заказов, готовых к получению.',
+      done: 'Полученных заказов пока нет.',
+      cancelled: 'Отменённых заказов нет.'
+    };
+
+    return {
+      filters: filters,
+      orders: orders,
+      isEmpty: orders.length === 0,
+      emptyText: emptyMap[s.filter],
+      showFeedback: !!s.feedback,
+      feedbackText: s.feedback,
+      theme: s.theme,
+      onThemeChange: this.onThemeChange,
+      onSignOut: this.onSignOut
+    };
+  }
+}
+</script>
+</body>
+</html>

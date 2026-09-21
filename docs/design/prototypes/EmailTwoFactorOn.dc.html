@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Письмо: подтверждение входа включено</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 760px; height: 880px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 64px 80px;">
+
+  <div style="width: 600px; display: flex; flex-direction: column; gap: 6px;">
+    <span class="eyebrow">Письмо · подтверждение входа включено</span>
+    <span style="font-size: 0.875rem;"><strong>Тема:</strong> Подтверждение входа включено</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>Прехедер:</strong> Теперь при входе понадобится код из письма.</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>От:</strong> MarketMesh · noreply@[ДОМЕН]</span>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 40px; display: flex; flex-direction: column; gap: 24px;">
+
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 2rem; line-height: 1.25; letter-spacing: -0.02em;">Подтверждение входа включено.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.7;">Теперь при входе в аккаунт [ПОЧТА ПОЛУЧАТЕЛЯ] мы присылаем код на эту почту. Одного пароля больше недостаточно — даже если он утечёт, войти без кода не получится.</p>
+    </div>
+
+    <div style="padding: 20px; background: var(--surface-tint); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 10px;">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65;">Сохраните резервные коды — они выручат, если доступа к почте не окажется.</p>
+      <a href="#" style="font-size: 0.875rem;">Открыть резервные коды</a>
+    </div>
+
+    <div style="padding: 16px 17px; background: var(--surface-error); border: 1px solid var(--border-error); border-radius: var(--r-sm);">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65; color: var(--on-surface-error);">Если подтверждение включили не вы, смените пароль: в аккаунт зашёл кто-то ещё.</p>
+    </div>
+
+    <div style="padding-top: 20px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Письмо отправлено автоматически, отвечать на него не нужно.</span>
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Вопросы — <a href="#">[ПОЧТА ПОДДЕРЖКИ]</a></span>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

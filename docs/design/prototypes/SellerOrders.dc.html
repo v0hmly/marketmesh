@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет продавца — заказы</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button, .account-nav a { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 1160px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; gap: 32px; padding: 48px 64px;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+    <span class="eyebrow">Портал продавца</span>
+  </div>
+
+  <nav class="account-nav" aria-label="Разделы портала продавца">
+    <a href="SellerDashboard.dc.html">Обзор</a>
+    <a href="SellerProducts.dc.html">Изделия</a>
+    <a href="SellerOrders.dc.html" class="active" aria-current="page">Заказы</a>
+  </nav>
+
+  <div class="page-heading">
+    <div>
+      <h1 style="margin: 0 0 10px; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Заказы</h1>
+      <p class="lede" style="margin: 0;">Состав, цена и данные получения сохранены на момент покупки и не меняются задним числом.</p>
+    </div>
+    <span class="section-number" aria-hidden="true">03 / ЗАКАЗЫ</span>
+  </div>
+
+  <sc-if value="{{showFeedback}}" hint-placeholder-val="{{false}}">
+    <div class="notice success" role="status">{{feedbackText}}</div>
+  </sc-if>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 8px;" role="group" aria-label="Фильтр по состоянию">
+    <sc-for list="{{filters}}" as="filter" hint-placeholder-count="3">
+      <button type="button" class="button secondary" style="border-color: {{filter.borderColor}}; background: {{filter.background}};" onClick="{{filter.onSelect}}" aria-pressed="{{filter.pressed}}">{{filter.label}}</button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+    <p class="card" style="margin: 0; padding: 28px; font-size: 0.875rem; color: var(--text-secondary);">{{emptyText}}</p>
+  </sc-if>
+
+  <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px;">
+    <sc-for list="{{orders}}" as="order" hint-placeholder-count="3">
+      <li class="card" style="padding: 26px 28px; display: flex; flex-direction: column; gap: 18px;">
+
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+            <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600;">Заказ {{order.number}}</h2>
+            <span class="draft-badge">{{order.statusLabel}}</span>
+          </div>
+          <span style="font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">{{order.placed}}</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px;">
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px;">
+            <sc-for list="{{order.items}}" as="line" hint-placeholder-count="2">
+              <li style="display: flex; justify-content: space-between; gap: 16px; font-size: 0.875rem;">
+                <span>{{line.title}}</span>
+                <span style="color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap;">{{line.amount}}</span>
+              </li>
+            </sc-for>
+          </ul>
+
+          <dl style="margin: 0; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;">
+              <dt style="margin: 0; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">ПОЛУЧАТЕЛЬ</dt>
+              <dd style="margin: 0; font-size: 0.875rem; text-align: right;">{{order.recipient}}</dd>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;">
+              <dt style="margin: 0; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">ПОЛУЧЕНИЕ</dt>
+              <dd style="margin: 0; font-size: 0.875rem; text-align: right;">{{order.delivery}}</dd>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;">
+              <dt style="margin: 0; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">СУММА</dt>
+              <dd style="margin: 0; font-size: 0.875rem; text-align: right; font-variant-numeric: tabular-nums;">{{order.total}}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.875rem; color: var(--text-secondary);">{{order.hint}}</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+            <sc-if value="{{order.hasAction}}" hint-placeholder-val="{{true}}">
+              <button type="button" class="button secondary" onClick="{{order.onAdvance}}">{{order.actionLabel}}</button>
+            </sc-if>
+            <button type="button" class="button text-button" onClick="{{order.onOpen}}">Открыть заказ</button>
+          </div>
+        </div>
+      </li>
+    </sc-for>
+  </ul>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1160}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      filter: 'active',
+      feedback: '',
+      orders: [
+        {
+          id: 'o1',
+          number: '[НОМЕР 1]',
+          placed: 'ОФОРМЛЕН [ДАТА]',
+          status: 'new',
+          recipient: 'Вера И.',
+          delivery: 'Доставка до двери',
+          total: '4 200 ₽',
+          items: [
+            { title: 'Льняное полотенце с мережкой × 2', amount: '3 600 ₽' },
+            { title: 'Набор открыток «Север»', amount: '600 ₽' }
+          ]
+        },
+        {
+          id: 'o2',
+          number: '[НОМЕР 2]',
+          placed: 'ОФОРМЛЕН [ДАТА]',
+          status: 'packing',
+          recipient: 'Илья И.',
+          delivery: 'Пункт выдачи',
+          total: '5 900 ₽',
+          items: [{ title: 'Шарф крупной вязки', amount: '5 900 ₽' }]
+        },
+        {
+          id: 'o3',
+          number: '[НОМЕР 3]',
+          placed: 'ОФОРМЛЕН [ДАТА]',
+          status: 'done',
+          recipient: 'Анна К.',
+          delivery: 'Пункт выдачи',
+          total: '2 400 ₽',
+          items: [{ title: 'Кружка «Пена», объём 300 мл', amount: '2 400 ₽' }]
+        }
+      ]
+    };
+  }
+
+  meta(status) {
+    if (status === 'new') {
+      return { label: 'Новый', action: 'Подтвердить заказ', next: 'packing', hint: 'Подтвердите заказ, чтобы начать сборку.', message: 'Заказ подтверждён. Соберите изделия и передайте их в доставку.' };
+    }
+    if (status === 'packing') {
+      return { label: 'Собирается', action: 'Передать в доставку', next: 'shipped', hint: 'Изделия зарезервированы за покупателем.', message: 'Заказ передан в доставку. Покупатель увидит трек-номер.' };
+    }
+    if (status === 'shipped') {
+      return { label: 'В доставке', action: '', next: '', hint: 'Ждём подтверждения получения от покупателя.', message: '' };
+    }
+    if (status === 'cancelled') {
+      return { label: 'Отменён', action: '', next: '', hint: 'Резерв освобождён, изделия вернулись в продажу.', message: '' };
+    }
+    return { label: 'Завершён', action: '', next: '', hint: 'Изделия получены, заказ закрыт.', message: '' };
+  }
+
+  renderVals() {
+    const s = this.state;
+
+    const filterDefs = [
+      { value: 'active', label: 'В работе' },
+      { value: 'done', label: 'Завершённые' },
+      { value: 'cancelled', label: 'Отменённые' }
+    ];
+
+    const filters = filterDefs.map((f) => ({
+      label: f.label,
+      pressed: s.filter === f.value ? 'true' : 'false',
+      borderColor: s.filter === f.value ? 'var(--text-link)' : 'var(--border-control)',
+      background: s.filter === f.value ? 'var(--surface-tint)' : 'var(--action-secondary)',
+      onSelect: () => this.setState({ filter: f.value })
+    }));
+
+    const inFilter = (o) => {
+      if (s.filter === 'active') return ['new', 'packing', 'shipped'].indexOf(o.status) !== -1;
+      if (s.filter === 'done') return o.status === 'done';
+      return o.status === 'cancelled';
+    };
+
+    const orders = s.orders.filter(inFilter).map((o) => {
+      const m = this.meta(o.status);
+      return {
+        number: o.number,
+        placed: o.placed,
+        statusLabel: m.label,
+        recipient: o.recipient,
+        delivery: o.delivery,
+        total: o.total,
+        items: o.items,
+        hint: m.hint,
+        hasAction: !!m.action,
+        actionLabel: m.action,
+        onAdvance: () => this.setState({
+          orders: s.orders.map((x) => (x.id === o.id ? Object.assign({}, x, { status: m.next }) : x)),
+          feedback: m.message
+        }),
+        onOpen: () => this.setState({ feedback: 'Заказ ' + o.number + ' открыт. Состав и данные получения зафиксированы на момент покупки.' })
+      };
+    });
+
+    const emptyMap = {
+      active: 'Заказов в работе нет.',
+      done: 'Завершённых заказов пока нет.',
+      cancelled: 'Отменённых заказов нет.'
+    };
+
+    return {
+      filters: filters,
+      orders: orders,
+      isEmpty: orders.length === 0,
+      emptyText: emptyMap[s.filter],
+      showFeedback: !!s.feedback,
+      feedbackText: s.feedback
+    };
+  }
+}
+</script>
+</body>
+</html>

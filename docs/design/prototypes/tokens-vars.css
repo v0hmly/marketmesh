@@ -1,0 +1,131 @@
+/* Generated from the MarketMesh design system's tokens.json (project/tokens.json).
+   Not part of the system's own files — this is the :root/dark-mode variable
+   layer that project/ds/marketmesh/components/bundle.css expects to find,
+   since the system does not yet publish its own tokens.css. */
+
+/* Поправка к знаку.
+   В системе .brand-mark собран под один размер и ломается: при width/height 35px
+   и padding-right 8px в content-box коробка становится 43×35, а border-radius 50%
+   превращает круг в овал; letter-spacing -8px сдвигает букву вбок, translateY(5px)
+   роняет её вниз, overflow: hidden подрезает. Правим на уровень глубже, чтобы
+   победить по специфичности независимо от порядка подключения стилей.
+   Когда в системе почините сам класс — этот блок можно убрать. */
+.brand > .brand-mark {
+  box-sizing: border-box;
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  letter-spacing: 0;
+  font-size: 25px;
+  line-height: 1;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.brand > .brand-mark > span {
+  transform: translateY(-0.06em);
+}
+
+:root {
+  --text-primary: #203d30;
+  --text-secondary: #5d6c61;
+  --text-disabled: #647269;
+  --text-link: #244c3b;
+  --on-action-primary: #fffef5;
+  --on-surface-avatar: #415a3b;
+  --on-surface-success: #3c5733;
+  --on-surface-error: #7b382c;
+  --border-subtle: #dce1d6;
+  --border-control: #6e896f;
+  --border-hover: #415a3b;
+  --border-badge: #d8dfc4;
+  --border-success: #d4dfbd;
+  --border-error: #e9cabe;
+  --border-reconcile: #d8d9bc;
+  --action-primary: #244c3b;
+  --action-primary-hover: #163c2a;
+  --action-secondary: #f8f9ef;
+  --action-secondary-hover: #e7eddb;
+  --action-text-hover: #edf0e4;
+  --status-danger: #8d3428;
+  --status-pending: #7f8f57;
+  --ring-focus: #7b9139;
+  --ring-focus-inner: #163c2a;
+  --brand-accent: #7f963f;
+  --surface-page: #f7f5ef;
+  --surface-raised: #fffef9;
+  --surface-tint: #eff1e7;
+  --surface-sunken: #f1f3ed;
+  --surface-avatar: #dce3cd;
+  --surface-badge: #f5f6e9;
+  --surface-success: #f0f4e3;
+  --surface-error: #fff7ef;
+  --surface-reconcile: #f7f6e9;
+  --surface-scrim: #203d3099;
+  --elevation-card: 0 5px 18px #29432c03;
+  --r-xs: 5px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+  --r-round: 50%;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 56px;
+  --sp-10: 64px;
+  --control-h: 48px;
+  --button-h: 45px;
+  --button-h-compact: 42px;
+  --container: 1320px;
+  --gutter: 64px;
+  --font-sans: Inter, 'Segoe UI', Arial, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: #e3ede1;
+    --text-secondary: #b3c4b7;
+    --text-disabled: #a1b5a6;
+    --text-link: #b6d7a8;
+    --on-action-primary: #17271c;
+    --on-surface-avatar: #e1edda;
+    --on-surface-success: #d1e7b8;
+    --on-surface-error: #f5c8b6;
+    --border-subtle: #46594a;
+    --border-control: #748879;
+    --border-hover: #a4bba9;
+    --border-badge: #6f8461;
+    --border-success: #6e8d53;
+    --border-error: #9e7563;
+    --border-reconcile: #82945b;
+    --action-primary: #b6d7a8;
+    --action-primary-hover: #cce6c0;
+    --action-secondary: #263b2e;
+    --action-secondary-hover: #344b38;
+    --action-text-hover: #2e4333;
+    --status-danger: #ffbaac;
+    --status-pending: #b6cb86;
+    --ring-focus: #d8e895;
+    --ring-focus-inner: #17271c;
+    --brand-accent: #93a957;
+    --surface-page: #142019;
+    --surface-raised: #1d2b24;
+    --surface-tint: #263629;
+    --surface-sunken: #27382c;
+    --surface-avatar: #344d36;
+    --surface-badge: #2b3b26;
+    --surface-success: #283d23;
+    --surface-error: #3a2823;
+    --surface-reconcile: #303822;
+    --surface-scrim: #0d1511cc;
+    --elevation-card: 0 5px 18px #00000030;
+  }
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Письмо: решение по заявке</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 760px; height: 960px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 64px 80px;">
+
+  <sc-if value="{{isApproved}}" hint-placeholder-val="{{true}}">
+  <div style="width: 600px; display: flex; flex-direction: column; gap: 6px;">
+    <span class="eyebrow">Письмо · заявка одобрена</span>
+    <span style="font-size: 0.875rem;"><strong>Тема:</strong> Магазин подключён к MarketMesh</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>Прехедер:</strong> Портал открыт — можно заводить товары.</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>От:</strong> MarketMesh · noreply@[ДОМЕН]</span>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 40px; display: flex; flex-direction: column; gap: 24px;">
+
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 2rem; line-height: 1.25; letter-spacing: -0.02em;">Заявка одобрена.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.7;">Магазин «[НАЗВАНИЕ МАГАЗИНА]» прошёл проверку. Портал продавца открыт: можно заводить товары, настраивать доставку и принимать заказы.</p>
+    </div>
+
+    <a class="button primary" href="#" style="align-self: flex-start;">
+      <span>Войти в портал</span>
+      <span aria-hidden="true">↗</span>
+    </a>
+
+    <div style="padding: 20px; background: var(--surface-tint); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 10px;">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65;">Вход в портал всегда подтверждается кодом из письма — это нельзя отключить, потому что через портал проходят деньги и заказы.</p>
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65;">С чего начать: [ССЫЛКА НА ИНСТРУКЦИЮ ДЛЯ ПРОДАВЦА]</p>
+    </div>
+
+    <div style="padding-top: 20px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Письмо отправлено автоматически, отвечать на него не нужно.</span>
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Поддержка продавцов — <a href="#">[ПОЧТА ПОДДЕРЖКИ ПРОДАВЦОВ]</a></span>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <sc-if value="{{isRejected}}" hint-placeholder-val="{{false}}">
+  <div style="width: 600px; display: flex; flex-direction: column; gap: 6px;">
+    <span class="eyebrow">Письмо · заявка отклонена</span>
+    <span style="font-size: 0.875rem;"><strong>Тема:</strong> Заявка на подключение магазина отклонена</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>Прехедер:</strong> Рассказываем, что поправить и как подать заявку снова.</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>От:</strong> MarketMesh · noreply@[ДОМЕН]</span>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 40px; display: flex; flex-direction: column; gap: 24px;">
+
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 2rem; line-height: 1.25; letter-spacing: -0.02em;">Заявка отклонена.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.7;">Мы проверили данные магазина «[НАЗВАНИЕ МАГАЗИНА]» и пока не можем подключить его к площадке.</p>
+    </div>
+
+    <dl style="margin: 0; padding: 20px; background: var(--surface-tint); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Причина</dt>
+        <dd style="margin: 0; font-size: 0.875rem; line-height: 1.65;">[ПРИЧИНА ОТКАЗА]</dd>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Что поправить</dt>
+        <dd style="margin: 0; font-size: 0.875rem; line-height: 1.65;">[ЧТО ИСПРАВИТЬ В ЗАЯВКЕ]</dd>
+      </div>
+    </dl>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a class="button primary" href="#" style="align-self: flex-start;">
+        <span>Подать заявку снова</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Аккаунт с этой почтой остаётся — войти в портал можно будет сразу после одобрения.</p>
+    </div>
+
+    <div style="padding-top: 20px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Не согласны с решением? Ответьте на это письмо — разберёмся вручную.</span>
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Поддержка продавцов — <a href="#">[ПОЧТА ПОДДЕРЖКИ ПРОДАВЦОВ]</a></span>
+    </div>
+
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"decision":{"editor":"enum","default":"approved","options":["approved","rejected"],"section":"Решение по заявке"},"$preview":{"width":760,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const decision = this.props.decision || 'approved';
+    return {
+      isApproved: decision === 'approved',
+      isRejected: decision === 'rejected'
+    };
+  }
+}
+</script>
+</body>
+</html>

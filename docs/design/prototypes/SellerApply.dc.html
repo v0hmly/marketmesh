@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Портал продавца — заявка</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+</style>
+</helmet>
+<div style="width: 1280px; height: 1180px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; padding: 72px 24px;">
+  <div style="width: 100%; max-width: 410px; display: flex; flex-direction: column; gap: 24px;">
+
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></div>
+
+    <sc-if value="{{showForm}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Портал продавца</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Расскажите о магазине.</h1>
+      <p class="lede" style="margin: 0;">Проверим данные и откроем доступ к порталу. Аккаунт создаётся сразу, работа с товарами — после проверки.</p>
+    </div>
+
+    <form class="card auth-card" novalidate onSubmit="{{onSubmit}}" aria-busy="{{ariaBusy}}">
+
+      <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">{{noticeText}}</div>
+      </sc-if>
+
+      <div class="field">
+        <label for="apply-email">Рабочая почта</label>
+        <input class="ctl" type="email" id="apply-email" name="email" autocomplete="username" value="{{email}}" onChange="{{onEmailChange}}" aria-invalid="{{emailInvalid}}" aria-describedby="{{emailDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <div class="field-help" id="apply-email-help">Логин для портала. На неё придёт решение по заявке.</div>
+        <sc-if value="{{showEmailError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="apply-email-error">{{emailErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <label for="apply-password">Пароль</label>
+        <input class="ctl" type="password" id="apply-password" name="password" autocomplete="new-password" value="{{password}}" onChange="{{onPasswordChange}}" aria-invalid="{{passwordInvalid}}" aria-describedby="{{passwordDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <sc-if value="{{showPasswordRequirements}}" hint-placeholder-val="{{false}}">
+          <ul id="apply-password-requirements" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+            <sc-for list="{{passwordRequirements}}" as="req" hint-placeholder-count="5">
+              <li style="display: flex; align-items: center; gap: 8px; font-size: 0.73rem; line-height: 1.6; color: {{req.color}};">
+                <span aria-hidden="true">{{req.mark}}</span>
+                <span>{{req.label}}<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;"> — {{req.statusText}}</span></span>
+              </li>
+            </sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{showPasswordError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="apply-password-error">{{passwordErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <label for="apply-confirm">Повторите пароль</label>
+        <input class="ctl" type="password" id="apply-confirm" name="confirmPassword" autocomplete="new-password" value="{{confirmPassword}}" onChange="{{onConfirmChange}}" aria-invalid="{{confirmInvalid}}" aria-describedby="{{confirmDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <sc-if value="{{showConfirmError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="apply-confirm-error">{{confirmErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <div class="label-line">
+          <label for="apply-shop">Название магазина</label>
+          <span class="field-count" id="apply-shop-count">{{shopCountText}}</span>
+        </div>
+        <input class="ctl" type="text" id="apply-shop" name="shopName" maxlength="60" value="{{shopName}}" onChange="{{onShopNameChange}}" aria-invalid="{{shopInvalid}}" aria-describedby="{{shopDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <div class="field-help" id="apply-shop-help">Так магазин увидят покупатели в каталоге.</div>
+        <sc-if value="{{showShopError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="apply-shop-error">{{shopErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <label for="apply-inn">ИНН</label>
+        <input class="ctl" type="text" id="apply-inn" name="inn" inputmode="numeric" maxlength="12" value="{{inn}}" onChange="{{onInnChange}}" aria-invalid="{{innInvalid}}" aria-describedby="{{innDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <div class="field-help" id="apply-inn-help">10 цифр для организации, 12 — для ИП. Без пробелов.</div>
+        <sc-if value="{{showInnError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="apply-inn-error">{{innErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <button type="submit" class="button primary wide" disabled="{{fieldsDisabled}}">
+        <span>{{submitLabel}}</span>
+        <sc-if value="{{showArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+      </button>
+    </form>
+
+    <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Заявка уже отправлена? <a href="SellerLogin.dc.html">Войдите в портал</a></p>
+    </sc-if>
+
+    <sc-if value="{{isSuccess}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Портал продавца</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Заявка отправлена.</h1>
+    </div>
+
+    <div class="card auth-card">
+      <p style="margin: 0; line-height: 1.7;">Проверяем данные магазина и напишем на {{email}}. Обычно проверка занимает [СРОК ПРОВЕРКИ].</p>
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Войти в портал можно уже сейчас — раздел с товарами откроется после проверки.</p>
+      <a class="button primary wide" href="SellerLogin.dc.html">
+        <span>Перейти к входу</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"demoOutcome":{"editor":"enum","default":"success","options":["success","emailTaken","pendingAlready","innTaken","nameTaken","serverError"],"section":"Демо: ответ сервера"},"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      shopName: '',
+      inn: '',
+      attempted: false,
+      status: 'idle',
+      serverError: null,
+      passwordStarted: false
+    };
+    this.onEmailChange = this.onEmailChange.bind(this);
+    this.onPasswordChange = this.onPasswordChange.bind(this);
+    this.onConfirmChange = this.onConfirmChange.bind(this);
+    this.onShopNameChange = this.onShopNameChange.bind(this);
+    this.onInnChange = this.onInnChange.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  getEmailError(rawEmail) {
+    const email = (rawEmail || '').trim();
+    if (!email) return 'Введите рабочую почту, чтобы продолжить.';
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) return 'Не похоже на настоящий адрес почты. Проверьте написание — например, name@example.com.';
+    return null;
+  }
+
+  getPasswordChecks(password) {
+    return {
+      lengthOk: password.length >= 8 && password.length <= 64,
+      hasLower: /[a-z]/.test(password),
+      hasUpper: /[A-Z]/.test(password),
+      hasDigit: /[0-9]/.test(password),
+      hasSpecial: /[^A-Za-z0-9]/.test(password)
+    };
+  }
+
+  getPasswordError(password) {
+    if (!password) return 'Введите пароль, чтобы продолжить.';
+    if (password.length < 8) return 'Пароль слишком короткий. Нужно не менее 8 символов.';
+    if (password.length > 64) return 'Пароль слишком длинный. Не более 64 символов.';
+    const c = this.getPasswordChecks(password);
+    if (!c.hasLower || !c.hasUpper || !c.hasDigit || !c.hasSpecial) {
+      return 'Пароль не соответствует требованиям надёжности — отметьте выполненные условия ниже.';
+    }
+    return null;
+  }
+
+  getConfirmError(password, confirmPassword) {
+    if (!confirmPassword) return 'Повторите пароль, чтобы продолжить.';
+    if (confirmPassword !== password) return 'Пароли не совпадают. Введите пароль ещё раз в оба поля.';
+    return null;
+  }
+
+  getShopError(shopName) {
+    if (!shopName.trim()) return 'Введите название магазина.';
+    if (shopName.trim().length < 2) return 'Название слишком короткое. Нужно хотя бы два символа.';
+    return null;
+  }
+
+  getInnError(inn) {
+    if (!inn) return 'Введите ИНН.';
+    if (inn.length !== 10 && inn.length !== 12) return 'ИНН состоит из 10 или 12 цифр.';
+    return null;
+  }
+
+  onEmailChange(e) {
+    this.setState({ email: e.target.value, serverError: null });
+  }
+
+  onPasswordChange(e) {
+    const value = e.target.value;
+    this.setState({
+      password: value,
+      serverError: null,
+      passwordStarted: this.state.passwordStarted || value.length > 0
+    });
+  }
+
+  onConfirmChange(e) {
+    this.setState({ confirmPassword: e.target.value, serverError: null });
+  }
+
+  onShopNameChange(e) {
+    this.setState({ shopName: e.target.value, serverError: null });
+  }
+
+  onInnChange(e) {
+    const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 12);
+    this.setState({ inn: digits, serverError: null });
+  }
+
+  onSubmit(e) {
+    e.preventDefault();
+    if (this.state.status === 'submitting' || this.state.status === 'success') return;
+
+    const s = this.state;
+    const errors = [
+      this.getEmailError(s.email),
+      this.getPasswordError(s.password),
+      this.getConfirmError(s.password, s.confirmPassword),
+      this.getShopError(s.shopName),
+      this.getInnError(s.inn)
+    ];
+    this.setState({ attempted: true, serverError: null });
+    if (errors.some(function (err) { return !!err; })) return;
+
+    this.setState({ status: 'submitting' });
+    const outcome = this.props.demoOutcome || 'success';
+
+    setTimeout(() => {
+      if (outcome === 'success') {
+        this.setState({ status: 'success' });
+      } else {
+        this.setState({ status: 'idle', serverError: outcome });
+      }
+    }, 900);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const attempted = s.attempted;
+    const isSubmitting = s.status === 'submitting';
+    const isSuccess = s.status === 'success';
+    const fieldsDisabled = isSubmitting || isSuccess;
+
+    const serverEmailError = s.serverError === 'emailTaken'
+      ? 'Эта почта уже зарегистрирована. Войдите в портал или восстановите пароль.'
+      : (s.serverError === 'pendingAlready'
+        ? 'Заявка с этой почтой уже на проверке. Мы напишем, как только примем решение.'
+        : null);
+    const serverInnError = s.serverError === 'innTaken'
+      ? 'На этот ИНН уже зарегистрирован магазин. Войдите в существующий аккаунт или напишите в поддержку продавцов.'
+      : null;
+    const serverShopError = s.serverError === 'nameTaken'
+      ? 'Такое название уже занято другим магазином. Выберите другое.'
+      : null;
+
+    const emailErr = (attempted ? this.getEmailError(s.email) : null) || serverEmailError;
+    const passwordErr = attempted ? this.getPasswordError(s.password) : null;
+    const confirmErr = attempted ? this.getConfirmError(s.password, s.confirmPassword) : null;
+    const shopErr = (attempted ? this.getShopError(s.shopName) : null) || serverShopError;
+    const innErr = (attempted ? this.getInnError(s.inn) : null) || serverInnError;
+
+    const checks = this.getPasswordChecks(s.password);
+    const reqDefs = [
+      { label: 'От 8 до 64 символов', ok: checks.lengthOk },
+      { label: 'Строчная буква (a-z)', ok: checks.hasLower },
+      { label: 'Заглавная буква (A-Z)', ok: checks.hasUpper },
+      { label: 'Цифра (0-9)', ok: checks.hasDigit },
+      { label: 'Специальный символ (например, !%#)', ok: checks.hasSpecial }
+    ];
+    const passwordRequirements = reqDefs.map(function (r) {
+      return {
+        label: r.label,
+        color: r.ok ? 'var(--on-surface-success)' : 'var(--text-secondary)',
+        mark: r.ok ? '✓' : '·',
+        statusText: r.ok ? 'выполнено' : 'ещё не выполнено'
+      };
+    });
+
+    const emailIds = ['apply-email-help'];
+    if (emailErr) emailIds.push('apply-email-error');
+    const passwordIds = [];
+    if (s.passwordStarted) passwordIds.push('apply-password-requirements');
+    if (passwordErr) passwordIds.push('apply-password-error');
+    const confirmIds = [];
+    if (confirmErr) confirmIds.push('apply-confirm-error');
+    const shopIds = ['apply-shop-help', 'apply-shop-count'];
+    if (shopErr) shopIds.push('apply-shop-error');
+    const innIds = ['apply-inn-help'];
+    if (innErr) innIds.push('apply-inn-error');
+
+    return {
+      email: s.email,
+      password: s.password,
+      confirmPassword: s.confirmPassword,
+      shopName: s.shopName,
+      inn: s.inn,
+      onEmailChange: this.onEmailChange,
+      onPasswordChange: this.onPasswordChange,
+      onConfirmChange: this.onConfirmChange,
+      onShopNameChange: this.onShopNameChange,
+      onInnChange: this.onInnChange,
+      onSubmit: this.onSubmit,
+
+      showEmailError: !!emailErr,
+      emailErrorText: emailErr || '',
+      emailInvalid: emailErr ? 'true' : 'false',
+      emailDescribedBy: emailIds.join(' '),
+
+      showPasswordError: !!passwordErr,
+      passwordErrorText: passwordErr || '',
+      passwordInvalid: passwordErr ? 'true' : 'false',
+      passwordDescribedBy: passwordIds.join(' '),
+      showPasswordRequirements: s.passwordStarted,
+      passwordRequirements: passwordRequirements,
+
+      showConfirmError: !!confirmErr,
+      confirmErrorText: confirmErr || '',
+      confirmInvalid: confirmErr ? 'true' : 'false',
+      confirmDescribedBy: confirmIds.join(' '),
+
+      showShopError: !!shopErr,
+      shopErrorText: shopErr || '',
+      shopInvalid: shopErr ? 'true' : 'false',
+      shopDescribedBy: shopIds.join(' '),
+      shopCountText: s.shopName.length + ' / 60',
+
+      showInnError: !!innErr,
+      innErrorText: innErr || '',
+      innInvalid: innErr ? 'true' : 'false',
+      innDescribedBy: innIds.join(' '),
+
+      fieldsDisabled: fieldsDisabled,
+      showArrow: !isSubmitting,
+      submitLabel: isSubmitting ? 'Отправляем заявку…' : 'Отправить заявку',
+      showNotice: s.serverError === 'serverError',
+      noticeText: s.serverError === 'serverError' ? 'Не удалось отправить заявку. Проверьте соединение и попробуйте ещё раз.' : '',
+      isSuccess: isSuccess,
+      showForm: !isSuccess,
+      ariaBusy: isSubmitting ? 'true' : 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>
