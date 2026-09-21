@@ -7,60 +7,31 @@ x-app: &app
   restart: "no"
 
 services:
-  auth-db:
+  postgres-primary:
     image: postgres:18.6-bookworm
-    env_file: ${ACCOUNT_LOCAL_STATE}/auth-db/env
+    env_file: ${ACCOUNT_LOCAL_STATE}/postgres-primary/env
     command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=10"]
     volumes:
-      - auth-db:/var/lib/postgresql
+      - postgres-primary:/var/lib/postgresql
       - ./primary-init.sh:/docker-entrypoint-initdb.d/10-account.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U fixture_admin -d auth"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U fixture_admin -d postgres"]
       interval: 2s
       timeout: 2s
       retries: 60
     networks: [internal]
-  auth-replica:
+  postgres-replica:
     image: postgres:18.6-bookworm
-    env_file: ${ACCOUNT_LOCAL_STATE}/auth-replica/env
+    env_file: ${ACCOUNT_LOCAL_STATE}/postgres-replica/env
     entrypoint: ["bash", "/replica.sh"]
     volumes:
-      - auth-replica:/var/lib/postgresql
+      - postgres-replica:/var/lib/postgresql
       - ./replica.sh:/replica.sh:ro
     depends_on:
-      auth-db:
+      postgres-primary:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "gosu postgres psql -U fixture_admin -d auth -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
-      interval: 2s
-      timeout: 2s
-      retries: 60
-    networks: [internal]
-  user-db:
-    image: postgres:18.6-bookworm
-    env_file: ${ACCOUNT_LOCAL_STATE}/user-db/env
-    command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=10"]
-    volumes:
-      - user-db:/var/lib/postgresql
-      - ./primary-init.sh:/docker-entrypoint-initdb.d/10-account.sh:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U fixture_admin -d user"]
-      interval: 2s
-      timeout: 2s
-      retries: 60
-    networks: [internal]
-  user-replica:
-    image: postgres:18.6-bookworm
-    env_file: ${ACCOUNT_LOCAL_STATE}/user-replica/env
-    entrypoint: ["bash", "/replica.sh"]
-    volumes:
-      - user-replica:/var/lib/postgresql
-      - ./replica.sh:/replica.sh:ro
-    depends_on:
-      user-db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "gosu postgres psql -U fixture_admin -d user -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      test: ["CMD-SHELL", "gosu postgres psql -U fixture_admin -d postgres -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
       interval: 2s
       timeout: 2s
       retries: 60
@@ -161,13 +132,9 @@ networks:
   ingress:
     labels: *ownership
 volumes:
-  auth-db:
+  postgres-primary:
     labels: *ownership
-  auth-replica:
-    labels: *ownership
-  user-db:
-    labels: *ownership
-  user-replica:
+  postgres-replica:
     labels: *ownership
   nats-data:
     labels: *ownership

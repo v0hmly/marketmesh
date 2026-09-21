@@ -150,11 +150,13 @@ func migrate(ctx context.Context, conn *pgx.Conn, dir, schema string) error {
 	if schema != "auth" && schema != "user" {
 		return errors.New("unknown schema")
 	}
+	rw := pgx.Identifier{schema + "_rw"}.Sanitize()
+	ro := pgx.Identifier{schema + "_ro"}.Sanitize()
 	if schema == "user" {
 		schema = "users"
 	}
 	quoted := pgx.Identifier{schema}.Sanitize()
-	_, err = tx.Exec(ctx, `GRANT USAGE ON SCHEMA `+quoted+` TO app_rw,app_ro; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA `+quoted+` TO app_rw; GRANT SELECT ON ALL TABLES IN SCHEMA `+quoted+` TO app_ro; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA `+quoted+` TO app_rw`)
+	_, err = tx.Exec(ctx, `GRANT USAGE ON SCHEMA `+quoted+` TO `+rw+`,`+ro+`; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA `+quoted+` TO `+rw+`; GRANT SELECT ON ALL TABLES IN SCHEMA `+quoted+` TO `+ro+`; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA `+quoted+` TO `+rw)
 	if err != nil {
 		return errors.New("application grants failed")
 	}
