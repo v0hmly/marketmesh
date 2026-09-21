@@ -483,3 +483,38 @@ tasks:
       - task: frontend:test
       - task: frontend:lint
       - task: frontend:typecheck
+
+  mail:config:
+    desc: Проверить Compose Mailpit
+    cmds:
+      - ./infra/mailpit/local.sh config
+
+  mail:up:
+    desc: Поднять локальный SMTP и web UI Mailpit
+    cmds:
+      - ./infra/mailpit/local.sh up
+
+  mail:status:
+    desc: Показать состояние Mailpit
+    cmds:
+      - ./infra/mailpit/local.sh status
+
+  mail:logs:
+    desc: Показать логи Mailpit
+    cmds:
+      - ./infra/mailpit/local.sh logs
+
+  mail:down:
+    desc: Остановить Mailpit с сохранением писем
+    cmds:
+      - ./infra/mailpit/local.sh down
+
+  mail:clean:
+    desc: Удалить локальный Mailpit и все сохранённые письма
+    cmds:
+      - ./infra/mailpit/local.sh clean
+
+  mail:verify:
+    desc: Проверить SMTP, UI и persistence в одноразовом Mailpit
+    cmds:
+      - ./infra/mailpit/local.sh verify
