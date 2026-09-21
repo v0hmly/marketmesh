@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package files.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/files/v1;filesv1";
+
+// FileService carries bounded control operations; file bytes never enter RPC.
+service FileService {
+  // CreateUpload creates or resumes one owner-scoped immutable upload manifest.
+  rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
+  // CompleteUpload commits a verified set of parts for asynchronous AV/CDR.
+  rpc CompleteUpload(CompleteUploadRequest) returns (CompleteUploadResponse);
+  // GetStatus reads only the authenticated owner's processing state.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  // CreateDownload issues a short-lived capability only for a READY clean object.
+  rpc CreateDownload(CreateDownloadRequest) returns (CreateDownloadResponse);
+  // Delete first tombstones the file, then schedules idempotent storage cleanup.
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
+
+// FileState is a finite processing vocabulary without storage diagnostics.
+enum FileState {
+  // FILE_STATE_UNSPECIFIED is never an accepted persisted state.
+  FILE_STATE_UNSPECIFIED = 0;
+  // FILE_STATE_UPLOADING accepts immutable parts until the upload deadline.
+  FILE_STATE_UPLOADING = 1;
+  // FILE_STATE_SCANNING is inaccessible while validation, AV and CDR run.
+  FILE_STATE_SCANNING = 2;
+  // FILE_STATE_REPLICATING waits for verified copies in both required DCs.
+  FILE_STATE_REPLICATING = 3;
+  // FILE_STATE_READY permits owner-authorized downloads of the clean derivative.
+  FILE_STATE_READY = 4;
+  // FILE_STATE_REJECTED is terminal and never permits downloads.
+  FILE_STATE_REJECTED = 5;
+  // FILE_STATE_EXPIRED is a terminal incomplete upload.
+  FILE_STATE_EXPIRED = 6;
+  // FILE_STATE_DELETED is a durable tombstone, including pending physical cleanup.
+  FILE_STATE_DELETED = 7;
+}
+
+// PartManifest binds one numbered part; its number is its one-based list index.
+message PartManifest {
+  // SizeBytes is exactly 5 MiB except for the bounded final part.
+  uint64 size_bytes = 1;
+  // Sha256 is exactly 32 bytes and is verified by storage and the worker.
+  bytes sha256 = 2;
+}
+
+// CreateUploadRequest has no tenant, owner, object key, endpoint or filename.
+message CreateUploadRequest {
+  // IdempotencyKey is an opaque nonzero 16-byte retry key scoped to the owner.
+  bytes idempotency_key = 1;
+  // MediaType must belong to the server's explicit format allowlist.
+  string media_type = 2;
+  // SizeBytes is the full source size, bounded by 100 MiB.
+  uint64 size_bytes = 3;
+  // Sha256 is the 32-byte digest of the concatenated source content.
+  bytes sha256 = 4;
+  // Parts contains at most twenty immutable part declarations.
+  repeated PartManifest parts = 5;
+}
+
+// CapabilityHeader is one server-signed request header for a storage operation.
+message CapabilityHeader {
+  // Name belongs to a fixed storage-header allowlist; it is never tunnel metadata.
+  string name = 1;
+  // Value is an exact signed value and must never enter logs or analytics.
+  string value = 2;
+}
+
+// UploadPartCapability is a bearer credential for one immutable PUT operation.
+message UploadPartCapability {
+  // PartNumber is one-based and references the accepted manifest.
+  uint32 part_number = 1;
+  // OffsetBytes is the exact offset in the source file.
+  uint64 offset_bytes = 2;
+  // SizeBytes is the exact request body length.
+  uint64 size_bytes = 3;
+  // Url is an HTTPS capability, never a caller-selected forwarding destination.
+  string url = 4;
+  // Headers contains the exact signed storage request headers.
+  repeated CapabilityHeader headers = 5;
+  // ExpiresAtUnix is the exclusive deadline, at most sixty seconds after issue.
+  int64 expires_at_unix = 6;
+}
+
+// CreateUploadResponse returns only missing parts when resuming the same manifest.
+message CreateUploadResponse {
+  // FileId is a random server-issued 16-byte identifier.
+  bytes file_id = 1;
+  // UploadId identifies the durable upload manifest independently of a pod.
+  string upload_id = 2;
+  // State is the current processing state.
+  FileState state = 3;
+  // Parts contains capabilities only for parts not acknowledged by storage.
+  repeated UploadPartCapability parts = 4;
+  // ReceivedParts lists acknowledged immutable parts without disclosing storage keys.
+  repeated uint32 received_parts = 5;
+  // UploadExpiresAtUnix bounds the lifetime of the entire upload session.
+  int64 upload_expires_at_unix = 6;
+}
+
+// CompleteUploadRequest identifies an owner-scoped session; no file bytes or ETags are accepted.
+message CompleteUploadRequest {
+  // FileId is a nonzero 16-byte file identifier.
+  bytes file_id = 1;
+}
+
+// CompleteUploadResponse acknowledges a durable state, never an unverified READY.
+message CompleteUploadResponse {
+  // State reports processing progress after the idempotent completion operation.
+  FileState state = 1;
+}
+
+// GetStatusRequest carries no caller-selected tenant or owner.
+message GetStatusRequest {
+  // FileId is a nonzero 16-byte file identifier.
+  bytes file_id = 1;
+}
+
+// GetStatusResponse deliberately excludes filenames, internal URLs and scanner output.
+message GetStatusResponse {
+  // State is the finite processing state.
+  FileState state = 1;
+  // CleanMediaType is present only after the clean derivative is READY.
+  string clean_media_type = 2;
+  // CleanSizeBytes is the exact READY derivative size.
+  uint64 clean_size_bytes = 3;
+  // CleanSha256 lets the downloader verify the complete derivative.
+  bytes clean_sha256 = 4;
+}
+
+// CreateDownloadRequest identifies a file and cannot extend capability constraints.
+message CreateDownloadRequest {
+  // FileId is a nonzero 16-byte file identifier.
+  bytes file_id = 1;
+}
+
+// CreateDownloadResponse contains a sensitive, non-cacheable HTTPS GET capability.
+message CreateDownloadResponse {
+  // Url addresses exactly one READY clean derivative.
+  string url = 1;
+  // ExpiresAtUnix is at most sixty seconds after issue.
+  int64 expires_at_unix = 2;
+}
+
+// DeleteRequest is intrinsically idempotent for one owner-scoped file.
+message DeleteRequest {
+  // FileId is a nonzero 16-byte file identifier.
+  bytes file_id = 1;
+}
+
+// DeleteResponse acknowledges a durable tombstone, with asynchronous physical cleanup.
+message DeleteResponse {}

@@ -11,6 +11,7 @@ readonly MODULES=(
   "e2e/tunnel|${REPOSITORY_MODULE_PREFIX}/e2e/tunnel"
   "platform|${REPOSITORY_MODULE_PREFIX}/platform"
   "services/auth|${REPOSITORY_MODULE_PREFIX}/services/auth"
+  "services/files|${REPOSITORY_MODULE_PREFIX}/services/files"
   "services/gateway-in|${REPOSITORY_MODULE_PREFIX}/services/gateway-in"
   "services/gateway-out|${REPOSITORY_MODULE_PREFIX}/services/gateway-out"
   "services/user|${REPOSITORY_MODULE_PREFIX}/services/user"

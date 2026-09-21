@@ -69,7 +69,9 @@ func New(service SessionOperations, keys *sessionkeys.Manager, config Config) (*
 		if err := identity.Validate(); err != nil {
 			return nil, errors.New("auth internal grpc: invalid audience configuration")
 		}
-		if existing, found := rules[identity]; found {
+		if audience == "files" {
+			// Files uses only the separate listener with a complete workload scope.
+		} else if existing, found := rules[identity]; found {
 			rules[identity] = append(existing, method("VerifyAssertion"), method("GetSigningKeys"))
 		} else {
 			rules[identity] = []string{method("VerifyAssertion"), method("GetSigningKeys")}
@@ -150,13 +152,17 @@ func (h *Handler) VerifyAssertion(ctx context.Context, request *authv1.VerifyAss
 	if err != nil {
 		return nil, err
 	}
+	return h.verifyAssertion(ctx, request, identity.Role)
+}
+
+func (h *Handler) verifyAssertion(ctx context.Context, request *authv1.VerifyAssertionRequest, audience string) (*authv1.VerifyAssertionResponse, error) {
 	if request == nil || request.GetAssertion() == "" {
 		return nil, denied()
 	}
-	if _, ok := h.config.Audiences[identity.Role]; !ok {
+	if _, ok := h.config.Audiences[audience]; !ok {
 		return nil, denied()
 	}
-	verifier, err := sessionassert.NewVerifier(h.config.Issuer, identity.Role, h.keys.KeySource(), sessionassert.WithLeeway(0), sessionassert.WithVerifierClock(h.config.Clock), sessionassert.WithVerifierMaxTTL(h.config.AssertionTTL), sessionassert.WithSessionChecker(sessionChecker{service: h.service}))
+	verifier, err := sessionassert.NewVerifier(h.config.Issuer, audience, h.keys.KeySource(), sessionassert.WithLeeway(0), sessionassert.WithVerifierClock(h.config.Clock), sessionassert.WithVerifierMaxTTL(h.config.AssertionTTL), sessionassert.WithSessionChecker(sessionChecker{service: h.service}))
 	if err != nil {
 		return nil, unavailable()
 	}
@@ -178,6 +184,10 @@ func (h *Handler) GetSigningKeys(ctx context.Context, request *authv1.GetSigning
 	if request == nil {
 		return nil, denied()
 	}
+	return h.signingKeys()
+}
+
+func (h *Handler) signingKeys() (*authv1.GetSigningKeysResponse, error) {
 	keys, err := h.keys.PublicKeys()
 	if err != nil {
 		return nil, unavailable()

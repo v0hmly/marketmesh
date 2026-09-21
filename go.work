@@ -6,6 +6,7 @@ use (
 	./e2e/tunnel
 	./platform
 	./services/auth
+	./services/files
 	./services/gateway-in
 	./services/gateway-out
 	./services/user

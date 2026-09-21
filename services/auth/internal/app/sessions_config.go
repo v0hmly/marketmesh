@@ -13,6 +13,7 @@ import (
 )
 
 type sessionConfig struct {
+	files                                                       filesSessionConfig
 	enabled                                                     bool
 	lifetimes                                                   sessions.Config
 	issuer, keysFile, trustDomain, internalAddress              string
@@ -113,6 +114,10 @@ func loadSessionConfig(env serviceruntime.Env, environment string) (sessionConfi
 		}
 	} else if !result.redisServerName.Present() {
 		return sessionConfig{}, errors.New("auth sessions: verified Redis TLS is required")
+	}
+	result.files, err = loadFilesSessionConfig(env, environment, result.trustDomain)
+	if err != nil {
+		return sessionConfig{}, err
 	}
 	return result, nil
 }

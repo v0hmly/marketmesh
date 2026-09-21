@@ -14,6 +14,11 @@ import (
 )
 
 var publicRPC = map[string]bool{
+	"/files.v1.FileService/CreateUpload":       true,
+	"/files.v1.FileService/CompleteUpload":     true,
+	"/files.v1.FileService/GetStatus":          true,
+	"/files.v1.FileService/CreateDownload":     true,
+	"/files.v1.FileService/Delete":             true,
 	"/user.v1.UserService/GetSettings":         true,
 	"/user.v1.UserService/UpdateSettings":      true,
 	"/auth.v1.AuthService/RegisterCredentials": true, "/auth.v1.AuthService/Login": true,

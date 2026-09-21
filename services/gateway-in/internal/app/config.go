@@ -18,6 +18,8 @@ const (
 )
 
 type config struct {
+	filesBrowserEnabled bool
+
 	serviceVersion              string
 	environment                 string
 	instanceID                  string
@@ -102,6 +104,9 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 
 	if result.authBrowserEnabled, err = env.Bool("AUTH_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.filesBrowserEnabled, err = env.Bool("FILES_BROWSER_ENABLED", false); err != nil {
 		return config{}, err
 	}
 	if result.userBrowserEnabled, err = env.Bool("USER_BROWSER_ENABLED", false); err != nil {

@@ -27,13 +27,15 @@ import (
 )
 
 type sessionResources struct {
-	service    *sessions.Service
-	redis      *platformredis.Client
-	keys       *sessionkeys.Manager
-	server     *platformgrpc.Server
-	policy     *workloadid.Policy
-	listener   net.Listener
-	components []serviceruntime.Component
+	filesServer   *platformgrpc.Server
+	filesListener net.Listener
+	service       *sessions.Service
+	redis         *platformredis.Client
+	keys          *sessionkeys.Manager
+	server        *platformgrpc.Server
+	policy        *workloadid.Policy
+	listener      net.Listener
+	components    []serviceruntime.Component
 }
 
 func newSessionResources(ctx context.Context, config config, log *logger.Logger, pipeline *telemetry.Telemetry, database *platformpostgres.Database, listen listenFunc) (*sessionResources, error) {
@@ -106,6 +108,11 @@ func newSessionResources(ctx context.Context, config config, log *logger.Logger,
 		return nil, err
 	}
 	resources.components = []serviceruntime.Component{redisComponent, grpcComponent}
+	if cfg.files.enabled {
+		if err := resources.startFilesListener(cfg.files, config, handler, log, pipeline, listen); err != nil {
+			return nil, err
+		}
+	}
 	owned = false
 	return resources, nil
 }
@@ -113,6 +120,12 @@ func newSessionResources(ctx context.Context, config config, log *logger.Logger,
 func (resources *sessionResources) close(ctx context.Context) error {
 	if resources == nil {
 		return nil
+	}
+	if resources.filesServer != nil {
+		resources.filesServer.GRPCServer().Stop()
+	}
+	if resources.filesListener != nil {
+		_ = resources.filesListener.Close()
 	}
 	if resources.server != nil {
 		resources.server.GRPCServer().Stop()
