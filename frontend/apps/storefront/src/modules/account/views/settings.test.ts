@@ -15,6 +15,7 @@ vi.mock('../../../shared/features', () => ({
   favoritesEnabled: false,
   reviewsEnabled: false,
   idEnabled: false,
+  sellerEnabled: false,
 }));
 const settings = (theme: ThemePreference = 'system', version = 1n): AccountSettings => ({
   subjectId: new Uint8Array(16).fill(1),

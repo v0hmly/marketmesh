@@ -14,7 +14,7 @@ import {
   validateLoginCode,
   validatePasswordRepeat,
   validatePasswordStrength,
-} from '../validation';
+} from '../../../shared/validation';
 
 const props = defineProps<{ mode: 'login' | 'register' }>();
 const session = useSession();
