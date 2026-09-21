@@ -286,19 +286,18 @@ textarea:disabled {
   justify-content: center;
   width: 35px;
   height: 35px;
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--button-primary);
   color: var(--button-primary-ink);
   font-family: Georgia, serif;
-  font-size: 28px;
+  font-size: 25px;
   line-height: 1;
-  letter-spacing: -8px;
-  padding-right: 8px;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .brand-mark > span {
-  transform: translateY(5px);
+  transform: translateY(-0.06em);
 }
 
 .brand-caption {
@@ -846,7 +845,7 @@ main:focus {
   .brand-mark {
     width: 29px;
     height: 29px;
-    font-size: 24px;
+    font-size: 21px;
   }
   .header-nav {
     gap: 14px;

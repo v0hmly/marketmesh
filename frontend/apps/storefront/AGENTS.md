@@ -129,9 +129,7 @@ storefront по правилам выше.
 и ярлыка приложения — квадратная плитка с радиусами из токенов, на тёмном — светлая плитка с
 зелёной буквой. Образцы — `docs/design/prototypes/Mark.dc.html`.
 
-Класс `.brand-mark` собран под один размер и ломается: `width`/`height` 35px вместе с
-`padding-right` 8px в `content-box` дают коробку 43×35, из-за чего `border-radius: 50%` рисует
-овал, `letter-spacing: -8px` уводит букву вбок, `translateY(5px)` роняет её вниз, а
-`overflow: hidden` подрезает. До починки класса в прототипах действует слой `.brand > .brand-mark`
-в `prototypes/tokens-vars.css`. Новый код не должен полагаться на этот класс, пока он не
-исправлен в `style.css` и в `components/bundle.css`.
+Класс `.brand-mark` починен в `style.css` и в `components/bundle.css` (MM-82): коробка 35×35 в
+`border-box`, без `letter-spacing`, `padding-right` и `overflow`, буква центрируется флексом и
+`translateY(-0.06em)`; разметка — `<span class="brand-mark"><span>m</span></span>`. Слой-поправка
+из `prototypes/tokens-vars.css` удалён; новые патчи под знак не вводятся.
