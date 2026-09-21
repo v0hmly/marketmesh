@@ -27,6 +27,12 @@ const profile = (id = 1): Profile => ({
   version: 1n,
   createdAtUnix: 1n,
   updatedAtUnix: 1n,
+  lastName: '',
+  birthDate: '',
+  gender: 0,
+  phone: '',
+  city: '',
+  showAge: false,
 });
 // A real wire detail exercises shared/api parsing without importing internal schemas.
 const pendingDetail = () => {
