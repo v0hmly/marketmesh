@@ -14,7 +14,11 @@ readonly STATE_PARENT="$SCRIPT_DIR/.state"
 export ACCOUNT_LOCAL_STATE="$STATE_PARENT/$ACCOUNT_LOCAL_PROJECT"
 export ACCOUNT_LOCAL_WORKSPACE="$SCRIPT_DIR"
 export ACCOUNT_LOCAL_IMAGE="${ACCOUNT_LOCAL_IMAGE:-$ACCOUNT_LOCAL_PROJECT:local}"
-compose(){ docker compose --project-directory "$SCRIPT_DIR" --project-name "$ACCOUNT_LOCAL_PROJECT" --file "$SCRIPT_DIR/compose.yml" "$@"; }
+readonly RYBBIT_OVERRIDE="$ROOT/infra/rybbit/account.override.yml"
+compose(){
+ local files=(--file "$SCRIPT_DIR/compose.yml")
+ if [[ "${ACCOUNT_RYBBIT_ENABLED:-false}" == true ]]; then files+=(--file "$RYBBIT_OVERRIDE"); fi
+ docker compose --project-directory "$SCRIPT_DIR" --project-name "$ACCOUNT_LOCAL_PROJECT" "${files[@]}" "$@"; }
 owned(){ [[ -f "$ACCOUNT_LOCAL_STATE/.owner" && "$(cat "$ACCOUNT_LOCAL_STATE/.owner")" == "$ACCOUNT_LOCAL_PROJECT|$SCRIPT_DIR" ]] || { echo 'State ownership marker missing or mismatched.' >&2; exit 1; }; }
 check_paths(){ [[ ! -L "$STATE_PARENT" && ! -L "$ACCOUNT_LOCAL_STATE" ]] || { echo 'Symlink state refused.' >&2; exit 1; }; }
 check_project(){
@@ -83,7 +87,7 @@ case "${1:-}" in
   [[ ! -e "$ACCOUNT_LOCAL_STATE" ]] || { echo 'Fresh test project required.' >&2; exit 1; }
   [[ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$ACCOUNT_LOCAL_PROJECT")" && -z "$(docker volume ls -q --filter "label=com.docker.compose.project=$ACCOUNT_LOCAL_PROJECT")" ]] || { echo 'Fresh test resources required.' >&2; exit 1; }
   # Always retain scoped artifacts, but remove only this fresh test project containers/data.
-  trap 'remove_resources' EXIT
+  trap 'test_status=$?; trap - EXIT; remove_resources || test_status=1; exit "$test_status"' EXIT
   export ACCOUNT_USER_CONSUME_ENABLED=false
   up
   export ACCOUNT_E2E_RUN_ID="run-$(date +%s)-$$"

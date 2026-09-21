@@ -20,6 +20,8 @@ WORKDIR /workspace
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY frontend/ frontend/
 COPY api/gen/ts/ api/gen/ts/
+ARG VITE_RYBBIT_ENABLED=false
+ENV VITE_RYBBIT_ENABLED=$VITE_RYBBIT_ENABLED
 ENV VITE_ACCOUNT_ADDRESSES_ENABLED=true
 ENV VITE_ACCOUNT_SETTINGS_ENABLED=true
 RUN corepack enable && pnpm install --frozen-lockfile && pnpm --filter @marketmesh/storefront build

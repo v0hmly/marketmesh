@@ -1,0 +1,18 @@
+# Enable explicitly with ACCOUNT_RYBBIT_ENABLED=true for every account command.
+services:
+  auth:
+    build:
+      args:
+        VITE_RYBBIT_ENABLED: "true"
+  browser:
+    environment:
+      ACCOUNT_E2E_ANALYTICS: "true"
+  frontdoor:
+    environment:
+      ACCOUNT_RYBBIT_ENABLED: "true"
+      RYBBIT_SITE_ID: ${RYBBIT_SITE_ID:?Set the local site ID from rybbit up}
+    networks: [dmz, ingress, analytics]
+networks:
+  analytics:
+    external: true
+    name: ${RYBBIT_PROJECT:-marketmesh-rybbit-local}_analytics

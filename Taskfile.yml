@@ -426,6 +426,42 @@ tasks:
     cmds:
       - "{{.INFRA_TOOL}} observability-clean"
 
+  analytics:config:
+    desc: Проверить Compose Rybbit
+    cmds:
+      - ./infra/rybbit/local.sh config
+
+  analytics:up:
+    desc: Поднять локальный Rybbit и подготовить сайт storefront
+    cmds:
+      - ./infra/rybbit/local.sh up
+
+  analytics:status:
+    desc: Показать состояние Rybbit
+    cmds:
+      - ./infra/rybbit/local.sh status
+
+  analytics:logs:
+    desc: Показать логи Rybbit
+    cmds:
+      - ./infra/rybbit/local.sh logs
+
+  analytics:down:
+    desc: Остановить Rybbit с сохранением данных
+    cmds:
+      - ./infra/rybbit/local.sh down
+
+  analytics:clean:
+    desc: Удалить локальный Rybbit и его данные
+    cmds:
+      - ./infra/rybbit/local.sh clean
+
+  analytics:verify:
+    desc: Проверить ingestion, dashboard и persistence в одноразовом Rybbit
+    cmds:
+      - ./infra/rybbit/local.sh verify
+
+
   account:up:
     desc: Запустить локальный HTTPS storefront с настоящими Auth/User и событиями регистрации
     cmds:
