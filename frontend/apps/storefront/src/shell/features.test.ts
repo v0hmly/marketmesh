@@ -49,3 +49,17 @@ it.each([undefined, 'false', '1', 'true'])(
     expect(routes.some((route) => route.path === '/seller')).toBe(flag === 'true');
   },
 );
+
+it.each([undefined, 'false', '1', 'true'])(
+  'enables the staff portal routes only for the exact build flag %s',
+  async (flag) => {
+    vi.stubEnv('VITE_STAFF_ENABLED', flag);
+    vi.resetModules();
+    const { staffEnabled } = await import('../shared/features');
+    const { createStorefrontRouter } = await import('./router');
+    expect(staffEnabled).toBe(flag === 'true');
+    const routes = createStorefrontRouter(createMemoryHistory()).getRoutes();
+    expect(routes.some((route) => route.path === '/staff/login')).toBe(flag === 'true');
+    expect(routes.some((route) => route.path === '/staff/invite')).toBe(flag === 'true');
+  },
+);

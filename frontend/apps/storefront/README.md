@@ -33,10 +33,12 @@ Browser-тесты требуют Chromium для закреплённой ве�
 ## Запуск с API
 
 Публичные RPC и статические файлы приложения должны обслуживаться на одном
-HTTPS origin. API-клиент обращается к `/auth.v1.AuthService/*` и
-`/user.v1.UserService/*` на текущем origin; cross-origin base URL не настраивается.
-Статический сервер должен возвращать `index.html` для `/login`, `/register` и
-`/account` и `/account/addresses`, не перехватывая RPC-маршруты. Персональные ответы остаются `no-store`.
+HTTPS origin. API-клиент обращается к `/auth.v1.AuthService/*`,
+`/user.v1.UserService/*`, `/seller.v1.SellerService/*` и `/staff.v1.StaffService/*`
+на текущем origin; cross-origin base URL не настраивается.
+Статический сервер должен возвращать `index.html` для всех UI-маршрутов
+(`/login`, `/register`, `/account/*`, `/seller/*`, `/staff/*`), не перехватывая
+RPC-маршруты. Персональные ответы остаются `no-store`.
 
 Для Vite можно передать `STOREFRONT_TLS_CERT` и `STOREFRONT_TLS_KEY` с путями к
 локальной паре сертификата/ключа и выполнить
