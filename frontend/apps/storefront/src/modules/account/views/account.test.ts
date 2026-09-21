@@ -35,6 +35,10 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     state,
     bootstrap: vi.fn().mockResolvedValue(undefined),
     register: vi.fn().mockResolvedValue(undefined),
+    startLogin: vi.fn().mockRejectedValue(new ConnectError('no code step', Code.Unimplemented)),
+    completeLogin: vi.fn(),
+    resendLoginCode: vi.fn(),
+    requestEmailVerification: vi.fn(),
     login: vi.fn().mockResolvedValue(undefined),
     logout: vi.fn().mockResolvedValue(undefined),
     capture: vi.fn(() => ({
@@ -84,19 +88,43 @@ describe('account forms', () => {
   it.each(['/login', '/register'])('enforces the password policy on %s', async (path) => {
     const { session } = fixture('anonymous');
     const { wrapper } = await open(session, path);
-    await wrapper.find('#identifier').setValue('alice');
-    expect(wrapper.find('#password-help').text()).toContain('От 8 до 64 символов');
-    for (const password of ['1234567', 'a'.repeat(65), 'я'.repeat(37)]) {
-      await wrapper.find('#password').setValue(password);
+    const register = path === '/register';
+    const emailField = register ? '#reg-email' : '#login-email';
+    const passwordField = register ? '#reg-password' : '#login-password';
+    await wrapper.find(emailField).setValue('anna@example.ru');
+    for (const password of register ? ['1234567', 'abcdefgh'] : ['']) {
+      await wrapper.find(passwordField).setValue(password);
+      if (register) await wrapper.find('#reg-confirm').setValue(password);
       await wrapper.find('form').trigger('submit');
-      expect(wrapper.find('#password-error').exists()).toBe(true);
+      expect(
+        wrapper.find(register ? '#reg-password-error' : '#login-password-error').exists(),
+      ).toBe(true);
       expect(session.login).not.toHaveBeenCalled();
       expect(session.register).not.toHaveBeenCalled();
     }
-    await wrapper.find('#password').setValue('12345678');
-    await wrapper.find('form').trigger('submit');
-    await flushPromises();
-    expect(path === '/login' ? session.login : session.register).toHaveBeenCalledTimes(1);
+    if (register) {
+      await wrapper.find(passwordField).setValue('Secret123!');
+      await wrapper.find('#reg-confirm').setValue('Secret123!');
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+      expect(session.register).toHaveBeenCalledTimes(1);
+    } else {
+      await wrapper.find(passwordField).setValue('long passphrase');
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+      expect(session.login).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('shows the password checklist only after typing starts on /register', async () => {
+    const { session } = fixture('anonymous');
+    const { wrapper } = await open(session, '/register');
+    expect(wrapper.find('#reg-password-requirements').exists()).toBe(false);
+    await wrapper.find('#reg-password').setValue('Secret1');
+    expect(wrapper.find('#reg-password-requirements').exists()).toBe(true);
+    expect(wrapper.findAll('.password-requirements li')).toHaveLength(5);
+    expect(wrapper.findAll('.password-requirements li.requirement-met').length).toBeGreaterThan(0);
+    expect(wrapper.find('#reg-password-requirements').text()).toContain('От 8 до 64 символов');
   });
 
   it.each(['/login', '/register'])(
@@ -122,62 +150,139 @@ describe('account forms', () => {
       mounted.push(wrapper);
       await flushPromises();
       expect(session.bootstrap).toHaveBeenCalledTimes(1);
-      expect(wrapper.find('#identifier').attributes('disabled')).toBeDefined();
-      expect(wrapper.find('#password').attributes('disabled')).toBeDefined();
+      const register = path === '/register';
+      const emailField = register ? '#reg-email' : '#login-email';
+      const passwordField = register ? '#reg-password' : '#login-password';
+      expect(wrapper.find(emailField).attributes('disabled')).toBeDefined();
+      expect(wrapper.find(passwordField).attributes('disabled')).toBeDefined();
       await wrapper.find('form').trigger('submit');
       expect(session.login).not.toHaveBeenCalled();
       expect(session.register).not.toHaveBeenCalled();
       release();
       await flushPromises();
-      expect(wrapper.find('#identifier').attributes('disabled')).toBeUndefined();
-      await wrapper.find('#identifier').setValue('alice');
-      await wrapper.find('#password').setValue('long passphrase');
+      expect(wrapper.find(emailField).attributes('disabled')).toBeUndefined();
+      await wrapper.find(emailField).setValue('anna@example.ru');
+      await wrapper.find(passwordField).setValue(register ? 'Secret123!' : 'long passphrase');
+      if (register) await wrapper.find('#reg-confirm').setValue('Secret123!');
       await wrapper.find('form').trigger('submit');
       await flushPromises();
       expect(path === '/login' ? session.login : session.register).toHaveBeenCalledTimes(1);
       expect(
         vi.mocked(path === '/login' ? session.login : session.register).mock.calls[0]?.[0],
-      ).toBe('alice');
+      ).toBe('anna@example.ru');
     },
   );
 
-  it('labels credentials, clears passwords after sending, and keeps registration response generic', async () => {
+  it('labels credentials, clears passwords after sending, and shows the verification card', async () => {
     const { session } = fixture('anonymous');
     let bytes: Uint8Array | undefined;
     vi.mocked(session.register).mockImplementation(async (_identifier, password) => {
       bytes = password;
-      expect(new TextDecoder().decode(password)).toBe('long passphrase');
+      expect(new TextDecoder().decode(password)).toBe('Secret123!');
     });
-    const { wrapper, router } = await open(session, '/register');
-    expect(wrapper.find('label[for="identifier"]').text()).toBe('Логин');
-    expect(wrapper.find('#identifier').attributes('autocomplete')).toBe('username');
-    expect(wrapper.find('label[for="password"]').text()).toBe('Пароль');
-    expect(wrapper.find('#password').attributes('autocomplete')).toBe('new-password');
-    await wrapper.find('#identifier').setValue('alice');
-    await wrapper.find('#password').setValue('long passphrase');
+    vi.mocked(session.requestEmailVerification).mockResolvedValue(undefined);
+    const { wrapper } = await open(session, '/register');
+    expect(wrapper.find('label[for="reg-email"]').text()).toBe('Почта');
+    expect(wrapper.find('#reg-email').attributes('autocomplete')).toBe('username');
+    expect(wrapper.find('label[for="reg-password"]').text()).toBe('Пароль');
+    expect(wrapper.find('#reg-password').attributes('autocomplete')).toBe('new-password');
+    await wrapper.find('#reg-email').setValue('anna@example.ru');
+    await wrapper.find('#reg-password').setValue('Secret123!');
+    await wrapper.find('#reg-confirm').setValue('Secret123!');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
-    expect(router.currentRoute.value.path).toBe('/login');
-    expect(wrapper.text()).toContain('Запрос обработан. Теперь войдите');
-    expect(wrapper.text()).not.toContain('аккаунт создан');
-    expect((wrapper.find('#password').element as HTMLInputElement).value).toBe('');
+    expect(wrapper.text()).toContain('Аккаунт создан.');
+    expect(wrapper.text()).toContain('Мы отправили письмо для подтверждения на anna@example.ru');
     expect(bytes?.every((value) => value === 0)).toBe(true);
-    expect(wrapper.find('#password').attributes('autocomplete')).toBe('current-password');
+    await button(wrapper, 'Отправить письмо ещё раз').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Письмо отправлено повторно.');
   });
 
-  it('never displays raw login diagnostics and clears the submitted password on failure', async () => {
+  it('keeps the neutral registration outcome when the backend cannot email yet', async () => {
+    const { session } = fixture('anonymous');
+    vi.mocked(session.requestEmailVerification).mockRejectedValue(
+      new ConnectError('no mail', Code.Unimplemented),
+    );
+    const { wrapper } = await open(session, '/register');
+    await wrapper.find('#reg-email').setValue('anna@example.ru');
+    await wrapper.find('#reg-password').setValue('Secret123!');
+    await wrapper.find('#reg-confirm').setValue('Secret123!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Запрос обработан. Теперь войдите с вашей почтой и паролем.');
+    expect(wrapper.text()).not.toContain('Мы отправили письмо');
+  });
+
+  it('never displays raw login diagnostics and keeps the draft password on failure', async () => {
     const { session } = fixture('anonymous');
     vi.mocked(session.login).mockRejectedValue(
       new ConnectError('internal secret db-host', Code.Unauthenticated),
     );
     const { wrapper } = await open(session, '/login');
-    await wrapper.find('#identifier').setValue('alice');
-    await wrapper.find('#password').setValue('long passphrase');
+    await wrapper.find('#login-email').setValue('anna@example.ru');
+    await wrapper.find('#login-password').setValue('long passphrase');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
-    expect(wrapper.find('[role="alert"]').text()).toContain('Не удалось подтвердить вход');
+    expect(wrapper.find('[role="alert"]').text()).toContain(
+      'Почта или пароль указаны неверно. Проверьте данные и попробуйте снова.',
+    );
     expect(wrapper.text()).not.toContain('db-host');
-    expect((wrapper.find('#password').element as HTMLInputElement).value).toBe('');
+    expect((wrapper.find('#login-password').element as HTMLInputElement).value).toBe(
+      'long passphrase',
+    );
+  });
+
+  it('locks the form after five failed attempts', async () => {
+    const { session } = fixture('anonymous');
+    vi.mocked(session.login).mockRejectedValue(new ConnectError('no', Code.Unauthenticated));
+    const { wrapper } = await open(session, '/login');
+    await wrapper.find('#login-email').setValue('anna@example.ru');
+    await wrapper.find('#login-password').setValue('long passphrase');
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+    }
+    expect(wrapper.find('[role="alert"]').text()).toContain('Вход временно заблокирован');
+    expect(wrapper.find('#login-email').attributes('disabled')).toBeDefined();
+    expect(button(wrapper, 'Вход заблокирован').attributes('disabled')).toBeDefined();
+  });
+
+  it('walks through the code step with resend and wrong-code handling', async () => {
+    const { session } = fixture('anonymous');
+    const challenge = { challengeId: new Uint8Array(16).fill(9), codeExpiresInSeconds: 600n };
+    vi.mocked(session.startLogin).mockResolvedValue(challenge);
+    vi.mocked(session.resendLoginCode).mockResolvedValue(challenge);
+    vi.mocked(session.completeLogin).mockRejectedValueOnce(
+      new ConnectError('no', Code.InvalidArgument, {
+        /* без ErrorInfo — обычная сетевая ошибка классифицируется иначе */
+      }),
+    );
+    const { wrapper, router } = await open(session, '/login');
+    await wrapper.find('#login-email').setValue('anna@example.ru');
+    await wrapper.find('#login-password').setValue('long passphrase');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.find('h1').text()).toBe('Подтвердите вход.');
+    expect(wrapper.find('#login-code-help').text()).toContain('10 минут');
+    const codeInput = wrapper.find('#login-code');
+    await codeInput.setValue('48a29');
+    expect((codeInput.element as HTMLInputElement).value).toBe('4829');
+    await wrapper.find('form').trigger('submit');
+    expect(wrapper.find('#login-code-error').text()).toBe('Код состоит из шести цифр.');
+    expect(session.completeLogin).not.toHaveBeenCalled();
+    await button(wrapper, 'Отправить код ещё раз').trigger('click');
+    await flushPromises();
+    expect(session.resendLoginCode).toHaveBeenCalledWith(challenge);
+    expect(wrapper.text()).toContain('Новый код отправлен на почту.');
+    await codeInput.setValue('482913');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').text()).toContain('Не удалось проверить код');
+    vi.mocked(session.completeLogin).mockResolvedValue(undefined);
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe('/account');
   });
 
   it('keeps a dirty draft and original CAS until explicit conflict reconciliation', async () => {
@@ -192,7 +297,17 @@ describe('account forms', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(session.updateProfile).toHaveBeenCalledWith(
-      { displayName: 'Мой черновик', bio: 'Люблю керамику', expectedVersion: 7n },
+      {
+        displayName: 'Мой черновик',
+        bio: 'Люблю керамику',
+        expectedVersion: 7n,
+        lastName: '',
+        birthDate: '',
+        gender: 0,
+        phone: '',
+        city: '',
+        showAge: false,
+      },
       { generation: 'g1', subjectId: '01'.repeat(16) },
     );
     expect((wrapper.find('#display-name').element as HTMLInputElement).value).toBe('Мой черновик');

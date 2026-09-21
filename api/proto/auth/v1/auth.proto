@@ -20,6 +20,8 @@ service AuthService {
   rpc StartLogin(StartLoginRequest) returns (StartLoginResponse);
   // CompleteLogin verifies the emailed code and establishes the session.
   rpc CompleteLogin(CompleteLoginRequest) returns (CompleteLoginResponse);
+  // ResendLoginCode replaces the code of a pending challenge without asking the password again.
+  rpc ResendLoginCode(ResendLoginCodeRequest) returns (ResendLoginCodeResponse);
   // RequestEmailVerification emails a confirmation link without disclosing account existence.
   rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);
   // ConfirmEmail applies the emailed confirmation token.
@@ -377,3 +379,15 @@ message CancelAccountDeletionRequest {
 
 // CancelAccountDeletionResponse is empty; success reopens sign-in.
 message CancelAccountDeletionResponse {}
+
+// ResendLoginCodeRequest selects a pending challenge started by StartLogin.
+message ResendLoginCodeRequest {
+  // LoginChallengeId selects the pending login; a new code invalidates the previous one.
+  bytes login_challenge_id = 1;
+}
+
+// ResendLoginCodeResponse reports the lifetime of the replacement code.
+message ResendLoginCodeResponse {
+  // CodeExpiresInSeconds is the lifetime of the new code in whole seconds.
+  int64 code_expires_in_seconds = 1;
+}

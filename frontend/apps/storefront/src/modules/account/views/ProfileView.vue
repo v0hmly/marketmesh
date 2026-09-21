@@ -144,7 +144,17 @@ async function save() {
   saving.value = true;
   try {
     const profile = await session.updateProfile(
-      { displayName: displayName.value, bio: bio.value, expectedVersion: current.value.version },
+      {
+        displayName: displayName.value,
+        bio: bio.value,
+        expectedVersion: current.value.version,
+        lastName: current.value.lastName,
+        birthDate: current.value.birthDate,
+        gender: current.value.gender,
+        phone: current.value.phone,
+        city: current.value.city,
+        showAge: current.value.showAge,
+      },
       guard.value,
     );
     if (requestRevision !== revision) return;

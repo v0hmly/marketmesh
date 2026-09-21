@@ -26,6 +26,7 @@ const (
 	AuthService_LogoutAll_FullMethodName                = "/auth.v1.AuthService/LogoutAll"
 	AuthService_StartLogin_FullMethodName               = "/auth.v1.AuthService/StartLogin"
 	AuthService_CompleteLogin_FullMethodName            = "/auth.v1.AuthService/CompleteLogin"
+	AuthService_ResendLoginCode_FullMethodName          = "/auth.v1.AuthService/ResendLoginCode"
 	AuthService_RequestEmailVerification_FullMethodName = "/auth.v1.AuthService/RequestEmailVerification"
 	AuthService_ConfirmEmail_FullMethodName             = "/auth.v1.AuthService/ConfirmEmail"
 	AuthService_RequestPasswordReset_FullMethodName     = "/auth.v1.AuthService/RequestPasswordReset"
@@ -60,6 +61,8 @@ type AuthServiceClient interface {
 	StartLogin(ctx context.Context, in *StartLoginRequest, opts ...grpc.CallOption) (*StartLoginResponse, error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(ctx context.Context, in *CompleteLoginRequest, opts ...grpc.CallOption) (*CompleteLoginResponse, error)
+	// ResendLoginCode replaces the code of a pending challenge without asking the password again.
+	ResendLoginCode(ctx context.Context, in *ResendLoginCodeRequest, opts ...grpc.CallOption) (*ResendLoginCodeResponse, error)
 	// RequestEmailVerification emails a confirmation link without disclosing account existence.
 	RequestEmailVerification(ctx context.Context, in *RequestEmailVerificationRequest, opts ...grpc.CallOption) (*RequestEmailVerificationResponse, error)
 	// ConfirmEmail applies the emailed confirmation token.
@@ -158,6 +161,16 @@ func (c *authServiceClient) CompleteLogin(ctx context.Context, in *CompleteLogin
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CompleteLoginResponse)
 	err := c.cc.Invoke(ctx, AuthService_CompleteLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResendLoginCode(ctx context.Context, in *ResendLoginCodeRequest, opts ...grpc.CallOption) (*ResendLoginCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResendLoginCodeResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResendLoginCode_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -304,6 +317,8 @@ type AuthServiceServer interface {
 	StartLogin(context.Context, *StartLoginRequest) (*StartLoginResponse, error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(context.Context, *CompleteLoginRequest) (*CompleteLoginResponse, error)
+	// ResendLoginCode replaces the code of a pending challenge without asking the password again.
+	ResendLoginCode(context.Context, *ResendLoginCodeRequest) (*ResendLoginCodeResponse, error)
 	// RequestEmailVerification emails a confirmation link without disclosing account existence.
 	RequestEmailVerification(context.Context, *RequestEmailVerificationRequest) (*RequestEmailVerificationResponse, error)
 	// ConfirmEmail applies the emailed confirmation token.
@@ -358,6 +373,9 @@ func (UnimplementedAuthServiceServer) StartLogin(context.Context, *StartLoginReq
 }
 func (UnimplementedAuthServiceServer) CompleteLogin(context.Context, *CompleteLoginRequest) (*CompleteLoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CompleteLogin not implemented")
+}
+func (UnimplementedAuthServiceServer) ResendLoginCode(context.Context, *ResendLoginCodeRequest) (*ResendLoginCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResendLoginCode not implemented")
 }
 func (UnimplementedAuthServiceServer) RequestEmailVerification(context.Context, *RequestEmailVerificationRequest) (*RequestEmailVerificationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RequestEmailVerification not implemented")
@@ -538,6 +556,24 @@ func _AuthService_CompleteLogin_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).CompleteLogin(ctx, req.(*CompleteLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResendLoginCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendLoginCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResendLoginCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResendLoginCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResendLoginCode(ctx, req.(*ResendLoginCodeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -792,6 +828,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompleteLogin",
 			Handler:    _AuthService_CompleteLogin_Handler,
+		},
+		{
+			MethodName: "ResendLoginCode",
+			Handler:    _AuthService_ResendLoginCode_Handler,
 		},
 		{
 			MethodName: "RequestEmailVerification",

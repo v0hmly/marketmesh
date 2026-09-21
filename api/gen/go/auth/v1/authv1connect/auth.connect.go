@@ -52,6 +52,9 @@ const (
 	// AuthServiceCompleteLoginProcedure is the fully-qualified name of the AuthService's CompleteLogin
 	// RPC.
 	AuthServiceCompleteLoginProcedure = "/auth.v1.AuthService/CompleteLogin"
+	// AuthServiceResendLoginCodeProcedure is the fully-qualified name of the AuthService's
+	// ResendLoginCode RPC.
+	AuthServiceResendLoginCodeProcedure = "/auth.v1.AuthService/ResendLoginCode"
 	// AuthServiceRequestEmailVerificationProcedure is the fully-qualified name of the AuthService's
 	// RequestEmailVerification RPC.
 	AuthServiceRequestEmailVerificationProcedure = "/auth.v1.AuthService/RequestEmailVerification"
@@ -121,6 +124,8 @@ type AuthServiceClient interface {
 	StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
+	// ResendLoginCode replaces the code of a pending challenge without asking the password again.
+	ResendLoginCode(context.Context, *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error)
 	// RequestEmailVerification emails a confirmation link without disclosing account existence.
 	RequestEmailVerification(context.Context, *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error)
 	// ConfirmEmail applies the emailed confirmation token.
@@ -198,6 +203,12 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			httpClient,
 			baseURL+AuthServiceCompleteLoginProcedure,
 			connect.WithSchema(authServiceMethods.ByName("CompleteLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		resendLoginCode: connect.NewClient[v1.ResendLoginCodeRequest, v1.ResendLoginCodeResponse](
+			httpClient,
+			baseURL+AuthServiceResendLoginCodeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ResendLoginCode")),
 			connect.WithClientOptions(opts...),
 		),
 		requestEmailVerification: connect.NewClient[v1.RequestEmailVerificationRequest, v1.RequestEmailVerificationResponse](
@@ -284,6 +295,7 @@ type authServiceClient struct {
 	logoutAll                *connect.Client[v1.LogoutAllRequest, v1.LogoutAllResponse]
 	startLogin               *connect.Client[v1.StartLoginRequest, v1.StartLoginResponse]
 	completeLogin            *connect.Client[v1.CompleteLoginRequest, v1.CompleteLoginResponse]
+	resendLoginCode          *connect.Client[v1.ResendLoginCodeRequest, v1.ResendLoginCodeResponse]
 	requestEmailVerification *connect.Client[v1.RequestEmailVerificationRequest, v1.RequestEmailVerificationResponse]
 	confirmEmail             *connect.Client[v1.ConfirmEmailRequest, v1.ConfirmEmailResponse]
 	requestPasswordReset     *connect.Client[v1.RequestPasswordResetRequest, v1.RequestPasswordResetResponse]
@@ -331,6 +343,11 @@ func (c *authServiceClient) StartLogin(ctx context.Context, req *connect.Request
 // CompleteLogin calls auth.v1.AuthService.CompleteLogin.
 func (c *authServiceClient) CompleteLogin(ctx context.Context, req *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error) {
 	return c.completeLogin.CallUnary(ctx, req)
+}
+
+// ResendLoginCode calls auth.v1.AuthService.ResendLoginCode.
+func (c *authServiceClient) ResendLoginCode(ctx context.Context, req *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error) {
+	return c.resendLoginCode.CallUnary(ctx, req)
 }
 
 // RequestEmailVerification calls auth.v1.AuthService.RequestEmailVerification.
@@ -409,6 +426,8 @@ type AuthServiceHandler interface {
 	StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
+	// ResendLoginCode replaces the code of a pending challenge without asking the password again.
+	ResendLoginCode(context.Context, *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error)
 	// RequestEmailVerification emails a confirmation link without disclosing account existence.
 	RequestEmailVerification(context.Context, *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error)
 	// ConfirmEmail applies the emailed confirmation token.
@@ -482,6 +501,12 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		AuthServiceCompleteLoginProcedure,
 		svc.CompleteLogin,
 		connect.WithSchema(authServiceMethods.ByName("CompleteLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceResendLoginCodeHandler := connect.NewUnaryHandler(
+		AuthServiceResendLoginCodeProcedure,
+		svc.ResendLoginCode,
+		connect.WithSchema(authServiceMethods.ByName("ResendLoginCode")),
 		connect.WithHandlerOptions(opts...),
 	)
 	authServiceRequestEmailVerificationHandler := connect.NewUnaryHandler(
@@ -572,6 +597,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceStartLoginHandler.ServeHTTP(w, r)
 		case AuthServiceCompleteLoginProcedure:
 			authServiceCompleteLoginHandler.ServeHTTP(w, r)
+		case AuthServiceResendLoginCodeProcedure:
+			authServiceResendLoginCodeHandler.ServeHTTP(w, r)
 		case AuthServiceRequestEmailVerificationProcedure:
 			authServiceRequestEmailVerificationHandler.ServeHTTP(w, r)
 		case AuthServiceConfirmEmailProcedure:
@@ -631,6 +658,10 @@ func (UnimplementedAuthServiceHandler) StartLogin(context.Context, *connect.Requ
 
 func (UnimplementedAuthServiceHandler) CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.CompleteLogin is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ResendLoginCode(context.Context, *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ResendLoginCode is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) RequestEmailVerification(context.Context, *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error) {
