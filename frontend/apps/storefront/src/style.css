@@ -1565,3 +1565,148 @@ main:focus {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Портал продавца: обзор, изделия, заказы (MM-84). */
+.seller-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.seller-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.seller-panel {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.seller-panel h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.seller-panel .subtle,
+.seller-panel .field-help {
+  margin: 0;
+}
+.seller-panel-action {
+  align-self: flex-start;
+}
+.seller-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.seller-task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--identity-bg);
+}
+.seller-task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.seller-task-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.seller-task .subtle {
+  margin: 0;
+  font-size: 0.73rem;
+}
+.seller-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.seller-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.seller-row dt {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.seller-row dd {
+  margin: 0;
+  font-size: 0.875rem;
+  text-align: right;
+}
+.seller-row .subtle {
+  margin: 0;
+}
+.seller-count {
+  font-variant-numeric: tabular-nums;
+}
+.seller-product-variant {
+  margin: 0;
+}
+.seller-product-stats {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.seller-stat {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.seller-stat dt {
+  margin: 0;
+  font-size: 0.73rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.seller-stat dd {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.seller-order-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.seller-order-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.seller-order-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.875rem;
+}
+.seller-order-lines .subtle {
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .seller-grid,
+  .seller-order-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .seller-panel {
+    padding: 24px;
+  }
+}

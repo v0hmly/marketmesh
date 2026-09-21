@@ -8,7 +8,8 @@ import { isProfilePending } from '../../../shared/api/errors';
 import { useSession } from '../../../shell/context';
 import { GuardMismatchError, type SessionGuard } from '../../../shell/session';
 import { accountError } from '../errors';
-import { trimDisplayName, validateProfile } from '../validation';
+import { trimDisplayName } from '../../../shared/validation';
+import { validateProfile } from '../validation';
 
 const session = useSession();
 const current = shallowRef<Profile | null>(null);

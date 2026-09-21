@@ -22,6 +22,7 @@ export default defineConfig({
       VITE_ACCOUNT_FAVORITES_ENABLED: 'true',
       VITE_ACCOUNT_REVIEWS_ENABLED: 'true',
       VITE_ACCOUNT_ID_ENABLED: 'true',
+      VITE_SELLER_ENABLED: 'true',
     },
     command: 'pnpm exec vite --host 127.0.0.1 --port 4174',
     url: 'https://127.0.0.1:4174',

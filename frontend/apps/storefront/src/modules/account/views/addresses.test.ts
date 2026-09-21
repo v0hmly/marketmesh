@@ -15,6 +15,7 @@ vi.mock('../../../shared/features', () => ({
   favoritesEnabled: false,
   reviewsEnabled: false,
   idEnabled: false,
+  sellerEnabled: false,
 }));
 const addressValue = (value: Omit<Address, '$typeName'>): Address => ({
   $typeName: 'user.v1.Address',
