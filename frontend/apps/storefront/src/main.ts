@@ -5,12 +5,15 @@ import { createSessionController } from './shell/session';
 import { sessionKey } from './shell/context';
 import { createStorefrontRouter } from './shell/router';
 import './style.css';
+import { installAnalytics } from './shared/analytics';
 
 try {
   const session = createSessionController(createPublicApi());
   const app = createApp(App);
   app.provide(sessionKey, session);
-  app.use(createStorefrontRouter());
+  const router = createStorefrontRouter();
+  installAnalytics(router);
+  app.use(router);
   app.mount('#app');
 } catch {
   createApp({

@@ -1,5 +1,6 @@
 # Инфраструктура
 
+- [`rybbit`](rybbit/README.md) — локальная веб-аналитика и подключение storefront.
 - [`compose`](compose/README.md) — локальное окружение Docker Compose с
   PostgreSQL streaming replication, раздельными Redis и SeaweedFS, зональными
   Alloy OTLP endpoints, Tempo, Loki, Grafana и изолированным loopback-gateway;

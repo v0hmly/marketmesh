@@ -1,0 +1,116 @@
+x-ownership: &ownership
+  marketmesh.rybbit.workspace: ${RYBBIT_WORKSPACE:?Use local.sh}
+services:
+  postgres:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: rybbit
+      POSTGRES_DB: analytics
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes: [postgres:/var/lib/postgresql]
+    networks: [storage]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U rybbit -d analytics"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  redis:
+    image: redis:8.10.1-alpine3.23
+    command: [redis-server, --requirepass, "${REDIS_PASSWORD:?}", --appendonly, "yes", --maxmemory, 128mb, --maxmemory-policy, noeviction]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?}
+    volumes: [redis:/data]
+    networks: [storage]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.17.4
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    mem_limit: 2g
+    volumes:
+      - clickhouse:/var/lib/clickhouse
+      - ./clickhouse-logging.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - ./clickhouse-resources.xml:/etc/clickhouse-server/config.d/resources.xml:ro
+      - ./clickhouse-users.xml:/etc/clickhouse-server/users.d/settings.xml:ro
+    networks: [storage]
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8123/ping]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+  backend:
+    image: ghcr.io/rybbit-io/rybbit-backend:v2.9.0@sha256:5a824932c8b7b16364c8ee132e29d1d9d9574445e0d1f091e6364695e117bd66
+    environment:
+      NODE_ENV: production
+      BASE_URL: http://localhost:${RYBBIT_PORT:-8310}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: analytics
+      POSTGRES_USER: rybbit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+      CLICKHOUSE_HOST: http://clickhouse:8123
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?}
+      CLICKHOUSE_QUERY_PASSWORD: ${CLICKHOUSE_QUERY_PASSWORD:?}
+      DISABLE_TELEMETRY: "true"
+      DISABLE_SIGNUP: "false"
+      CLUSTER_WORKERS: "1"
+    networks: [storage, analytics]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:3001/api/health]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+  client:
+    image: ghcr.io/rybbit-io/rybbit-client:v2.9.0@sha256:2f6f7cbfd65f50129573b67082148b5bb00c20c04420d74ae133c1fd4dc8ac99
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:${RYBBIT_PORT:-8310}
+      NEXT_PUBLIC_DISABLE_SIGNUP: "false"
+    networks: [analytics]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:3002/]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+  gateway:
+    image: caddy:2.11.4
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro"]
+    ports: ["127.0.0.1:${RYBBIT_PORT:-8310}:8080"]
+    networks: [analytics]
+    depends_on:
+      backend: {condition: service_healthy}
+      client: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/api/health]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+networks:
+  storage:
+    internal: true
+    labels: *ownership
+  analytics:
+    labels: *ownership
+volumes:
+  postgres: {labels: *ownership}
+  redis: {labels: *ownership}
+  clickhouse: {labels: *ownership}

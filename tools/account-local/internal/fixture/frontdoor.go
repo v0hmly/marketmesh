@@ -92,7 +92,14 @@ func Serve(ctx context.Context) error {
 		w.Header().Set("Cache-Control", "no-store")
 		http.Error(w, "gateway unavailable", http.StatusBadGateway)
 	}}
-	server := &http.Server{TLSConfig: &tls.Config{MinVersion: tls.VersionTLS13}, Addr: ":8443", Handler: frontdoorHandler(os.DirFS("/site"), proxy), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 20 * time.Second, IdleTimeout: time.Minute, MaxHeaderBytes: 16384}
+	handler := frontdoorHandler(os.DirFS("/site"), proxy)
+	if os.Getenv("ACCOUNT_RYBBIT_ENABLED") == "true" {
+		mux := http.NewServeMux()
+		mux.Handle("/analytics/track", localAnalyticsHandler(os.Getenv("RYBBIT_SITE_ID")))
+		mux.Handle("/", handler)
+		handler = mux
+	}
+	server := &http.Server{TLSConfig: &tls.Config{MinVersion: tls.VersionTLS13}, Addr: ":8443", Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 20 * time.Second, IdleTimeout: time.Minute, MaxHeaderBytes: 16384}
 	done := make(chan struct{})
 	defer close(done)
 	go func() {

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSession } from '../../../shell/context';
 import { accountError } from '../errors';
+import { analytics } from '../../../shared/analytics';
 import { validateCredentials } from '../validation';
 
 const props = defineProps<{ mode: 'login' | 'register' }>();
@@ -62,12 +63,14 @@ async function submit() {
     if (isRegister.value) {
       await session.register(identifier.value, bytes);
       if (!active || sequence !== requestSequence) return;
+      analytics.event('registration_request_completed');
       registered.value = true;
       await router.push('/login');
     } else {
       await session.login(identifier.value, bytes);
       if (!active || sequence !== requestSequence) return;
       identifier.value = '';
+      analytics.event('login_succeeded');
       await router.push('/account');
     }
   } catch (error) {

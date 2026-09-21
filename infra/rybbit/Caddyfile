@@ -1,0 +1,15 @@
+{
+ auto_https off
+ admin off
+}
+:8080 {
+ request_body {
+  max_size 1MB
+ }
+ handle /api/* {
+  reverse_proxy backend:3001
+ }
+ handle {
+  reverse_proxy client:3002
+ }
+}
