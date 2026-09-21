@@ -1,6 +1,13 @@
-import type { Profile, Address, AddressBook, AddressFields } from '@marketmesh/api/user/v1/user_pb';
+import {
+  Gender,
+  type Profile,
+  type Address,
+  type AddressBook,
+  type AddressFields,
+} from '@marketmesh/api/user/v1/user_pb';
 
 export type { Profile, Address, AddressBook, AddressFields };
+export { Gender };
 export type AddressInput = Omit<AddressFields, '$typeName'>;
 export interface AddressWrite {
   fields: AddressInput;
@@ -26,12 +33,28 @@ export interface ProfileInput {
   displayName: string;
   bio: string;
   expectedVersion: bigint;
+  lastName?: string;
+  birthDate?: string;
+  gender?: Gender;
+  phone?: string;
+  city?: string;
+  showAge?: boolean;
+}
+
+/** Pending login started by StartLogin; the code arrives by email. */
+export interface LoginChallenge {
+  challengeId: Uint8Array;
+  codeExpiresInSeconds: bigint;
 }
 
 /** Only browser-public RPCs; cookies are managed exclusively by the browser. */
 export interface PublicApi {
   register(identifier: string, password: Uint8Array): Promise<void>;
   login(identifier: string, password: Uint8Array): Promise<Uint8Array>;
+  startLogin(identifier: string, password: Uint8Array): Promise<LoginChallenge>;
+  completeLogin(challengeId: Uint8Array, code: string): Promise<Uint8Array>;
+  resendLoginCode(challengeId: Uint8Array): Promise<LoginChallenge>;
+  requestEmailVerification(email: string): Promise<void>;
   refresh(): Promise<void>;
   logout(): Promise<void>;
   logoutAll(): Promise<void>;

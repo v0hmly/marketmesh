@@ -8,7 +8,14 @@ import type { SessionController, SessionState } from '../../../shell/session';
 import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import { emptyAddress } from '../address-validation';
-vi.mock('../../../shared/features', () => ({ addressesEnabled: true, settingsEnabled: false }));
+vi.mock('../../../shared/features', () => ({
+  addressesEnabled: true,
+  settingsEnabled: false,
+  ordersEnabled: false,
+  favoritesEnabled: false,
+  reviewsEnabled: false,
+  idEnabled: false,
+}));
 const addressValue = (value: Omit<Address, '$typeName'>): Address => ({
   $typeName: 'user.v1.Address',
   ...value,
@@ -53,6 +60,10 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     state,
     bootstrap: vi.fn(),
     register: vi.fn(),
+    startLogin: vi.fn(),
+    completeLogin: vi.fn(),
+    resendLoginCode: vi.fn(),
+    requestEmailVerification: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
     dispose: vi.fn(),

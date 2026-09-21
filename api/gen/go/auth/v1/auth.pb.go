@@ -2427,6 +2427,98 @@ func (*CancelAccountDeletionResponse) Descriptor() ([]byte, []int) {
 	return file_auth_v1_auth_proto_rawDescGZIP(), []int{49}
 }
 
+// ResendLoginCodeRequest selects a pending challenge started by StartLogin.
+type ResendLoginCodeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// LoginChallengeId selects the pending login; a new code invalidates the previous one.
+	LoginChallengeId []byte `protobuf:"bytes,1,opt,name=login_challenge_id,json=loginChallengeId,proto3" json:"login_challenge_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ResendLoginCodeRequest) Reset() {
+	*x = ResendLoginCodeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResendLoginCodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResendLoginCodeRequest) ProtoMessage() {}
+
+func (x *ResendLoginCodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResendLoginCodeRequest.ProtoReflect.Descriptor instead.
+func (*ResendLoginCodeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *ResendLoginCodeRequest) GetLoginChallengeId() []byte {
+	if x != nil {
+		return x.LoginChallengeId
+	}
+	return nil
+}
+
+// ResendLoginCodeResponse reports the lifetime of the replacement code.
+type ResendLoginCodeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// CodeExpiresInSeconds is the lifetime of the new code in whole seconds.
+	CodeExpiresInSeconds int64 `protobuf:"varint,1,opt,name=code_expires_in_seconds,json=codeExpiresInSeconds,proto3" json:"code_expires_in_seconds,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ResendLoginCodeResponse) Reset() {
+	*x = ResendLoginCodeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResendLoginCodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResendLoginCodeResponse) ProtoMessage() {}
+
+func (x *ResendLoginCodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResendLoginCodeResponse.ProtoReflect.Descriptor instead.
+func (*ResendLoginCodeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *ResendLoginCodeResponse) GetCodeExpiresInSeconds() int64 {
+	if x != nil {
+		return x.CodeExpiresInSeconds
+	}
+	return 0
+}
+
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
 
 const file_auth_v1_auth_proto_rawDesc = "" +
@@ -2556,7 +2648,11 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x1adeletion_scheduled_at_unix\x18\x01 \x01(\x03R\x17deletionScheduledAtUnix\"4\n" +
 	"\x1cCancelAccountDeletionRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x1f\n" +
-	"\x1dCancelAccountDeletionResponse2\xef\f\n" +
+	"\x1dCancelAccountDeletionResponse\"F\n" +
+	"\x16ResendLoginCodeRequest\x12,\n" +
+	"\x12login_challenge_id\x18\x01 \x01(\fR\x10loginChallengeId\"P\n" +
+	"\x17ResendLoginCodeResponse\x125\n" +
+	"\x17code_expires_in_seconds\x18\x01 \x01(\x03R\x14codeExpiresInSeconds2\xc5\r\n" +
 	"\vAuthService\x12`\n" +
 	"\x13RegisterCredentials\x12#.auth.v1.RegisterCredentialsRequest\x1a$.auth.v1.RegisterCredentialsResponse\x126\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\x12Q\n" +
@@ -2565,7 +2661,8 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\tLogoutAll\x12\x19.auth.v1.LogoutAllRequest\x1a\x1a.auth.v1.LogoutAllResponse\x12E\n" +
 	"\n" +
 	"StartLogin\x12\x1a.auth.v1.StartLoginRequest\x1a\x1b.auth.v1.StartLoginResponse\x12N\n" +
-	"\rCompleteLogin\x12\x1d.auth.v1.CompleteLoginRequest\x1a\x1e.auth.v1.CompleteLoginResponse\x12o\n" +
+	"\rCompleteLogin\x12\x1d.auth.v1.CompleteLoginRequest\x1a\x1e.auth.v1.CompleteLoginResponse\x12T\n" +
+	"\x0fResendLoginCode\x12\x1f.auth.v1.ResendLoginCodeRequest\x1a .auth.v1.ResendLoginCodeResponse\x12o\n" +
 	"\x18RequestEmailVerification\x12(.auth.v1.RequestEmailVerificationRequest\x1a).auth.v1.RequestEmailVerificationResponse\x12K\n" +
 	"\fConfirmEmail\x12\x1c.auth.v1.ConfirmEmailRequest\x1a\x1d.auth.v1.ConfirmEmailResponse\x12c\n" +
 	"\x14RequestPasswordReset\x12$.auth.v1.RequestPasswordResetRequest\x1a%.auth.v1.RequestPasswordResetResponse\x12c\n" +
@@ -2597,7 +2694,7 @@ func file_auth_v1_auth_proto_rawDescGZIP() []byte {
 	return file_auth_v1_auth_proto_rawDescData
 }
 
-var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
+var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
 var file_auth_v1_auth_proto_goTypes = []any{
 	(*RegisterCredentialsRequest)(nil),         // 0: auth.v1.RegisterCredentialsRequest
 	(*RegisterCredentialsResponse)(nil),        // 1: auth.v1.RegisterCredentialsResponse
@@ -2649,6 +2746,8 @@ var file_auth_v1_auth_proto_goTypes = []any{
 	(*RequestAccountDeletionResponse)(nil),     // 47: auth.v1.RequestAccountDeletionResponse
 	(*CancelAccountDeletionRequest)(nil),       // 48: auth.v1.CancelAccountDeletionRequest
 	(*CancelAccountDeletionResponse)(nil),      // 49: auth.v1.CancelAccountDeletionResponse
+	(*ResendLoginCodeRequest)(nil),             // 50: auth.v1.ResendLoginCodeRequest
+	(*ResendLoginCodeResponse)(nil),            // 51: auth.v1.ResendLoginCodeResponse
 }
 var file_auth_v1_auth_proto_depIdxs = []int32{
 	0,  // 0: auth.v1.BrowserRegisterCredentialsRequest.request:type_name -> auth.v1.RegisterCredentialsRequest
@@ -2674,49 +2773,51 @@ var file_auth_v1_auth_proto_depIdxs = []int32{
 	8,  // 20: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
 	21, // 21: auth.v1.AuthService.StartLogin:input_type -> auth.v1.StartLoginRequest
 	23, // 22: auth.v1.AuthService.CompleteLogin:input_type -> auth.v1.CompleteLoginRequest
-	25, // 23: auth.v1.AuthService.RequestEmailVerification:input_type -> auth.v1.RequestEmailVerificationRequest
-	27, // 24: auth.v1.AuthService.ConfirmEmail:input_type -> auth.v1.ConfirmEmailRequest
-	29, // 25: auth.v1.AuthService.RequestPasswordReset:input_type -> auth.v1.RequestPasswordResetRequest
-	31, // 26: auth.v1.AuthService.ConfirmPasswordReset:input_type -> auth.v1.ConfirmPasswordResetRequest
-	33, // 27: auth.v1.AuthService.GetCredentials:input_type -> auth.v1.GetCredentialsRequest
-	35, // 28: auth.v1.AuthService.StartEmailChange:input_type -> auth.v1.StartEmailChangeRequest
-	37, // 29: auth.v1.AuthService.ConfirmEmailChange:input_type -> auth.v1.ConfirmEmailChangeRequest
-	39, // 30: auth.v1.AuthService.CancelEmailChange:input_type -> auth.v1.CancelEmailChangeRequest
-	42, // 31: auth.v1.AuthService.ListSessions:input_type -> auth.v1.ListSessionsRequest
-	44, // 32: auth.v1.AuthService.RevokeSession:input_type -> auth.v1.RevokeSessionRequest
-	46, // 33: auth.v1.AuthService.RequestAccountDeletion:input_type -> auth.v1.RequestAccountDeletionRequest
-	48, // 34: auth.v1.AuthService.CancelAccountDeletion:input_type -> auth.v1.CancelAccountDeletionRequest
-	11, // 35: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
-	13, // 36: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
-	15, // 37: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
-	17, // 38: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
-	19, // 39: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
-	1,  // 40: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
-	3,  // 41: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
-	5,  // 42: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
-	7,  // 43: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
-	9,  // 44: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
-	22, // 45: auth.v1.AuthService.StartLogin:output_type -> auth.v1.StartLoginResponse
-	24, // 46: auth.v1.AuthService.CompleteLogin:output_type -> auth.v1.CompleteLoginResponse
-	26, // 47: auth.v1.AuthService.RequestEmailVerification:output_type -> auth.v1.RequestEmailVerificationResponse
-	28, // 48: auth.v1.AuthService.ConfirmEmail:output_type -> auth.v1.ConfirmEmailResponse
-	30, // 49: auth.v1.AuthService.RequestPasswordReset:output_type -> auth.v1.RequestPasswordResetResponse
-	32, // 50: auth.v1.AuthService.ConfirmPasswordReset:output_type -> auth.v1.ConfirmPasswordResetResponse
-	34, // 51: auth.v1.AuthService.GetCredentials:output_type -> auth.v1.GetCredentialsResponse
-	36, // 52: auth.v1.AuthService.StartEmailChange:output_type -> auth.v1.StartEmailChangeResponse
-	38, // 53: auth.v1.AuthService.ConfirmEmailChange:output_type -> auth.v1.ConfirmEmailChangeResponse
-	40, // 54: auth.v1.AuthService.CancelEmailChange:output_type -> auth.v1.CancelEmailChangeResponse
-	43, // 55: auth.v1.AuthService.ListSessions:output_type -> auth.v1.ListSessionsResponse
-	45, // 56: auth.v1.AuthService.RevokeSession:output_type -> auth.v1.RevokeSessionResponse
-	47, // 57: auth.v1.AuthService.RequestAccountDeletion:output_type -> auth.v1.RequestAccountDeletionResponse
-	49, // 58: auth.v1.AuthService.CancelAccountDeletion:output_type -> auth.v1.CancelAccountDeletionResponse
-	12, // 59: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
-	14, // 60: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
-	16, // 61: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
-	18, // 62: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
-	20, // 63: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
-	40, // [40:64] is the sub-list for method output_type
-	16, // [16:40] is the sub-list for method input_type
+	50, // 23: auth.v1.AuthService.ResendLoginCode:input_type -> auth.v1.ResendLoginCodeRequest
+	25, // 24: auth.v1.AuthService.RequestEmailVerification:input_type -> auth.v1.RequestEmailVerificationRequest
+	27, // 25: auth.v1.AuthService.ConfirmEmail:input_type -> auth.v1.ConfirmEmailRequest
+	29, // 26: auth.v1.AuthService.RequestPasswordReset:input_type -> auth.v1.RequestPasswordResetRequest
+	31, // 27: auth.v1.AuthService.ConfirmPasswordReset:input_type -> auth.v1.ConfirmPasswordResetRequest
+	33, // 28: auth.v1.AuthService.GetCredentials:input_type -> auth.v1.GetCredentialsRequest
+	35, // 29: auth.v1.AuthService.StartEmailChange:input_type -> auth.v1.StartEmailChangeRequest
+	37, // 30: auth.v1.AuthService.ConfirmEmailChange:input_type -> auth.v1.ConfirmEmailChangeRequest
+	39, // 31: auth.v1.AuthService.CancelEmailChange:input_type -> auth.v1.CancelEmailChangeRequest
+	42, // 32: auth.v1.AuthService.ListSessions:input_type -> auth.v1.ListSessionsRequest
+	44, // 33: auth.v1.AuthService.RevokeSession:input_type -> auth.v1.RevokeSessionRequest
+	46, // 34: auth.v1.AuthService.RequestAccountDeletion:input_type -> auth.v1.RequestAccountDeletionRequest
+	48, // 35: auth.v1.AuthService.CancelAccountDeletion:input_type -> auth.v1.CancelAccountDeletionRequest
+	11, // 36: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
+	13, // 37: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
+	15, // 38: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
+	17, // 39: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
+	19, // 40: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
+	1,  // 41: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
+	3,  // 42: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	5,  // 43: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
+	7,  // 44: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	9,  // 45: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
+	22, // 46: auth.v1.AuthService.StartLogin:output_type -> auth.v1.StartLoginResponse
+	24, // 47: auth.v1.AuthService.CompleteLogin:output_type -> auth.v1.CompleteLoginResponse
+	51, // 48: auth.v1.AuthService.ResendLoginCode:output_type -> auth.v1.ResendLoginCodeResponse
+	26, // 49: auth.v1.AuthService.RequestEmailVerification:output_type -> auth.v1.RequestEmailVerificationResponse
+	28, // 50: auth.v1.AuthService.ConfirmEmail:output_type -> auth.v1.ConfirmEmailResponse
+	30, // 51: auth.v1.AuthService.RequestPasswordReset:output_type -> auth.v1.RequestPasswordResetResponse
+	32, // 52: auth.v1.AuthService.ConfirmPasswordReset:output_type -> auth.v1.ConfirmPasswordResetResponse
+	34, // 53: auth.v1.AuthService.GetCredentials:output_type -> auth.v1.GetCredentialsResponse
+	36, // 54: auth.v1.AuthService.StartEmailChange:output_type -> auth.v1.StartEmailChangeResponse
+	38, // 55: auth.v1.AuthService.ConfirmEmailChange:output_type -> auth.v1.ConfirmEmailChangeResponse
+	40, // 56: auth.v1.AuthService.CancelEmailChange:output_type -> auth.v1.CancelEmailChangeResponse
+	43, // 57: auth.v1.AuthService.ListSessions:output_type -> auth.v1.ListSessionsResponse
+	45, // 58: auth.v1.AuthService.RevokeSession:output_type -> auth.v1.RevokeSessionResponse
+	47, // 59: auth.v1.AuthService.RequestAccountDeletion:output_type -> auth.v1.RequestAccountDeletionResponse
+	49, // 60: auth.v1.AuthService.CancelAccountDeletion:output_type -> auth.v1.CancelAccountDeletionResponse
+	12, // 61: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
+	14, // 62: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
+	16, // 63: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
+	18, // 64: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
+	20, // 65: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
+	41, // [41:66] is the sub-list for method output_type
+	16, // [16:41] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
 	16, // [16:16] is the sub-list for extension extendee
 	0,  // [0:16] is the sub-list for field type_name
@@ -2733,7 +2834,7 @@ func file_auth_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_v1_auth_proto_rawDesc), len(file_auth_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   50,
+			NumMessages:   52,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

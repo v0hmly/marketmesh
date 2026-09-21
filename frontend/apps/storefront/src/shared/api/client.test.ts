@@ -70,6 +70,7 @@ describe('public browser API boundary', () => {
     ).rejects.toBeInstanceOf(ConnectError);
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(Object.keys(api).sort()).toEqual([
+      'completeLogin',
       'createAddress',
       'deleteAddress',
       'getProfile',
@@ -80,7 +81,10 @@ describe('public browser API boundary', () => {
       'logoutAll',
       'refresh',
       'register',
+      'requestEmailVerification',
+      'resendLoginCode',
       'setDefaultAddress',
+      'startLogin',
       'updateAddress',
       'updateProfile',
       'updateSettings',

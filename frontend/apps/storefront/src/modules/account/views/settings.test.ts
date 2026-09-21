@@ -8,7 +8,14 @@ import type { SessionController, SessionState } from '../../../shell/session';
 import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import App from '../../../App.vue';
-vi.mock('../../../shared/features', () => ({ addressesEnabled: false, settingsEnabled: true }));
+vi.mock('../../../shared/features', () => ({
+  addressesEnabled: false,
+  settingsEnabled: true,
+  ordersEnabled: false,
+  favoritesEnabled: false,
+  reviewsEnabled: false,
+  idEnabled: false,
+}));
 const settings = (theme: ThemePreference = 'system', version = 1n): AccountSettings => ({
   subjectId: new Uint8Array(16).fill(1),
   version,
@@ -24,6 +31,10 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     state,
     bootstrap: vi.fn(),
     register: vi.fn(),
+    startLogin: vi.fn(),
+    completeLogin: vi.fn(),
+    resendLoginCode: vi.fn(),
+    requestEmailVerification: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
     dispose: vi.fn(),
