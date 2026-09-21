@@ -188,6 +188,7 @@ def main():
             compose("build", "integration")
             compose("run", "--rm", "integration")
             compose("run", "--rm", "--entrypoint", "/usr/local/bin/files-s3-integration", "integration", "-test.v", "-test.run=TestLive", "-test.timeout=3m")
+            run(sys.executable, str(ROOT / "infra/files-local/database_checks.py"))
         finally:
             compose("up", "-d", "worker")
     else:

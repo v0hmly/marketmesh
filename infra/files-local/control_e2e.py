@@ -63,6 +63,8 @@ def prepare():
     overlay.chmod(0o600)
 
 try:
+    f.compose("stop", "worker", quiet=True)
+    f.compose("build", "worker", "integration")
     prepare()
     compose("build","auth")
     compose("up","-d","--wait","--wait-timeout","150","postgres-primary","postgres-replica")
@@ -90,3 +92,4 @@ finally:
     # Unique project generated above; external Files networks/volumes are retained.
     if overlay.is_file():
         compose("down","--volumes","--remove-orphans")
+    f.compose("up", "-d", "worker", quiet=True)
