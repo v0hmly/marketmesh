@@ -3,29 +3,6 @@
    layer that project/ds/marketmesh/components/bundle.css expects to find,
    since the system does not yet publish its own tokens.css. */
 
-/* Поправка к знаку.
-   В системе .brand-mark собран под один размер и ломается: при width/height 35px
-   и padding-right 8px в content-box коробка становится 43×35, а border-radius 50%
-   превращает круг в овал; letter-spacing -8px сдвигает букву вбок, translateY(5px)
-   роняет её вниз, overflow: hidden подрезает. Правим на уровень глубже, чтобы
-   победить по специфичности независимо от порядка подключения стилей.
-   Когда в системе почините сам класс — этот блок можно убрать. */
-.brand > .brand-mark {
-  box-sizing: border-box;
-  width: 35px;
-  height: 35px;
-  padding: 0;
-  letter-spacing: 0;
-  font-size: 25px;
-  line-height: 1;
-  overflow: visible;
-  flex-shrink: 0;
-}
-
-.brand > .brand-mark > span {
-  transform: translateY(-0.06em);
-}
-
 :root {
   --text-primary: #203d30;
   --text-secondary: #5d6c61;

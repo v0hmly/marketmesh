@@ -1,5 +1,5 @@
 import type { AddressInput } from '../../shared/api/types';
-import { trimDisplayName } from './validation';
+import { trimDisplayName } from '../../shared/validation';
 
 export const addressFields = [
   {

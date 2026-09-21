@@ -27,6 +27,12 @@ const profile = (id = 1): Profile => ({
   version: 1n,
   createdAtUnix: 1n,
   updatedAtUnix: 1n,
+  lastName: '',
+  birthDate: '',
+  gender: 0,
+  phone: '',
+  city: '',
+  showAge: false,
 });
 // A real wire detail exercises shared/api parsing without importing internal schemas.
 const pendingDetail = () => {
@@ -43,6 +49,16 @@ const denied = () => new ConnectError('authentication failed', Code.Unauthentica
 function api(): PublicApi {
   return {
     register: vi.fn(async () => {}),
+    startLogin: vi.fn(async () => ({
+      challengeId: new Uint8Array(16).fill(9),
+      codeExpiresInSeconds: 600n,
+    })),
+    completeLogin: vi.fn(async () => profile().subjectId),
+    resendLoginCode: vi.fn(async () => ({
+      challengeId: new Uint8Array(16).fill(9),
+      codeExpiresInSeconds: 600n,
+    })),
+    requestEmailVerification: vi.fn(async () => {}),
     login: vi.fn(async () => profile().subjectId),
     refresh: vi.fn(async () => {}),
     logout: vi.fn(async () => {}),

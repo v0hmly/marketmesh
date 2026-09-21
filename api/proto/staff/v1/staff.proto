@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package staff.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/staff/v1;staffv1";
+
+// StaffService backs the internal portal, reachable only from the corporate
+// network; edge policy rejects outside requests before they reach this service.
+service StaffService {
+  // StartSso returns the corporate identity provider URL for the sign-in redirect.
+  rpc StartSso(StartSsoRequest) returns (StartSsoResponse);
+  // GetInvite reads the state of an emailed staff invite.
+  rpc GetInvite(GetInviteRequest) returns (GetInviteResponse);
+  // AcceptInvite consumes an active invite and links it to the caller's SSO identity.
+  rpc AcceptInvite(AcceptInviteRequest) returns (AcceptInviteResponse);
+}
+
+// StartSsoRequest carries no caller-selected identity provider or redirect target.
+message StartSsoRequest {}
+
+// StartSsoResponse carries the only redirect target the portal may send the browser to.
+message StartSsoResponse {
+  // AuthorizeUrl is the server-configured corporate IdP authorization URL.
+  string authorize_url = 1;
+}
+
+// InviteState is the closed set of invite outcomes the portal screen renders.
+enum InviteState {
+  // INVITE_STATE_UNSPECIFIED is invalid in responses.
+  INVITE_STATE_UNSPECIFIED = 0;
+  // INVITE_STATE_ACTIVE allows acceptance by the invited address only.
+  INVITE_STATE_ACTIVE = 1;
+  // INVITE_STATE_EXPIRED requires a new invite from an administrator.
+  INVITE_STATE_EXPIRED = 2;
+  // INVITE_STATE_USED means the invite was already consumed.
+  INVITE_STATE_USED = 3;
+  // INVITE_STATE_WRONG_ACCOUNT means the caller's SSO identity is not the invitee.
+  INVITE_STATE_WRONG_ACCOUNT = 4;
+}
+
+// GetInviteRequest carries the opaque token from the emailed link.
+message GetInviteRequest {
+  // InviteToken is the emailed single-use invite token.
+  string invite_token = 1;
+}
+
+// GetInviteResponse reveals only what the invite screen needs.
+message GetInviteResponse {
+  // State selects the screen state.
+  InviteState state = 1;
+  // Role is the granted portal role, set only for INVITE_STATE_ACTIVE.
+  string role = 2;
+  // InviterName is the employee who sent the invite, set only for INVITE_STATE_ACTIVE.
+  string inviter_name = 3;
+}
+
+// AcceptInviteRequest carries the same opaque token; the SSO session identifies the invitee.
+message AcceptInviteRequest {
+  // InviteToken is the emailed single-use invite token.
+  string invite_token = 1;
+}
+
+// AcceptInviteResponse is empty; the session is established through the browser bridge.
+message AcceptInviteResponse {}

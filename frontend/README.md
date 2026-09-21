@@ -2,7 +2,9 @@
 
 Frontend строится на Vue и pnpm workspace. До появления независимых продуктовых команд используется одно модульное приложение, описанное в [ADR-0010](../docs/adr/0010-microfrontend-composition-and-deployment.md).
 
-- `apps/storefront` — приложение онлайн-магазина;
+- `apps/storefront` — приложение онлайн-магазина с продуктовыми областями
+  (покупатель `modules/account`, продавец `modules/seller`, сотрудник `modules/staff`);
+  shell владеет запуском, композицией маршрутов, сессией и темой;
 - `packages` — только действительно общие frontend-пакеты;
 - `../api/gen/ts` — сгенерированные API-контракты.
 

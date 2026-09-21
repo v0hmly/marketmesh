@@ -68,7 +68,7 @@ onMounted(() => {
   <div class="site-wrap">
     <header class="site-header">
       <RouterLink class="brand" to="/account" aria-label="MarketMesh — личный кабинет"
-        ><span class="brand-mark" aria-hidden="true">m<span>m</span></span
+        ><span class="brand-mark" aria-hidden="true"><span>m</span></span
         ><span>marketmesh<span class="brand-dot">.</span></span></RouterLink
       >
       <span class="brand-caption">Изделия мастеров. Личные истории.</span>

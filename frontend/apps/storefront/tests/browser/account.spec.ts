@@ -8,6 +8,7 @@ import {
   ProfileSchema,
   UserService,
 } from '@marketmesh/api/user/v1/user_pb';
+import { ErrorInfoSchema } from '@marketmesh/api/google/rpc/error_details_pb';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type BrowserContext, type Route } from '@playwright/test';
 
@@ -15,6 +16,7 @@ import { expect, test, type BrowserContext, type Route } from '@playwright/test'
 async function browserApi(context: BrowserContext) {
   let signedIn = false;
   let accessLive = false;
+  let codeFlow = false;
   let updates = 0;
   let refreshes = 0;
   let settingsWrites = 0;
@@ -49,9 +51,84 @@ async function browserApi(context: BrowserContext) {
         headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
         body: Buffer.alloc(0),
       });
+    } else if (method === 'StartLogin') {
+      if (!codeFlow) {
+        await jsonError(route, 'unimplemented', 501);
+        return;
+      }
+      const input = fromBinary(
+        AuthService.method.startLogin.input,
+        route.request().postDataBuffer()!,
+      );
+      expect(input.identifier).toBe('anna@example.ru');
+      await route.fulfill({
+        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+        body: Buffer.from(
+          toBinary(
+            AuthService.method.startLogin.output,
+            create(AuthService.method.startLogin.output, {
+              loginChallengeId: new Uint8Array(16).fill(9),
+              codeExpiresInSeconds: 600n,
+            }),
+          ),
+        ),
+      });
+    } else if (method === 'ResendLoginCode') {
+      await route.fulfill({
+        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+        body: Buffer.from(
+          toBinary(
+            AuthService.method.resendLoginCode.output,
+            create(AuthService.method.resendLoginCode.output, { codeExpiresInSeconds: 600n }),
+          ),
+        ),
+      });
+    } else if (method === 'CompleteLogin') {
+      const input = fromBinary(
+        AuthService.method.completeLogin.input,
+        route.request().postDataBuffer()!,
+      );
+      if (input.code !== '482913') {
+        const detail = toBinary(
+          ErrorInfoSchema,
+          create(ErrorInfoSchema, { domain: 'marketmesh.auth', reason: 'CODE_MISMATCH' }),
+        );
+        await route.fulfill({
+          status: 400,
+          headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+          body: JSON.stringify({
+            code: 'invalid_argument',
+            message: 'wrong code',
+            details: [
+              { type: 'google.rpc.ErrorInfo', value: Buffer.from(detail).toString('base64') },
+            ],
+          }),
+        });
+        return;
+      }
+      signedIn = true;
+      accessLive = true;
+      await route.fulfill({
+        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+        body: Buffer.from(
+          toBinary(
+            AuthService.method.completeLogin.output,
+            create(AuthService.method.completeLogin.output, { subjectId: profile.subjectId }),
+          ),
+        ),
+      });
+    } else if (method === 'RequestEmailVerification') {
+      if (!codeFlow) {
+        await jsonError(route, 'unimplemented', 501);
+        return;
+      }
+      await route.fulfill({
+        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+        body: Buffer.alloc(0),
+      });
     } else if (method === 'Login') {
       const input = fromBinary(AuthService.method.login.input, route.request().postDataBuffer()!);
-      expect(input.identifier).toBe('anna');
+      expect(input.identifier).toBe('anna@example.ru');
       signedIn = true;
       accessLive = true;
       await route.fulfill({
@@ -196,6 +273,12 @@ async function browserApi(context: BrowserContext) {
         ...profile,
         displayName: input.displayName.trim(),
         bio: input.bio,
+        lastName: input.lastName,
+        birthDate: input.birthDate,
+        gender: input.gender,
+        phone: input.phone,
+        city: input.city,
+        showAge: input.showAge,
         version: profile.version + 1n,
       });
     }
@@ -210,6 +293,9 @@ async function browserApi(context: BrowserContext) {
     });
   });
   return {
+    enableCodeFlow() {
+      codeFlow = true;
+    },
     settingsWrites: () => settingsWrites,
     loseNextSettingsReply() {
       loseSettingsReply = true;
@@ -237,17 +323,21 @@ test('registration, profile editing, reload, keyboard labels and accessible layo
 }, testInfo) => {
   const api = await browserApi(context);
   await page.goto('/register');
-  await page.getByLabel('Логин', { exact: true }).fill('anna');
-  await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
-  await page.getByRole('button', { name: 'Создать аккаунт' }).click();
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
+  await page.getByLabel('Пароль', { exact: true }).fill('Secret123!');
+  await page.getByLabel('Повторите пароль', { exact: true }).fill('Secret123!');
+  await page.getByRole('button', { name: 'Зарегистрироваться' }).click();
+  await expect(page.getByText('Аккаунт создан.')).toBeVisible();
   await expect(
-    page.getByText('Запрос обработан. Теперь войдите с вашим логином и паролем.'),
+    page.getByText('Запрос обработан. Теперь войдите с вашей почтой и паролем.'),
   ).toBeVisible();
-  await expect(page.getByLabel('Пароль', { exact: true })).toHaveValue('');
   const loginA11y = await new AxeBuilder({ page }).analyze();
   expect(loginA11y.violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('login-desktop.png'), fullPage: true });
-  await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
+  await page.getByRole('link', { name: 'Войти' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
+  await page.getByLabel('Пароль', { exact: true }).fill('Secret123!');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page.getByLabel('Имя', { exact: true })).toHaveValue('Анна');
   await page
@@ -263,7 +353,7 @@ test('registration, profile editing, reload, keyboard labels and accessible layo
   expect(await page.locator('script:not([src])').count()).toBe(0);
   const storage = await page.evaluate(() => JSON.stringify({ ...localStorage }));
   expect(storage).not.toContain('Анна');
-  expect(storage).not.toContain('anna');
+  expect(storage).not.toContain('anna@example.ru');
   expect(storage).not.toContain('password');
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('profile-desktop.png'), fullPage: true });
@@ -275,10 +365,39 @@ test('registration, profile editing, reload, keyboard labels and accessible layo
   await page.screenshot({ path: testInfo.outputPath('profile-mobile.png'), fullPage: true });
 });
 
+test('login with the emailed code: wrong code, resend, success and accessibility', async ({
+  page,
+  context,
+}) => {
+  const api = await browserApi(context);
+  api.enableCodeFlow();
+  await page.goto('/login');
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
+  await page.getByLabel('Пароль', { exact: true }).fill('Secret123!');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Подтвердите вход.' })).toBeVisible();
+  await expect(page.getByText('Мы отправили код из шести цифр на anna@example.ru.')).toBeVisible();
+  const code = page.getByLabel('Код из письма', { exact: true });
+  await expect(code).toHaveAttribute('inputmode', 'numeric');
+  await expect(code).toHaveAttribute('autocomplete', 'one-time-code');
+  await code.fill('000000');
+  await page.getByRole('button', { name: 'Подтвердить вход', exact: true }).click();
+  await expect(
+    page.getByText('Код неверный. Проверьте письмо и введите код ещё раз.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Отправить код ещё раз' }).click();
+  await expect(page.getByText('Новый код отправлен на почту.')).toBeVisible();
+  await expect(code).toHaveValue('');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await code.fill('482913');
+  await page.getByRole('button', { name: 'Подтвердить вход', exact: true }).click();
+  await expect(page.getByLabel('Имя', { exact: true })).toHaveValue('Анна');
+});
+
 test('logout in another tab clears an unsaved private draft', async ({ page, context }) => {
   await browserApi(context);
   await page.goto('/login');
-  await page.getByLabel('Логин', { exact: true }).fill('anna');
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
   await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page.getByLabel('Имя', { exact: true })).toHaveValue('Анна');
@@ -300,7 +419,7 @@ test('an active refresh is shared by new tabs and preserves an existing draft', 
 }) => {
   const api = await browserApi(context);
   await page.goto('/login');
-  await page.getByLabel('Логин', { exact: true }).fill('anna');
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
   await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page.getByLabel('Имя', { exact: true })).toHaveValue('Анна');
@@ -331,7 +450,7 @@ test('an active refresh is shared by new tabs and preserves an existing draft', 
 
 async function addressLogin(page: import('@playwright/test').Page) {
   await page.goto('/login');
-  await page.getByLabel('Логин', { exact: true }).fill('anna');
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
   await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await page.getByRole('link', { name: 'Адреса доставки', exact: true }).click();
@@ -420,20 +539,19 @@ for (const path of ['/login', '/register']) {
       );
     });
     await page.goto(path);
-    await expect(page.getByLabel('Логин', { exact: true })).toBeDisabled();
+    await expect(page.getByLabel('Почта', { exact: true })).toBeDisabled();
     await expect(page.getByLabel('Пароль', { exact: true })).toBeDisabled();
     await expect(
       page.getByText('Проверяем сессию перед вводом данных…', { exact: true }),
     ).toBeVisible();
     await page.evaluate(() => window.dispatchEvent(new Event('marketmesh-test-release-bootstrap')));
-    await expect(page.getByLabel('Логин', { exact: true })).toBeEnabled();
-    await page.getByLabel('Логин', { exact: true }).fill('anna');
-    await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
+    await expect(page.getByLabel('Почта', { exact: true })).toBeEnabled();
+    await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
+    await page.getByLabel('Пароль', { exact: true }).fill('Secret123!');
     if (path === '/register') {
-      await page.getByRole('button', { name: 'Создать аккаунт', exact: true }).click();
-      await expect(
-        page.getByText('Запрос обработан. Теперь войдите с вашим логином и паролем.'),
-      ).toBeVisible();
+      await page.getByLabel('Повторите пароль', { exact: true }).fill('Secret123!');
+      await page.getByRole('button', { name: 'Зарегистрироваться', exact: true }).click();
+      await expect(page.getByText('Аккаунт создан.')).toBeVisible();
     } else {
       await page.getByRole('button', { name: 'Войти', exact: true }).click();
       await expect(page.getByLabel('Имя', { exact: true })).toHaveValue('Анна');
@@ -543,4 +661,108 @@ test('theme conflicts and lost replies require reconciliation, and cross-tab log
   await second.getByRole('button', { name: 'Выйти', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
   await expect(page.getByRole('radio')).toHaveCount(0);
+});
+
+async function buyerLogin(page: import('@playwright/test').Page) {
+  await page.goto('/login');
+  await page.getByLabel('Почта', { exact: true }).fill('anna@example.ru');
+  await page.getByLabel('Пароль', { exact: true }).fill('a secure demo password');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByLabel('Имя', { exact: true })).toHaveValue('Анна');
+}
+
+test('orders section lists orders, filters them and reveals the pickup code accessibly', async ({
+  page,
+  context,
+}) => {
+  await browserApi(context);
+  await buyerLogin(page);
+  await page.getByRole('link', { name: 'Заказы', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Заказ № 1482-0091' })).toBeVisible();
+  expect(page.getByText('481 902')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Показать код' }).click();
+  await expect(page.getByText('481 902')).toBeVisible();
+  await page.getByRole('button', { name: 'Отменённые', exact: true }).click();
+  await expect(page.locator('.sample-card')).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Заказ № 1388-0064' })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
+test('favorites section filters by stock and asks for restock mail accessibly', async ({
+  page,
+  context,
+}) => {
+  await browserApi(context);
+  await buyerLogin(page);
+  await page.getByRole('link', { name: 'Избранное', exact: true }).click();
+  await expect(page.locator('.favorite-card')).toHaveCount(6);
+  await page.getByRole('button', { name: 'Закончились', exact: true }).click();
+  await expect(page.locator('.favorite-card')).toHaveCount(2);
+  await page
+    .getByRole('button', { name: /Сообщить о пополнении\s*:?\s*Свеча «Хвоя и дым», 200 мл/ })
+    .click();
+  await expect(page.getByText('Напишем на почту, когда мастер пополнит партию.')).toBeVisible();
+  await page
+    .getByRole('button', { name: /Убрать из избранного\s*:?\s*Деревянная доска из дуба/ })
+    .click();
+  await expect(page.locator('.favorite-card')).toHaveCount(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('reviews section validates the form and publishes to my reviews accessibly', async ({
+  page,
+  context,
+}) => {
+  await browserApi(context);
+  await buyerLogin(page);
+  await page.getByRole('link', { name: 'Отзывы', exact: true }).click();
+  await page.getByRole('button', { name: 'Написать отзыв', exact: false }).first().click();
+  await page.getByRole('button', { name: 'Отправить отзыв' }).click();
+  await expect(page.getByText('Поставьте оценку — без неё отзыв не отправить.')).toBeVisible();
+  await page.locator('label[for="rate-w1-4"]').click();
+  await page
+    .getByLabel('Что скажете об изделии', { exact: true })
+    .fill('Тёплый плед, ровные швы, цвет как на фотографии.');
+  await page.getByRole('button', { name: 'Отправить отзыв' }).click();
+  await expect(page.getByText('Отзыв отправлен.', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: /Мои отзывы/ }).click();
+  await expect(page.getByText('На модерации', { exact: true })).toHaveCount(2);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
+test('MarketMesh ID edits personal data with CAS and hides private fields from the signature', async ({
+  page,
+  context,
+}) => {
+  const api = await browserApi(context);
+  await buyerLogin(page);
+  await page.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Личные данные', exact: true })).toBeVisible();
+  await expect(page.locator('.id-rows').first()).toContainText('Не указана');
+  await page.getByRole('button', { name: 'Изменить данные' }).click();
+  await page.getByLabel('Телефон', { exact: true }).fill('123');
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await expect(page.getByText('Проверьте номер: нужно от 7 до 15 цифр.')).toBeVisible();
+  expect(api.updates()).toBe(0);
+  await page.getByLabel('Телефон', { exact: true }).fill('+7 999 1234567');
+  await page.getByLabel('Город проживания', { exact: true }).fill('Москва');
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
+  expect(api.updates()).toBe(1);
+  await expect(page.locator('.id-rows').first()).toContainText('Москва');
+  await expect(page.locator('.review-preview')).toContainText('Анна, Москва');
+  await expect(page.locator('.review-preview')).not.toContainText('+7 999 1234567');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
 });

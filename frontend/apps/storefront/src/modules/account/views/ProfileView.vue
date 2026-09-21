@@ -8,7 +8,8 @@ import { isProfilePending } from '../../../shared/api/errors';
 import { useSession } from '../../../shell/context';
 import { GuardMismatchError, type SessionGuard } from '../../../shell/session';
 import { accountError } from '../errors';
-import { trimDisplayName, validateProfile } from '../validation';
+import { trimDisplayName } from '../../../shared/validation';
+import { validateProfile } from '../validation';
 
 const session = useSession();
 const current = shallowRef<Profile | null>(null);
@@ -144,7 +145,17 @@ async function save() {
   saving.value = true;
   try {
     const profile = await session.updateProfile(
-      { displayName: displayName.value, bio: bio.value, expectedVersion: current.value.version },
+      {
+        displayName: displayName.value,
+        bio: bio.value,
+        expectedVersion: current.value.version,
+        lastName: current.value.lastName,
+        birthDate: current.value.birthDate,
+        gender: current.value.gender,
+        phone: current.value.phone,
+        city: current.value.city,
+        showAge: current.value.showAge,
+      },
       guard.value,
     );
     if (requestRevision !== revision) return;
