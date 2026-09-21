@@ -65,7 +65,7 @@ wait_ready(){
 up(){
  generate
  compose build auth
- compose up -d --wait --wait-timeout 150 auth-db auth-replica user-db user-replica
+ compose up -d --wait --wait-timeout 150 postgres-primary postgres-replica
  compose up -d redis nats
  compose run --rm --no-deps provision
  compose up -d --wait --wait-timeout 120 auth
@@ -94,6 +94,11 @@ case "${1:-}" in
   export ACCOUNT_E2E_PHASE=pending
   compose build browser
   compose run --rm --no-deps browser
+  compose run --rm --no-deps provision account-local database-check seed
+  compose restart postgres-primary postgres-replica
+  compose up -d --wait --wait-timeout 150 postgres-primary postgres-replica
+  compose run --rm --no-deps provision account-local database-check check
+  compose run --rm --no-deps provision account-local database-check clean
   export ACCOUNT_USER_CONSUME_ENABLED=true
   compose up -d --wait --wait-timeout 120 --force-recreate user
   export ACCOUNT_E2E_PHASE=core
