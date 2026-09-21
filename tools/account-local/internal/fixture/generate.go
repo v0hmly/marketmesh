@@ -25,6 +25,7 @@ import (
 )
 
 const lifetime = 7 * 24 * time.Hour
+const topologyVersion = 2
 
 func secret() string {
 	b := make([]byte, 32)
@@ -68,11 +69,12 @@ func Generate(root, port string) error {
 	}
 	if marker, err := os.ReadFile(filepath.Join(root, "ready.json")); err == nil {
 		var state struct {
-			Port    string
-			Expires time.Time
+			Port     string
+			Expires  time.Time
+			Topology int
 		}
-		if json.Unmarshal(marker, &state) != nil || state.Port != port || time.Until(state.Expires) < time.Hour {
-			return errors.New("fixture expired or origin changed; explicit reset required")
+		if json.Unmarshal(marker, &state) != nil || state.Topology != topologyVersion || state.Port != port || time.Until(state.Expires) < time.Hour {
+			return errors.New("fixture topology, expiration or origin changed; preserve old state and use a new project, or explicitly reset disposable data")
 		}
 		return nil
 	}
@@ -173,17 +175,23 @@ func Generate(root, port string) error {
 	for _, name := range []string{"auth", "user", "gateway-in", "gateway-out"} {
 		apps[name] = map[string]string{"SERVICE_VERSION": "local", "ENVIRONMENT": "test", "SERVICE_INSTANCE_ID": "account-local-" + name, "HTTP_ADDRESS": ":8080"}
 	}
+	admin, repl := secret(), secret()
+	databaseEnv := map[string]string{"POSTGRES_DB": "postgres", "POSTGRES_USER": "fixture_admin", "POSTGRES_PASSWORD": admin, "REPLICATOR_PASSWORD": repl}
 	for _, name := range []string{"auth", "user"} {
-		admin, rw, ro, repl := secret(), secret(), secret(), secret()
-		if err = writeEnv(root, name+"-db/env", map[string]string{"POSTGRES_DB": name, "POSTGRES_USER": "fixture_admin", "POSTGRES_PASSWORD": admin, "APP_RW_PASSWORD": rw, "APP_RO_PASSWORD": ro, "REPLICATOR_PASSWORD": repl}); err != nil {
-			return err
-		}
-		if err = writeEnv(root, name+"-replica/env", map[string]string{"PGDATA": "/var/lib/postgresql/18/replica", "PRIMARY_HOST": name + "-db", "REPLICATOR_PASSWORD": repl}); err != nil {
-			return err
-		}
-		provision[strings.ToUpper(name)+"_ADMIN_DSN"] = "postgres://fixture_admin:" + admin + "@" + name + "-db:5432/" + name + "?sslmode=disable"
-		apps[name]["POSTGRES_RW_DSN"] = "postgres://app_rw:" + rw + "@" + name + "-db:5432/" + name + "?sslmode=disable"
-		apps[name]["POSTGRES_RO_DSN"] = "postgres://app_ro:" + ro + "@" + name + "-replica:5432/" + name + "?sslmode=disable"
+		rw, ro := secret(), secret()
+		databaseEnv[strings.ToUpper(name)+"_RW_PASSWORD"] = rw
+		databaseEnv[strings.ToUpper(name)+"_RO_PASSWORD"] = ro
+		provision[strings.ToUpper(name)+"_ADMIN_DSN"] = "postgres://fixture_admin:" + admin + "@postgres-primary:5432/" + name + "?sslmode=disable"
+		apps[name]["POSTGRES_RW_DSN"] = "postgres://" + name + "_rw:" + rw + "@postgres-primary:5432/" + name + "?sslmode=disable"
+		apps[name]["POSTGRES_RO_DSN"] = "postgres://" + name + "_ro:" + ro + "@postgres-replica:5432/" + name + "?sslmode=disable"
+		provision[strings.ToUpper(name)+"_RW_DSN"] = apps[name]["POSTGRES_RW_DSN"]
+		provision[strings.ToUpper(name)+"_RO_DSN"] = apps[name]["POSTGRES_RO_DSN"]
+	}
+	if err = writeEnv(root, "postgres-primary/env", databaseEnv); err != nil {
+		return err
+	}
+	if err = writeEnv(root, "postgres-replica/env", map[string]string{"PGDATA": "/var/lib/postgresql/18/replica", "PRIMARY_HOST": "postgres-primary", "REPLICATOR_PASSWORD": repl}); err != nil {
+		return err
 	}
 	redisPassword := secret()
 	if err = write(root, "redis/redis.conf", []byte("bind 0.0.0.0\nprotected-mode yes\nrequirepass "+redisPassword+"\nsave \"\"\nappendonly no\n")); err != nil {
@@ -220,9 +228,10 @@ func Generate(root, port string) error {
 		return err
 	}
 	marker, _ := json.Marshal(struct {
-		Port    string
-		Expires time.Time
-	}{port, expires})
+		Port     string
+		Expires  time.Time
+		Topology int
+	}{port, expires, topologyVersion})
 	return write(root, "ready.json", marker)
 }
 

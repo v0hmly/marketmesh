@@ -25,6 +25,12 @@ func main() {
 			err = fixture.Ready(ctx)
 		case "probe":
 			err = fixture.Probe(ctx)
+		case "database-check":
+			if len(os.Args) != 3 {
+				err = fmt.Errorf("database check phase required")
+			} else {
+				err = fixture.CheckDatabases(ctx, os.Args[2])
+			}
 		case "provision":
 			err = fixture.Provision(ctx)
 		case "frontdoor":

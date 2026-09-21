@@ -2,6 +2,7 @@ package fixture
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -142,5 +143,30 @@ func TestFrontdoorRoutesAndBrowserHeaders(t *testing.T) {
 	}
 	if count != 10 {
 		t.Fatal("private request forwarded", count)
+	}
+}
+
+func TestGenerateRejectsOldTopologyWithoutChangingSecrets(t *testing.T) {
+	root := t.TempDir()
+	if err := Generate(root, "8443"); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(filepath.Join(root, "auth/env"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	marker, _ := json.Marshal(map[string]any{"Port": "8443", "Expires": time.Now().Add(lifetime)})
+	if err = os.WriteFile(filepath.Join(root, "ready.json"), marker, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = Generate(root, "8443"); err == nil {
+		t.Fatal("old topology reused")
+	}
+	after, err := os.ReadFile(filepath.Join(root, "auth/env"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Fatal("existing credentials changed")
 	}
 }
