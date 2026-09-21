@@ -5,3 +5,4 @@ export const favoritesEnabled = import.meta.env.VITE_ACCOUNT_FAVORITES_ENABLED =
 export const reviewsEnabled = import.meta.env.VITE_ACCOUNT_REVIEWS_ENABLED === 'true';
 export const idEnabled = import.meta.env.VITE_ACCOUNT_ID_ENABLED === 'true';
 export const sellerEnabled = import.meta.env.VITE_SELLER_ENABLED === 'true';
+export const staffEnabled = import.meta.env.VITE_STAFF_ENABLED === 'true';

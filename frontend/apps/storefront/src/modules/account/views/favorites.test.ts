@@ -13,6 +13,7 @@ vi.mock('../../../shared/features', () => ({
   reviewsEnabled: false,
   idEnabled: false,
   sellerEnabled: false,
+  staffEnabled: false,
 }));
 vi.mock('../sample-data', async (importOriginal) => {
   const original = await importOriginal<typeof import('../sample-data')>();

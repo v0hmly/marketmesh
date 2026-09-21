@@ -16,6 +16,7 @@ vi.mock('../../../shared/features', () => ({
   reviewsEnabled: false,
   idEnabled: false,
   sellerEnabled: true,
+  staffEnabled: false,
 }));
 
 // Hand-encoded google.rpc.ErrorInfo { reason: 1, domain: 2 } — tests must not

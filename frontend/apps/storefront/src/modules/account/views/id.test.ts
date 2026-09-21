@@ -15,6 +15,7 @@ vi.mock('../../../shared/features', () => ({
   reviewsEnabled: false,
   idEnabled: true,
   sellerEnabled: false,
+  staffEnabled: false,
 }));
 
 const profile = (overrides: Partial<Profile> = {}): Profile => ({
