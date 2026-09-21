@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Внутренний портал — приглашение</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+</style>
+</helmet>
+<div style="width: 1280px; height: 880px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; padding: 72px 24px;">
+  <div style="width: 100%; max-width: 410px; display: flex; flex-direction: column; gap: 24px;">
+
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></div>
+
+    <sc-if value="{{isActive}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Внутренний портал</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Вас пригласили в портал.</h1>
+      <p class="lede" style="margin: 0;">Вам открыли доступ с ролью [РОЛЬ].</p>
+    </div>
+
+    <div class="card auth-card">
+      <sc-if value="{{isAcceptDone}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; align-items: center; gap: 12px;" role="status">
+          <span class="loading-dot" aria-hidden="true"></span>
+          <span>Приглашение принято. Открываем корпоративный вход…</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showAcceptForm}}" hint-placeholder-val="{{true}}">
+      <button type="button" class="button primary wide" onClick="{{onAccept}}" disabled="{{acceptDisabled}}">
+        <span>{{acceptLabel}}</span>
+        <sc-if value="{{showAcceptArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+      </button>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isExpired}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Внутренний портал</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Срок приглашения истёк.</h1>
+      <p class="lede" style="margin: 0;">Ссылка из письма больше не действует.</p>
+    </div>
+
+    <div class="card auth-card">
+      <sc-if value="{{isRequestDone}}" hint-placeholder-val="{{false}}">
+        <div class="notice success" role="status">Запрос отправлен администратору. Новое приглашение придёт на рабочую почту.</div>
+      </sc-if>
+
+      <sc-if value="{{showRequestButton}}" hint-placeholder-val="{{true}}">
+        <button type="button" class="button secondary" onClick="{{onRequestInvite}}" disabled="{{requestDisabled}}">{{requestLabel}}</button>
+      </sc-if>
+    </div>
+
+    <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Доступ уже настроен? <a href="StaffLogin.dc.html">Войдите через рабочий аккаунт</a></p>
+    </sc-if>
+
+    <sc-if value="{{isUsed}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Внутренний портал</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Приглашение уже использовано.</h1>
+      <p class="lede" style="margin: 0;">Доступ по этой ссылке уже открыт — просто войдите.</p>
+    </div>
+
+    <div class="card auth-card">
+      <a class="button primary wide" href="StaffLogin.dc.html">
+        <span>Войти через рабочий аккаунт</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+
+    </sc-if>
+
+    <sc-if value="{{isWrongAccount}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Внутренний портал</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Приглашение для другой почты.</h1>
+      <p class="lede" style="margin: 0;">Вы вошли как [ТЕКУЩАЯ ПОЧТА], а приглашение выдано для [ПОЧТА СОТРУДНИКА]. Выйдите из аккаунта и откройте ссылку из письма снова.</p>
+    </div>
+
+    <div class="card auth-card">
+      <sc-if value="{{isLogoutDone}}" hint-placeholder-val="{{false}}">
+        <div class="notice success" role="status">Вы вышли из аккаунта. Откройте ссылку из письма снова.</div>
+      </sc-if>
+
+      <sc-if value="{{showLogoutButton}}" hint-placeholder-val="{{true}}">
+        <button type="button" class="button secondary" onClick="{{onLogout}}" disabled="{{logoutDisabled}}">{{logoutLabel}}</button>
+      </sc-if>
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"inviteState":{"editor":"enum","default":"active","options":["active","expired","used","wrongAccount"],"section":"Демо: состояние приглашения"},"$preview":{"width":1280,"height":880}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      acceptStatus: 'idle',
+      requestStatus: 'idle',
+      logoutStatus: 'idle'
+    };
+    this.onAccept = this.onAccept.bind(this);
+    this.onRequestInvite = this.onRequestInvite.bind(this);
+    this.onLogout = this.onLogout.bind(this);
+  }
+
+  onAccept() {
+    if (this.state.acceptStatus !== 'idle') return;
+    this.setState({ acceptStatus: 'submitting' });
+    setTimeout(() => {
+      this.setState({ acceptStatus: 'done' });
+    }, 1000);
+  }
+
+  onRequestInvite() {
+    if (this.state.requestStatus !== 'idle') return;
+    this.setState({ requestStatus: 'submitting' });
+    setTimeout(() => {
+      this.setState({ requestStatus: 'done' });
+    }, 800);
+  }
+
+  onLogout() {
+    if (this.state.logoutStatus !== 'idle') return;
+    this.setState({ logoutStatus: 'submitting' });
+    setTimeout(() => {
+      this.setState({ logoutStatus: 'done' });
+    }, 800);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const inviteState = this.props.inviteState || 'active';
+
+    const acceptSubmitting = s.acceptStatus === 'submitting';
+    const acceptDone = s.acceptStatus === 'done';
+    const requestSubmitting = s.requestStatus === 'submitting';
+    const requestDone = s.requestStatus === 'done';
+    const logoutSubmitting = s.logoutStatus === 'submitting';
+    const logoutDone = s.logoutStatus === 'done';
+
+    return {
+      isActive: inviteState === 'active',
+      isExpired: inviteState === 'expired',
+      isUsed: inviteState === 'used',
+      isWrongAccount: inviteState === 'wrongAccount',
+
+      onAccept: this.onAccept,
+      acceptLabel: acceptSubmitting ? 'Проверяем приглашение…' : 'Принять приглашение',
+      acceptDisabled: acceptSubmitting || acceptDone,
+      showAcceptArrow: !acceptSubmitting,
+      showAcceptForm: !acceptDone,
+      isAcceptDone: acceptDone,
+
+      onRequestInvite: this.onRequestInvite,
+      requestLabel: requestSubmitting ? 'Отправляем запрос…' : 'Запросить новое приглашение',
+      requestDisabled: requestSubmitting,
+      showRequestButton: !requestDone,
+      isRequestDone: requestDone,
+
+      onLogout: this.onLogout,
+      logoutLabel: logoutSubmitting ? 'Выходим…' : 'Выйти из аккаунта',
+      logoutDisabled: logoutSubmitting,
+      showLogoutButton: !logoutDone,
+      isLogoutDone: logoutDone
+    };
+  }
+}
+</script>
+</body>
+</html>

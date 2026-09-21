@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Письмо: удаление аккаунта</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 760px; height: 880px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 64px 80px;">
+
+  <div style="width: 600px; display: flex; flex-direction: column; gap: 6px;">
+    <span class="eyebrow">Письмо · удаление аккаунта</span>
+    <span style="font-size: 0.875rem;"><strong>Тема:</strong> Аккаунт будет удалён [ДАТА УДАЛЕНИЯ]</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>Прехедер:</strong> До этой даты удаление можно отменить.</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>От:</strong> MarketMesh · noreply@[ДОМЕН]</span>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 40px; display: flex; flex-direction: column; gap: 24px;">
+
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 2rem; line-height: 1.25; letter-spacing: -0.02em;">Удалим аккаунт [ДАТА УДАЛЕНИЯ].</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.7;">Вы попросили удалить аккаунт [ПОЧТА ПОЛУЧАТЕЛЯ]. До [ДАТА УДАЛЕНИЯ] его можно вернуть — после этой даты заказы, адреса и история исчезнут навсегда.</p>
+    </div>
+
+    <a class="button primary" href="#" style="align-self: flex-start;">
+      <span>Отменить удаление</span>
+      <span aria-hidden="true">↗</span>
+    </a>
+
+    <div style="padding: 20px; background: var(--surface-tint); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 10px;">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65;">До [ДАТА УДАЛЕНИЯ] вход в аккаунт закрыт — отменить удаление можно только по ссылке из этого письма.</p>
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65;">Документы по заказам мы храним по закону дольше — это не мешает удалению самого аккаунта.</p>
+    </div>
+
+    <div style="padding: 16px 17px; background: var(--surface-error); border: 1px solid var(--border-error); border-radius: var(--r-sm);">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65; color: var(--on-surface-error);">Удаление просили не вы? Отмените его и смените пароль — аккаунт пытается удалить кто-то посторонний.</p>
+    </div>
+
+    <div style="padding-top: 20px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Письмо отправлено автоматически, отвечать на него не нужно.</span>
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Вопросы — <a href="#">[ПОЧТА ПОДДЕРЖКИ]</a></span>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

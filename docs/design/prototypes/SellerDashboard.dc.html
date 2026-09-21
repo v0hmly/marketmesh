@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет продавца — обзор</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button, .account-nav a { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; gap: 32px; padding: 48px 64px;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+    <span class="eyebrow">Портал продавца</span>
+  </div>
+
+  <nav class="account-nav" aria-label="Разделы портала продавца">
+    <a href="SellerDashboard.dc.html" class="active" aria-current="page">Обзор</a>
+    <a href="SellerProducts.dc.html">Изделия</a>
+    <a href="SellerOrders.dc.html">Заказы</a>
+  </nav>
+
+  <div class="page-heading">
+    <div>
+      <h1 style="margin: 0 0 10px; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Обзор</h1>
+      <p class="lede" style="margin: 0;">Магазин «[НАЗВАНИЕ МАГАЗИНА]». Здесь собрано то, что ждёт вашего решения.</p>
+    </div>
+    <span class="section-number" aria-hidden="true">01 / ОБЗОР</span>
+  </div>
+
+  <sc-if value="{{showFeedback}}" hint-placeholder-val="{{false}}">
+    <div class="notice success" role="status">{{feedbackText}}</div>
+  </sc-if>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start;">
+
+    <div class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
+        <h2 style="margin: 0; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">Требуют действия</h2>
+        <a href="SellerOrders.dc.html" style="font-size: 0.875rem;">Все заказы</a>
+      </div>
+
+      <sc-if value="{{hasTasks}}" hint-placeholder-val="{{true}}">
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px;">
+          <sc-for list="{{tasks}}" as="task" hint-placeholder-count="3">
+            <li style="display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 18px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); background: var(--surface-raised);">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 0.875rem; font-weight: 600;">{{task.title}}</span>
+                <span style="font-size: 0.73rem; color: var(--text-secondary);">{{task.meta}}</span>
+              </div>
+              <button type="button" class="button secondary" onClick="{{task.onAct}}">{{task.action}}</button>
+            </li>
+          </sc-for>
+        </ul>
+      </sc-if>
+
+      <sc-if value="{{noTasks}}" hint-placeholder-val="{{false}}">
+        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Ничего не ждёт: все заказы обработаны, остатки в порядке.</p>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+      <div class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 16px;">
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600;">Магазин</h2>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+            <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Состояние</dt>
+            <dd style="margin: 0; font-size: 0.875rem;"><span class="draft-badge">Опубликован</span></dd>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+            <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Страница</dt>
+            <dd style="margin: 0; font-size: 0.875rem;">[АДРЕС СТРАНИЦЫ]</dd>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+            <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Изделий в продаже</dt>
+            <dd style="margin: 0; font-size: 0.875rem;">{{publishedCount}}</dd>
+          </div>
+        </dl>
+        <a class="button secondary" href="SellerProducts.dc.html" style="align-self: flex-start;">Открыть изделия</a>
+      </div>
+
+      <div class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 16px;">
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600;">Остатки на исходе</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{lowStock}}" as="item" hint-placeholder-count="2">
+            <li style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+              <span style="font-size: 0.875rem;">{{item.title}}</span>
+              <span style="font-size: 0.875rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">{{item.left}}</span>
+            </li>
+          </sc-for>
+        </ul>
+        <p style="margin: 0; font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Пополнить партию можно в карточке изделия — покупателям видно только доступное количество.</p>
+      </div>
+
+      <div class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600;">Выплаты</h2>
+        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Ближайшая выплата — [ДАТА ВЫПЛАТЫ]. Состав и расчёт появятся здесь после MM-56.</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      done: [],
+      feedback: ''
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+
+    const defs = [
+      { id: 't1', title: 'Заказ [НОМЕР] ждёт подтверждения', meta: 'Оформлен [ДАТА] · 2 изделия', action: 'Подтвердить', message: 'Заказ подтверждён. Следующий шаг — сборка.' },
+      { id: 't2', title: 'Заказ [НОМЕР] собран и ждёт передачи', meta: 'Подтверждён [ДАТА] · 1 изделие', action: 'Передать', message: 'Заказ передан в доставку.' },
+      { id: 't3', title: 'Карточка «Кружка «Пена»» на модерации', meta: 'Отправлена [ДАТА]', action: 'Открыть', message: 'Карточка открыта в разделе изделий.' }
+    ];
+
+    const tasks = defs
+      .filter((d) => s.done.indexOf(d.id) === -1)
+      .map((d) => ({
+        title: d.title,
+        meta: d.meta,
+        action: d.action,
+        onAct: () => this.setState({ done: s.done.concat([d.id]), feedback: d.message })
+      }));
+
+    return {
+      tasks: tasks,
+      hasTasks: tasks.length > 0,
+      noTasks: tasks.length === 0,
+      showFeedback: !!s.feedback,
+      feedbackText: s.feedback,
+      publishedCount: '[ЧИСЛО]',
+      lowStock: [
+        { title: 'Шарф крупной вязки', left: 'осталось 2' },
+        { title: 'Кружка «Пена», объём 300 мл', left: 'осталось 1' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

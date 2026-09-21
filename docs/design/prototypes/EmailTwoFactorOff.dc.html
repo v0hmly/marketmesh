@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Письмо: подтверждение входа отключено</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 760px; height: 920px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 64px 80px;">
+
+  <div style="width: 600px; display: flex; flex-direction: column; gap: 6px;">
+    <span class="eyebrow">Письмо · подтверждение входа отключено</span>
+    <span style="font-size: 0.875rem;"><strong>Тема:</strong> Подтверждение входа отключено</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>Прехедер:</strong> Если это не вы — включите его обратно.</span>
+    <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);"><strong>От:</strong> MarketMesh · noreply@[ДОМЕН]</span>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 40px; display: flex; flex-direction: column; gap: 24px;">
+
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 2rem; line-height: 1.25; letter-spacing: -0.02em;">Подтверждение входа отключено.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.7;">[ДАТА И ВРЕМЯ, ЧАСОВОЙ ПОЯС] для аккаунта [ПОЧТА ПОЛУЧАТЕЛЯ] отключили подтверждение входа. Теперь, чтобы войти, достаточно пароля.</p>
+    </div>
+
+    <dl style="margin: 0; padding: 20px; background: var(--surface-tint); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+        <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Откуда отключили</dt>
+        <dd style="margin: 0; font-size: 0.875rem; text-align: right;">[УСТРОЙСТВО И БРАУЗЕР]</dd>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px;">
+        <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">IP-адрес</dt>
+        <dd style="margin: 0; font-size: 0.875rem; text-align: right; font-family: var(--font-mono);">[IP-АДРЕС]</dd>
+      </div>
+    </dl>
+
+    <div style="padding: 16px 17px; background: var(--surface-error); border: 1px solid var(--border-error); border-radius: var(--r-sm);">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.65; color: var(--on-surface-error);">Вы этого не делали? Включите подтверждение обратно и смените пароль. Отключение защиты — обычно первый шаг того, кто уже внутри аккаунта.</p>
+    </div>
+
+    <a class="button primary" href="#" style="align-self: flex-start;">
+      <span>Включить подтверждение</span>
+      <span aria-hidden="true">↗</span>
+    </a>
+
+    <div style="padding-top: 20px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Письмо отправлено автоматически, отвечать на него не нужно.</span>
+      <span style="font-size: 0.73rem; line-height: 1.6; color: var(--text-secondary);">Вопросы — <a href="#">[ПОЧТА ПОДДЕРЖКИ]</a></span>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

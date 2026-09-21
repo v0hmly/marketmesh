@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Внутренний портал — вход</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+</style>
+</helmet>
+<div style="width: 1280px; height: 880px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; padding: 72px 24px;">
+  <div style="width: 100%; max-width: 410px; display: flex; flex-direction: column; gap: 24px;">
+
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="eyebrow">Внутренний портал</span>
+      <h1 style="margin: 0; font-size: 2rem; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em;">Войдите через рабочий аккаунт.</h1>
+      <p class="lede" style="margin: 0;">Доступ выдаёт администратор.</p>
+    </div>
+
+    <form class="card auth-card" novalidate onSubmit="{{onSubmit}}" aria-busy="{{ariaBusy}}">
+
+      <sc-if value="{{showNetworkNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">Портал открыт только из корпоративной сети. Подключитесь к VPN и обновите страницу.</div>
+      </sc-if>
+
+      <sc-if value="{{showSessionNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">Сессия закрыта из-за неактивности. Войдите снова, чтобы продолжить работу.</div>
+      </sc-if>
+
+      <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">{{noticeText}}</div>
+      </sc-if>
+
+      <sc-if value="{{isSuccess}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; align-items: center; gap: 12px;" role="status">
+          <span class="loading-dot" aria-hidden="true"></span>
+          <span>Права проверены. Открываем внутренний портал…</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showFields}}" hint-placeholder-val="{{true}}">
+      <div class="field">
+        <label for="staff-email">Рабочая почта</label>
+        <input class="ctl" type="email" id="staff-email" name="email" autocomplete="username" value="{{email}}" onChange="{{onEmailChange}}" aria-invalid="{{emailInvalid}}" aria-describedby="{{emailDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <div class="field-help" id="staff-email-help">Адрес в корпоративном домене. Личную почту портал не примет.</div>
+        <sc-if value="{{showEmailError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="staff-email-error">{{emailErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <button type="submit" class="button primary wide" disabled="{{fieldsDisabled}}">
+        <span>{{submitLabel}}</span>
+        <sc-if value="{{showArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+      </button>
+      </sc-if>
+    </form>
+
+    <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Пришло приглашение в портал? <a href="StaffInvite.dc.html">Откройте его</a></p>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"demoOutcome":{"editor":"enum","default":"success","options":["success","unknownDomain","accessRevoked","idpUnavailable","serverError"],"section":"Демо: ответ сервера"},"sessionExpired":{"editor":"boolean","default":false,"section":"Демо: ответ сервера"},"outsideNetwork":{"editor":"boolean","default":false,"section":"Демо: ответ сервера"},"$preview":{"width":1280,"height":880}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      email: '',
+      attempted: false,
+      interacted: false,
+      status: 'idle',
+      serverError: null
+    };
+    this.onEmailChange = this.onEmailChange.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  getEmailError(rawEmail) {
+    const email = (rawEmail || '').trim();
+    if (!email) return 'Введите рабочую почту, чтобы продолжить.';
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) return 'Не похоже на настоящий адрес почты. Проверьте написание — например, name@example.com.';
+    return null;
+  }
+
+  onEmailChange(e) {
+    this.setState({ email: e.target.value, serverError: null });
+  }
+
+  onSubmit(e) {
+    e.preventDefault();
+    if (this.props.outsideNetwork) return;
+    if (this.state.status === 'submitting' || this.state.status === 'success') return;
+
+    const emailErr = this.getEmailError(this.state.email);
+    this.setState({ attempted: true, interacted: true, serverError: null });
+    if (emailErr) return;
+
+    this.setState({ status: 'submitting' });
+    const outcome = this.props.demoOutcome || 'success';
+
+    setTimeout(() => {
+      if (outcome === 'success') {
+        this.setState({ status: 'success' });
+      } else {
+        this.setState({ status: 'idle', serverError: outcome });
+      }
+    }, 1100);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const outsideNetwork = !!this.props.outsideNetwork;
+    const isSubmitting = s.status === 'submitting';
+    const isSuccess = s.status === 'success';
+    const fieldsDisabled = isSubmitting || isSuccess || outsideNetwork;
+
+    const serverEmailError = s.serverError === 'unknownDomain'
+      ? 'Домен этой почты не подключён к порталу. Проверьте адрес или напишите администратору.'
+      : null;
+    const emailErr = (s.attempted ? this.getEmailError(s.email) : null) || serverEmailError;
+
+    const noticeMap = {
+      accessRevoked: 'У этой учётной записи нет доступа к внутреннему порталу. Доступ выдаёт администратор — напишите ему, чтобы получить роль.',
+      idpUnavailable: 'Корпоративный вход сейчас недоступен. Попробуйте через несколько минут, а если не поможет — напишите в ИТ-поддержку.',
+      serverError: 'Не удалось подключиться к серверу. Проверьте соединение и попробуйте ещё раз.'
+    };
+
+    const emailIds = ['staff-email-help'];
+    if (emailErr) emailIds.push('staff-email-error');
+
+    return {
+      email: s.email,
+      onEmailChange: this.onEmailChange,
+      onSubmit: this.onSubmit,
+
+      showEmailError: !!emailErr,
+      emailErrorText: emailErr || '',
+      emailInvalid: emailErr ? 'true' : 'false',
+      emailDescribedBy: emailIds.join(' '),
+
+      fieldsDisabled: fieldsDisabled,
+      showArrow: !isSubmitting,
+      submitLabel: isSubmitting ? 'Перенаправляем…' : 'Продолжить через SSO',
+      showNotice: !!noticeMap[s.serverError] && !outsideNetwork,
+      noticeText: noticeMap[s.serverError] || '',
+      showNetworkNotice: outsideNetwork,
+      showSessionNotice: !!this.props.sessionExpired && !s.interacted && !outsideNetwork,
+      isSuccess: isSuccess,
+      showFields: !isSuccess,
+      ariaBusy: isSubmitting ? 'true' : 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>

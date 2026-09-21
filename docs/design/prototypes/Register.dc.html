@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Регистрация</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+</style>
+</helmet>
+<div style="width: 1280px; height: 980px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; padding: 96px 24px;">
+  <div style="width: 100%; max-width: 410px; display: flex; flex-direction: column; gap: 32px;">
+
+    <sc-if value="{{showIntro}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 3.1rem; line-height: 1.2; letter-spacing: -0.03em;">Начнём знакомство.</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.8; color: var(--text-secondary);">Заведём аккаунт, чтобы возвращаться сюда было проще.</p>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isSuccess}}" hint-placeholder-val="{{false}}">
+    <div class="card state-card">
+      <h2 style="margin: 0;">Аккаунт создан.</h2>
+      <p>Мы отправили письмо для подтверждения на {{email}}. Перейдите по ссылке в письме, чтобы войти.</p>
+      <sc-if value="{{resendSent}}" hint-placeholder-val="{{false}}">
+        <div class="notice success" role="status" style="width: 100%; box-sizing: border-box; text-align: left;">Письмо отправлено повторно.</div>
+      </sc-if>
+      <sc-if value="{{resendNotSent}}" hint-placeholder-val="{{true}}">
+        <button type="button" class="button secondary" onClick="{{onResend}}">Отправить письмо ещё раз</button>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{showForm}}" hint-placeholder-val="{{true}}">
+    <form class="card auth-card" novalidate onSubmit="{{onSubmit}}" aria-busy="{{ariaBusy}}">
+
+      <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+        <div class="notice error" role="alert">{{noticeText}}</div>
+      </sc-if>
+
+      <div class="field">
+        <label for="reg-email">Почта</label>
+        <input class="ctl" type="email" id="reg-email" name="email" autocomplete="username" value="{{email}}" onChange="{{onEmailChange}}" aria-invalid="{{emailInvalid}}" aria-describedby="{{emailDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <div class="field-help" id="reg-email-help">Используется для входа. Проверьте перед отправкой.</div>
+        <sc-if value="{{showEmailError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="reg-email-error">{{emailErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <label for="reg-password">Пароль</label>
+        <input class="ctl" type="password" id="reg-password" name="password" autocomplete="new-password" value="{{password}}" onChange="{{onPasswordChange}}" aria-invalid="{{passwordInvalid}}" aria-describedby="{{passwordDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <sc-if value="{{showPasswordRequirements}}" hint-placeholder-val="{{false}}">
+          <ul id="reg-password-requirements" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+            <sc-for list="{{passwordRequirements}}" as="req" hint-placeholder-count="5">
+              <li style="display: flex; align-items: center; gap: 8px; font-size: 0.73rem; line-height: 1.6; color: {{req.color}};">
+                <span aria-hidden="true">{{req.mark}}</span>
+                <span>{{req.label}}<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;"> — {{req.statusText}}</span></span>
+              </li>
+            </sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{showPasswordError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="reg-password-error">{{passwordErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <div class="field">
+        <label for="reg-confirm">Повторите пароль</label>
+        <input class="ctl" type="password" id="reg-confirm" name="confirmPassword" autocomplete="new-password" value="{{confirmPassword}}" onChange="{{onConfirmChange}}" aria-invalid="{{confirmInvalid}}" aria-describedby="{{confirmDescribedBy}}" disabled="{{fieldsDisabled}}">
+        <sc-if value="{{showConfirmError}}" hint-placeholder-val="{{false}}">
+          <div class="field-error" id="reg-confirm-error">{{confirmErrorText}}</div>
+        </sc-if>
+      </div>
+
+      <button type="submit" class="button primary wide" disabled="{{fieldsDisabled}}">
+        <span>{{submitLabel}}</span>
+        <sc-if value="{{showArrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+      </button>
+    </form>
+
+    <p style="margin: 0; text-align: center; font-size: 0.875rem; color: var(--text-secondary);">Уже есть аккаунт? <a href="Login.dc.html">Войти</a></p>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"demoOutcome":{"editor":"enum","default":"success","options":["success","emailTaken","serverError"],"section":"Демо: ответ сервера"},"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      attempted: false,
+      status: 'idle',
+      serverError: null,
+      resendSent: false,
+      passwordStarted: false
+    };
+    this.onEmailChange = this.onEmailChange.bind(this);
+    this.onPasswordChange = this.onPasswordChange.bind(this);
+    this.onConfirmChange = this.onConfirmChange.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+    this.onResend = this.onResend.bind(this);
+  }
+
+  getEmailError(rawEmail) {
+    const email = (rawEmail || '').trim();
+    if (!email) return 'Введите адрес почты, чтобы продолжить.';
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) return 'Не похоже на настоящий адрес почты. Проверьте написание — например, name@example.com.';
+    return null;
+  }
+
+  getPasswordChecks(password) {
+    return {
+      lengthOk: password.length >= 8 && password.length <= 64,
+      hasLower: /[a-z]/.test(password),
+      hasUpper: /[A-Z]/.test(password),
+      hasDigit: /[0-9]/.test(password),
+      hasSpecial: /[^A-Za-z0-9]/.test(password)
+    };
+  }
+
+  getPasswordError(password) {
+    if (!password) return 'Введите пароль, чтобы продолжить.';
+    if (password.length < 8) return 'Пароль слишком короткий. Нужно не менее 8 символов.';
+    if (password.length > 64) return 'Пароль слишком длинный. Не более 64 символов.';
+    const c = this.getPasswordChecks(password);
+    if (!c.hasLower || !c.hasUpper || !c.hasDigit || !c.hasSpecial) {
+      return 'Пароль не соответствует требованиям надёжности — отметьте выполненные условия ниже.';
+    }
+    return null;
+  }
+
+  getConfirmError(password, confirmPassword) {
+    if (!confirmPassword) return 'Повторите пароль, чтобы продолжить.';
+    if (confirmPassword !== password) return 'Пароли не совпадают. Введите пароль ещё раз в оба поля.';
+    return null;
+  }
+
+  onEmailChange(e) {
+    this.setState({ email: e.target.value, serverError: null });
+  }
+
+  onPasswordChange(e) {
+    const value = e.target.value;
+    this.setState({
+      password: value,
+      serverError: null,
+      passwordStarted: this.state.passwordStarted || value.length > 0
+    });
+  }
+
+  onConfirmChange(e) {
+    this.setState({ confirmPassword: e.target.value, serverError: null });
+  }
+
+  onResend() {
+    this.setState({ resendSent: true });
+  }
+
+  onSubmit(e) {
+    e.preventDefault();
+    if (this.state.status === 'submitting' || this.state.status === 'success') return;
+
+    const emailErr = this.getEmailError(this.state.email);
+    const passwordErr = this.getPasswordError(this.state.password);
+    const confirmErr = this.getConfirmError(this.state.password, this.state.confirmPassword);
+    this.setState({ attempted: true, serverError: null });
+    if (emailErr || passwordErr || confirmErr) return;
+
+    this.setState({ status: 'submitting' });
+    const outcome = this.props.demoOutcome || 'success';
+
+    setTimeout(() => {
+      if (outcome === 'success') {
+        this.setState({ status: 'success' });
+      } else if (outcome === 'emailTaken') {
+        this.setState({ status: 'idle', serverError: 'emailTaken' });
+      } else {
+        this.setState({ status: 'idle', serverError: 'serverError' });
+      }
+    }, 900);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const attempted = s.attempted;
+    const emailErrClient = attempted ? this.getEmailError(s.email) : null;
+    const passwordErr = attempted ? this.getPasswordError(s.password) : null;
+    const confirmErr = attempted ? this.getConfirmError(s.password, s.confirmPassword) : null;
+    const isSubmitting = s.status === 'submitting';
+    const isSuccess = s.status === 'success';
+    const fieldsDisabled = isSubmitting || isSuccess;
+
+    const emailTaken = s.serverError === 'emailTaken';
+    const emailErr = emailErrClient || (emailTaken ? 'Эта почта уже зарегистрирована. Войдите или восстановите пароль.' : null);
+
+    const noticeText = s.serverError === 'serverError'
+      ? 'Не удалось создать аккаунт. Проверьте соединение и попробуйте ещё раз.'
+      : '';
+    const showNotice = s.serverError === 'serverError';
+
+    let submitLabel = isSubmitting ? 'Создаём аккаунт…' : 'Зарегистрироваться';
+
+    const checks = this.getPasswordChecks(s.password);
+
+    const reqDefs = [
+      { label: 'От 8 до 64 символов', ok: checks.lengthOk },
+      { label: 'Строчная буква (a-z)', ok: checks.hasLower },
+      { label: 'Заглавная буква (A-Z)', ok: checks.hasUpper },
+      { label: 'Цифра (0-9)', ok: checks.hasDigit },
+      { label: 'Специальный символ (например, !%#)', ok: checks.hasSpecial }
+    ];
+    const passwordRequirements = reqDefs.map(function (r) {
+      return {
+        label: r.label,
+        color: r.ok ? 'var(--on-surface-success)' : 'var(--text-secondary)',
+        mark: r.ok ? '✓' : '·',
+        statusText: r.ok ? 'выполнено' : 'ещё не выполнено'
+      };
+    });
+
+    const emailIds = [];
+    if (emailErr) emailIds.push('reg-email-error'); else emailIds.push('reg-email-help');
+    const passwordIds = [];
+    if (s.passwordStarted) passwordIds.push('reg-password-requirements');
+    if (passwordErr) passwordIds.push('reg-password-error');
+    const confirmIds = [];
+    if (confirmErr) confirmIds.push('reg-confirm-error');
+
+    return {
+      email: s.email,
+      password: s.password,
+      confirmPassword: s.confirmPassword,
+      onEmailChange: this.onEmailChange,
+      onPasswordChange: this.onPasswordChange,
+      onConfirmChange: this.onConfirmChange,
+      onSubmit: this.onSubmit,
+      onResend: this.onResend,
+
+      showEmailError: !!emailErr,
+      emailErrorText: emailErr || '',
+      showPasswordError: !!passwordErr,
+      passwordErrorText: passwordErr || '',
+      showConfirmError: !!confirmErr,
+      confirmErrorText: confirmErr || '',
+
+      emailInvalid: emailErr ? 'true' : 'false',
+      passwordInvalid: passwordErr ? 'true' : 'false',
+      confirmInvalid: confirmErr ? 'true' : 'false',
+
+      emailDescribedBy: emailIds.join(' '),
+      passwordDescribedBy: passwordIds.join(' '),
+      confirmDescribedBy: confirmIds.join(' '),
+
+      showPasswordRequirements: s.passwordStarted,
+      passwordRequirements: passwordRequirements,
+
+      fieldsDisabled: fieldsDisabled,
+      showArrow: !isSubmitting,
+      submitLabel: submitLabel,
+
+      showNotice: showNotice,
+      noticeText: noticeText,
+
+      isSuccess: isSuccess,
+      showForm: !isSuccess,
+      showIntro: !isSuccess,
+      resendSent: s.resendSent,
+      resendNotSent: !s.resendSent,
+      ariaBusy: isSubmitting ? 'true' : 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>

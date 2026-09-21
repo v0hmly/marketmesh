@@ -1,0 +1,341 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Login.dc.html": {
+      "h": 980,
+      "is_interactive": true,
+      "page": "buyer",
+      "title": "Вход",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "Mark.dc.html": {
+      "h": 720,
+      "page": "brand",
+      "title": "Знак проекта",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "Register.dc.html": {
+      "h": 980,
+      "is_interactive": true,
+      "page": "buyer",
+      "title": "Регистрация",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "SellerApply.dc.html": {
+      "h": 1180,
+      "is_interactive": true,
+      "page": "seller",
+      "title": "Заявка на подключение",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "SellerLogin.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "seller",
+      "title": "Вход в портал",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "StaffInvite.dc.html": {
+      "h": 880,
+      "is_interactive": true,
+      "page": "staff",
+      "title": "Приглашение",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "StaffLogin.dc.html": {
+      "h": 880,
+      "is_interactive": true,
+      "page": "staff",
+      "title": "Вход через SSO",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "EmailVerify.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Подтверждение почты",
+      "w": 760,
+      "x": 0,
+      "y": 0
+    },
+    "EmailCode.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Код для входа",
+      "w": 760,
+      "x": 840,
+      "y": 0
+    },
+    "EmailNewLogin.dc.html": {
+      "h": 1040,
+      "page": "mail",
+      "title": "Вход с нового устройства",
+      "w": 760,
+      "x": 1680,
+      "y": 0
+    },
+    "EmailPasswordReset.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Сброс пароля",
+      "w": 760,
+      "x": 0,
+      "y": 1160
+    },
+    "EmailPasswordChanged.dc.html": {
+      "h": 920,
+      "page": "mail",
+      "title": "Пароль изменён",
+      "w": 760,
+      "x": 840,
+      "y": 1160
+    },
+    "EmailAccountLocked.dc.html": {
+      "h": 960,
+      "page": "mail",
+      "title": "Вход заблокирован",
+      "w": 760,
+      "x": 1680,
+      "y": 1160
+    },
+    "EmailEmailChangeConfirm.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Смена почты · новый адрес",
+      "w": 760,
+      "x": 0,
+      "y": 2240
+    },
+    "EmailEmailChangeAlert.dc.html": {
+      "h": 960,
+      "page": "mail",
+      "title": "Смена почты · старый адрес",
+      "w": 760,
+      "x": 840,
+      "y": 2240
+    },
+    "EmailSessionsClosed.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Сессии закрыты",
+      "w": 760,
+      "x": 1680,
+      "y": 2240
+    },
+    "EmailTwoFactorOn.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Подтверждение входа включено",
+      "w": 760,
+      "x": 0,
+      "y": 3320
+    },
+    "EmailTwoFactorOff.dc.html": {
+      "h": 920,
+      "page": "mail",
+      "title": "Подтверждение входа отключено",
+      "w": 760,
+      "x": 840,
+      "y": 3320
+    },
+    "EmailBackupCodes.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Резервные коды",
+      "w": 760,
+      "x": 1680,
+      "y": 3320
+    },
+    "EmailSellerDecision.dc.html": {
+      "h": 960,
+      "page": "mail",
+      "title": "Решение по заявке",
+      "w": 760,
+      "x": 0,
+      "y": 4360
+    },
+    "EmailStaffInvite.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Приглашение сотруднику",
+      "w": 760,
+      "x": 840,
+      "y": 4360
+    },
+    "EmailAccountDeleted.dc.html": {
+      "h": 880,
+      "page": "mail",
+      "title": "Удаление аккаунта",
+      "w": 760,
+      "x": 1680,
+      "y": 4360
+    },
+    "AccountOrders.dc.html": {
+      "h": 1400,
+      "is_interactive": true,
+      "page": "buyer-account",
+      "title": "Заказы",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "AccountFavorites.dc.html": {
+      "h": 1200,
+      "is_interactive": true,
+      "page": "buyer-account",
+      "title": "Избранное",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "AccountReviews.dc.html": {
+      "h": 1320,
+      "is_interactive": true,
+      "page": "buyer-account",
+      "title": "Отзывы",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "BuyerAddresses.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "page": "buyer-account",
+      "title": "Адреса доставки",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "MarketMeshId.dc.html": {
+      "h": 1900,
+      "is_interactive": true,
+      "page": "buyer-account",
+      "title": "MarketMesh ID",
+      "w": 1440,
+      "x": 6080,
+      "y": 0
+    },
+    "SellerDashboard.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "page": "seller-account",
+      "title": "Обзор",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "SellerProducts.dc.html": {
+      "h": 1180,
+      "is_interactive": true,
+      "page": "seller-account",
+      "title": "Изделия",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "SellerOrders.dc.html": {
+      "h": 1160,
+      "is_interactive": true,
+      "page": "seller-account",
+      "title": "Заказы",
+      "w": 1280,
+      "x": 2720,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-18T12:55:12Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/artifact/J3bVRaYpJ6DhXPZs7HsW8H",
+      "copiedAt": "2026-09-18T12:55:12Z",
+      "namespace": "marketmesh",
+      "title": "MarketMesh",
+      "version": null
+    }
+  ],
+  "launch": {
+    "page": "buyer",
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Login.dc.html",
+    "Register.dc.html",
+    "SellerLogin.dc.html",
+    "SellerApply.dc.html",
+    "StaffLogin.dc.html",
+    "StaffInvite.dc.html",
+    "Mark.dc.html",
+    "EmailVerify.dc.html",
+    "EmailCode.dc.html",
+    "EmailNewLogin.dc.html",
+    "EmailPasswordReset.dc.html",
+    "EmailPasswordChanged.dc.html",
+    "EmailAccountLocked.dc.html",
+    "EmailEmailChangeConfirm.dc.html",
+    "EmailEmailChangeAlert.dc.html",
+    "EmailSessionsClosed.dc.html",
+    "EmailTwoFactorOn.dc.html",
+    "EmailTwoFactorOff.dc.html",
+    "EmailBackupCodes.dc.html",
+    "EmailSellerDecision.dc.html",
+    "EmailStaffInvite.dc.html",
+    "EmailAccountDeleted.dc.html",
+    "AccountOrders.dc.html",
+    "AccountFavorites.dc.html",
+    "AccountReviews.dc.html",
+    "BuyerAddresses.dc.html",
+    "MarketMeshId.dc.html",
+    "SellerDashboard.dc.html",
+    "SellerProducts.dc.html",
+    "SellerOrders.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "buyer",
+      "name": "Покупатель"
+    },
+    {
+      "id": "seller",
+      "name": "Продавец"
+    },
+    {
+      "id": "staff",
+      "name": "Сотрудники"
+    },
+    {
+      "id": "brand",
+      "name": "Иконка"
+    },
+    {
+      "id": "mail",
+      "name": "Письма"
+    },
+    {
+      "id": "buyer-account",
+      "name": "Кабинет покупателя"
+    },
+    {
+      "id": "seller-account",
+      "name": "Кабинет продавца"
+    }
+  ],
+  "title": "Вход и регистрация"
+}

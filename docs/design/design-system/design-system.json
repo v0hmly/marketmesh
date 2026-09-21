@@ -1,0 +1,14 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": {"v": 1, "at": "2026-09-18T12:24:44Z"},
+  "title": "MarketMesh",
+  "namespace": "MarketMesh",
+  "libraries": [],
+  "sections": {},
+  "groups": [],
+  "assetGroups": {},
+  "blobs": {},
+  "docs": {"readme": "project/README.md", "sections": []},
+  "lastChange": {"by": "John", "via": "Cowork", "at": "2026-09-18T13:05:00Z", "note": "Accessibility and architecture pass: control borders and the pending dot raised to 3:1, two-tone focus ring, unified role/on- token naming, dark-mode collapses separated, type scale rebalanced, AddressRow and Dialog added."}
+}

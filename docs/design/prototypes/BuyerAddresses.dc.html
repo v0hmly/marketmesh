@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет — адреса доставки</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button, a.side-link { text-decoration: none; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 1240px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; gap: 40px; padding: 44px 56px;">
+
+  <aside style="width: 268px; flex-shrink: 0; display: flex; flex-direction: column; gap: 28px;">
+    <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
+
+    <nav aria-label="Разделы личного кабинета" style="display: flex; flex-direction: column; gap: 2px;">
+      <a class="side-link" href="AccountOrders.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Заказы<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">4</span></a>
+      <a class="side-link" href="AccountFavorites.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Избранное<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">6</span></a>
+      <a class="side-link" href="AccountReviews.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">Отзывы<span style="font-size: 0.73rem; color: var(--text-secondary); font-variant-numeric: tabular-nums;">2</span></a>
+      <a class="side-link" href="BuyerAddresses.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; font-weight: 600; color: var(--text-link); background: var(--surface-tint);">Адреса доставки</a>
+      <a class="side-link" href="MarketMeshId.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm); font-size: 0.875rem; color: var(--text-primary);">MarketMesh ID</a>
+    </nav>
+
+    <div class="field">
+      <label for="theme-pick">Тема оформления</label>
+      <span class="select-wrap">
+        <select class="ctl" id="theme-pick" value="{{theme}}" onChange="{{onThemeChange}}">
+          <option value="system">Системная</option>
+          <option value="light">Светлая</option>
+          <option value="dark">Тёмная</option>
+        </select>
+      </span>
+    </div>
+
+    <button type="button" class="button text-button" style="align-self: flex-start;" onClick="{{onSignOut}}">Выйти из аккаунта</button>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+
+    <div>
+      <h1 style="margin: 0 0 10px; font-family: var(--font-serif); font-weight: 400; font-size: 2.6rem; line-height: 1.2; letter-spacing: -0.04em;">Адреса доставки</h1>
+      <p class="lede" style="margin: 0;">Сохраните удобные адреса, чтобы они были под рукой при оформлении заказа.</p>
+    </div>
+
+    <sc-if value="{{showFeedback}}" hint-placeholder-val="{{false}}">
+      <div class="notice success" role="status">{{feedbackText}}</div>
+    </sc-if>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
+      <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">{{countText}} Контакты доступны только вам.</p>
+      <button type="button" class="button primary" onClick="{{onAdd}}" disabled="{{addDisabled}}">
+        <span>Добавить адрес</span>
+        <span aria-hidden="true">↗</span>
+      </button>
+    </div>
+
+    <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+      <p class="card" style="margin: 0; padding: 30px; font-size: 0.875rem; color: var(--text-secondary);">Пока нет сохранённых адресов. Первый адрес станет основным.</p>
+    </sc-if>
+
+    <ul class="address-list" aria-label="Сохранённые адреса" style="margin: 0; padding: 0; list-style: none;">
+      <sc-for list="{{addresses}}" as="address" hint-placeholder-count="2">
+        <li class="address-row">
+          <div class="address-head">
+            <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600;">{{address.recipient}}</h2>
+            <sc-if value="{{address.isDefault}}" hint-placeholder-val="{{true}}">
+              <span class="draft-badge">По умолчанию</span>
+            </sc-if>
+          </div>
+          <address>{{address.phone}}<br>{{address.line}}</address>
+          <sc-if value="{{address.hasComment}}" hint-placeholder-val="{{false}}">
+            <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">{{address.comment}}</p>
+          </sc-if>
+          <div class="address-actions">
+            <button type="button" class="button secondary" onClick="{{address.onEdit}}" disabled="{{rowsDisabled}}">Изменить</button>
+            <sc-if value="{{address.canMakeDefault}}" hint-placeholder-val="{{true}}">
+              <button type="button" class="button text-button" onClick="{{address.onMakeDefault}}" disabled="{{rowsDisabled}}">Использовать по умолчанию</button>
+            </sc-if>
+            <button type="button" class="button text-button" onClick="{{address.onDelete}}" disabled="{{rowsDisabled}}">Удалить</button>
+          </div>
+        </li>
+      </sc-for>
+    </ul>
+
+    <sc-if value="{{isDeleting}}" hint-placeholder-val="{{false}}">
+      <div class="reconcile-panel" aria-labelledby="delete-address-title">
+        <h2 id="delete-address-title" style="margin: 0; font-size: 1.15rem; font-weight: 600;">Удалить адрес?</h2>
+        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7;">{{deletingSummary}}</p>
+        <sc-if value="{{deletingIsDefault}}" hint-placeholder-val="{{false}}">
+          <p style="margin: 0; font-size: 0.875rem; line-height: 1.7;">Другой основной адрес не будет выбран автоматически.</p>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+          <button type="button" class="button secondary" onClick="{{onCancelDelete}}">Отменить удаление</button>
+          <button type="button" class="button primary" onClick="{{onConfirmDelete}}">Подтвердить удаление</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isEditing}}" hint-placeholder-val="{{false}}">
+      <div class="card" style="padding: 32px; display: flex; flex-direction: column; gap: 24px;">
+        <div>
+          <h2 style="margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.035em;">{{editorTitle}}</h2>
+          <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Обязательные поля отмечены звёздочкой. Телефон нужен для получения, он не меняет логин.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px;">
+          <div class="field">
+            <label for="addr-recipient">Получатель<span aria-hidden="true"> *</span></label>
+            <input class="ctl" type="text" id="addr-recipient" maxlength="120" value="{{draftRecipient}}" onChange="{{onRecipientChange}}" aria-describedby="addr-recipient-help">
+            <div class="field-help" id="addr-recipient-help">До 120 символов.</div>
+          </div>
+          <div class="field">
+            <label for="addr-phone">Телефон<span aria-hidden="true"> *</span></label>
+            <input class="ctl" type="tel" id="addr-phone" maxlength="32" value="{{draftPhone}}" onChange="{{onPhoneChange}}" aria-describedby="addr-phone-help">
+            <div class="field-help" id="addr-phone-help">7–15 цифр.</div>
+          </div>
+          <div class="field">
+            <label for="addr-country">Страна<span aria-hidden="true"> *</span></label>
+            <input class="ctl" type="text" id="addr-country" maxlength="80" value="{{draftCountry}}" onChange="{{onCountryChange}}" aria-describedby="addr-country-help">
+            <div class="field-help" id="addr-country-help">Обычное название.</div>
+          </div>
+          <div class="field">
+            <label for="addr-postal">Почтовый индекс</label>
+            <input class="ctl" type="text" id="addr-postal" maxlength="20" value="{{draftPostal}}" onChange="{{onPostalChange}}" aria-describedby="addr-postal-help">
+            <div class="field-help" id="addr-postal-help">Необязательно.</div>
+          </div>
+          <div class="field">
+            <label for="addr-city">Город<span aria-hidden="true"> *</span></label>
+            <input class="ctl" type="text" id="addr-city" maxlength="120" value="{{draftCity}}" onChange="{{onCityChange}}" aria-describedby="addr-city-help">
+            <div class="field-help" id="addr-city-help">До 120 символов.</div>
+          </div>
+          <div class="field">
+            <label for="addr-apartment">Квартира или помещение</label>
+            <input class="ctl" type="text" id="addr-apartment" maxlength="40" value="{{draftApartment}}" onChange="{{onApartmentChange}}" aria-describedby="addr-apartment-help">
+            <div class="field-help" id="addr-apartment-help">Необязательно.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="addr-street">Улица и дом<span aria-hidden="true"> *</span></label>
+          <input class="ctl" type="text" id="addr-street" maxlength="240" value="{{draftStreet}}" onChange="{{onStreetChange}}" aria-describedby="addr-street-help">
+          <div class="field-help" id="addr-street-help">Одним полем, до 240 символов.</div>
+        </div>
+
+        <div class="field">
+          <div class="label-line">
+            <label for="addr-comment">Комментарий</label>
+            <span class="field-count">{{commentCountText}}</span>
+          </div>
+          <textarea class="ctl" id="addr-comment" rows="3" maxlength="500" value="{{draftComment}}" onChange="{{onCommentChange}}" aria-describedby="addr-comment-help"></textarea>
+          <div class="field-help" id="addr-comment-help">Код домофона, ориентир, удобное время — необязательно.</div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+          <span class="field-help">{{editorHint}}</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+            <button type="button" class="button secondary" onClick="{{onCancelEdit}}" disabled="{{savingAddress}}">Отменить</button>
+            <button type="button" class="button primary" onClick="{{onSaveAddress}}" disabled="{{savingAddress}}">
+              <span>{{saveAddressLabel}}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      theme: 'system',
+      addresses: [
+        {
+          id: 'a1', recipient: 'Вера Ильина', phone: '+7 921 000-11-22', country: 'Россия', postal: '191186',
+          city: 'Санкт-Петербург', street: 'набережная реки Мойки, 12', apartment: 'кв. 5',
+          comment: 'Домофон не работает, позвоните за пятнадцать минут.', isDefault: true
+        },
+        {
+          id: 'a2', recipient: 'Илья Ильин', phone: '+7 921 000-33-44', country: 'Россия', postal: '603000',
+          city: 'Нижний Новгород', street: 'улица Рождественская, 24', apartment: '', comment: '', isDefault: false
+        }
+      ],
+      editingId: null,
+      creating: false,
+      deletingId: null,
+      draft: null,
+      savingAddress: false,
+      feedback: ''
+    };
+    this.onAdd = this.onAdd.bind(this);
+    this.onCancelEdit = this.onCancelEdit.bind(this);
+    this.onSaveAddress = this.onSaveAddress.bind(this);
+    this.onCancelDelete = this.onCancelDelete.bind(this);
+    this.onConfirmDelete = this.onConfirmDelete.bind(this);
+    this.onThemeChange = this.onThemeChange.bind(this);
+    this.onSignOut = this.onSignOut.bind(this);
+    this.onRecipientChange = this.field('recipient');
+    this.onPhoneChange = this.field('phone');
+    this.onCountryChange = this.field('country');
+    this.onPostalChange = this.field('postal');
+    this.onCityChange = this.field('city');
+    this.onStreetChange = this.field('street');
+    this.onApartmentChange = this.field('apartment');
+    this.onCommentChange = this.field('comment');
+  }
+
+  field(key) {
+    return (e) => {
+      const draft = Object.assign({}, this.state.draft);
+      draft[key] = e.target.value;
+      this.setState({ draft: draft });
+    };
+  }
+
+  emptyDraft() {
+    return { id: null, recipient: '', phone: '', country: '', postal: '', city: '', street: '', apartment: '', comment: '', isDefault: false };
+  }
+
+  onThemeChange(e) {
+    this.setState({ theme: e.target.value, feedback: 'Тема сохранена и применится на всех ваших устройствах.' });
+  }
+
+  onSignOut() {
+    this.setState({ feedback: 'Сеанс на этом устройстве завершён.' });
+  }
+
+  onAdd() {
+    this.setState({ creating: true, editingId: null, draft: this.emptyDraft(), feedback: '' });
+  }
+
+  onCancelEdit() {
+    this.setState({ creating: false, editingId: null, draft: null });
+  }
+
+  onSaveAddress() {
+    if (this.state.savingAddress) return;
+    this.setState({ savingAddress: true });
+    setTimeout(() => {
+      const draft = this.state.draft;
+      const list = this.state.addresses.slice();
+      if (this.state.editingId) {
+        const i = list.findIndex((a) => a.id === this.state.editingId);
+        if (i >= 0) list[i] = Object.assign({}, list[i], draft, { id: list[i].id, isDefault: list[i].isDefault });
+      } else {
+        const isFirst = list.length === 0;
+        list.push(Object.assign({}, draft, { id: 'a' + Date.now(), isDefault: isFirst }));
+      }
+      this.setState({
+        addresses: list,
+        savingAddress: false,
+        creating: false,
+        editingId: null,
+        draft: null,
+        feedback: this.state.editingId ? 'Адрес обновлён.' : 'Адрес сохранён. Он появился в списке.'
+      });
+    }, 900);
+  }
+
+  onConfirmDelete() {
+    this.setState({
+      addresses: this.state.addresses.filter((a) => a.id !== this.state.deletingId),
+      deletingId: null,
+      feedback: 'Адрес удалён. Основной адрес выбирается вручную.'
+    });
+  }
+
+  onCancelDelete() {
+    this.setState({ deletingId: null });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const busy = s.savingAddress;
+    const editing = s.creating || !!s.editingId;
+    const deleting = s.addresses.find((a) => a.id === s.deletingId) || null;
+
+    const addresses = s.addresses.map((a) => ({
+      recipient: a.recipient,
+      phone: a.phone,
+      line: [a.country, a.postal, a.city, a.street, a.apartment].filter(Boolean).join(', '),
+      comment: a.comment,
+      hasComment: !!a.comment,
+      isDefault: a.isDefault,
+      canMakeDefault: !a.isDefault,
+      onEdit: () => this.setState({ editingId: a.id, creating: false, draft: Object.assign({}, a), feedback: '' }),
+      onMakeDefault: () => this.setState({
+        addresses: s.addresses.map((x) => Object.assign({}, x, { isDefault: x.id === a.id })),
+        feedback: 'Основной адрес изменён.'
+      }),
+      onDelete: () => this.setState({ deletingId: a.id, feedback: '' })
+    }));
+
+    const draft = s.draft || this.emptyDraft();
+
+    return {
+      theme: s.theme,
+      onThemeChange: this.onThemeChange,
+      onSignOut: this.onSignOut,
+
+      addresses: addresses,
+      countText: s.addresses.length + ' / 20 адресов.',
+      isEmpty: s.addresses.length === 0,
+
+      onAdd: this.onAdd,
+      addDisabled: editing || !!deleting || s.addresses.length >= 20,
+      rowsDisabled: editing || !!deleting || busy,
+
+      showFeedback: !!s.feedback,
+      feedbackText: s.feedback,
+
+      isDeleting: !!deleting,
+      deletingIsDefault: deleting ? deleting.isDefault : false,
+      deletingSummary: deleting ? deleting.recipient + ' — ' + deleting.city + ', ' + deleting.street : '',
+      onCancelDelete: this.onCancelDelete,
+      onConfirmDelete: this.onConfirmDelete,
+
+      isEditing: editing,
+      editorTitle: s.editingId ? 'Изменить адрес' : 'Новый адрес',
+      editorHint: s.editingId ? 'Есть несохранённые изменения' : 'Проверьте адрес перед сохранением',
+      draftRecipient: draft.recipient,
+      draftPhone: draft.phone,
+      draftCountry: draft.country,
+      draftPostal: draft.postal,
+      draftCity: draft.city,
+      draftStreet: draft.street,
+      draftApartment: draft.apartment,
+      draftComment: draft.comment,
+      commentCountText: (draft.comment || '').length + ' / 500',
+      onRecipientChange: this.onRecipientChange,
+      onPhoneChange: this.onPhoneChange,
+      onCountryChange: this.onCountryChange,
+      onPostalChange: this.onPostalChange,
+      onCityChange: this.onCityChange,
+      onStreetChange: this.onStreetChange,
+      onApartmentChange: this.onApartmentChange,
+      onCommentChange: this.onCommentChange,
+      onCancelEdit: this.onCancelEdit,
+      onSaveAddress: this.onSaveAddress,
+      savingAddress: busy,
+      saveAddressLabel: busy ? 'Сохраняем…' : 'Сохранить адрес'
+    };
+  }
+}
+</script>
+</body>
+</html>
