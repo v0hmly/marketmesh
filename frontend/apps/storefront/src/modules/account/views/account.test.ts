@@ -17,6 +17,12 @@ const profile = (overrides: Partial<Profile> = {}): Profile => ({
   version: 7n,
   createdAtUnix: 1n,
   updatedAtUnix: 2n,
+  lastName: '',
+  birthDate: '',
+  gender: 0,
+  phone: '',
+  city: '',
+  showAge: false,
   ...overrides,
 });
 function fixture(initial: SessionState['status'] = 'authenticated') {

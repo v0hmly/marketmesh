@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package seller.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/seller/v1;sellerv1";
+
+// SellerService exposes the seller application and the caller's own shop state.
+// Sign-in itself uses auth.v1 AuthService: StartLogin/CompleteLogin with the
+// mandatory emailed code; the portal then reads the shop status here.
+service SellerService {
+  // SubmitApplication registers a shop application without disclosing whether
+  // the email, shop name, or INN are already taken.
+  rpc SubmitApplication(SubmitApplicationRequest) returns (SubmitApplicationResponse);
+  // GetMyShop returns the authenticated seller's shop with its moderation status.
+  rpc GetMyShop(GetMyShopRequest) returns (GetMyShopResponse);
+}
+
+// SubmitApplicationRequest carries the application; secrets must not be logged or traced.
+message SubmitApplicationRequest {
+  // Email is the case-insensitive work email and the future portal login.
+  string email = 1;
+  // Password is the raw secret and must not be persisted, logged, or traced.
+  bytes password = 2;
+  // ShopName is the public shop name, at most 80 Unicode characters after trimming.
+  string shop_name = 3;
+  // Inn is the seller's 10- or 12-digit tax identifier.
+  string inn = 4;
+}
+
+// SubmitApplicationResponse deliberately contains no uniqueness signal.
+// Conflicts surface as FailedPrecondition with ErrorInfo domain "marketmesh.seller"
+// and one of the reasons "EMAIL_TAKEN", "APPLICATION_PENDING", "INN_TAKEN",
+// "NAME_TAKEN"; the neutral success answer is identical for a fresh application.
+message SubmitApplicationResponse {}
+
+// ShopStatus is the closed set of moderation states of a shop.
+enum ShopStatus {
+  // SHOP_STATUS_UNSPECIFIED is invalid in stored state and responses.
+  SHOP_STATUS_UNSPECIFIED = 0;
+  // SHOP_STATUS_PENDING awaits moderation; the portal shows a waiting state.
+  SHOP_STATUS_PENDING = 1;
+  // SHOP_STATUS_APPROVED opens the seller portal.
+  SHOP_STATUS_APPROVED = 2;
+  // SHOP_STATUS_REJECTED carries RejectReason and FixInstructions for a resubmission.
+  SHOP_STATUS_REJECTED = 3;
+  // SHOP_STATUS_BLOCKED closes the portal until the block is lifted.
+  SHOP_STATUS_BLOCKED = 4;
+}
+
+// Shop contains the seller's own shop data; it is private and never publicly cached.
+message Shop {
+  // ShopId is a nonzero 16-byte server-generated identifier.
+  bytes shop_id = 1;
+  // ShopName is the current public shop name.
+  string shop_name = 2;
+  // Status is the current moderation state.
+  ShopStatus status = 3;
+  // RejectReason is set only for SHOP_STATUS_REJECTED.
+  string reject_reason = 4;
+  // FixInstructions tells what to correct before resubmitting; only for SHOP_STATUS_REJECTED.
+  string fix_instructions = 5;
+  // CreatedAtUnix is the application time in whole Unix seconds.
+  int64 created_at_unix = 6;
+}
+
+// GetMyShopRequest has no caller-selected identity; the session selects the seller.
+message GetMyShopRequest {}
+
+// GetMyShopResponse carries the caller's own shop; a seller without any
+// application yields NotFound with ErrorInfo reason "SHOP_NOT_FOUND".
+message GetMyShopResponse {
+  // Shop is the authenticated seller's shop snapshot.
+  Shop shop = 1;
+}

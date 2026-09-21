@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file auth/v1/auth.proto.
  */
 export const file_auth_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiQgoaUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSEgoKaWRlbnRpZmllchgBIAEoCRIQCghwYXNzd29yZBgCIAEoDCIdChtSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2UiNAoMTG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiIwoNTG9naW5SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMIhcKFVJlZnJlc2hTZXNzaW9uUmVxdWVzdCIYChZSZWZyZXNoU2Vzc2lvblJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UiEgoQTG9nb3V0QWxsUmVxdWVzdCITChFMb2dvdXRBbGxSZXNwb25zZSJICg5Ccm93c2VyQ29udGV4dBIOCgZjb29raWUYASADKAkSDgoGb3JpZ2luGAIgAygJEhYKDnNlY19mZXRjaF9zaXRlGAMgAygJIoMBCiFCcm93c2VyUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSNAoHcmVxdWVzdBgBIAEoCzIjLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQicAoiQnJvd3NlclJlZ2lzdGVyQ3JlZGVudGlhbHNSZXNwb25zZRI2CghyZXNwb25zZRgBIAEoCzIkLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEhIKCnNldF9jb29raWUYAiADKAkiZwoTQnJvd3NlckxvZ2luUmVxdWVzdBImCgdyZXF1ZXN0GAEgASgLMhUuYXV0aC52MS5Mb2dpblJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiVAoUQnJvd3NlckxvZ2luUmVzcG9uc2USKAoIcmVzcG9uc2UYASABKAsyFi5hdXRoLnYxLkxvZ2luUmVzcG9uc2USEgoKc2V0X2Nvb2tpZRgCIAMoCSJ5ChxCcm93c2VyUmVmcmVzaFNlc3Npb25SZXF1ZXN0Ei8KB3JlcXVlc3QYASABKAsyHi5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJmCh1Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXNwb25zZRIxCghyZXNwb25zZRgBIAEoCzIfLmF1dGgudjEuUmVmcmVzaFNlc3Npb25SZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJImkKFEJyb3dzZXJMb2dvdXRSZXF1ZXN0EicKB3JlcXVlc3QYASABKAsyFi5hdXRoLnYxLkxvZ291dFJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiVgoVQnJvd3NlckxvZ291dFJlc3BvbnNlEikKCHJlc3BvbnNlGAEgASgLMhcuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJIm8KF0Jyb3dzZXJMb2dvdXRBbGxSZXF1ZXN0EioKB3JlcXVlc3QYASABKAsyGS5hdXRoLnYxLkxvZ291dEFsbFJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiXAoYQnJvd3NlckxvZ291dEFsbFJlc3BvbnNlEiwKCHJlc3BvbnNlGAEgASgLMhouYXV0aC52MS5Mb2dvdXRBbGxSZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJMvkCCgtBdXRoU2VydmljZRJgChNSZWdpc3RlckNyZWRlbnRpYWxzEiMuYXV0aC52MS5SZWdpc3RlckNyZWRlbnRpYWxzUmVxdWVzdBokLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEjYKBUxvZ2luEhUuYXV0aC52MS5Mb2dpblJlcXVlc3QaFi5hdXRoLnYxLkxvZ2luUmVzcG9uc2USUQoOUmVmcmVzaFNlc3Npb24SHi5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVxdWVzdBofLmF1dGgudjEuUmVmcmVzaFNlc3Npb25SZXNwb25zZRI5CgZMb2dvdXQSFi5hdXRoLnYxLkxvZ291dFJlcXVlc3QaFy5hdXRoLnYxLkxvZ291dFJlc3BvbnNlEkIKCUxvZ291dEFsbBIZLmF1dGgudjEuTG9nb3V0QWxsUmVxdWVzdBoaLmF1dGgudjEuTG9nb3V0QWxsUmVzcG9uc2Uy6QMKEkF1dGhCcm93c2VyU2VydmljZRJ1ChpCcm93c2VyUmVnaXN0ZXJDcmVkZW50aWFscxIqLmF1dGgudjEuQnJvd3NlclJlZ2lzdGVyQ3JlZGVudGlhbHNSZXF1ZXN0GisuYXV0aC52MS5Ccm93c2VyUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEksKDEJyb3dzZXJMb2dpbhIcLmF1dGgudjEuQnJvd3NlckxvZ2luUmVxdWVzdBodLmF1dGgudjEuQnJvd3NlckxvZ2luUmVzcG9uc2USZgoVQnJvd3NlclJlZnJlc2hTZXNzaW9uEiUuYXV0aC52MS5Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXF1ZXN0GiYuYXV0aC52MS5Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXNwb25zZRJOCg1Ccm93c2VyTG9nb3V0Eh0uYXV0aC52MS5Ccm93c2VyTG9nb3V0UmVxdWVzdBoeLmF1dGgudjEuQnJvd3NlckxvZ291dFJlc3BvbnNlElcKEEJyb3dzZXJMb2dvdXRBbGwSIC5hdXRoLnYxLkJyb3dzZXJMb2dvdXRBbGxSZXF1ZXN0GiEuYXV0aC52MS5Ccm93c2VyTG9nb3V0QWxsUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL2F1dGgvdjE7YXV0aHYxYgZwcm90bzM");
+  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiQgoaUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSEgoKaWRlbnRpZmllchgBIAEoCRIQCghwYXNzd29yZBgCIAEoDCIdChtSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2UiNAoMTG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiIwoNTG9naW5SZXNwb25zZRISCgpzdWJqZWN0X2lkGAEgASgMIhcKFVJlZnJlc2hTZXNzaW9uUmVxdWVzdCIYChZSZWZyZXNoU2Vzc2lvblJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UiEgoQTG9nb3V0QWxsUmVxdWVzdCITChFMb2dvdXRBbGxSZXNwb25zZSJICg5Ccm93c2VyQ29udGV4dBIOCgZjb29raWUYASADKAkSDgoGb3JpZ2luGAIgAygJEhYKDnNlY19mZXRjaF9zaXRlGAMgAygJIoMBCiFCcm93c2VyUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSNAoHcmVxdWVzdBgBIAEoCzIjLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQicAoiQnJvd3NlclJlZ2lzdGVyQ3JlZGVudGlhbHNSZXNwb25zZRI2CghyZXNwb25zZRgBIAEoCzIkLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1Jlc3BvbnNlEhIKCnNldF9jb29raWUYAiADKAkiZwoTQnJvd3NlckxvZ2luUmVxdWVzdBImCgdyZXF1ZXN0GAEgASgLMhUuYXV0aC52MS5Mb2dpblJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiVAoUQnJvd3NlckxvZ2luUmVzcG9uc2USKAoIcmVzcG9uc2UYASABKAsyFi5hdXRoLnYxLkxvZ2luUmVzcG9uc2USEgoKc2V0X2Nvb2tpZRgCIAMoCSJ5ChxCcm93c2VyUmVmcmVzaFNlc3Npb25SZXF1ZXN0Ei8KB3JlcXVlc3QYASABKAsyHi5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJmCh1Ccm93c2VyUmVmcmVzaFNlc3Npb25SZXNwb25zZRIxCghyZXNwb25zZRgBIAEoCzIfLmF1dGgudjEuUmVmcmVzaFNlc3Npb25SZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJImkKFEJyb3dzZXJMb2dvdXRSZXF1ZXN0EicKB3JlcXVlc3QYASABKAsyFi5hdXRoLnYxLkxvZ291dFJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiVgoVQnJvd3NlckxvZ291dFJlc3BvbnNlEikKCHJlc3BvbnNlGAEgASgLMhcuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJIm8KF0Jyb3dzZXJMb2dvdXRBbGxSZXF1ZXN0EioKB3JlcXVlc3QYASABKAsyGS5hdXRoLnYxLkxvZ291dEFsbFJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQiXAoYQnJvd3NlckxvZ291dEFsbFJlc3BvbnNlEiwKCHJlc3BvbnNlGAEgASgLMhouYXV0aC52MS5Mb2dvdXRBbGxSZXNwb25zZRISCgpzZXRfY29va2llGAIgAygJIjkKEVN0YXJ0TG9naW5SZXF1ZXN0EhIKCmlkZW50aWZpZXIYASABKAkSEAoIcGFzc3dvcmQYAiABKAwiUQoSU3RhcnRMb2dpblJlc3BvbnNlEhoKEmxvZ2luX2NoYWxsZW5nZV9pZBgBIAEoDBIfChdjb2RlX2V4cGlyZXNfaW5fc2Vjb25kcxgCIAEoAyJAChRDb21wbGV0ZUxvZ2luUmVxdWVzdBIaChJsb2dpbl9jaGFsbGVuZ2VfaWQYASABKAwSDAoEY29kZRgCIAEoCSIrChVDb21wbGV0ZUxvZ2luUmVzcG9uc2USEgoKc3ViamVjdF9pZBgBIAEoDCIwCh9SZXF1ZXN0RW1haWxWZXJpZmljYXRpb25SZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIiIKIFJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlIiQKE0NvbmZpcm1FbWFpbFJlcXVlc3QSDQoFdG9rZW4YASABKAkiFgoUQ29uZmlybUVtYWlsUmVzcG9uc2UiLAobUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIh4KHFJlcXVlc3RQYXNzd29yZFJlc2V0UmVzcG9uc2UiQgobQ29uZmlybVBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBXRva2VuGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoDCIeChxDb25maXJtUGFzc3dvcmRSZXNldFJlc3BvbnNlIhcKFUdldENyZWRlbnRpYWxzUmVxdWVzdCKDAQoWR2V0Q3JlZGVudGlhbHNSZXNwb25zZRINCgVlbWFpbBgBIAEoCRIWCg5lbWFpbF92ZXJpZmllZBgCIAEoCBIaChJsb2dpbl9jb2RlX2VuYWJsZWQYAyABKAgSJgoebmV3X2RldmljZV9jb29sZG93bl91bnRpbF91bml4GAQgASgDIiwKF1N0YXJ0RW1haWxDaGFuZ2VSZXF1ZXN0EhEKCW5ld19lbWFpbBgBIAEoCSIaChhTdGFydEVtYWlsQ2hhbmdlUmVzcG9uc2UiKgoZQ29uZmlybUVtYWlsQ2hhbmdlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIcChpDb25maXJtRW1haWxDaGFuZ2VSZXNwb25zZSIpChhDYW5jZWxFbWFpbENoYW5nZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiGwoZQ2FuY2VsRW1haWxDaGFuZ2VSZXNwb25zZSKlAQoLU2Vzc2lvbkluZm8SEgoKc2Vzc2lvbl9pZBgBIAEoDBIOCgZkZXZpY2UYAiABKAkSDwoHYnJvd3NlchgDIAEoCRIKCgJpcBgEIAEoCRIQCghsb2NhdGlvbhgFIAEoCRIXCg9jcmVhdGVkX2F0X3VuaXgYBiABKAMSGQoRbGFzdF9zZWVuX2F0X3VuaXgYByABKAMSDwoHY3VycmVudBgIIAEoCCIVChNMaXN0U2Vzc2lvbnNSZXF1ZXN0Ij4KFExpc3RTZXNzaW9uc1Jlc3BvbnNlEiYKCHNlc3Npb25zGAEgAygLMhQuYXV0aC52MS5TZXNzaW9uSW5mbyIqChRSZXZva2VTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgMIhcKFVJldm9rZVNlc3Npb25SZXNwb25zZSIxCh1SZXF1ZXN0QWNjb3VudERlbGV0aW9uUmVxdWVzdBIQCghwYXNzd29yZBgBIAEoDCJECh5SZXF1ZXN0QWNjb3VudERlbGV0aW9uUmVzcG9uc2USIgoaZGVsZXRpb25fc2NoZWR1bGVkX2F0X3VuaXgYASABKAMiLQocQ2FuY2VsQWNjb3VudERlbGV0aW9uUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIfCh1DYW5jZWxBY2NvdW50RGVsZXRpb25SZXNwb25zZTLvDAoLQXV0aFNlcnZpY2USYAoTUmVnaXN0ZXJDcmVkZW50aWFscxIjLmF1dGgudjEuUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QaJC5hdXRoLnYxLlJlZ2lzdGVyQ3JlZGVudGlhbHNSZXNwb25zZRI2CgVMb2dpbhIVLmF1dGgudjEuTG9naW5SZXF1ZXN0GhYuYXV0aC52MS5Mb2dpblJlc3BvbnNlElEKDlJlZnJlc2hTZXNzaW9uEh4uYXV0aC52MS5SZWZyZXNoU2Vzc2lvblJlcXVlc3QaHy5hdXRoLnYxLlJlZnJlc2hTZXNzaW9uUmVzcG9uc2USOQoGTG9nb3V0EhYuYXV0aC52MS5Mb2dvdXRSZXF1ZXN0GhcuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRJCCglMb2dvdXRBbGwSGS5hdXRoLnYxLkxvZ291dEFsbFJlcXVlc3QaGi5hdXRoLnYxLkxvZ291dEFsbFJlc3BvbnNlEkUKClN0YXJ0TG9naW4SGi5hdXRoLnYxLlN0YXJ0TG9naW5SZXF1ZXN0GhsuYXV0aC52MS5TdGFydExvZ2luUmVzcG9uc2USTgoNQ29tcGxldGVMb2dpbhIdLmF1dGgudjEuQ29tcGxldGVMb2dpblJlcXVlc3QaHi5hdXRoLnYxLkNvbXBsZXRlTG9naW5SZXNwb25zZRJvChhSZXF1ZXN0RW1haWxWZXJpZmljYXRpb24SKC5hdXRoLnYxLlJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlcXVlc3QaKS5hdXRoLnYxLlJlcXVlc3RFbWFpbFZlcmlmaWNhdGlvblJlc3BvbnNlEksKDENvbmZpcm1FbWFpbBIcLmF1dGgudjEuQ29uZmlybUVtYWlsUmVxdWVzdBodLmF1dGgudjEuQ29uZmlybUVtYWlsUmVzcG9uc2USYwoUUmVxdWVzdFBhc3N3b3JkUmVzZXQSJC5hdXRoLnYxLlJlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBolLmF1dGgudjEuUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXNwb25zZRJjChRDb25maXJtUGFzc3dvcmRSZXNldBIkLmF1dGgudjEuQ29uZmlybVBhc3N3b3JkUmVzZXRSZXF1ZXN0GiUuYXV0aC52MS5Db25maXJtUGFzc3dvcmRSZXNldFJlc3BvbnNlElEKDkdldENyZWRlbnRpYWxzEh4uYXV0aC52MS5HZXRDcmVkZW50aWFsc1JlcXVlc3QaHy5hdXRoLnYxLkdldENyZWRlbnRpYWxzUmVzcG9uc2USVwoQU3RhcnRFbWFpbENoYW5nZRIgLmF1dGgudjEuU3RhcnRFbWFpbENoYW5nZVJlcXVlc3QaIS5hdXRoLnYxLlN0YXJ0RW1haWxDaGFuZ2VSZXNwb25zZRJdChJDb25maXJtRW1haWxDaGFuZ2USIi5hdXRoLnYxLkNvbmZpcm1FbWFpbENoYW5nZVJlcXVlc3QaIy5hdXRoLnYxLkNvbmZpcm1FbWFpbENoYW5nZVJlc3BvbnNlEloKEUNhbmNlbEVtYWlsQ2hhbmdlEiEuYXV0aC52MS5DYW5jZWxFbWFpbENoYW5nZVJlcXVlc3QaIi5hdXRoLnYxLkNhbmNlbEVtYWlsQ2hhbmdlUmVzcG9uc2USSwoMTGlzdFNlc3Npb25zEhwuYXV0aC52MS5MaXN0U2Vzc2lvbnNSZXF1ZXN0Gh0uYXV0aC52MS5MaXN0U2Vzc2lvbnNSZXNwb25zZRJOCg1SZXZva2VTZXNzaW9uEh0uYXV0aC52MS5SZXZva2VTZXNzaW9uUmVxdWVzdBoeLmF1dGgudjEuUmV2b2tlU2Vzc2lvblJlc3BvbnNlEmkKFlJlcXVlc3RBY2NvdW50RGVsZXRpb24SJi5hdXRoLnYxLlJlcXVlc3RBY2NvdW50RGVsZXRpb25SZXF1ZXN0GicuYXV0aC52MS5SZXF1ZXN0QWNjb3VudERlbGV0aW9uUmVzcG9uc2USZgoVQ2FuY2VsQWNjb3VudERlbGV0aW9uEiUuYXV0aC52MS5DYW5jZWxBY2NvdW50RGVsZXRpb25SZXF1ZXN0GiYuYXV0aC52MS5DYW5jZWxBY2NvdW50RGVsZXRpb25SZXNwb25zZTLpAwoSQXV0aEJyb3dzZXJTZXJ2aWNlEnUKGkJyb3dzZXJSZWdpc3RlckNyZWRlbnRpYWxzEiouYXV0aC52MS5Ccm93c2VyUmVnaXN0ZXJDcmVkZW50aWFsc1JlcXVlc3QaKy5hdXRoLnYxLkJyb3dzZXJSZWdpc3RlckNyZWRlbnRpYWxzUmVzcG9uc2USSwoMQnJvd3NlckxvZ2luEhwuYXV0aC52MS5Ccm93c2VyTG9naW5SZXF1ZXN0Gh0uYXV0aC52MS5Ccm93c2VyTG9naW5SZXNwb25zZRJmChVCcm93c2VyUmVmcmVzaFNlc3Npb24SJS5hdXRoLnYxLkJyb3dzZXJSZWZyZXNoU2Vzc2lvblJlcXVlc3QaJi5hdXRoLnYxLkJyb3dzZXJSZWZyZXNoU2Vzc2lvblJlc3BvbnNlEk4KDUJyb3dzZXJMb2dvdXQSHS5hdXRoLnYxLkJyb3dzZXJMb2dvdXRSZXF1ZXN0Gh4uYXV0aC52MS5Ccm93c2VyTG9nb3V0UmVzcG9uc2USVwoQQnJvd3NlckxvZ291dEFsbBIgLmF1dGgudjEuQnJvd3NlckxvZ291dEFsbFJlcXVlc3QaIS5hdXRoLnYxLkJyb3dzZXJMb2dvdXRBbGxSZXNwb25zZUI4WjZnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vYXV0aC92MTthdXRodjFiBnByb3RvMw");
 
 /**
  * RegisterCredentialsRequest carries the secret material needed for credential registration.
@@ -513,6 +513,660 @@ export const BrowserLogoutAllResponseSchema: GenMessage<BrowserLogoutAllResponse
   messageDesc(file_auth_v1_auth, 20);
 
 /**
+ * StartLoginRequest carries the secret material needed for the first login step.
+ *
+ * @generated from message auth.v1.StartLoginRequest
+ */
+export type StartLoginRequest = Message<"auth.v1.StartLoginRequest"> & {
+  /**
+   * Identifier is the case-insensitive account email and must not be logged or traced.
+   *
+   * @generated from field: string identifier = 1;
+   */
+  identifier: string;
+
+  /**
+   * Password is the raw secret and must not be persisted, logged, or traced.
+   *
+   * @generated from field: bytes password = 2;
+   */
+  password: Uint8Array;
+};
+
+/**
+ * Describes the message auth.v1.StartLoginRequest.
+ * Use `create(StartLoginRequestSchema)` to create a new message.
+ */
+export const StartLoginRequestSchema: GenMessage<StartLoginRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 21);
+
+/**
+ * StartLoginResponse is returned for accepted credentials; a wrong pair yields
+ * Unauthenticated without revealing which part failed or whether the account exists.
+ * After five failed attempts the caller gets FailedPrecondition with ErrorInfo
+ * domain "marketmesh.auth", reason "LOGIN_LOCKED".
+ *
+ * @generated from message auth.v1.StartLoginResponse
+ */
+export type StartLoginResponse = Message<"auth.v1.StartLoginResponse"> & {
+  /**
+   * LoginChallengeId is an opaque 16-byte challenge identifying this pending login.
+   *
+   * @generated from field: bytes login_challenge_id = 1;
+   */
+  loginChallengeId: Uint8Array;
+
+  /**
+   * CodeExpiresInSeconds is the lifetime of the emailed code in whole seconds.
+   *
+   * @generated from field: int64 code_expires_in_seconds = 2;
+   */
+  codeExpiresInSeconds: bigint;
+};
+
+/**
+ * Describes the message auth.v1.StartLoginResponse.
+ * Use `create(StartLoginResponseSchema)` to create a new message.
+ */
+export const StartLoginResponseSchema: GenMessage<StartLoginResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 22);
+
+/**
+ * CompleteLoginRequest carries the emailed six-digit code for a pending challenge.
+ *
+ * @generated from message auth.v1.CompleteLoginRequest
+ */
+export type CompleteLoginRequest = Message<"auth.v1.CompleteLoginRequest"> & {
+  /**
+   * LoginChallengeId selects the pending login started by StartLogin.
+   *
+   * @generated from field: bytes login_challenge_id = 1;
+   */
+  loginChallengeId: Uint8Array;
+
+  /**
+   * Code is exactly six ASCII digits, whitespace-trimmed by the caller.
+   *
+   * @generated from field: string code = 2;
+   */
+  code: string;
+};
+
+/**
+ * Describes the message auth.v1.CompleteLoginRequest.
+ * Use `create(CompleteLoginRequestSchema)` to create a new message.
+ */
+export const CompleteLoginRequestSchema: GenMessage<CompleteLoginRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 23);
+
+/**
+ * CompleteLoginResponse establishes identity; the session cookies travel via the
+ * browser bridge. A wrong code yields InvalidArgument with ErrorInfo domain
+ * "marketmesh.auth", reason "CODE_MISMATCH"; after three wrong codes the challenge
+ * is replaced ("CODE_REISSUED"); an expired challenge yields FailedPrecondition
+ * with reason "CODE_EXPIRED".
+ *
+ * @generated from message auth.v1.CompleteLoginResponse
+ */
+export type CompleteLoginResponse = Message<"auth.v1.CompleteLoginResponse"> & {
+  /**
+   * SubjectId is an opaque 16-byte identifier and is never an authentication secret.
+   *
+   * @generated from field: bytes subject_id = 1;
+   */
+  subjectId: Uint8Array;
+};
+
+/**
+ * Describes the message auth.v1.CompleteLoginResponse.
+ * Use `create(CompleteLoginResponseSchema)` to create a new message.
+ */
+export const CompleteLoginResponseSchema: GenMessage<CompleteLoginResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 24);
+
+/**
+ * RequestEmailVerificationRequest selects the account by email without confirming it exists.
+ *
+ * @generated from message auth.v1.RequestEmailVerificationRequest
+ */
+export type RequestEmailVerificationRequest = Message<"auth.v1.RequestEmailVerificationRequest"> & {
+  /**
+   * Email is the case-insensitive account email and must not be logged or traced.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message auth.v1.RequestEmailVerificationRequest.
+ * Use `create(RequestEmailVerificationRequestSchema)` to create a new message.
+ */
+export const RequestEmailVerificationRequestSchema: GenMessage<RequestEmailVerificationRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 25);
+
+/**
+ * RequestEmailVerificationResponse deliberately contains no existence signal.
+ *
+ * @generated from message auth.v1.RequestEmailVerificationResponse
+ */
+export type RequestEmailVerificationResponse = Message<"auth.v1.RequestEmailVerificationResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.RequestEmailVerificationResponse.
+ * Use `create(RequestEmailVerificationResponseSchema)` to create a new message.
+ */
+export const RequestEmailVerificationResponseSchema: GenMessage<RequestEmailVerificationResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 26);
+
+/**
+ * ConfirmEmailRequest carries the opaque token from the confirmation link.
+ *
+ * @generated from message auth.v1.ConfirmEmailRequest
+ */
+export type ConfirmEmailRequest = Message<"auth.v1.ConfirmEmailRequest"> & {
+  /**
+   * Token is the emailed single-use confirmation token.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message auth.v1.ConfirmEmailRequest.
+ * Use `create(ConfirmEmailRequestSchema)` to create a new message.
+ */
+export const ConfirmEmailRequestSchema: GenMessage<ConfirmEmailRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 27);
+
+/**
+ * ConfirmEmailResponse is empty; expired or used tokens yield FailedPrecondition
+ * with ErrorInfo reasons "TOKEN_EXPIRED" or "TOKEN_USED".
+ *
+ * @generated from message auth.v1.ConfirmEmailResponse
+ */
+export type ConfirmEmailResponse = Message<"auth.v1.ConfirmEmailResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.ConfirmEmailResponse.
+ * Use `create(ConfirmEmailResponseSchema)` to create a new message.
+ */
+export const ConfirmEmailResponseSchema: GenMessage<ConfirmEmailResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 28);
+
+/**
+ * RequestPasswordResetRequest selects the account by email without confirming it exists.
+ *
+ * @generated from message auth.v1.RequestPasswordResetRequest
+ */
+export type RequestPasswordResetRequest = Message<"auth.v1.RequestPasswordResetRequest"> & {
+  /**
+   * Email is the case-insensitive account email and must not be logged or traced.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message auth.v1.RequestPasswordResetRequest.
+ * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
+ */
+export const RequestPasswordResetRequestSchema: GenMessage<RequestPasswordResetRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 29);
+
+/**
+ * RequestPasswordResetResponse deliberately contains no existence signal.
+ *
+ * @generated from message auth.v1.RequestPasswordResetResponse
+ */
+export type RequestPasswordResetResponse = Message<"auth.v1.RequestPasswordResetResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.RequestPasswordResetResponse.
+ * Use `create(RequestPasswordResetResponseSchema)` to create a new message.
+ */
+export const RequestPasswordResetResponseSchema: GenMessage<RequestPasswordResetResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 30);
+
+/**
+ * ConfirmPasswordResetRequest carries the emailed token and the new secret.
+ *
+ * @generated from message auth.v1.ConfirmPasswordResetRequest
+ */
+export type ConfirmPasswordResetRequest = Message<"auth.v1.ConfirmPasswordResetRequest"> & {
+  /**
+   * Token is the emailed single-use reset token.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * NewPassword is the raw secret and must not be persisted, logged, or traced.
+   *
+   * @generated from field: bytes new_password = 2;
+   */
+  newPassword: Uint8Array;
+};
+
+/**
+ * Describes the message auth.v1.ConfirmPasswordResetRequest.
+ * Use `create(ConfirmPasswordResetRequestSchema)` to create a new message.
+ */
+export const ConfirmPasswordResetRequestSchema: GenMessage<ConfirmPasswordResetRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 31);
+
+/**
+ * ConfirmPasswordResetResponse is empty; success revokes all sessions of the subject.
+ *
+ * @generated from message auth.v1.ConfirmPasswordResetResponse
+ */
+export type ConfirmPasswordResetResponse = Message<"auth.v1.ConfirmPasswordResetResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.ConfirmPasswordResetResponse.
+ * Use `create(ConfirmPasswordResetResponseSchema)` to create a new message.
+ */
+export const ConfirmPasswordResetResponseSchema: GenMessage<ConfirmPasswordResetResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 32);
+
+/**
+ * GetCredentialsRequest has no caller-selected identity; the access cookie selects the subject.
+ *
+ * @generated from message auth.v1.GetCredentialsRequest
+ */
+export type GetCredentialsRequest = Message<"auth.v1.GetCredentialsRequest"> & {
+};
+
+/**
+ * Describes the message auth.v1.GetCredentialsRequest.
+ * Use `create(GetCredentialsRequestSchema)` to create a new message.
+ */
+export const GetCredentialsRequestSchema: GenMessage<GetCredentialsRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 33);
+
+/**
+ * GetCredentialsResponse exposes the caller's own contact and security state.
+ *
+ * @generated from message auth.v1.GetCredentialsResponse
+ */
+export type GetCredentialsResponse = Message<"auth.v1.GetCredentialsResponse"> & {
+  /**
+   * Email is the caller's current account email.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * EmailVerified is true once the address has been confirmed.
+   *
+   * @generated from field: bool email_verified = 2;
+   */
+  emailVerified: boolean;
+
+  /**
+   * LoginCodeEnabled is true when sign-in requires the emailed one-time code.
+   *
+   * @generated from field: bool login_code_enabled = 3;
+   */
+  loginCodeEnabled: boolean;
+
+  /**
+   * NewDeviceCooldownUntilUnix is the exclusive end of the protection window after
+   * a login from a new device; zero when no cooldown applies. While it is active,
+   * RevokeSession of other sessions and RequestAccountDeletion fail with
+   * FailedPrecondition, reason "NEW_DEVICE_COOLDOWN".
+   *
+   * @generated from field: int64 new_device_cooldown_until_unix = 4;
+   */
+  newDeviceCooldownUntilUnix: bigint;
+};
+
+/**
+ * Describes the message auth.v1.GetCredentialsResponse.
+ * Use `create(GetCredentialsResponseSchema)` to create a new message.
+ */
+export const GetCredentialsResponseSchema: GenMessage<GetCredentialsResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 34);
+
+/**
+ * StartEmailChangeRequest starts the change for the authenticated caller.
+ *
+ * @generated from message auth.v1.StartEmailChangeRequest
+ */
+export type StartEmailChangeRequest = Message<"auth.v1.StartEmailChangeRequest"> & {
+  /**
+   * NewEmail is the case-insensitive new account email.
+   *
+   * @generated from field: string new_email = 1;
+   */
+  newEmail: string;
+};
+
+/**
+ * Describes the message auth.v1.StartEmailChangeRequest.
+ * Use `create(StartEmailChangeRequestSchema)` to create a new message.
+ */
+export const StartEmailChangeRequestSchema: GenMessage<StartEmailChangeRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 35);
+
+/**
+ * StartEmailChangeResponse is empty; the alert goes to the old address and the
+ * confirmation link to the new one.
+ *
+ * @generated from message auth.v1.StartEmailChangeResponse
+ */
+export type StartEmailChangeResponse = Message<"auth.v1.StartEmailChangeResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.StartEmailChangeResponse.
+ * Use `create(StartEmailChangeResponseSchema)` to create a new message.
+ */
+export const StartEmailChangeResponseSchema: GenMessage<StartEmailChangeResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 36);
+
+/**
+ * ConfirmEmailChangeRequest carries the token sent to the new address.
+ *
+ * @generated from message auth.v1.ConfirmEmailChangeRequest
+ */
+export type ConfirmEmailChangeRequest = Message<"auth.v1.ConfirmEmailChangeRequest"> & {
+  /**
+   * Token is the emailed single-use confirmation token.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message auth.v1.ConfirmEmailChangeRequest.
+ * Use `create(ConfirmEmailChangeRequestSchema)` to create a new message.
+ */
+export const ConfirmEmailChangeRequestSchema: GenMessage<ConfirmEmailChangeRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 37);
+
+/**
+ * ConfirmEmailChangeResponse is empty; success moves the account email.
+ *
+ * @generated from message auth.v1.ConfirmEmailChangeResponse
+ */
+export type ConfirmEmailChangeResponse = Message<"auth.v1.ConfirmEmailChangeResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.ConfirmEmailChangeResponse.
+ * Use `create(ConfirmEmailChangeResponseSchema)` to create a new message.
+ */
+export const ConfirmEmailChangeResponseSchema: GenMessage<ConfirmEmailChangeResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 38);
+
+/**
+ * CancelEmailChangeRequest carries the token sent to the old address.
+ *
+ * @generated from message auth.v1.CancelEmailChangeRequest
+ */
+export type CancelEmailChangeRequest = Message<"auth.v1.CancelEmailChangeRequest"> & {
+  /**
+   * Token is the emailed single-use cancellation token.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message auth.v1.CancelEmailChangeRequest.
+ * Use `create(CancelEmailChangeRequestSchema)` to create a new message.
+ */
+export const CancelEmailChangeRequestSchema: GenMessage<CancelEmailChangeRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 39);
+
+/**
+ * CancelEmailChangeResponse is empty; success keeps the previous account email.
+ *
+ * @generated from message auth.v1.CancelEmailChangeResponse
+ */
+export type CancelEmailChangeResponse = Message<"auth.v1.CancelEmailChangeResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.CancelEmailChangeResponse.
+ * Use `create(CancelEmailChangeResponseSchema)` to create a new message.
+ */
+export const CancelEmailChangeResponseSchema: GenMessage<CancelEmailChangeResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 40);
+
+/**
+ * SessionInfo describes one session of the authenticated caller.
+ *
+ * @generated from message auth.v1.SessionInfo
+ */
+export type SessionInfo = Message<"auth.v1.SessionInfo"> & {
+  /**
+   * SessionId is an opaque 16-byte session identifier, valid only for the owner's calls.
+   *
+   * @generated from field: bytes session_id = 1;
+   */
+  sessionId: Uint8Array;
+
+  /**
+   * Device is a human-readable device and system label.
+   *
+   * @generated from field: string device = 2;
+   */
+  device: string;
+
+  /**
+   * Browser is a human-readable browser label.
+   *
+   * @generated from field: string browser = 3;
+   */
+  browser: string;
+
+  /**
+   * Ip is the last seen IP address of the session.
+   *
+   * @generated from field: string ip = 4;
+   */
+  ip: string;
+
+  /**
+   * Location is the approximate city and country derived from the IP.
+   *
+   * @generated from field: string location = 5;
+   */
+  location: string;
+
+  /**
+   * CreatedAtUnix is the session creation time in whole Unix seconds.
+   *
+   * @generated from field: int64 created_at_unix = 6;
+   */
+  createdAtUnix: bigint;
+
+  /**
+   * LastSeenAtUnix is the last activity time in whole Unix seconds.
+   *
+   * @generated from field: int64 last_seen_at_unix = 7;
+   */
+  lastSeenAtUnix: bigint;
+
+  /**
+   * Current is true for the session presenting this request.
+   *
+   * @generated from field: bool current = 8;
+   */
+  current: boolean;
+};
+
+/**
+ * Describes the message auth.v1.SessionInfo.
+ * Use `create(SessionInfoSchema)` to create a new message.
+ */
+export const SessionInfoSchema: GenMessage<SessionInfo> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 41);
+
+/**
+ * ListSessionsRequest has no caller-selected identity; the access cookie selects the subject.
+ *
+ * @generated from message auth.v1.ListSessionsRequest
+ */
+export type ListSessionsRequest = Message<"auth.v1.ListSessionsRequest"> & {
+};
+
+/**
+ * Describes the message auth.v1.ListSessionsRequest.
+ * Use `create(ListSessionsRequestSchema)` to create a new message.
+ */
+export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 42);
+
+/**
+ * ListSessionsResponse contains only the caller's own sessions.
+ *
+ * @generated from message auth.v1.ListSessionsResponse
+ */
+export type ListSessionsResponse = Message<"auth.v1.ListSessionsResponse"> & {
+  /**
+   * Sessions lists the caller's sessions, current first.
+   *
+   * @generated from field: repeated auth.v1.SessionInfo sessions = 1;
+   */
+  sessions: SessionInfo[];
+};
+
+/**
+ * Describes the message auth.v1.ListSessionsResponse.
+ * Use `create(ListSessionsResponseSchema)` to create a new message.
+ */
+export const ListSessionsResponseSchema: GenMessage<ListSessionsResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 43);
+
+/**
+ * RevokeSessionRequest ends one owned session, never a session of another subject.
+ *
+ * @generated from message auth.v1.RevokeSessionRequest
+ */
+export type RevokeSessionRequest = Message<"auth.v1.RevokeSessionRequest"> & {
+  /**
+   * SessionId selects a session of the authenticated caller only.
+   *
+   * @generated from field: bytes session_id = 1;
+   */
+  sessionId: Uint8Array;
+};
+
+/**
+ * Describes the message auth.v1.RevokeSessionRequest.
+ * Use `create(RevokeSessionRequestSchema)` to create a new message.
+ */
+export const RevokeSessionRequestSchema: GenMessage<RevokeSessionRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 44);
+
+/**
+ * RevokeSessionResponse is empty; revoking the current session equals Logout.
+ *
+ * @generated from message auth.v1.RevokeSessionResponse
+ */
+export type RevokeSessionResponse = Message<"auth.v1.RevokeSessionResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.RevokeSessionResponse.
+ * Use `create(RevokeSessionResponseSchema)` to create a new message.
+ */
+export const RevokeSessionResponseSchema: GenMessage<RevokeSessionResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 45);
+
+/**
+ * RequestAccountDeletionRequest requires the password as proof of intent.
+ *
+ * @generated from message auth.v1.RequestAccountDeletionRequest
+ */
+export type RequestAccountDeletionRequest = Message<"auth.v1.RequestAccountDeletionRequest"> & {
+  /**
+   * Password is the raw secret and must not be persisted, logged, or traced.
+   *
+   * @generated from field: bytes password = 1;
+   */
+  password: Uint8Array;
+};
+
+/**
+ * Describes the message auth.v1.RequestAccountDeletionRequest.
+ * Use `create(RequestAccountDeletionRequestSchema)` to create a new message.
+ */
+export const RequestAccountDeletionRequestSchema: GenMessage<RequestAccountDeletionRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 46);
+
+/**
+ * RequestAccountDeletionResponse reports the scheduled deletion date.
+ *
+ * @generated from message auth.v1.RequestAccountDeletionResponse
+ */
+export type RequestAccountDeletionResponse = Message<"auth.v1.RequestAccountDeletionResponse"> & {
+  /**
+   * DeletionScheduledAtUnix is the moment after which the account is erased;
+   * until then the cancellation token from the email restores the account.
+   *
+   * @generated from field: int64 deletion_scheduled_at_unix = 1;
+   */
+  deletionScheduledAtUnix: bigint;
+};
+
+/**
+ * Describes the message auth.v1.RequestAccountDeletionResponse.
+ * Use `create(RequestAccountDeletionResponseSchema)` to create a new message.
+ */
+export const RequestAccountDeletionResponseSchema: GenMessage<RequestAccountDeletionResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 47);
+
+/**
+ * CancelAccountDeletionRequest carries the token from the deletion email.
+ *
+ * @generated from message auth.v1.CancelAccountDeletionRequest
+ */
+export type CancelAccountDeletionRequest = Message<"auth.v1.CancelAccountDeletionRequest"> & {
+  /**
+   * Token is the emailed single-use cancellation token.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message auth.v1.CancelAccountDeletionRequest.
+ * Use `create(CancelAccountDeletionRequestSchema)` to create a new message.
+ */
+export const CancelAccountDeletionRequestSchema: GenMessage<CancelAccountDeletionRequest> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 48);
+
+/**
+ * CancelAccountDeletionResponse is empty; success reopens sign-in.
+ *
+ * @generated from message auth.v1.CancelAccountDeletionResponse
+ */
+export type CancelAccountDeletionResponse = Message<"auth.v1.CancelAccountDeletionResponse"> & {
+};
+
+/**
+ * Describes the message auth.v1.CancelAccountDeletionResponse.
+ * Use `create(CancelAccountDeletionResponseSchema)` to create a new message.
+ */
+export const CancelAccountDeletionResponseSchema: GenMessage<CancelAccountDeletionResponse> = /*@__PURE__*/
+  messageDesc(file_auth_v1_auth, 49);
+
+/**
  * AuthService registers and verifies user-controlled credentials.
  *
  * @generated from service auth.v1.AuthService
@@ -567,6 +1221,146 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof LogoutAllRequestSchema;
     output: typeof LogoutAllResponseSchema;
+  },
+  /**
+   * StartLogin verifies the password and, on success, emails a one-time login code.
+   *
+   * @generated from rpc auth.v1.AuthService.StartLogin
+   */
+  startLogin: {
+    methodKind: "unary";
+    input: typeof StartLoginRequestSchema;
+    output: typeof StartLoginResponseSchema;
+  },
+  /**
+   * CompleteLogin verifies the emailed code and establishes the session.
+   *
+   * @generated from rpc auth.v1.AuthService.CompleteLogin
+   */
+  completeLogin: {
+    methodKind: "unary";
+    input: typeof CompleteLoginRequestSchema;
+    output: typeof CompleteLoginResponseSchema;
+  },
+  /**
+   * RequestEmailVerification emails a confirmation link without disclosing account existence.
+   *
+   * @generated from rpc auth.v1.AuthService.RequestEmailVerification
+   */
+  requestEmailVerification: {
+    methodKind: "unary";
+    input: typeof RequestEmailVerificationRequestSchema;
+    output: typeof RequestEmailVerificationResponseSchema;
+  },
+  /**
+   * ConfirmEmail applies the emailed confirmation token.
+   *
+   * @generated from rpc auth.v1.AuthService.ConfirmEmail
+   */
+  confirmEmail: {
+    methodKind: "unary";
+    input: typeof ConfirmEmailRequestSchema;
+    output: typeof ConfirmEmailResponseSchema;
+  },
+  /**
+   * RequestPasswordReset emails a reset link without disclosing account existence.
+   *
+   * @generated from rpc auth.v1.AuthService.RequestPasswordReset
+   */
+  requestPasswordReset: {
+    methodKind: "unary";
+    input: typeof RequestPasswordResetRequestSchema;
+    output: typeof RequestPasswordResetResponseSchema;
+  },
+  /**
+   * ConfirmPasswordReset sets a new password and revokes every existing session.
+   *
+   * @generated from rpc auth.v1.AuthService.ConfirmPasswordReset
+   */
+  confirmPasswordReset: {
+    methodKind: "unary";
+    input: typeof ConfirmPasswordResetRequestSchema;
+    output: typeof ConfirmPasswordResetResponseSchema;
+  },
+  /**
+   * GetCredentials returns the authenticated caller's contact and security state.
+   *
+   * @generated from rpc auth.v1.AuthService.GetCredentials
+   */
+  getCredentials: {
+    methodKind: "unary";
+    input: typeof GetCredentialsRequestSchema;
+    output: typeof GetCredentialsResponseSchema;
+  },
+  /**
+   * StartEmailChange begins the two-letter email change for the authenticated caller.
+   *
+   * @generated from rpc auth.v1.AuthService.StartEmailChange
+   */
+  startEmailChange: {
+    methodKind: "unary";
+    input: typeof StartEmailChangeRequestSchema;
+    output: typeof StartEmailChangeResponseSchema;
+  },
+  /**
+   * ConfirmEmailChange applies the token sent to the new address.
+   *
+   * @generated from rpc auth.v1.AuthService.ConfirmEmailChange
+   */
+  confirmEmailChange: {
+    methodKind: "unary";
+    input: typeof ConfirmEmailChangeRequestSchema;
+    output: typeof ConfirmEmailChangeResponseSchema;
+  },
+  /**
+   * CancelEmailChange cancels a pending change via the token sent to the old address.
+   *
+   * @generated from rpc auth.v1.AuthService.CancelEmailChange
+   */
+  cancelEmailChange: {
+    methodKind: "unary";
+    input: typeof CancelEmailChangeRequestSchema;
+    output: typeof CancelEmailChangeResponseSchema;
+  },
+  /**
+   * ListSessions returns the authenticated caller's own sessions.
+   *
+   * @generated from rpc auth.v1.AuthService.ListSessions
+   */
+  listSessions: {
+    methodKind: "unary";
+    input: typeof ListSessionsRequestSchema;
+    output: typeof ListSessionsResponseSchema;
+  },
+  /**
+   * RevokeSession ends one of the authenticated caller's sessions.
+   *
+   * @generated from rpc auth.v1.AuthService.RevokeSession
+   */
+  revokeSession: {
+    methodKind: "unary";
+    input: typeof RevokeSessionRequestSchema;
+    output: typeof RevokeSessionResponseSchema;
+  },
+  /**
+   * RequestAccountDeletion schedules deletion after a grace period and closes the sessions.
+   *
+   * @generated from rpc auth.v1.AuthService.RequestAccountDeletion
+   */
+  requestAccountDeletion: {
+    methodKind: "unary";
+    input: typeof RequestAccountDeletionRequestSchema;
+    output: typeof RequestAccountDeletionResponseSchema;
+  },
+  /**
+   * CancelAccountDeletion restores the account via the token sent by email.
+   *
+   * @generated from rpc auth.v1.AuthService.CancelAccountDeletion
+   */
+  cancelAccountDeletion: {
+    methodKind: "unary";
+    input: typeof CancelAccountDeletionRequestSchema;
+    output: typeof CancelAccountDeletionResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_auth_v1_auth, 0);

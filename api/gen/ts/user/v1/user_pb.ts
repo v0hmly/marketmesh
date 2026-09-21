@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file user/v1/user.proto.
  */
 export const file_user_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSJOCg9VcGRhdGVNZVJlcXVlc3QSFAoMZGlzcGxheV9uYW1lGAEgASgJEgsKA2JpbxgCIAEoCRIYChBleHBlY3RlZF92ZXJzaW9uGAMgASgEIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSKDAQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDIp8BCg1BZGRyZXNzRmllbGRzEhEKCXJlY2lwaWVudBgBIAEoCRINCgVwaG9uZRgCIAEoCRIPCgdjb3VudHJ5GAMgASgJEhMKC3Bvc3RhbF9jb2RlGAQgASgJEgwKBGNpdHkYBSABKAkSFAoMc3RyZWV0X2hvdXNlGAYgASgJEhEKCWFwYXJ0bWVudBgHIAEoCRIPCgdjb21tZW50GAggASgJIlkKB0FkZHJlc3MSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSEgoKaXNfZGVmYXVsdBgDIAEoCCJXCgtBZGRyZXNzQm9vaxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSIwoJYWRkcmVzc2VzGAMgAygLMhAudXNlci52MS5BZGRyZXNzIhYKFExpc3RBZGRyZXNzZXNSZXF1ZXN0Il0KFENyZWF0ZUFkZHJlc3NSZXF1ZXN0Eh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgBIAEoBBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMicQoUVXBkYXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBImCgZmaWVsZHMYAiABKAsyFi51c2VyLnYxLkFkZHJlc3NGaWVsZHMSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAMgASgEIkkKFERlbGV0ZUFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIk0KGFNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEh0KFWV4cGVjdGVkX2Jvb2tfdmVyc2lvbhgCIAEoBCI7ChVMaXN0QWRkcmVzc2VzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVQ3JlYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFVVwZGF0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVEZWxldGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siPwoZU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayJVCg9BY2NvdW50U2V0dGluZ3MSEgoKc3ViamVjdF9pZBgBIAEoDBIPCgd2ZXJzaW9uGAIgASgEEh0KBXRoZW1lGAMgASgOMg4udXNlci52MS5UaGVtZSIUChJHZXRTZXR0aW5nc1JlcXVlc3QiQQoTR2V0U2V0dGluZ3NSZXNwb25zZRIqCghzZXR0aW5ncxgBIAEoCzIYLnVzZXIudjEuQWNjb3VudFNldHRpbmdzIlAKFVVwZGF0ZVNldHRpbmdzUmVxdWVzdBIdCgV0aGVtZRgBIAEoDjIOLnVzZXIudjEuVGhlbWUSGAoQZXhwZWN0ZWRfdmVyc2lvbhgCIAEoBCJEChZVcGRhdGVTZXR0aW5nc1Jlc3BvbnNlEioKCHNldHRpbmdzGAEgASgLMhgudXNlci52MS5BY2NvdW50U2V0dGluZ3MqUQoFVGhlbWUSFQoRVEhFTUVfVU5TUEVDSUZJRUQQABIQCgxUSEVNRV9TWVNURU0QARIPCgtUSEVNRV9MSUdIVBACEg4KClRIRU1FX0RBUksQAzK/BQoLVXNlclNlcnZpY2USNgoFR2V0TWUSFS51c2VyLnYxLkdldE1lUmVxdWVzdBoWLnVzZXIudjEuR2V0TWVSZXNwb25zZRI/CghVcGRhdGVNZRIYLnVzZXIudjEuVXBkYXRlTWVSZXF1ZXN0GhkudXNlci52MS5VcGRhdGVNZVJlc3BvbnNlEk4KDUxpc3RBZGRyZXNzZXMSHS51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXF1ZXN0Gh4udXNlci52MS5MaXN0QWRkcmVzc2VzUmVzcG9uc2USTgoNQ3JlYXRlQWRkcmVzcxIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRJOCg1VcGRhdGVBZGRyZXNzEh0udXNlci52MS5VcGRhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDURlbGV0ZUFkZHJlc3MSHS51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5EZWxldGVBZGRyZXNzUmVzcG9uc2USWgoRU2V0RGVmYXVsdEFkZHJlc3MSIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBoiLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRJICgtHZXRTZXR0aW5ncxIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0GhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlElEKDlVwZGF0ZVNldHRpbmdzEh4udXNlci52MS5VcGRhdGVTZXR0aW5nc1JlcXVlc3QaHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL3VzZXIvdjE7dXNlcnYxYgZwcm90bzM");
+  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSLFAQoPVXBkYXRlTWVSZXF1ZXN0EhQKDGRpc3BsYXlfbmFtZRgBIAEoCRILCgNiaW8YAiABKAkSGAoQZXhwZWN0ZWRfdmVyc2lvbhgDIAEoBBIRCglsYXN0X25hbWUYBCABKAkSEgoKYmlydGhfZGF0ZRgFIAEoCRIfCgZnZW5kZXIYBiABKA4yDy51c2VyLnYxLkdlbmRlchINCgVwaG9uZRgHIAEoCRIMCgRjaXR5GAggASgJEhAKCHNob3dfYWdlGAkgASgIIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSL6AQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDEhEKCWxhc3RfbmFtZRgHIAEoCRISCgpiaXJ0aF9kYXRlGAggASgJEh8KBmdlbmRlchgJIAEoDjIPLnVzZXIudjEuR2VuZGVyEg0KBXBob25lGAogASgJEgwKBGNpdHkYCyABKAkSEAoIc2hvd19hZ2UYDCABKAginwEKDUFkZHJlc3NGaWVsZHMSEQoJcmVjaXBpZW50GAEgASgJEg0KBXBob25lGAIgASgJEg8KB2NvdW50cnkYAyABKAkSEwoLcG9zdGFsX2NvZGUYBCABKAkSDAoEY2l0eRgFIAEoCRIUCgxzdHJlZXRfaG91c2UYBiABKAkSEQoJYXBhcnRtZW50GAcgASgJEg8KB2NvbW1lbnQYCCABKAkiWQoHQWRkcmVzcxISCgphZGRyZXNzX2lkGAEgASgMEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcxISCgppc19kZWZhdWx0GAMgASgIIlcKC0FkZHJlc3NCb29rEhIKCnN1YmplY3RfaWQYASABKAwSDwoHdmVyc2lvbhgCIAEoBBIjCglhZGRyZXNzZXMYAyADKAsyEC51c2VyLnYxLkFkZHJlc3MiFgoUTGlzdEFkZHJlc3Nlc1JlcXVlc3QiXQoUQ3JlYXRlQWRkcmVzc1JlcXVlc3QSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAEgASgEEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcyJxChRVcGRhdGVBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcxIdChVleHBlY3RlZF9ib29rX3ZlcnNpb24YAyABKAQiSQoURGVsZXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBIdChVleHBlY3RlZF9ib29rX3ZlcnNpb24YAiABKAQiTQoYU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIjsKFUxpc3RBZGRyZXNzZXNSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVDcmVhdGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFURlbGV0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI/ChlTZXREZWZhdWx0QWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIlUKD0FjY291bnRTZXR0aW5ncxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSHQoFdGhlbWUYAyABKA4yDi51c2VyLnYxLlRoZW1lIhQKEkdldFNldHRpbmdzUmVxdWVzdCJBChNHZXRTZXR0aW5nc1Jlc3BvbnNlEioKCHNldHRpbmdzGAEgASgLMhgudXNlci52MS5BY2NvdW50U2V0dGluZ3MiUAoVVXBkYXRlU2V0dGluZ3NSZXF1ZXN0Eh0KBXRoZW1lGAEgASgOMg4udXNlci52MS5UaGVtZRIYChBleHBlY3RlZF92ZXJzaW9uGAIgASgEIkQKFlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USKgoIc2V0dGluZ3MYASABKAsyGC51c2VyLnYxLkFjY291bnRTZXR0aW5ncypECgZHZW5kZXISFgoSR0VOREVSX1VOU1BFQ0lGSUVEEAASEQoNR0VOREVSX0ZFTUFMRRABEg8KC0dFTkRFUl9NQUxFEAIqUQoFVGhlbWUSFQoRVEhFTUVfVU5TUEVDSUZJRUQQABIQCgxUSEVNRV9TWVNURU0QARIPCgtUSEVNRV9MSUdIVBACEg4KClRIRU1FX0RBUksQAzK/BQoLVXNlclNlcnZpY2USNgoFR2V0TWUSFS51c2VyLnYxLkdldE1lUmVxdWVzdBoWLnVzZXIudjEuR2V0TWVSZXNwb25zZRI/CghVcGRhdGVNZRIYLnVzZXIudjEuVXBkYXRlTWVSZXF1ZXN0GhkudXNlci52MS5VcGRhdGVNZVJlc3BvbnNlEk4KDUxpc3RBZGRyZXNzZXMSHS51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXF1ZXN0Gh4udXNlci52MS5MaXN0QWRkcmVzc2VzUmVzcG9uc2USTgoNQ3JlYXRlQWRkcmVzcxIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRJOCg1VcGRhdGVBZGRyZXNzEh0udXNlci52MS5VcGRhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDURlbGV0ZUFkZHJlc3MSHS51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5EZWxldGVBZGRyZXNzUmVzcG9uc2USWgoRU2V0RGVmYXVsdEFkZHJlc3MSIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBoiLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRJICgtHZXRTZXR0aW5ncxIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0GhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlElEKDlVwZGF0ZVNldHRpbmdzEh4udXNlci52MS5VcGRhdGVTZXR0aW5nc1JlcXVlc3QaHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL3VzZXIvdjE7dXNlcnYxYgZwcm90bzM");
 
 /**
  * GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -74,6 +74,48 @@ export type UpdateMeRequest = Message<"user.v1.UpdateMeRequest"> & {
    * @generated from field: uint64 expected_version = 3;
    */
   expectedVersion: bigint;
+
+  /**
+   * LastName is an optional family name of at most 80 Unicode characters.
+   *
+   * @generated from field: string last_name = 4;
+   */
+  lastName: string;
+
+  /**
+   * BirthDate is an optional calendar date in RFC 3339 YYYY-MM-DD form, not in the future.
+   *
+   * @generated from field: string birth_date = 5;
+   */
+  birthDate: string;
+
+  /**
+   * Gender is an optional self-description; never shown publicly.
+   *
+   * @generated from field: user.v1.Gender gender = 6;
+   */
+  gender: Gender;
+
+  /**
+   * Phone is an optional contact number, ASCII formatting with 7–15 digits.
+   *
+   * @generated from field: string phone = 7;
+   */
+  phone: string;
+
+  /**
+   * City is an optional freeform city of at most 120 Unicode characters.
+   *
+   * @generated from field: string city = 8;
+   */
+  city: string;
+
+  /**
+   * ShowAge controls whether the public signature shows the computed age.
+   *
+   * @generated from field: bool show_age = 9;
+   */
+  showAge: boolean;
 };
 
 /**
@@ -151,6 +193,49 @@ export type Profile = Message<"user.v1.Profile"> & {
    * @generated from field: int64 updated_at_unix = 6;
    */
   updatedAtUnix: bigint;
+
+  /**
+   * LastName is the optional family name; it never appears in public signatures.
+   *
+   * @generated from field: string last_name = 7;
+   */
+  lastName: string;
+
+  /**
+   * BirthDate is the optional calendar date in RFC 3339 YYYY-MM-DD form; it never
+   * appears publicly, only the computed age may be shown when ShowAge is true.
+   *
+   * @generated from field: string birth_date = 8;
+   */
+  birthDate: string;
+
+  /**
+   * Gender is the optional self-description; it never appears publicly.
+   *
+   * @generated from field: user.v1.Gender gender = 9;
+   */
+  gender: Gender;
+
+  /**
+   * Phone is the optional contact number; it never appears publicly.
+   *
+   * @generated from field: string phone = 10;
+   */
+  phone: string;
+
+  /**
+   * City is the optional city; it is the one personal field that may appear publicly.
+   *
+   * @generated from field: string city = 11;
+   */
+  city: string;
+
+  /**
+   * ShowAge controls whether the public review signature includes the computed age.
+   *
+   * @generated from field: bool show_age = 12;
+   */
+  showAge: boolean;
 };
 
 /**
@@ -660,6 +745,40 @@ export const UpdateSettingsResponseSchema: GenMessage<UpdateSettingsResponse> = 
   messageDesc(file_user_v1_user, 22);
 
 /**
+ * Gender is the closed set of self-description options; it is never shown publicly.
+ *
+ * @generated from enum user.v1.Gender
+ */
+export enum Gender {
+  /**
+   * GENDER_UNSPECIFIED means the caller did not specify a gender.
+   *
+   * @generated from enum value: GENDER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * GENDER_FEMALE is a female self-description.
+   *
+   * @generated from enum value: GENDER_FEMALE = 1;
+   */
+  FEMALE = 1,
+
+  /**
+   * GENDER_MALE is a male self-description.
+   *
+   * @generated from enum value: GENDER_MALE = 2;
+   */
+  MALE = 2,
+}
+
+/**
+ * Describes the enum user.v1.Gender.
+ */
+export const GenderSchema: GenEnum<Gender> = /*@__PURE__*/
+  enumDesc(file_user_v1_user, 0);
+
+/**
  * Theme is the closed set of supported display preferences.
  *
  * @generated from enum user.v1.Theme
@@ -698,7 +817,7 @@ export enum Theme {
  * Describes the enum user.v1.Theme.
  */
 export const ThemeSchema: GenEnum<Theme> = /*@__PURE__*/
-  enumDesc(file_user_v1_user, 0);
+  enumDesc(file_user_v1_user, 1);
 
 /**
  * UserService exposes the authenticated caller's account data on the workload-authenticated listener.
