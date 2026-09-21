@@ -48,9 +48,18 @@ HTTPS origin. API-клиент обращается к `/auth.v1.AuthService/*` 
 
 ## Границы и сессия
 
+- Продуктовые области по ADR-0010: покупатель (`modules/account`, маршруты `/login`,
+  `/register`, `/account/*`), продавец (`modules/seller`, `/seller/*`, MM-84) и сотрудник
+  (`modules/staff`, `/staff/*`, MM-85). Shell композирует маршруты модулей
+  (`shell/router.ts` + `modules/*/routes.ts`); область маршрута фиксируется в
+  `meta.area` (`shell/areas.ts`). Модуль не импортирует маршруты и состояние других
+  модулей — это проверяет eslint-правило `marketmesh/boundaries`.
+
 - `shell/session` хранит статус, непрозрачный идентификатор текущего владельца в
   памяти и поколение сессии; профиль и черновики принадлежат `modules/account`.
-- `shared/api` — единственная граница с generated API. Внутренний Auth assertion
+- `shared/api` — единственная граница с generated API: `client.ts` (покупатель,
+  Auth/User), `seller.ts` и `staff.ts` (фасады контрактов MM-81), общий транспорт —
+  `transport.ts`. Внутренний Auth assertion
   и gateway transport не экспортируются браузерным фасадом. `PROFILE_NOT_READY`
   распознаётся только по стандартному protobuf `ErrorInfo`, не тексту ошибки.
 - Session-changing RPC выполняются под общим exclusive Web Lock, операции профиля

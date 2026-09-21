@@ -86,8 +86,8 @@
 /* ---- Badges, choices, brand ---- */
 .draft-badge { display: inline-block; border: 1px solid var(--border-badge); background: var(--surface-badge); font-size: 0.73rem; padding: 5px 9px; border-radius: var(--r-pill); white-space: nowrap; color: var(--text-primary); }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-size: 1.35rem; font-weight: 600; letter-spacing: -1px; color: var(--text-primary); text-decoration: none; white-space: nowrap; }
-.brand-mark { display: flex; align-items: center; justify-content: center; width: 35px; height: 35px; border-radius: var(--r-round); background: var(--action-primary); color: var(--on-action-primary); font-family: var(--font-serif, Georgia, serif); font-size: 28px; line-height: 1; letter-spacing: -8px; padding-right: var(--sp-2); overflow: hidden; }
-.brand-mark > span { transform: translateY(5px); display: inline-block; }
+.brand-mark { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 35px; height: 35px; border-radius: var(--r-round); background: var(--action-primary); color: var(--on-action-primary); font-family: var(--font-serif, Georgia, serif); font-size: 25px; line-height: 1; flex-shrink: 0; }
+.brand-mark > span { transform: translateY(-0.06em); display: inline-block; }
 .brand-dot { color: var(--brand-accent); }
 .skip-link { display: inline-block; background: var(--action-primary); color: var(--on-action-primary); padding: 10px 16px; border-radius: var(--r-xs); text-decoration: none; font-size: 0.875rem; }
 .theme-choice { display: flex; align-items: start; gap: var(--sp-4); padding: 18px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); cursor: pointer; background: var(--surface-raised); }

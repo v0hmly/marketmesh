@@ -1,5 +1,4 @@
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
-import { createConnectTransport } from '@connectrpc/connect-web';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
 import {
   Theme,
@@ -7,6 +6,7 @@ import {
   UserService,
 } from '@marketmesh/api/user/v1/user_pb';
 import type { Profile, PublicApi, AddressBook, AccountSettings, ThemePreference } from './types';
+import { createPublicTransport } from './transport';
 
 function validProfile(profile: Profile | undefined): Profile {
   if (
@@ -65,24 +65,7 @@ export function createPublicApi(
   origin = window.location.origin,
   fetcher: typeof globalThis.fetch = globalThis.fetch.bind(globalThis),
 ): PublicApi {
-  const url = new URL(origin);
-  if (url.protocol !== 'https:' || url.username || url.password || url.origin !== origin) {
-    throw new Error('Для входа требуется HTTPS origin приложения');
-  }
-  const transport = createConnectTransport({
-    baseUrl: origin,
-    useBinaryFormat: true,
-    useHttpGet: false,
-    defaultTimeoutMs: 15_000,
-    fetch: (input, init) =>
-      fetcher(input, {
-        ...init,
-        credentials: 'same-origin',
-        cache: 'no-store',
-        redirect: 'error',
-        referrerPolicy: 'no-referrer',
-      }),
-  });
+  const transport = createPublicTransport(origin, fetcher);
   const auth = createClient(AuthService, transport);
   const user = createClient(UserService, transport);
   return {

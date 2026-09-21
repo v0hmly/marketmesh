@@ -1,24 +1,18 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router';
-import AuthView from '../modules/account/views/AuthView.vue';
-import SettingsView from '../modules/account/views/SettingsView.vue';
-import AddressesView from '../modules/account/views/AddressesView.vue';
-import { addressesEnabled, settingsEnabled } from '../shared/features';
-import ProfileView from '../modules/account/views/ProfileView.vue';
+import { accountRoutes } from '../modules/account/routes';
 
+/**
+ * Композиция маршрутов продуктовых областей (ADR-0010): shell собирает
+ * маршруты модулей, владеет историей и скроллом; модуль не импортирует
+ * маршруты других модулей. Маршруты продавца и сотрудника добавляют
+ * modules/seller и modules/staff (MM-84/MM-85).
+ */
 export function createStorefrontRouter(history: RouterHistory = createWebHistory()) {
   return createRouter({
     history,
     routes: [
       { path: '/', redirect: '/account' },
-      { path: '/login', name: 'login', component: AuthView, props: { mode: 'login' } },
-      { path: '/register', name: 'register', component: AuthView, props: { mode: 'register' } },
-      ...(addressesEnabled
-        ? [{ path: '/account/addresses', name: 'addresses', component: AddressesView }]
-        : []),
-      ...(settingsEnabled
-        ? [{ path: '/account/settings', name: 'settings', component: SettingsView }]
-        : []),
-      { path: '/account', name: 'account', component: ProfileView },
+      ...accountRoutes,
       { path: '/:pathMatch(.*)*', redirect: '/account' },
     ],
     scrollBehavior: () => ({ top: 0 }),

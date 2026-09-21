@@ -29,14 +29,13 @@
 `:root`, `:root[data-theme='dark']` и `@media (prefers-color-scheme: dark)`. Генератор делает
 это сам, так что расхождения между темами возникнуть не может.
 
-### Известная ошибка в `.brand-mark`
+### Знак `.brand-mark`
 
-В `components/bundle.css` знак собран под один размер и ломается: при `width`/`height` 35px
-и `padding-right` 8px в `content-box` коробка становится 43×35, а `border-radius: 50%`
-превращает круг в овал; `letter-spacing: -8px` уводит букву вбок, `translateY(5px)` роняет её
-вниз, `overflow: hidden` подрезает. В прототипах это закрыто слоем-поправкой
-(`prototypes/tokens-vars.css`, селектор `.brand > .brand-mark`). Правильное решение —
-починить сам класс в системе и в `style.css`, после чего поправку удалить.
+Класс починен в `components/bundle.css` и в `frontend/apps/storefront/src/style.css`
+(MM-82): коробка 35×35 в `border-box`, без `letter-spacing`, `padding-right` и
+`overflow`; буква центрируется флексом и `translateY(-0.06em)`. Бывший слой-поправка
+`.brand > .brand-mark` из `prototypes/tokens-vars.css` удалён — новые поправки поверх
+знака не вводятся.
 
 ## prototypes
 
