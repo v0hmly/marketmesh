@@ -1132,14 +1132,14 @@ main:focus {
   gap: 20px;
 }
 .sample-card {
-  padding: 26px;
+  padding: 24px;
   overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 .sample-empty {
-  padding: 26px;
+  padding: 24px;
   color: var(--muted);
 }
 .sample-photo {
