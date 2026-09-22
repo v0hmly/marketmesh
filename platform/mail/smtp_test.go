@@ -182,6 +182,22 @@ func TestSMTPConfiguration(t *testing.T) {
 	}
 }
 
+// deadlinePendingContext models a socket reaching its deadline before the
+// context cancellation timer has run; Err deliberately remains nil.
+type deadlinePendingContext struct{ context.Context }
+
+func (deadlinePendingContext) Deadline() (time.Time, bool) {
+	return time.Now().Add(-time.Second), true
+}
+
+func TestSMTPDeadlineBeforeContextTimer(t *testing.T) {
+	ctx := deadlinePendingContext{context.Background()}
+	err := deliveryError(ctx, "greeting", &net.DNSError{IsTimeout: true})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("elapsed socket deadline lost its cancellation classification")
+	}
+}
+
 func TestSMTPGreetingDisconnectIsRetryable(t *testing.T) {
 	address, done := serveSMTP(t, func(conn net.Conn) error {
 		_, _ = io.WriteString(conn, "220 test\r\n")

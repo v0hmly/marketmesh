@@ -147,6 +147,11 @@ func deliveryError(ctx context.Context, stage string, err error) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+	// The connection deadline and the context timer are independent. The socket
+	// may time out before the context's timer goroutine has set Err.
+	if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+		return context.DeadlineExceeded
+	}
 	result := &DeliveryError{Stage: stage, Retryable: true}
 	var reply *textproto.Error
 	if errors.As(err, &reply) && reply.Code >= 400 && reply.Code <= 599 {
