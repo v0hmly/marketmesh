@@ -180,6 +180,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   });
   await page.getByRole('button', { name: 'Удалить аватар', exact: true }).click();
   await expect(page.getByText('Запись могла выполниться.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Результат запроса не подтверждён');
   expect(writes).toBe(1);
   await page.unroute('**/user.v1.UserService/ClearAvatar');
   await page.getByRole('button', { name: 'Обновить состояние', exact: true }).click();
