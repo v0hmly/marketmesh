@@ -43,6 +43,8 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 	a, b, missing := profile.SubjectID{1}, profile.SubjectID{2}, profile.SubjectID{3}
 	// Provisioning belongs to a future creation-event consumer; only fixtures insert.
 	exec(`INSERT INTO users.profiles(subject_id,display_name) VALUES($1,'Alice'),($2,'Bob')`, a.Bytes(), b.Bytes())
+	// Additive migration preserves profiles created by the prior application.
+	exec(migrations.IdentityUp)
 	for _, tc := range []struct {
 		name string
 		sql  string
@@ -53,6 +55,12 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 		{"invalid version", `UPDATE users.profiles SET version=0 WHERE subject_id=$1`, []any{a.Bytes()}},
 		{"long display", `UPDATE users.profiles SET display_name=repeat('x',81) WHERE subject_id=$1`, []any{a.Bytes()}},
 		{"long bio", `UPDATE users.profiles SET bio=repeat('x',1001) WHERE subject_id=$1`, []any{a.Bytes()}},
+		{"long last name", `UPDATE users.profiles SET last_name=repeat('x',81) WHERE subject_id=$1`, []any{a.Bytes()}},
+		{"long city", `UPDATE users.profiles SET city=repeat('x',121) WHERE subject_id=$1`, []any{a.Bytes()}},
+		{"invalid calendar", `UPDATE users.profiles SET birth_date='2026-02-30' WHERE subject_id=$1`, []any{a.Bytes()}},
+		{"infinite date", `UPDATE users.profiles SET birth_date='infinity' WHERE subject_id=$1`, []any{a.Bytes()}},
+		{"unknown gender", `UPDATE users.profiles SET gender=3 WHERE subject_id=$1`, []any{a.Bytes()}},
+		{"phone letters", `UPDATE users.profiles SET phone='1234567x' WHERE subject_id=$1`, []any{a.Bytes()}},
 	} {
 		if _, err := pool.Exec(ctx, tc.sql, tc.args...); err == nil {
 			t.Fatalf("schema accepted %s", tc.name)
@@ -62,6 +70,10 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	old, err := repo.Get(ctx, a)
+	if err != nil || old.Fields != (profile.Fields{DisplayName: "Alice"}) || old.Version != 1 {
+		t.Fatal("identity migration changed an existing profile")
+	}
 	if _, err := repo.Get(ctx, missing); !errors.Is(err, profile.ErrNotReady) {
 		t.Fatalf("missing Get: %v", err)
 	}
@@ -69,6 +81,7 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 		t.Fatalf("missing Update: %v", err)
 	}
 	const workers = 16
+	fields := profile.Fields{DisplayName: "Changed", Bio: "line\n\ttwo", LastName: "Фамилия 😀", BirthDate: "2000-02-29", Gender: profile.GenderFemale, Phone: "+7 (999) 123-45-67", City: "Город", ShowAge: true}
 	errs := make(chan error, workers)
 	var wg sync.WaitGroup
 	start := make(chan struct{})
@@ -77,7 +90,7 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			<-start
-			_, err := repo.Update(ctx, a, profile.Fields{DisplayName: "Changed", Bio: "line\n\ttwo"}, 1)
+			_, err := repo.Update(ctx, a, fields, 1)
 			errs <- err
 		}()
 	}
@@ -96,7 +109,7 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 		t.Fatalf("CAS winners=%d", wins)
 	}
 	got, err := repo.Get(ctx, a)
-	if err != nil || got.Version != 2 || got.Fields.DisplayName != "Changed" || got.UpdatedAt.Before(got.CreatedAt) {
+	if err != nil || got.Version != 2 || got.Fields != fields || got.UpdatedAt.Before(got.CreatedAt) {
 		t.Fatalf("updated profile=%+v err=%v", got, err)
 	}
 	other, err := repo.Get(ctx, b)
@@ -146,9 +159,30 @@ func TestIntegrationProfileIsolationCASAndMigrations(t *testing.T) {
 	if _, err := conn.Exec(ctx, `RESET ROLE`); err != nil {
 		t.Fatal(err)
 	}
+	// A prior binary updates only its known columns during sequential rollout.
+	if _, err := repo.Update(ctx, a, fields, 3); err != nil {
+		t.Fatal("identity update before compatibility check failed", err)
+	}
+	exec(`UPDATE users.profiles SET display_name='Legacy',version=version+1 WHERE subject_id=$1`, a.Bytes())
+	fields.DisplayName = "Legacy"
+	if got, err := repo.Get(ctx, a); err != nil || got.Fields != fields || got.Version != 5 {
+		t.Fatal("old writer lost identity data")
+	}
+	// Down is tested only on this disposable database; it intentionally drops the
+	// added private fields while preserving the original profile and CAS version.
+	exec(migrations.IdentityDown)
+	var originalName string
+	if err := pool.QueryRow(ctx, `SELECT display_name FROM users.profiles WHERE subject_id=$1`, a.Bytes()).Scan(&originalName); err != nil || originalName != "Legacy" {
+		t.Fatal("identity down changed original fields")
+	}
+	exec(migrations.IdentityUp)
+	if got, err := repo.Get(ctx, a); err != nil || got.Fields.LastName != "" || got.Fields.BirthDate != "" || got.Fields.ShowAge || got.Version != 5 {
+		t.Fatal("identity up defaults are invalid")
+	}
 	// Down/up is reversible and removes fixture data.
 	exec(migrations.ProfilesDown)
 	exec(migrations.ProfilesUp)
+	exec(migrations.IdentityUp)
 	if _, err := repo.Get(ctx, a); !errors.Is(err, profile.ErrNotReady) {
 		t.Fatal("migration recreated data", err)
 	}

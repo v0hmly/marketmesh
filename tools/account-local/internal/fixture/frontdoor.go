@@ -78,7 +78,7 @@ func frontdoorHandler(files fs.FS, proxy http.Handler) http.Handler {
 		}
 		// Only known client-side routes fall back to index; private/unknown RPC paths never do.
 		switch r.URL.Path {
-		case "/account/security", "/account/security/verify", "/account/security/reset", "/account/security/change_email", "/account/security/cancel_email", "/account/security/cancel_deletion", "/", "/account", "/account/addresses", "/account/settings", "/login", "/register":
+		case "/account/security", "/account/security/verify", "/account/security/reset", "/account/security/change_email", "/account/security/cancel_email", "/account/security/cancel_deletion", "/", "/account", "/account/id", "/account/addresses", "/account/settings", "/login", "/register":
 			clone := r.Clone(r.Context())
 			u := *r.URL
 			clone.URL = &u

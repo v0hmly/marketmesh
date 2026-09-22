@@ -224,7 +224,7 @@ func (r *profileResources) dependencies() []serviceruntime.CriticalDependency {
 					}
 				}
 
-				rows, err := executor.Query(ctx, "SELECT subject_id, display_name, bio, version, created_at, updated_at FROM users.profiles LIMIT 0")
+				rows, err := executor.Query(ctx, "SELECT subject_id, display_name, bio, version, created_at, updated_at, last_name, birth_date, gender, phone, city, show_age FROM users.profiles LIMIT 0")
 				if err != nil {
 					return errors.New("user profile: schema unavailable")
 				}

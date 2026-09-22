@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 
 	"github.com/v0hmly/marketmesh/services/user/internal/application/identity"
 	"github.com/v0hmly/marketmesh/services/user/internal/domain/profile"
@@ -14,8 +15,10 @@ type Updater interface {
 	Update(context.Context, profile.SubjectID, profile.Fields, uint64) (profile.Profile, error)
 }
 type Command struct {
-	DisplayName, Bio string
-	ExpectedVersion  uint64
+	DisplayName, Bio, LastName, BirthDate, Phone, City string
+	Gender                                             profile.Gender
+	ShowAge                                            bool
+	ExpectedVersion                                    uint64
 }
 type UseCase struct{ updater Updater }
 
@@ -41,7 +44,7 @@ func (uc *UseCase) Execute(ctx context.Context, p identity.Principal, cmd Comman
 	if cmd.ExpectedVersion == 0 || cmd.ExpectedVersion >= math.MaxInt64 {
 		return profile.Profile{}, profile.ErrInvalidProfile
 	}
-	fields, err := profile.NewFields(cmd.DisplayName, cmd.Bio)
+	fields, err := profile.NormalizeFields(profile.Fields{DisplayName: cmd.DisplayName, Bio: cmd.Bio, LastName: cmd.LastName, BirthDate: cmd.BirthDate, Gender: cmd.Gender, Phone: cmd.Phone, City: cmd.City, ShowAge: cmd.ShowAge}, time.Now())
 	if err != nil {
 		return profile.Profile{}, err
 	}

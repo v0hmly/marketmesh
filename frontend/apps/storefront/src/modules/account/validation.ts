@@ -13,7 +13,7 @@ export function validateProfile(
     !wellFormed(displayName) ||
     utf8.encode(displayName).length > 320 ||
     Array.from(normalized).length > 80 ||
-    controls.test(normalized)
+    controls.test(displayName)
   ) {
     errors.displayName = 'Имя: не более 80 символов и 320 байт UTF-8, без управляющих символов.';
   }
@@ -30,6 +30,24 @@ export function validateProfile(
 }
 
 const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+function calendarDate(value: string): RegExpExecArray | null {
+  const match = datePattern.exec(value);
+  if (!match || Number(match[1]) < 1) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+    ? match
+    : null;
+}
+
+function boundedText(value: string, limit: number): boolean {
+  return (
+    wellFormed(value) &&
+    utf8.encode(value).length <= limit * 4 &&
+    Array.from(trimDisplayName(value)).length <= limit &&
+    !controls.test(value)
+  );
+}
 
 export interface IdentityDraft {
   displayName: string;
@@ -53,42 +71,39 @@ export function validateIdentity(draft: IdentityDraft): IdentityErrors {
   const name = trimDisplayName(draft.displayName);
   if (!name) {
     errors.displayName = 'Введите имя — оно нужно мастеру и видно в ваших отзывах.';
-  } else if (
-    !wellFormed(draft.displayName) ||
-    utf8.encode(draft.displayName).length > 320 ||
-    Array.from(name).length > 80 ||
-    controls.test(name)
-  ) {
+  } else if (!boundedText(draft.displayName, 80)) {
     errors.displayName = 'Имя: не более 80 символов и 320 байт UTF-8, без управляющих символов.';
   }
-  if (Array.from(trimDisplayName(draft.lastName)).length > 80)
-    errors.lastName = 'Фамилия: не более 80 символов.';
+  if (!boundedText(draft.lastName, 80))
+    errors.lastName = 'Фамилия: не более 80 символов и 320 байт UTF-8, без управляющих символов.';
   if (draft.birthDate) {
-    const match = datePattern.exec(draft.birthDate);
-    const date = match ? new Date(`${draft.birthDate}T00:00:00`) : null;
-    if (!match || !date || Number.isNaN(date.getTime()))
-      errors.birthDate = 'Дата указывается в формате ГГГГ-ММ-ДД.';
-    else if (date.getTime() > Date.now())
+    if (!calendarDate(draft.birthDate))
+      errors.birthDate = 'Укажите существующую дату в формате ГГГГ-ММ-ДД.';
+    else if (draft.birthDate > new Date().toISOString().slice(0, 10))
       errors.birthDate = 'Проверьте дату: она не может быть в будущем.';
   }
   if (draft.phone) {
     const digits = draft.phone.replace(/\D/g, '');
-    if (digits.length < 7 || digits.length > 15)
-      errors.phone = 'Проверьте номер: нужно от 7 до 15 цифр.';
+    if (
+      draft.phone.length > 32 ||
+      /[^0-9 +.()-]/.test(draft.phone) ||
+      (draft.phone.trim() !== '' && (digits.length < 7 || digits.length > 15))
+    )
+      errors.phone = 'Номер: от 7 до 15 цифр, не более 32 знаков. Допустимы пробелы и +-.().';
   }
-  if (Array.from(trimDisplayName(draft.city)).length > 120)
-    errors.city = 'Город: не более 120 символов.';
+  if (!boundedText(draft.city, 120))
+    errors.city = 'Город: не более 120 символов и 480 байт UTF-8, без управляющих символов.';
   return errors;
 }
 
 /** Возраст в полных годах из даты YYYY-MM-DD; null, если дата пустая или неправдоподобная. */
 export function ageOf(birthDate: string): number | null {
-  const match = datePattern.exec(birthDate);
+  const match = calendarDate(birthDate);
   if (!match) return null;
   const now = new Date();
-  let age = now.getFullYear() - Number(match[1]);
-  const month = now.getMonth() + 1 - Number(match[2]);
-  if (month < 0 || (month === 0 && now.getDate() < Number(match[3]))) age -= 1;
+  let age = now.getUTCFullYear() - Number(match[1]);
+  const month = now.getUTCMonth() + 1 - Number(match[2]);
+  if (month < 0 || (month === 0 && now.getUTCDate() < Number(match[3]))) age -= 1;
   return age >= 0 && age < 130 ? age : null;
 }
 
@@ -118,7 +133,7 @@ const monthNames = [
 
 /** Дата YYYY-MM-DD словами: «12 марта 1989 года». */
 export function birthLabel(birthDate: string): string {
-  const match = datePattern.exec(birthDate);
+  const match = calendarDate(birthDate);
   if (!match) return 'Не указана';
   return `${Number(match[3])} ${monthNames[Number(match[2]) - 1]} ${match[1]} года`;
 }
