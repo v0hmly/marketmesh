@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -44,6 +46,10 @@ func configure(root string) error {
 	if !roots.AppendCertsFromPEM(ca) {
 		return errors.New("invalid CA")
 	}
+	requested, err := browserOrigins(nil, os.Getenv("MM_FILES_BROWSER_ORIGINS"))
+	if err != nil {
+		return err
+	}
 	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}}, Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -57,8 +63,22 @@ func configure(root string) error {
 		if err != nil && (!errors.As(err, &se) || (se.ErrorCode() != "BucketAlreadyOwnedByYou" && se.ErrorCode() != "BucketAlreadyExists")) {
 			return err
 		}
+		previous, err := api.GetBucketCors(ctx, &s3.GetBucketCorsInput{Bucket: aws.String(zone.name)})
+		if err != nil && (!errors.As(err, &se) || se.ErrorCode() != "NoSuchCORSConfiguration") {
+			return err
+		}
+		var existing []string
+		if previous != nil {
+			for _, rule := range previous.CORSRules {
+				existing = append(existing, rule.AllowedOrigins...)
+			}
+		}
+		origins, err := browserOrigins(existing, strings.Join(requested, ","))
+		if err != nil {
+			return err
+		}
 		_, err = api.PutBucketCors(ctx, &s3.PutBucketCorsInput{Bucket: aws.String(zone.name), CORSConfiguration: &types.CORSConfiguration{CORSRules: []types.CORSRule{{
-			AllowedOrigins: []string{"https://localhost:8443"}, AllowedMethods: []string{zone.method}, MaxAgeSeconds: aws.Int32(60),
+			AllowedOrigins: origins, AllowedMethods: []string{zone.method}, MaxAgeSeconds: aws.Int32(60),
 			AllowedHeaders: []string{"content-type", "content-length", "if-none-match", "x-amz-checksum-sha256", "x-amz-sdk-checksum-algorithm", "x-amz-server-side-encryption", "x-amz-server-side-encryption-aws-kms-key-id", "x-amz-meta-file-id", "x-amz-meta-upload-id"},
 			ExposeHeaders:  []string{"etag", "content-disposition", "content-length", "x-amz-checksum-sha256"},
 		}}}})
@@ -77,4 +97,29 @@ func configure(root string) error {
 		}
 	}
 	return nil
+}
+
+// Local account overlays share Files. Preserve earlier exact origins rather than
+// replacing another running account's CORS when a disposable test starts.
+func browserOrigins(existing []string, raw string) ([]string, error) {
+	values := append([]string{"https://localhost:8443"}, existing...)
+	if raw != "" {
+		values = append(values, strings.Split(raw, ",")...)
+	}
+	seen := make(map[string]bool)
+	var origins []string
+	for _, origin := range values {
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme != "https" || u.Host == "" || strings.Contains(u.Host, "*") || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || strings.ContainsAny(origin, " \t\r\n;'\"") {
+			return nil, errors.New("invalid browser origin")
+		}
+		if !seen[origin] {
+			seen[origin] = true
+			origins = append(origins, origin)
+		}
+	}
+	if len(origins) > 32 {
+		return nil, errors.New("too many browser origins; review local CORS configuration")
+	}
+	return origins, nil
 }

@@ -143,8 +143,7 @@ assertion Auth остаются Ed25519 по действующему контр
 Compose-сети; для Redis причина явно передаётся в конфигурации Auth. Генератор,
 provisioner и часть контейнеров работают с правами root внутри контейнера, а
 диагностические секреты доступны владельцу Docker. Окружение не предназначено
-для внешнего размещения или production. Оно не включает CI/CD MM-6, аватары
-MM-43 и покупки MM-55.
+для внешнего размещения или production. Отдельный Files overlay для аватаров описан ниже; покупки MM-55 сюда не входят.
 
 
 Адресная книга MM-68 включается в этом локальном контуре на User и обоих шлюзах;
@@ -212,3 +211,44 @@ runtime Auth. Topology version — 3: старое состояние верси
 Коды/ссылки остаются в памяти теста, reporter выводит только статические имена и
 места проверок. SMTP-параметры и план отката — в
 [описании Auth email](../../docs/security/auth-email.md).
+
+
+## Аватары с настоящим Files (MM-65)
+
+Нужен уже запущенный собственный стенд [files-local](../files-local/README.md).
+Команда подключает account-local к его закрытым сетям и данным, применяет User
+миграции и собирает storefront с аватаром. Mailpit остаётся локальным.
+
+```sh
+# Значения по умолчанию Files: marketmesh-files-local и .cache/files-local.
+python3 infra/account-local/files.py up
+# HTTPS localhost:18443; Mailpit localhost:18025.
+python3 infra/account-local/files.py test
+python3 infra/account-local/files.py down
+```
+
+Для существующего именованного стенда передайте `FILES_LOCAL_PROJECT` и
+`FILES_LOCAL_STATE` (абсолютный каталог внутри `.cache`), а для аккаунта —
+`ACCOUNT_LOCAL_PROJECT`, `ACCOUNT_LOCAL_PORT`, `ACCOUNT_MAILPIT_PORT`. Скрипт
+отказывает чужим owner-marker и Compose resources. Повторный `up` сохраняет
+PKI, почтовый ключ, базы, storage и KMS; `down` не удаляет volumes.
+`files.py renew` согласованно останавливает только свой account overlay,
+перевыпускает workload PKI и запускает всех его потребителей. Срок сертификатов
+короткий; истёкший PKI отклоняется с указанием этой команды. Отдельная PKI самого
+Files/storage обновляется его `local.py renew`, без удаления данных.
+
+CA публичного приложения и Files объединены в указанном командой файле
+`browser/combined-ca.pem`. Browser runner доверяет им только внутри собственного
+контейнера (NSS/Node); системный trust store хоста не меняется. При ручном запуске
+браузера требуется доверие обоим локальным CA. Прямые HTTPS storage endpoints —
+localhost:18343–18345; frontdoor не проксирует файловые байты.
+
+`files.py test` создаёт отдельный account-проект, выполняет pending и core фазы,
+проверяет реальную загрузку/AV/CDR/привязку/замену/удаление, чужого владельца,
+неготовый файл, CAS и потерю ответа. После проверки удаляет только созданные
+account resources; внешний Files сохраняется. Тест добавляет только постоянный
+origin `https://frontdoor:8443`, сохраняя ранее настроенные точные CORS origins
+работающих кабинетов. Список ограничен 32 origins; wildcard отклоняется. Синтетические файлы проходят
+обычный lifecycle Files. Учтите [лимит одноразового sandbox](../../services/files/README.md):
+один документ на контейнер и обязательный перезапуск, минимум 11 секунд.
+Границы доверия, параметры поставки и ограничения — в [MM-65](../../docs/security/account-avatar.md).

@@ -39,7 +39,7 @@ func main() {
 	write(root, "ca.crt", "CERTIFICATE", der)
 	ca, err = x509.ParseCertificate(der)
 	must(err)
-	names := []string{"bao", "quarantine", "internal-clean", "delivery-a", "delivery-b", "pg-primary", "pg-replica", "files", "gateway-out", "files-auth", "auth", "redis"}
+	names := []string{"bao", "quarantine", "internal-clean", "delivery-a", "delivery-b", "pg-primary", "pg-replica", "files", "gateway-out", "files-auth", "auth", "redis", "user"}
 	for i, name := range names {
 		leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		must(err)
@@ -50,7 +50,7 @@ func main() {
 		}
 		identity := ""
 		switch name {
-		case "files", "gateway-out", "auth":
+		case "files", "gateway-out", "auth", "user":
 			identity = "spiffe://marketmesh.test/env/test/cluster/" + cluster + "/ns/marketmesh/sa/" + name + "/pod/01234567-89ab-cdef-0123-456789abcdef"
 		case "files-auth":
 			identity = "spiffe://marketmesh.test/env/test/cluster/" + cluster + "/ns/marketmesh/sa/files"

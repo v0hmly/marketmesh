@@ -8,6 +8,7 @@ import type { SessionController, SessionState } from '../../../shell/session';
 import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 vi.mock('../../../shared/features', () => ({
+  avatarEnabled: false,
   addressesEnabled: false,
   settingsEnabled: false,
   ordersEnabled: false,

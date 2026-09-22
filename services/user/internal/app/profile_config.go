@@ -13,6 +13,7 @@ import (
 )
 
 type profileConfig struct {
+	avatar                                         avatarConfig
 	enabled                                        bool
 	addressesEnabled                               bool
 	settingsEnabled                                bool
@@ -45,6 +46,10 @@ func loadProfileConfig(env serviceruntime.Env, environment string) (profileConfi
 	}
 	if c.settingsEnabled && !c.enabled {
 		return c, errors.New("USER_SETTINGS_ENABLED requires USER_PROFILE_ENABLED")
+	}
+	c.avatar, err = loadAvatarConfig(env, c.enabled)
+	if err != nil {
+		return c, err
 	}
 	if !c.enabled {
 		return c, err

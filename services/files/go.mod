@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.113.1
 	github.com/aws/smithy-go v1.28.1
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922082005-210a89db5688
+	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922211745-52c7837d70da
 	github.com/v0hmly/marketmesh/platform v0.0.0-20260922082005-210a89db5688
 	google.golang.org/grpc v1.83.2
 )

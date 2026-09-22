@@ -19,6 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	UserService_GetAvatar_FullMethodName         = "/user.v1.UserService/GetAvatar"
+	UserService_SetAvatar_FullMethodName         = "/user.v1.UserService/SetAvatar"
+	UserService_ClearAvatar_FullMethodName       = "/user.v1.UserService/ClearAvatar"
 	UserService_GetMe_FullMethodName             = "/user.v1.UserService/GetMe"
 	UserService_UpdateMe_FullMethodName          = "/user.v1.UserService/UpdateMe"
 	UserService_ListAddresses_FullMethodName     = "/user.v1.UserService/ListAddresses"
@@ -36,6 +39,12 @@ const (
 //
 // UserService exposes the authenticated caller's account data on the workload-authenticated listener.
 type UserServiceClient interface {
+	// GetAvatar reads the caller's independently versioned avatar association.
+	GetAvatar(ctx context.Context, in *GetAvatarRequest, opts ...grpc.CallOption) (*GetAvatarResponse, error)
+	// SetAvatar attaches only the owner's READY clean raster after Files validation.
+	SetAvatar(ctx context.Context, in *SetAvatarRequest, opts ...grpc.CallOption) (*SetAvatarResponse, error)
+	// ClearAvatar unlinks the avatar and durably schedules its retirement.
+	ClearAvatar(ctx context.Context, in *ClearAvatarRequest, opts ...grpc.CallOption) (*ClearAvatarResponse, error)
 	// GetMe reads the caller's profile with read-after-write consistency.
 	GetMe(ctx context.Context, in *GetMeRequest, opts ...grpc.CallOption) (*GetMeResponse, error)
 	// UpdateMe replaces editable fields only when the expected profile version still matches.
@@ -62,6 +71,36 @@ type userServiceClient struct {
 
 func NewUserServiceClient(cc grpc.ClientConnInterface) UserServiceClient {
 	return &userServiceClient{cc}
+}
+
+func (c *userServiceClient) GetAvatar(ctx context.Context, in *GetAvatarRequest, opts ...grpc.CallOption) (*GetAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAvatarResponse)
+	err := c.cc.Invoke(ctx, UserService_GetAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SetAvatar(ctx context.Context, in *SetAvatarRequest, opts ...grpc.CallOption) (*SetAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetAvatarResponse)
+	err := c.cc.Invoke(ctx, UserService_SetAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ClearAvatar(ctx context.Context, in *ClearAvatarRequest, opts ...grpc.CallOption) (*ClearAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClearAvatarResponse)
+	err := c.cc.Invoke(ctx, UserService_ClearAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *userServiceClient) GetMe(ctx context.Context, in *GetMeRequest, opts ...grpc.CallOption) (*GetMeResponse, error) {
@@ -160,6 +199,12 @@ func (c *userServiceClient) UpdateSettings(ctx context.Context, in *UpdateSettin
 //
 // UserService exposes the authenticated caller's account data on the workload-authenticated listener.
 type UserServiceServer interface {
+	// GetAvatar reads the caller's independently versioned avatar association.
+	GetAvatar(context.Context, *GetAvatarRequest) (*GetAvatarResponse, error)
+	// SetAvatar attaches only the owner's READY clean raster after Files validation.
+	SetAvatar(context.Context, *SetAvatarRequest) (*SetAvatarResponse, error)
+	// ClearAvatar unlinks the avatar and durably schedules its retirement.
+	ClearAvatar(context.Context, *ClearAvatarRequest) (*ClearAvatarResponse, error)
 	// GetMe reads the caller's profile with read-after-write consistency.
 	GetMe(context.Context, *GetMeRequest) (*GetMeResponse, error)
 	// UpdateMe replaces editable fields only when the expected profile version still matches.
@@ -188,6 +233,15 @@ type UserServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedUserServiceServer struct{}
 
+func (UnimplementedUserServiceServer) GetAvatar(context.Context, *GetAvatarRequest) (*GetAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAvatar not implemented")
+}
+func (UnimplementedUserServiceServer) SetAvatar(context.Context, *SetAvatarRequest) (*SetAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetAvatar not implemented")
+}
+func (UnimplementedUserServiceServer) ClearAvatar(context.Context, *ClearAvatarRequest) (*ClearAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ClearAvatar not implemented")
+}
 func (UnimplementedUserServiceServer) GetMe(context.Context, *GetMeRequest) (*GetMeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetMe not implemented")
 }
@@ -234,6 +288,60 @@ func RegisterUserServiceServer(s grpc.ServiceRegistrar, srv UserServiceServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&UserService_ServiceDesc, srv)
+}
+
+func _UserService_GetAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetAvatar(ctx, req.(*GetAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SetAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SetAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SetAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SetAvatar(ctx, req.(*SetAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ClearAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClearAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ClearAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ClearAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ClearAvatar(ctx, req.(*ClearAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _UserService_GetMe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -405,6 +513,18 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "user.v1.UserService",
 	HandlerType: (*UserServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAvatar",
+			Handler:    _UserService_GetAvatar_Handler,
+		},
+		{
+			MethodName: "SetAvatar",
+			Handler:    _UserService_SetAvatar_Handler,
+		},
+		{
+			MethodName: "ClearAvatar",
+			Handler:    _UserService_ClearAvatar_Handler,
+		},
 		{
 			MethodName: "GetMe",
 			Handler:    _UserService_GetMe_Handler,

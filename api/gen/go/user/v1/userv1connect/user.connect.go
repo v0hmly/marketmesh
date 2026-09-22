@@ -33,6 +33,12 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// UserServiceGetAvatarProcedure is the fully-qualified name of the UserService's GetAvatar RPC.
+	UserServiceGetAvatarProcedure = "/user.v1.UserService/GetAvatar"
+	// UserServiceSetAvatarProcedure is the fully-qualified name of the UserService's SetAvatar RPC.
+	UserServiceSetAvatarProcedure = "/user.v1.UserService/SetAvatar"
+	// UserServiceClearAvatarProcedure is the fully-qualified name of the UserService's ClearAvatar RPC.
+	UserServiceClearAvatarProcedure = "/user.v1.UserService/ClearAvatar"
 	// UserServiceGetMeProcedure is the fully-qualified name of the UserService's GetMe RPC.
 	UserServiceGetMeProcedure = "/user.v1.UserService/GetMe"
 	// UserServiceUpdateMeProcedure is the fully-qualified name of the UserService's UpdateMe RPC.
@@ -61,6 +67,12 @@ const (
 
 // UserServiceClient is a client for the user.v1.UserService service.
 type UserServiceClient interface {
+	// GetAvatar reads the caller's independently versioned avatar association.
+	GetAvatar(context.Context, *connect.Request[v1.GetAvatarRequest]) (*connect.Response[v1.GetAvatarResponse], error)
+	// SetAvatar attaches only the owner's READY clean raster after Files validation.
+	SetAvatar(context.Context, *connect.Request[v1.SetAvatarRequest]) (*connect.Response[v1.SetAvatarResponse], error)
+	// ClearAvatar unlinks the avatar and durably schedules its retirement.
+	ClearAvatar(context.Context, *connect.Request[v1.ClearAvatarRequest]) (*connect.Response[v1.ClearAvatarResponse], error)
 	// GetMe reads the caller's profile with read-after-write consistency.
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 	// UpdateMe replaces editable fields only when the expected profile version still matches.
@@ -92,6 +104,24 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	userServiceMethods := v1.File_user_v1_user_proto.Services().ByName("UserService").Methods()
 	return &userServiceClient{
+		getAvatar: connect.NewClient[v1.GetAvatarRequest, v1.GetAvatarResponse](
+			httpClient,
+			baseURL+UserServiceGetAvatarProcedure,
+			connect.WithSchema(userServiceMethods.ByName("GetAvatar")),
+			connect.WithClientOptions(opts...),
+		),
+		setAvatar: connect.NewClient[v1.SetAvatarRequest, v1.SetAvatarResponse](
+			httpClient,
+			baseURL+UserServiceSetAvatarProcedure,
+			connect.WithSchema(userServiceMethods.ByName("SetAvatar")),
+			connect.WithClientOptions(opts...),
+		),
+		clearAvatar: connect.NewClient[v1.ClearAvatarRequest, v1.ClearAvatarResponse](
+			httpClient,
+			baseURL+UserServiceClearAvatarProcedure,
+			connect.WithSchema(userServiceMethods.ByName("ClearAvatar")),
+			connect.WithClientOptions(opts...),
+		),
 		getMe: connect.NewClient[v1.GetMeRequest, v1.GetMeResponse](
 			httpClient,
 			baseURL+UserServiceGetMeProcedure,
@@ -151,6 +181,9 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // userServiceClient implements UserServiceClient.
 type userServiceClient struct {
+	getAvatar         *connect.Client[v1.GetAvatarRequest, v1.GetAvatarResponse]
+	setAvatar         *connect.Client[v1.SetAvatarRequest, v1.SetAvatarResponse]
+	clearAvatar       *connect.Client[v1.ClearAvatarRequest, v1.ClearAvatarResponse]
 	getMe             *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
 	updateMe          *connect.Client[v1.UpdateMeRequest, v1.UpdateMeResponse]
 	listAddresses     *connect.Client[v1.ListAddressesRequest, v1.ListAddressesResponse]
@@ -160,6 +193,21 @@ type userServiceClient struct {
 	setDefaultAddress *connect.Client[v1.SetDefaultAddressRequest, v1.SetDefaultAddressResponse]
 	getSettings       *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
 	updateSettings    *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
+}
+
+// GetAvatar calls user.v1.UserService.GetAvatar.
+func (c *userServiceClient) GetAvatar(ctx context.Context, req *connect.Request[v1.GetAvatarRequest]) (*connect.Response[v1.GetAvatarResponse], error) {
+	return c.getAvatar.CallUnary(ctx, req)
+}
+
+// SetAvatar calls user.v1.UserService.SetAvatar.
+func (c *userServiceClient) SetAvatar(ctx context.Context, req *connect.Request[v1.SetAvatarRequest]) (*connect.Response[v1.SetAvatarResponse], error) {
+	return c.setAvatar.CallUnary(ctx, req)
+}
+
+// ClearAvatar calls user.v1.UserService.ClearAvatar.
+func (c *userServiceClient) ClearAvatar(ctx context.Context, req *connect.Request[v1.ClearAvatarRequest]) (*connect.Response[v1.ClearAvatarResponse], error) {
+	return c.clearAvatar.CallUnary(ctx, req)
 }
 
 // GetMe calls user.v1.UserService.GetMe.
@@ -209,6 +257,12 @@ func (c *userServiceClient) UpdateSettings(ctx context.Context, req *connect.Req
 
 // UserServiceHandler is an implementation of the user.v1.UserService service.
 type UserServiceHandler interface {
+	// GetAvatar reads the caller's independently versioned avatar association.
+	GetAvatar(context.Context, *connect.Request[v1.GetAvatarRequest]) (*connect.Response[v1.GetAvatarResponse], error)
+	// SetAvatar attaches only the owner's READY clean raster after Files validation.
+	SetAvatar(context.Context, *connect.Request[v1.SetAvatarRequest]) (*connect.Response[v1.SetAvatarResponse], error)
+	// ClearAvatar unlinks the avatar and durably schedules its retirement.
+	ClearAvatar(context.Context, *connect.Request[v1.ClearAvatarRequest]) (*connect.Response[v1.ClearAvatarResponse], error)
 	// GetMe reads the caller's profile with read-after-write consistency.
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
 	// UpdateMe replaces editable fields only when the expected profile version still matches.
@@ -236,6 +290,24 @@ type UserServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	userServiceMethods := v1.File_user_v1_user_proto.Services().ByName("UserService").Methods()
+	userServiceGetAvatarHandler := connect.NewUnaryHandler(
+		UserServiceGetAvatarProcedure,
+		svc.GetAvatar,
+		connect.WithSchema(userServiceMethods.ByName("GetAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceSetAvatarHandler := connect.NewUnaryHandler(
+		UserServiceSetAvatarProcedure,
+		svc.SetAvatar,
+		connect.WithSchema(userServiceMethods.ByName("SetAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceClearAvatarHandler := connect.NewUnaryHandler(
+		UserServiceClearAvatarProcedure,
+		svc.ClearAvatar,
+		connect.WithSchema(userServiceMethods.ByName("ClearAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
 	userServiceGetMeHandler := connect.NewUnaryHandler(
 		UserServiceGetMeProcedure,
 		svc.GetMe,
@@ -292,6 +364,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case UserServiceGetAvatarProcedure:
+			userServiceGetAvatarHandler.ServeHTTP(w, r)
+		case UserServiceSetAvatarProcedure:
+			userServiceSetAvatarHandler.ServeHTTP(w, r)
+		case UserServiceClearAvatarProcedure:
+			userServiceClearAvatarHandler.ServeHTTP(w, r)
 		case UserServiceGetMeProcedure:
 			userServiceGetMeHandler.ServeHTTP(w, r)
 		case UserServiceUpdateMeProcedure:
@@ -318,6 +396,18 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 
 // UnimplementedUserServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedUserServiceHandler struct{}
+
+func (UnimplementedUserServiceHandler) GetAvatar(context.Context, *connect.Request[v1.GetAvatarRequest]) (*connect.Response[v1.GetAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.GetAvatar is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) SetAvatar(context.Context, *connect.Request[v1.SetAvatarRequest]) (*connect.Response[v1.SetAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.SetAvatar is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) ClearAvatar(context.Context, *connect.Request[v1.ClearAvatarRequest]) (*connect.Response[v1.ClearAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.ClearAvatar is not implemented"))
+}
 
 func (UnimplementedUserServiceHandler) GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("user.v1.UserService.GetMe is not implemented"))

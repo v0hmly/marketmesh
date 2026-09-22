@@ -131,6 +131,36 @@ func (c *userBrowserClient) Invoke(ctx context.Context, method string, args, rep
 		var err error
 		response.Response, response.Failure, err = invokeAddress(ctx, c, request.GetContext(), request.GetRequest(), c.user.SetDefaultAddress, true)
 		return err
+	case gatewayv1.UserBrowserService_BrowserGetAvatar_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserGetAvatarRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserGetAvatarResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserGetAvatarResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAvatar(ctx, c, request.GetContext(), request.GetRequest(), c.user.GetAvatar, false)
+		return err
+	case gatewayv1.UserBrowserService_BrowserSetAvatar_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserSetAvatarRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserSetAvatarResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserSetAvatarResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAvatar(ctx, c, request.GetContext(), request.GetRequest(), c.user.SetAvatar, true)
+		return err
+	case gatewayv1.UserBrowserService_BrowserClearAvatar_FullMethodName:
+		request, ok := args.(*gatewayv1.BrowserClearAvatarRequest)
+		response, responseOK := reply.(*gatewayv1.BrowserClearAvatarResponse)
+		if !ok || !responseOK || request == nil || response == nil {
+			return status.Error(codes.InvalidArgument, "invalid request")
+		}
+		*response = gatewayv1.BrowserClearAvatarResponse{}
+		var err error
+		response.Response, response.Failure, err = invokeAvatar(ctx, c, request.GetContext(), request.GetRequest(), c.user.ClearAvatar, true)
+		return err
 	case gatewayv1.UserBrowserService_BrowserGetSettings_FullMethodName:
 		request, ok := args.(*gatewayv1.BrowserGetSettingsRequest)
 		response, responseOK := reply.(*gatewayv1.BrowserGetSettingsResponse)

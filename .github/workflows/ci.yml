@@ -53,6 +53,7 @@ jobs:
           python3 -m unittest discover -s infra/files-dc-e2e -p 'test_*.py' -v
           go test -race infra/files-dc-e2e/tunnel_balancer.go infra/files-dc-e2e/tunnel_balancer_test.go
           go test -tags=integration ./services/files/internal/app -run '^$'
+          go test infra/files-local/storage.go infra/files-local/storage_test.go
       - name: Проверить frontend
         run: ./tools/ci.sh frontend
       - name: Проверить protobuf и воспроизводимость генерации

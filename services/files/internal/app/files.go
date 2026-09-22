@@ -43,6 +43,7 @@ type bucketConfig struct {
 }
 type tlsFiles struct{ Certificate, PrivateKey, RootCA string }
 type controlConfig struct {
+	Avatar                                      avatarConfig
 	Enabled                                     bool
 	Address                                     string
 	TLS                                         tlsFiles
@@ -286,26 +287,48 @@ func serveFiles(ctx context.Context, c controlConfig, repo *filespostgres.Reposi
 	if err != nil {
 		return err
 	}
+	server := controlServer(serverTLS, handler, func(ctx context.Context) error {
+		if err := repo.Ready(ctx); err != nil {
+			return err
+		}
+		return verifier.Ready(ctx)
+	})
+	listener, err := net.Listen("tcp", c.Address)
+	if err != nil {
+		return file.ErrUnavailable
+	}
+	defer listener.Close()
+	avatar, avatarListener, err := avatarServer(c, service)
+	if err != nil {
+		server.Stop()
+		return err
+	}
+	defer server.Stop()
+	results := make(chan error, 2)
+	if avatar != nil {
+		defer avatar.Stop()
+		defer avatarListener.Close()
+		go func() { results <- avatar.Serve(avatarListener) }()
+	}
+	go func() { results <- server.Serve(listener) }()
+	select {
+	case <-ctx.Done():
+		return nil
+	case err = <-results:
+		if err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			return file.ErrUnavailable
+		}
+		return nil
+	}
+}
+
+func controlServer(serverTLS *tls.Config, handler *internalgrpc.Handler, ready func(context.Context) error) *grpc.Server {
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(serverTLS)), grpc.MaxRecvMsgSize(16*1024), grpc.MaxSendMsgSize(64*1024), grpc.MaxConcurrentStreams(32), grpc.ChainUnaryInterceptor(internalgrpc.AuditInterceptor(os.Stdout), func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		return next(ctx, req)
 	}))
 	filesv1.RegisterFileServiceServer(server, handler)
-	grpc_health_v1.RegisterHealthServer(server, &filesHealth{ready: func(ctx context.Context) error {
-		if err := repo.Ready(ctx); err != nil {
-			return err
-		}
-		return verifier.Ready(ctx)
-	}})
-	listener, err := net.Listen("tcp", c.Address)
-	if err != nil {
-		return file.ErrUnavailable
-	}
-	defer listener.Close()
-	go func() { <-ctx.Done(); server.Stop() }()
-	if err = server.Serve(listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-		return file.ErrUnavailable
-	}
-	return nil
+	grpc_health_v1.RegisterHealthServer(server, &filesHealth{ready: ready})
+	return server
 }

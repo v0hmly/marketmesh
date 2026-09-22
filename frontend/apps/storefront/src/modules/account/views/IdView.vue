@@ -16,6 +16,9 @@ import {
   type IdentityErrors,
 } from '../validation';
 import AccountNav from '../components/AccountNav.vue';
+import AvatarEditor from '../components/AvatarEditor.vue';
+import { avatarEnabled } from '../../../shared/features';
+const avatarURL = ref('');
 
 const session = useSession();
 const current = shallowRef<Profile | null>(null);
@@ -46,7 +49,17 @@ const pollDelays = [1500, 3000, 6000, 12000] as const;
 const permitted = computed(() =>
   ['authenticated', 'profilePending'].includes(session.state.value.status),
 );
-const busy = computed(() => loading.value || saving.value);
+const recheckingOwner = computed(() => {
+  const state = session.state.value;
+  return (
+    state.status === 'checking' &&
+    current.value !== null &&
+    guard.value !== null &&
+    state.subjectId === guard.value.subjectId &&
+    state.generation === guard.value.generation
+  );
+});
+const busy = computed(() => loading.value || saving.value || recheckingOwner.value);
 const shown = computed<IdentityDraft & { gender: Gender }>(() =>
   editing.value
     ? { ...draft.value, gender: gender.value }
@@ -398,7 +411,7 @@ onBeforeUnmount(() => {
       </button>
       <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
     </div>
-    <div v-else-if="!permitted" class="card state-card">
+    <div v-else-if="!permitted && !recheckingOwner" class="card state-card">
       <template v-if="['unknown', 'checking'].includes(session.state.value.status)"
         ><span class="loading-dot" aria-hidden="true"></span>
         <h2>Открываем ваш кабинет</h2>
@@ -422,9 +435,11 @@ onBeforeUnmount(() => {
         </button></template
       >
     </div>
-    <div v-else class="id-content">
+    <div v-else v-show="!recheckingOwner" class="id-content" :inert="recheckingOwner">
       <div class="card identity-card id-hero" aria-label="Ваш MarketMesh ID">
-        <div class="initials" aria-hidden="true">{{ initials }}</div>
+        <div class="initials" aria-hidden="true">
+          <img v-if="avatarURL" :src="avatarURL" alt="" /><template v-else>{{ initials }}</template>
+        </div>
         <div class="id-hero-text">
           <h2>{{ fullName }}</h2>
           <p>MarketMesh ID</p>
@@ -435,6 +450,7 @@ onBeforeUnmount(() => {
           <p>Личные данные видите только вы. Публичными делитесь сами.</p>
         </div>
       </div>
+      <AvatarEditor v-if="avatarEnabled" :initials="initials" @image="avatarURL = $event" />
       <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
       <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
       <div v-if="reconcile" class="reconcile-panel" aria-labelledby="id-reconcile-title">
@@ -710,5 +726,6 @@ onBeforeUnmount(() => {
         </label>
       </section>
     </div>
+    <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
   </section>
 </template>

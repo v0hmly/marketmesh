@@ -6,6 +6,12 @@ option go_package = "github.com/v0hmly/marketmesh/api/gen/go/user/v1;userv1";
 
 // UserService exposes the authenticated caller's account data on the workload-authenticated listener.
 service UserService {
+  // GetAvatar reads the caller's independently versioned avatar association.
+  rpc GetAvatar(GetAvatarRequest) returns (GetAvatarResponse);
+  // SetAvatar attaches only the owner's READY clean raster after Files validation.
+  rpc SetAvatar(SetAvatarRequest) returns (SetAvatarResponse);
+  // ClearAvatar unlinks the avatar and durably schedules its retirement.
+  rpc ClearAvatar(ClearAvatarRequest) returns (ClearAvatarResponse);
   // GetMe reads the caller's profile with read-after-write consistency.
   rpc GetMe(GetMeRequest) returns (GetMeResponse);
   // UpdateMe replaces editable fields only when the expected profile version still matches.
@@ -252,4 +258,49 @@ message UpdateSettingsRequest {
 message UpdateSettingsResponse {
   // Settings includes the incremented version.
   AccountSettings settings = 1;
+}
+
+// Avatar contains private metadata only; signed download capabilities are never persisted.
+message Avatar {
+  // SubjectId is the authenticated owner's immutable 16-byte identifier.
+  bytes subject_id = 1;
+  // Version is positive and independent of profile, addresses and settings.
+  uint64 version = 2;
+  // FileId is empty when unset, otherwise a nonzero 16-byte Files identifier.
+  bytes file_id = 3;
+}
+
+// GetAvatarRequest selects the caller solely from the verified session.
+message GetAvatarRequest {}
+
+// GetAvatarResponse returns the current primary snapshot.
+message GetAvatarResponse {
+  // Avatar is the owner's association, including an empty selection.
+  Avatar avatar = 1;
+}
+
+// SetAvatarRequest never accepts an owner, URL, key or unverified image metadata.
+message SetAvatarRequest {
+  // FileId must belong to the caller and contain a READY clean PNG or JPEG.
+  bytes file_id = 1;
+  // ExpectedVersion must match the last-read avatar version.
+  uint64 expected_version = 2;
+}
+
+// SetAvatarResponse contains the committed association.
+message SetAvatarResponse {
+  // Avatar includes the incremented independent version.
+  Avatar avatar = 1;
+}
+
+// ClearAvatarRequest conditionally removes the current association.
+message ClearAvatarRequest {
+  // ExpectedVersion must match the last-read avatar version.
+  uint64 expected_version = 1;
+}
+
+// ClearAvatarResponse acknowledges unlinking and durable asynchronous cleanup.
+message ClearAvatarResponse {
+  // Avatar has an empty file identifier and the committed version.
+  Avatar avatar = 1;
 }

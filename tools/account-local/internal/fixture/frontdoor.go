@@ -14,6 +14,9 @@ import (
 )
 
 var publicRPC = map[string]bool{
+	"/user.v1.UserService/GetAvatar":                true,
+	"/user.v1.UserService/SetAvatar":                true,
+	"/user.v1.UserService/ClearAvatar":              true,
 	"/auth.v1.AuthService/StartLoginCodeChange":     true,
 	"/auth.v1.AuthService/CompleteLoginCodeChange":  true,
 	"/auth.v1.AuthService/ChangePassword":           true,
@@ -50,9 +53,32 @@ var publicRPC = map[string]bool{
 }
 
 func frontdoorHandler(files fs.FS, proxy http.Handler) http.Handler {
+	return frontdoorWithPolicy(files, proxy, defaultContentPolicy)
+}
+
+const defaultContentPolicy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+
+func filesContentPolicy(raw string) (string, error) {
+	if raw == "" {
+		return defaultContentPolicy, nil
+	}
+	origins := strings.Split(raw, ",")
+	if len(origins) > 3 {
+		return "", errors.New("invalid Files origins")
+	}
+	for _, origin := range origins {
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme != "https" || u.Host == "" || strings.Contains(u.Host, "*") || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || strings.ContainsAny(origin, " \t\r\n;'\"") {
+			return "", errors.New("invalid Files origin")
+		}
+	}
+	result := strings.Replace(defaultContentPolicy, "img-src 'self'", "img-src 'self' blob:", 1)
+	return strings.Replace(result, "connect-src 'self'", "connect-src 'self' "+strings.Join(origins, " "), 1), nil
+}
+func frontdoorWithPolicy(files fs.FS, proxy http.Handler, policy string) http.Handler {
 	static := http.FileServerFS(files)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+		w.Header().Set("Content-Security-Policy", policy)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Frame-Options", "DENY")
@@ -95,6 +121,10 @@ func frontdoorHandler(files fs.FS, proxy http.Handler) http.Handler {
 }
 
 func Serve(ctx context.Context) error {
+	policy, err := filesContentPolicy(os.Getenv("ACCOUNT_FILES_ORIGINS"))
+	if err != nil {
+		return err
+	}
 	cfg, err := clientTLS("/secrets", "gateway-in")
 	if err != nil {
 		return err
@@ -115,7 +145,7 @@ func Serve(ctx context.Context) error {
 		w.Header().Set("Cache-Control", "no-store")
 		http.Error(w, "gateway unavailable", http.StatusBadGateway)
 	}}
-	handler := frontdoorHandler(os.DirFS("/site"), proxy)
+	handler := frontdoorWithPolicy(os.DirFS("/site"), proxy, policy)
 	if os.Getenv("ACCOUNT_RYBBIT_ENABLED") == "true" {
 		mux := http.NewServeMux()
 		mux.Handle("/analytics/track", localAnalyticsHandler(os.Getenv("RYBBIT_SITE_ID")))
