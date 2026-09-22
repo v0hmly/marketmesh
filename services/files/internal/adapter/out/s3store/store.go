@@ -210,7 +210,10 @@ func (s *Store) SignDownload(ctx context.Context, r file.Record, until time.Time
 		if bucket.presign == nil {
 			continue
 		}
-		probeCtx, cancel := context.WithTimeout(ctx, time.Second)
+		// A fresh verified TLS connection can exceed one second on a small DC
+		// node. Bound each probe while leaving time for the second replica in
+		// the 10-second control RPC; signing still uses the remaining URL TTL.
+		probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		head, err := bucket.control.HeadObject(probeCtx, &s3.HeadObjectInput{Bucket: aws.String(bucket.name), Key: aws.String(r.ObjectKey)})
 		cancel()
 		if err != nil {

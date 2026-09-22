@@ -19,8 +19,15 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) != 2 && len(os.Args) != 3 {
 		os.Exit(2)
+	}
+	cluster := "dc-a"
+	if len(os.Args) == 3 {
+		cluster = os.Args[2]
+		if cluster != "dc-a" && cluster != "dc-b" {
+			os.Exit(2)
+		}
 	}
 	root := os.Args[1]
 	must(os.MkdirAll(root, 0700))
@@ -32,17 +39,21 @@ func main() {
 	write(root, "ca.crt", "CERTIFICATE", der)
 	ca, err = x509.ParseCertificate(der)
 	must(err)
-	names := []string{"bao", "quarantine", "internal-clean", "delivery-a", "delivery-b", "pg-primary", "pg-replica", "files", "gateway-out", "files-auth", "auth"}
+	names := []string{"bao", "quarantine", "internal-clean", "delivery-a", "delivery-b", "pg-primary", "pg-replica", "files", "gateway-out", "files-auth", "auth", "redis"}
 	for i, name := range names {
 		leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		must(err)
 		leaf := &x509.Certificate{SerialNumber: big.NewInt(int64(i + 2)), Subject: pkix.Name{CommonName: name}, NotBefore: time.Now().Add(-time.Minute), NotAfter: time.Now().Add(12 * time.Hour), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}, DNSNames: []string{name, "localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1")}}
+		if name == "pg-primary" || name == "pg-replica" {
+			// Both disposable nodes may serve the primary alias after fenced promotion.
+			leaf.DNSNames = []string{"pg-primary", "pg-replica", "localhost"}
+		}
 		identity := ""
 		switch name {
 		case "files", "gateway-out", "auth":
-			identity = "spiffe://marketmesh.test/env/test/cluster/dc-a/ns/marketmesh/sa/" + name + "/pod/01234567-89ab-cdef-0123-456789abcdef"
+			identity = "spiffe://marketmesh.test/env/test/cluster/" + cluster + "/ns/marketmesh/sa/" + name + "/pod/01234567-89ab-cdef-0123-456789abcdef"
 		case "files-auth":
-			identity = "spiffe://marketmesh.test/env/test/cluster/dc-a/ns/marketmesh/sa/files"
+			identity = "spiffe://marketmesh.test/env/test/cluster/" + cluster + "/ns/marketmesh/sa/files"
 		}
 		if identity != "" {
 			uri, err := url.Parse(identity)

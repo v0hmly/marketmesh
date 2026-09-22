@@ -48,6 +48,11 @@ jobs:
           ./tools/ci.sh secrets
       - name: Проверить Go workspace и изолированные модули
         run: ./tools/ci.sh go
+      - name: Проверить безопасность Files DC harness без VM
+        run: |
+          python3 -m unittest discover -s infra/files-dc-e2e -p 'test_*.py' -v
+          go test -race infra/files-dc-e2e/tunnel_balancer.go infra/files-dc-e2e/tunnel_balancer_test.go
+          go test -tags=integration ./services/files/internal/app -run '^$'
       - name: Проверить frontend
         run: ./tools/ci.sh frontend
       - name: Проверить protobuf и воспроизводимость генерации

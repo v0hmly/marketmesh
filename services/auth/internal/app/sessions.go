@@ -208,7 +208,7 @@ func sessionRedisConfig(config sessionConfig) (platformredis.Config, error) {
 	}
 	return platformredis.Config{Role: platformredis.RoleAuth, Address: config.redisAddress, Authentication: platformredis.AuthenticationConfig{Username: config.redisUsername, Password: config.redisPassword}, Transport: transport,
 		Pool:     platformredis.PoolConfig{Size: 10, MinIdleConns: 1, MaxIdleConns: 10, MaxActiveConns: 10, MaxConcurrentDials: 2, ConnMaxIdleTime: 5 * time.Minute, ConnMaxLifetime: 30 * time.Minute},
-		Timeouts: platformredis.TimeoutConfig{Connect: time.Second, Command: 3 * time.Second, Pool: time.Second, Read: 2 * time.Second, Write: 2 * time.Second, Readiness: 2 * time.Second, Shutdown: 5 * time.Second},
+		Timeouts: platformredis.TimeoutConfig{Connect: config.redisConnectTimeout, Command: 3 * time.Second, Pool: time.Second, Read: 2 * time.Second, Write: 2 * time.Second, Readiness: 2 * time.Second, Shutdown: 5 * time.Second},
 	}, nil
 }
 

@@ -160,6 +160,10 @@ Redis и internal gRPC listener не создаются; это staged rollout f
 `POSTGRES_RW_DSN` и `POSTGRES_RO_DSN`. Для включённых сессий обязательны
 `AUTH_REDIS_ADDRESS` и `AUTH_REDIS_PASSWORD`; по умолчанию нужен проверенный
 Redis TLS (`AUTH_REDIS_TLS_SERVER_NAME`, опционально `AUTH_REDIS_CA_FILE`).
+`AUTH_REDIS_CONNECT_TIMEOUT` ограничивает установление соединения вместе с TLS
+и начальной Redis-командой: по умолчанию `1s`, допустимо до `10s`. Локальный
+DC E2E использует `5s`: проверенный TLS bootstrap между VM занимает около `1.3s`.
+Дедлайны проверки сессии и проверки отзыва этим параметром не изменяются.
 Plaintext Redis разрешён только с явным `AUTH_REDIS_PLAINTEXT_REASON`, не в
 production и не вместе с TLS-настройками.
 

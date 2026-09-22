@@ -41,7 +41,7 @@ func TestDownloadFailoverUsesRemainingTTL(t *testing.T) {
 	}))
 	defer fast.Close()
 	store := &Store{Clean: []*Bucket{bucket(t, slow), bucket(t, fast)}}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 	until := time.Now().Add(10 * time.Second)
 	capability, err := store.SignDownload(ctx, r, until)
@@ -65,6 +65,28 @@ func TestDownloadFailoverUsesRemainingTTL(t *testing.T) {
 	}
 	if issued.Add(time.Duration(expires)*time.Second).After(until) || !capability.ExpiresAt.Equal(until) {
 		t.Fatal("URL exceeds reported expiry")
+	}
+}
+
+func TestDownloadAcceptsHealthyReplicaAboveOneSecond(t *testing.T) {
+	sum := file.Digest(sha256.Sum256([]byte("pdf")))
+	r := file.Record{ID: file.ID{1}, Owner: file.Owner{Tenant: file.ID{2}, Subject: file.ID{3}}, ObjectKey: file.ID{4}.String(), State: file.Ready, Manifest: file.Manifest{Format: file.PDF, Size: 3, SHA256: sum, Parts: []file.Part{{Size: 3, SHA256: sum}}}, CleanFormat: file.PDF, CleanSize: 3, CleanSHA256: sum}
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-time.After(1100 * time.Millisecond):
+		case <-r.Context().Done():
+			return
+		}
+		w.Header().Set("Content-Length", "3")
+		w.Header().Set("X-Amz-Server-Side-Encryption", "aws:kms")
+		w.Header().Set("X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id", "clean-key")
+		w.Header().Set("X-Amz-Meta-Clean-Sha256", hex.EncodeToString(sum[:]))
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+	store := &Store{Clean: []*Bucket{bucket(t, server)}}
+	if _, err := store.SignDownload(t.Context(), r, time.Now().Add(10*time.Second)); err != nil {
+		t.Fatal("healthy replica rejected before bootstrap completed", err)
 	}
 }
 

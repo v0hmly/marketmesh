@@ -22,6 +22,7 @@ type sessionConfig struct {
 	certificateFile, privateKeyFile, clientCAFile               string
 	redisAddress, redisUsername, redisPassword, redisServerName serviceruntime.Secret
 	redisCAFile, redisPlaintextReason                           string
+	redisConnectTimeout                                         time.Duration
 }
 
 func loadSessionConfig(env serviceruntime.Env, environment string) (sessionConfig, error) {
@@ -104,6 +105,12 @@ func loadSessionConfig(env serviceruntime.Env, environment string) (sessionConfi
 	}
 	if result.redisCAFile, err = env.String("AUTH_REDIS_CA_FILE", ""); err != nil {
 		return sessionConfig{}, err
+	}
+	if result.redisConnectTimeout, err = env.PositiveDuration("AUTH_REDIS_CONNECT_TIMEOUT", time.Second); err != nil {
+		return sessionConfig{}, err
+	}
+	if result.redisConnectTimeout > 10*time.Second {
+		return sessionConfig{}, errors.New("auth sessions: Redis connect timeout must not exceed 10s")
 	}
 	if result.redisPlaintextReason, err = env.String("AUTH_REDIS_PLAINTEXT_REASON", ""); err != nil {
 		return sessionConfig{}, err
