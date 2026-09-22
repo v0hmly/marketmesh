@@ -5,9 +5,9 @@ go 1.27.0
 require (
 	connectrpc.com/connect v1.20.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260901103419-49d09068cab5
-	github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260901104113-687c690f0f14
-	github.com/v0hmly/marketmesh/platform v0.0.0-20260901082211-0511bbc88b77
+	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260921181519-8fd69c786937
+	github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260921181519-8fd69c786937
+	github.com/v0hmly/marketmesh/platform v0.0.0-20260921181519-8fd69c786937
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
