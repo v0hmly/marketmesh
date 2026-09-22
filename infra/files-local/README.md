@@ -105,4 +105,7 @@ AV имеет 2 ГБ RAM, актуальность сигнатур провер
 writer, переключение routing и восстановление загрузки тем же idempotency key.
 Наличие двух delivery buckets само по себе не подтверждает весь DC failover.
 
-Результаты и незакрытые условия приёмки: [проверки MM-43](../../docs/testing/files-data-plane.md).
+Результаты локальных проверок: [отчёт MM-43](../../docs/testing/files-data-plane.md).
+Полный отказ двух логических DC проверяется отдельным
+[OrbStack harness](../../docs/testing/files-dc-e2e.md); условия текущего dev
+и остаточные CVE зафиксированы в [решении владельца](../../docs/security/files-dev-acceptance.md).

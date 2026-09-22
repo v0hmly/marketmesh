@@ -35,7 +35,11 @@ package metadata. Исключение относится к текущему de
 [Отчёт сканирования](../testing/files-data-plane.md) сохраняет исходные findings.
 Trivy 0.74.0 от 22.09: Files runtime — 0; sandbox — 1 Critical, 72 High,
 126 Medium, 214 Low, 11 Unknown. Проверенный sandbox digest:
-`sha256:11a6a51651d5c950ee7f3c6a80cdfeb6cc4f223f079b26bb9f5553f3324fe0e4`.
+`sha256:d6ffb94795adcbfa5978c7a59ae34301891c93c9c47ebf09aa0ba88cf1a24cf6`.
+Проверенный Trivy/CRI config ID:
+`sha256:9a4a985d8d2ed8f97d66f93e5af51890a8a03394718521a2536af41868e73ec4`.
+[Сводка и SHA-256 исходных отчётов](../testing/evidence/mm43-container-scan-2026-09-22.json)
+связывают findings с образами успешного DC E2E.
 
 В trixie/trixie-security на эту дату нет обновлений установленных libxml2,
 libtiff, expat, curl и util-linux. Debian отмечает
