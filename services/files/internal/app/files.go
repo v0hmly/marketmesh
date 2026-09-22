@@ -268,6 +268,9 @@ func serveFiles(ctx context.Context, c controlConfig, repo *filespostgres.Reposi
 		return file.ErrUnavailable
 	}
 	defer connection.Close()
+	if err = connectAuth(ctx, connection); err != nil {
+		return errors.New("files control: Auth connection failed")
+	}
 	verifier, err := authsession.New(authv1.NewAuthInternalServiceClient(connection), authsession.Config{Issuer: c.Issuer, MaxTTL: time.Minute, Timeout: 2 * time.Second})
 	if err != nil {
 		return err
