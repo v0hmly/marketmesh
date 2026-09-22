@@ -118,7 +118,7 @@ services = {
 }
 overlay.write_text(json.dumps({"services": services, "networks": {key: {"external": True, "name": f.PROJECT+"_"+value} for key, value in external.items()}})); overlay.chmod(0o600)
 # CORS contains exact known dev/test origins only; never a wildcard or credentials.
-env["MM_FILES_BROWSER_ORIGINS"] = "https://frontdoor:8443,https://localhost:"+port
+env["MM_FILES_BROWSER_ORIGINS"] = "https://frontdoor:8443" + ("" if fresh else ",https://localhost:"+port)
 try:
     f.compose("build", "worker")
     f.compose("up", "-d", "worker")

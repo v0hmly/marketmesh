@@ -1,12 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { shallowRef } from 'vue';
+import { createMemoryHistory, createRouter } from 'vue-router';
+import IdView from '../views/IdView.vue';
 import { Code, ConnectError } from '@connectrpc/connect';
 import type { SessionController, SessionState } from '../../../shell/session';
 import { sessionKey } from '../../../shell/context';
 import { avatarApiKey, FileState, type AvatarApi, type Avatar } from '../avatar/api';
 import AvatarEditor from './AvatarEditor.vue';
 
+vi.mock('../../../shared/features', async (original) => ({
+  ...(await original<object>()),
+  avatarEnabled: true,
+}));
 vi.mock('../avatar/api', async (original) => ({
   ...(await original<object>()),
   prepareUpload: vi.fn(async (file: File) => ({ file })),
@@ -24,6 +30,7 @@ const snapshot = (version = 1n, set = true): Avatar => ({
 });
 async function fixture(
   image: Promise<Blob> = Promise.resolve(new Blob(['verified'], { type: 'image/png' })),
+  wholePage = false,
 ) {
   const state = shallowRef<SessionState>({
     status: 'authenticated',
@@ -38,6 +45,21 @@ async function fixture(
       state.value = { ...state.value, status: 'authenticated' };
     }),
     capture: () => ({ generation: state.value.generation, subjectId: state.value.subjectId }),
+    readProfile: vi.fn().mockResolvedValue({
+      $typeName: 'user.v1.Profile',
+      subjectId: new Uint8Array(16).fill(1),
+      version: 1n,
+      displayName: 'Анна',
+      lastName: '',
+      birthDate: '',
+      gender: 0,
+      phone: '',
+      city: '',
+      bio: '',
+      showAge: false,
+      createdAtUnix: 0n,
+      updatedAtUnix: 0n,
+    }),
     withSession: vi.fn(async (_guard, action: () => Promise<unknown>) => action()),
   } as unknown as SessionController;
   const api = {
@@ -60,9 +82,17 @@ async function fixture(
       static revokeObjectURL = revokeURL;
     },
   );
-  const wrapper = mount(AvatarEditor, {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/', component: IdView }],
+  });
+  await router.push('/');
+  const wrapper = mount(wholePage ? IdView : AvatarEditor, {
     props: { initials: 'АБ' },
-    global: { provide: { [sessionKey as symbol]: session, [avatarApiKey as symbol]: api } },
+    global: {
+      plugins: [router],
+      provide: { [sessionKey as symbol]: session, [avatarApiKey as symbol]: api },
+    },
   });
   mounted.push(wrapper);
   await flushPromises();
@@ -88,6 +118,29 @@ describe('avatar editor lifecycle', () => {
     expect(api.get).toHaveBeenCalledTimes(3);
     expect(api.clear).toHaveBeenCalledTimes(1);
     expect(button(wrapper, 'Удалить аватар').attributes('disabled')).toBeUndefined();
+  });
+  it('keeps the editor mounted within ID during same-owner session recovery', async () => {
+    const { wrapper, api, session, state } = await fixture(undefined, true);
+    const editor = wrapper.findComponent(AvatarEditor).vm.$;
+    let resume!: () => void;
+    vi.mocked(session.bootstrap).mockImplementation(async () => {
+      state.value = { ...state.value, status: 'checking' };
+      await new Promise<void>((resolve) => {
+        resume = resolve;
+      });
+      state.value = { ...state.value, status: 'authenticated' };
+    });
+    vi.mocked(api.get).mockRejectedValueOnce(new ConnectError('expired', Code.Unauthenticated));
+    await button(wrapper, 'Обновить состояние').trigger('click');
+    await flushPromises();
+    expect(session.bootstrap).toHaveBeenCalledTimes(1);
+    expect(wrapper.findComponent(AvatarEditor).vm.$).toBe(editor);
+    expect(wrapper.find('.id-content').attributes('style')).toContain('display: none');
+    expect(wrapper.find('.id-content').attributes('inert')).toBeDefined();
+    resume();
+    await flushPromises();
+    expect(wrapper.findComponent(AvatarEditor).vm.$).toBe(editor);
+    expect(api.get).toHaveBeenCalledTimes(3);
   });
   it('discards the old owner when session recovery switches identity', async () => {
     const { wrapper, api, session, state } = await fixture();

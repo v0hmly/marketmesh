@@ -202,6 +202,8 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await page.getByRole('button', { name: 'Загрузить аватар', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Файл пока недоступен', { timeout: 90_000 });
   await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toHaveCount(0);
+  // Simulate access expiry while retaining the refresh cookie and in-memory candidate.
+  await context.clearCookies({ name: '__Host-mm-access' });
   await page.getByRole('button', { name: 'Обновить состояние', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Отменить загрузку', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Отменить загрузку', exact: true }).click();
