@@ -9,6 +9,7 @@ import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import App from '../../../App.vue';
 vi.mock('../../../shared/features', () => ({
+  avatarEnabled: false,
   addressesEnabled: false,
   settingsEnabled: true,
   ordersEnabled: false,

@@ -287,18 +287,12 @@ func serveFiles(ctx context.Context, c controlConfig, repo *filespostgres.Reposi
 	if err != nil {
 		return err
 	}
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(serverTLS)), grpc.MaxRecvMsgSize(16*1024), grpc.MaxSendMsgSize(64*1024), grpc.MaxConcurrentStreams(32), grpc.ChainUnaryInterceptor(internalgrpc.AuditInterceptor(os.Stdout), func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		return next(ctx, req)
-	}))
-	filesv1.RegisterFileServiceServer(server, handler)
-	grpc_health_v1.RegisterHealthServer(server, &filesHealth{ready: func(ctx context.Context) error {
+	server := controlServer(serverTLS, handler, func(ctx context.Context) error {
 		if err := repo.Ready(ctx); err != nil {
 			return err
 		}
 		return verifier.Ready(ctx)
-	}})
+	})
 	listener, err := net.Listen("tcp", c.Address)
 	if err != nil {
 		return file.ErrUnavailable
@@ -326,4 +320,15 @@ func serveFiles(ctx context.Context, c controlConfig, repo *filespostgres.Reposi
 		}
 		return nil
 	}
+}
+
+func controlServer(serverTLS *tls.Config, handler *internalgrpc.Handler, ready func(context.Context) error) *grpc.Server {
+	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(serverTLS)), grpc.MaxRecvMsgSize(16*1024), grpc.MaxSendMsgSize(64*1024), grpc.MaxConcurrentStreams(32), grpc.ChainUnaryInterceptor(internalgrpc.AuditInterceptor(os.Stdout), func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		return next(ctx, req)
+	}))
+	filesv1.RegisterFileServiceServer(server, handler)
+	grpc_health_v1.RegisterHealthServer(server, &filesHealth{ready: ready})
+	return server
 }

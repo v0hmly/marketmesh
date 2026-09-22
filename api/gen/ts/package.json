@@ -8,7 +8,8 @@
     "./user/v1/user_pb": "./user/v1/user_pb.ts",
     "./seller/v1/seller_pb": "./seller/v1/seller_pb.ts",
     "./staff/v1/staff_pb": "./staff/v1/staff_pb.ts",
-    "./google/rpc/error_details_pb": "./google/rpc/error_details_pb.ts"
+    "./google/rpc/error_details_pb": "./google/rpc/error_details_pb.ts",
+    "./files/v1/files_pb": "./files/v1/files_pb.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.14.0"

@@ -68,7 +68,7 @@ def prepare():
         "files-control":dict(restricted, image="marketmesh-mm43-files:local", environment={"FILES_CONFIG_FILE":"/config.json"}, networks=["internal",*networks], volumes=[str(config)+":/config.json:ro",workload,str(f.STATE / "pki/ca.crt")+":/pki/ca.crt:ro"]),
         "files-probe":dict(restricted, image="marketmesh-mm43-integration:local", entrypoint=["/usr/local/bin/files-integration","-test.v","-test.run=TestLiveControlThroughAuthAndTunnel","-test.timeout=10m"], environment={"FILES_FIXTURE":"/fixture","FILES_CONTROL_BASE":"https://frontdoor:8443","TMPDIR":"/work"}, networks=["dmz",*networks], tmpfs=[f"/work:rw,noexec,nosuid,size=256m,uid={os.getuid()},gid={os.getgid()},mode=700"], mem_limit="2g", volumes=[str(f.STATE)+":/fixture:ro", str(f.STATE / "pki/ca.crt")+":/pki/ca.crt:ro",str(state / "browser/ca.pem")+":/account-ca.pem:ro","files-sandbox:/run/files-sandbox:ro","files-av:/run/files-clamav:ro"]),
     }
-    overlay.write_text(json.dumps({"services":services,"networks":{key:{"external":True,"name":"marketmesh-files-local_"+value} for key,value in external.items()},"volumes":{"files-sandbox":{"external":True,"name":"marketmesh-files-local_sandbox-socket"},"files-av":{"external":True,"name":"marketmesh-files-local_av-socket"}}}))
+    overlay.write_text(json.dumps({"services":services,"networks":{key:{"external":True,"name":f.PROJECT+"_"+value} for key,value in external.items()},"volumes":{"files-sandbox":{"external":True,"name":f.PROJECT+"_sandbox-socket"},"files-av":{"external":True,"name":f.PROJECT+"_av-socket"}}}))
     overlay.chmod(0o600)
 
 try:

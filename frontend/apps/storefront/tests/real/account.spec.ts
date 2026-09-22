@@ -748,7 +748,11 @@ test('real identity fields persist with CAS, owner isolation and an ambiguous co
   await page.goto('/account/id');
   const edit = (target: Page) =>
     target.getByRole('button', { name: 'Изменить данные', exact: true });
-  const submit = (target: Page) => target.locator('form button[type="submit"]');
+  const submit = (target: Page) =>
+    target
+      .locator('form')
+      .filter({ has: target.locator('#id-first') })
+      .locator('button[type="submit"]');
   await edit(page).click();
   const values = {
     'id-first': 'Вера',

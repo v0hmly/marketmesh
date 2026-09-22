@@ -9,6 +9,7 @@ import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import { emptyAddress } from '../address-validation';
 vi.mock('../../../shared/features', () => ({
+  avatarEnabled: false,
   addressesEnabled: true,
   settingsEnabled: false,
   ordersEnabled: false,

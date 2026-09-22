@@ -2,6 +2,7 @@
 """Изолированный стенд MM-43. Секреты остаются в .cache/files-local (0700)."""
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import ssl
@@ -12,8 +13,12 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-STATE = ROOT / ".cache/files-local"
-PROJECT = "marketmesh-files-local"
+PROJECT = os.environ.get("FILES_LOCAL_PROJECT", "marketmesh-files-local")
+if not re.fullmatch(r"marketmesh-files-[a-z0-9][a-z0-9-]{0,39}", PROJECT):
+    raise RuntimeError("invalid Files project")
+STATE = Path(os.environ.get("FILES_LOCAL_STATE", str(ROOT / ".cache/files-local")))
+if not STATE.is_absolute() or STATE.is_symlink() or not STATE.resolve().is_relative_to((ROOT / ".cache").resolve()):
+    raise RuntimeError("Files state must be owned storage below repository .cache")
 ZONES = ("quarantine", "internal-clean", "delivery-a", "delivery-b")
 ENV = dict(os.environ, MM_FILES_STATE=str(STATE), MM_FILES_UID=str(os.getuid()), MM_FILES_GID=str(os.getgid()), GOCACHE=str(STATE / "go-build"))
 

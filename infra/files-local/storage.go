@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -44,6 +46,16 @@ func configure(root string) error {
 	if !roots.AppendCertsFromPEM(ca) {
 		return errors.New("invalid CA")
 	}
+	origins := []string{"https://localhost:8443"}
+	if raw := os.Getenv("MM_FILES_BROWSER_ORIGINS"); raw != "" {
+		for _, origin := range strings.Split(raw, ",") {
+			u, e := url.Parse(origin)
+			if e != nil || u.Scheme != "https" || u.Host == "" || strings.Contains(u.Host, "*") || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || strings.ContainsAny(origin, " \t\r\n") {
+				return errors.New("invalid browser origin")
+			}
+			origins = append(origins, origin)
+		}
+	}
 	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}}, Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -58,7 +70,7 @@ func configure(root string) error {
 			return err
 		}
 		_, err = api.PutBucketCors(ctx, &s3.PutBucketCorsInput{Bucket: aws.String(zone.name), CORSConfiguration: &types.CORSConfiguration{CORSRules: []types.CORSRule{{
-			AllowedOrigins: []string{"https://localhost:8443"}, AllowedMethods: []string{zone.method}, MaxAgeSeconds: aws.Int32(60),
+			AllowedOrigins: origins, AllowedMethods: []string{zone.method}, MaxAgeSeconds: aws.Int32(60),
 			AllowedHeaders: []string{"content-type", "content-length", "if-none-match", "x-amz-checksum-sha256", "x-amz-sdk-checksum-algorithm", "x-amz-server-side-encryption", "x-amz-server-side-encryption-aws-kms-key-id", "x-amz-meta-file-id", "x-amz-meta-upload-id"},
 			ExposeHeaders:  []string{"etag", "content-disposition", "content-length", "x-amz-checksum-sha256"},
 		}}}})

@@ -16,6 +16,9 @@ import {
   type IdentityErrors,
 } from '../validation';
 import AccountNav from '../components/AccountNav.vue';
+import AvatarEditor from '../components/AvatarEditor.vue';
+import { avatarEnabled } from '../../../shared/features';
+const avatarURL = ref('');
 
 const session = useSession();
 const current = shallowRef<Profile | null>(null);
@@ -424,7 +427,9 @@ onBeforeUnmount(() => {
     </div>
     <div v-else class="id-content">
       <div class="card identity-card id-hero" aria-label="Ваш MarketMesh ID">
-        <div class="initials" aria-hidden="true">{{ initials }}</div>
+        <div class="initials" aria-hidden="true">
+          <img v-if="avatarURL" :src="avatarURL" alt="" /><template v-else>{{ initials }}</template>
+        </div>
         <div class="id-hero-text">
           <h2>{{ fullName }}</h2>
           <p>MarketMesh ID</p>
@@ -435,6 +440,7 @@ onBeforeUnmount(() => {
           <p>Личные данные видите только вы. Публичными делитесь сами.</p>
         </div>
       </div>
+      <AvatarEditor v-if="avatarEnabled" :initials="initials" @image="avatarURL = $event" />
       <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
       <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
       <div v-if="reconcile" class="reconcile-panel" aria-labelledby="id-reconcile-title">
