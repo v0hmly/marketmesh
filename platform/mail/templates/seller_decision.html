@@ -1,0 +1,60 @@
+{{ define "content" }}
+{{ if .Data.Approved }}
+<div class="em-ink" style="font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 32px; line-height: 1.25; letter-spacing: -0.02em; color: #203d30;">Заявка одобрена.</div>
+<p class="em-ink" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #203d30;">Магазин «{{ .Data.ShopName }}» прошёл проверку. Портал продавца открыт: можно заводить товары, настраивать доставку и принимать заказы.</p>
+<div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td class="em-btn" style="border-radius: 8px; background-color: #244c3b;">
+      <a href="{{ .Data.PortalURL }}" class="em-btn-label" style="display: inline-block; padding: 13px 22px; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: 600; color: #fffef5; text-decoration: none;">Войти в портал&nbsp;↗</a>
+    </td>
+  </tr>
+</table>
+<div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td class="em-tint" style="background-color: #eff1e7; border-radius: 10px; padding: 20px;">
+      <p class="em-ink" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65; color: #203d30;">Вход в портал всегда подтверждается кодом из письма — это нельзя отключить, потому что через портал проходят деньги и заказы.</p>
+      <p class="em-ink" style="margin: 10px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65; color: #203d30;">С чего начать: <a href="{{ .Data.GuideURL }}" class="em-link" style="color: #244c3b; overflow-wrap: anywhere;">{{ .Data.GuideURL }}</a></p>
+    </td>
+  </tr>
+</table>
+<div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+<div class="em-hr" style="border-top: 1px solid #dce1d6; padding-top: 20px;">
+  <p class="em-muted" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Письмо отправлено автоматически, отвечать на него не нужно.</p>
+  <p class="em-muted" style="margin: 6px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Поддержка продавцов — <a href="mailto:{{ sellersSupportEmail }}" class="em-link" style="color: #244c3b;">{{ sellersSupportEmail }}</a></p>
+</div>
+{{ else }}
+<div class="em-ink" style="font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 32px; line-height: 1.25; letter-spacing: -0.02em; color: #203d30;">Заявка отклонена.</div>
+<p class="em-ink" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #203d30;">Мы проверили данные магазина «{{ .Data.ShopName }}» и пока не можем подключить его к площадке.</p>
+<div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="em-tint" style="background-color: #eff1e7; border-radius: 10px;">
+  <tr>
+    <td class="em-muted" style="padding: 20px 20px 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #5d6c61;">Причина</td>
+  </tr>
+  <tr>
+    <td class="em-ink" style="padding: 4px 20px 14px; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65; color: #203d30;">{{ .Data.RejectReason }}</td>
+  </tr>
+  <tr>
+    <td class="em-muted" style="padding: 0 20px; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #5d6c61;">Что поправить</td>
+  </tr>
+  <tr>
+    <td class="em-ink" style="padding: 4px 20px 20px; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65; color: #203d30;">{{ .Data.FixInstructions }}</td>
+  </tr>
+</table>
+<div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td class="em-btn" style="border-radius: 8px; background-color: #244c3b;">
+      <a href="{{ .Data.PortalURL }}" class="em-btn-label" style="display: inline-block; padding: 13px 22px; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: 600; color: #fffef5; text-decoration: none;">Подать заявку снова&nbsp;↗</a>
+    </td>
+  </tr>
+</table>
+<p class="em-muted" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.7; color: #5d6c61;">Аккаунт с этой почтой остаётся — войти в портал можно будет сразу после одобрения.</p>
+<div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+<div class="em-hr" style="border-top: 1px solid #dce1d6; padding-top: 20px;">
+  <p class="em-muted" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Не согласны с решением? Ответьте на это письмо — разберёмся вручную.</p>
+  <p class="em-muted" style="margin: 6px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Поддержка продавцов — <a href="mailto:{{ sellersSupportEmail }}" class="em-link" style="color: #244c3b;">{{ sellersSupportEmail }}</a></p>
+</div>
+{{ end }}
+{{ end }}

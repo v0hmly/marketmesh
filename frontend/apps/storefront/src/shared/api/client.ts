@@ -1,12 +1,13 @@
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
-import { createConnectTransport } from '@connectrpc/connect-web';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
 import {
+  Gender,
   Theme,
   type AccountSettings as WireSettings,
   UserService,
 } from '@marketmesh/api/user/v1/user_pb';
 import type { Profile, PublicApi, AddressBook, AccountSettings, ThemePreference } from './types';
+import { createPublicTransport } from './transport';
 
 function validProfile(profile: Profile | undefined): Profile {
   if (
@@ -65,24 +66,7 @@ export function createPublicApi(
   origin = window.location.origin,
   fetcher: typeof globalThis.fetch = globalThis.fetch.bind(globalThis),
 ): PublicApi {
-  const url = new URL(origin);
-  if (url.protocol !== 'https:' || url.username || url.password || url.origin !== origin) {
-    throw new Error('Для входа требуется HTTPS origin приложения');
-  }
-  const transport = createConnectTransport({
-    baseUrl: origin,
-    useBinaryFormat: true,
-    useHttpGet: false,
-    defaultTimeoutMs: 15_000,
-    fetch: (input, init) =>
-      fetcher(input, {
-        ...init,
-        credentials: 'same-origin',
-        cache: 'no-store',
-        redirect: 'error',
-        referrerPolicy: 'no-referrer',
-      }),
-  });
+  const transport = createPublicTransport(origin, fetcher);
   const auth = createClient(AuthService, transport);
   const user = createClient(UserService, transport);
   return {
@@ -95,6 +79,37 @@ export function createPublicApi(
         throw new ConnectError('Invalid login response', Code.DataLoss);
       }
       return result.subjectId;
+    },
+    async startLogin(identifier, password) {
+      const result = await auth.startLogin({ identifier, password });
+      if (
+        result.loginChallengeId.length !== 16 ||
+        result.loginChallengeId.every((v) => v === 0) ||
+        result.codeExpiresInSeconds < 1n
+      ) {
+        throw new ConnectError('Invalid start login response', Code.DataLoss);
+      }
+      return {
+        challengeId: result.loginChallengeId,
+        codeExpiresInSeconds: result.codeExpiresInSeconds,
+      };
+    },
+    async completeLogin(challengeId, code) {
+      const result = await auth.completeLogin({ loginChallengeId: challengeId, code });
+      if (result.subjectId.length !== 16 || result.subjectId.every((v) => v === 0)) {
+        throw new ConnectError('Invalid complete login response', Code.DataLoss);
+      }
+      return result.subjectId;
+    },
+    async resendLoginCode(challengeId) {
+      const result = await auth.resendLoginCode({ loginChallengeId: challengeId });
+      if (result.codeExpiresInSeconds < 1n) {
+        throw new ConnectError('Invalid resend code response', Code.DataLoss);
+      }
+      return { challengeId, codeExpiresInSeconds: result.codeExpiresInSeconds };
+    },
+    async requestEmailVerification(email) {
+      await auth.requestEmailVerification({ email });
     },
     async refresh() {
       await auth.refreshSession({});
@@ -139,7 +154,21 @@ export function createPublicApi(
       return validProfile((await user.getMe({})).profile);
     },
     async updateProfile(input) {
-      return validProfile((await user.updateMe(input)).profile);
+      return validProfile(
+        (
+          await user.updateMe({
+            displayName: input.displayName,
+            bio: input.bio,
+            expectedVersion: input.expectedVersion,
+            lastName: input.lastName ?? '',
+            birthDate: input.birthDate ?? '',
+            gender: input.gender ?? Gender.UNSPECIFIED,
+            phone: input.phone ?? '',
+            city: input.city ?? '',
+            showAge: input.showAge ?? false,
+          })
+        ).profile,
+      );
     },
   };
 }

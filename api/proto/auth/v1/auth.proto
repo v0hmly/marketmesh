@@ -16,6 +16,36 @@ service AuthService {
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   // LogoutAll revokes every session of the authenticated subject.
   rpc LogoutAll(LogoutAllRequest) returns (LogoutAllResponse);
+  // StartLogin verifies the password and, on success, emails a one-time login code.
+  rpc StartLogin(StartLoginRequest) returns (StartLoginResponse);
+  // CompleteLogin verifies the emailed code and establishes the session.
+  rpc CompleteLogin(CompleteLoginRequest) returns (CompleteLoginResponse);
+  // ResendLoginCode replaces the code of a pending challenge without asking the password again.
+  rpc ResendLoginCode(ResendLoginCodeRequest) returns (ResendLoginCodeResponse);
+  // RequestEmailVerification emails a confirmation link without disclosing account existence.
+  rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);
+  // ConfirmEmail applies the emailed confirmation token.
+  rpc ConfirmEmail(ConfirmEmailRequest) returns (ConfirmEmailResponse);
+  // RequestPasswordReset emails a reset link without disclosing account existence.
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+  // ConfirmPasswordReset sets a new password and revokes every existing session.
+  rpc ConfirmPasswordReset(ConfirmPasswordResetRequest) returns (ConfirmPasswordResetResponse);
+  // GetCredentials returns the authenticated caller's contact and security state.
+  rpc GetCredentials(GetCredentialsRequest) returns (GetCredentialsResponse);
+  // StartEmailChange begins the two-letter email change for the authenticated caller.
+  rpc StartEmailChange(StartEmailChangeRequest) returns (StartEmailChangeResponse);
+  // ConfirmEmailChange applies the token sent to the new address.
+  rpc ConfirmEmailChange(ConfirmEmailChangeRequest) returns (ConfirmEmailChangeResponse);
+  // CancelEmailChange cancels a pending change via the token sent to the old address.
+  rpc CancelEmailChange(CancelEmailChangeRequest) returns (CancelEmailChangeResponse);
+  // ListSessions returns the authenticated caller's own sessions.
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  // RevokeSession ends one of the authenticated caller's sessions.
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  // RequestAccountDeletion schedules deletion after a grace period and closes the sessions.
+  rpc RequestAccountDeletion(RequestAccountDeletionRequest) returns (RequestAccountDeletionResponse);
+  // CancelAccountDeletion restores the account via the token sent by email.
+  rpc CancelAccountDeletion(CancelAccountDeletionRequest) returns (CancelAccountDeletionResponse);
 }
 
 // RegisterCredentialsRequest carries the secret material needed for credential registration.
@@ -166,4 +196,198 @@ message BrowserLogoutAllResponse {
   LogoutAllResponse response = 1;
   // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
   repeated string set_cookie = 2;
+}
+
+// StartLoginRequest carries the secret material needed for the first login step.
+message StartLoginRequest {
+  // Identifier is the case-insensitive account email and must not be logged or traced.
+  string identifier = 1;
+  // Password is the raw secret and must not be persisted, logged, or traced.
+  bytes password = 2;
+}
+
+// StartLoginResponse is returned for accepted credentials; a wrong pair yields
+// Unauthenticated without revealing which part failed or whether the account exists.
+// After five failed attempts the caller gets FailedPrecondition with ErrorInfo
+// domain "marketmesh.auth", reason "LOGIN_LOCKED".
+message StartLoginResponse {
+  // LoginChallengeId is an opaque 16-byte challenge identifying this pending login.
+  bytes login_challenge_id = 1;
+  // CodeExpiresInSeconds is the lifetime of the emailed code in whole seconds.
+  int64 code_expires_in_seconds = 2;
+}
+
+// CompleteLoginRequest carries the emailed six-digit code for a pending challenge.
+message CompleteLoginRequest {
+  // LoginChallengeId selects the pending login started by StartLogin.
+  bytes login_challenge_id = 1;
+  // Code is exactly six ASCII digits, whitespace-trimmed by the caller.
+  string code = 2;
+}
+
+// CompleteLoginResponse establishes identity; the session cookies travel via the
+// browser bridge. A wrong code yields InvalidArgument with ErrorInfo domain
+// "marketmesh.auth", reason "CODE_MISMATCH"; after three wrong codes the challenge
+// is replaced ("CODE_REISSUED"); an expired challenge yields FailedPrecondition
+// with reason "CODE_EXPIRED".
+message CompleteLoginResponse {
+  // SubjectId is an opaque 16-byte identifier and is never an authentication secret.
+  bytes subject_id = 1;
+}
+
+// RequestEmailVerificationRequest selects the account by email without confirming it exists.
+message RequestEmailVerificationRequest {
+  // Email is the case-insensitive account email and must not be logged or traced.
+  string email = 1;
+}
+
+// RequestEmailVerificationResponse deliberately contains no existence signal.
+message RequestEmailVerificationResponse {}
+
+// ConfirmEmailRequest carries the opaque token from the confirmation link.
+message ConfirmEmailRequest {
+  // Token is the emailed single-use confirmation token.
+  string token = 1;
+}
+
+// ConfirmEmailResponse is empty; expired or used tokens yield FailedPrecondition
+// with ErrorInfo reasons "TOKEN_EXPIRED" or "TOKEN_USED".
+message ConfirmEmailResponse {}
+
+// RequestPasswordResetRequest selects the account by email without confirming it exists.
+message RequestPasswordResetRequest {
+  // Email is the case-insensitive account email and must not be logged or traced.
+  string email = 1;
+}
+
+// RequestPasswordResetResponse deliberately contains no existence signal.
+message RequestPasswordResetResponse {}
+
+// ConfirmPasswordResetRequest carries the emailed token and the new secret.
+message ConfirmPasswordResetRequest {
+  // Token is the emailed single-use reset token.
+  string token = 1;
+  // NewPassword is the raw secret and must not be persisted, logged, or traced.
+  bytes new_password = 2;
+}
+
+// ConfirmPasswordResetResponse is empty; success revokes all sessions of the subject.
+message ConfirmPasswordResetResponse {}
+
+// GetCredentialsRequest has no caller-selected identity; the access cookie selects the subject.
+message GetCredentialsRequest {}
+
+// GetCredentialsResponse exposes the caller's own contact and security state.
+message GetCredentialsResponse {
+  // Email is the caller's current account email.
+  string email = 1;
+  // EmailVerified is true once the address has been confirmed.
+  bool email_verified = 2;
+  // LoginCodeEnabled is true when sign-in requires the emailed one-time code.
+  bool login_code_enabled = 3;
+  // NewDeviceCooldownUntilUnix is the exclusive end of the protection window after
+  // a login from a new device; zero when no cooldown applies. While it is active,
+  // RevokeSession of other sessions and RequestAccountDeletion fail with
+  // FailedPrecondition, reason "NEW_DEVICE_COOLDOWN".
+  int64 new_device_cooldown_until_unix = 4;
+}
+
+// StartEmailChangeRequest starts the change for the authenticated caller.
+message StartEmailChangeRequest {
+  // NewEmail is the case-insensitive new account email.
+  string new_email = 1;
+}
+
+// StartEmailChangeResponse is empty; the alert goes to the old address and the
+// confirmation link to the new one.
+message StartEmailChangeResponse {}
+
+// ConfirmEmailChangeRequest carries the token sent to the new address.
+message ConfirmEmailChangeRequest {
+  // Token is the emailed single-use confirmation token.
+  string token = 1;
+}
+
+// ConfirmEmailChangeResponse is empty; success moves the account email.
+message ConfirmEmailChangeResponse {}
+
+// CancelEmailChangeRequest carries the token sent to the old address.
+message CancelEmailChangeRequest {
+  // Token is the emailed single-use cancellation token.
+  string token = 1;
+}
+
+// CancelEmailChangeResponse is empty; success keeps the previous account email.
+message CancelEmailChangeResponse {}
+
+// SessionInfo describes one session of the authenticated caller.
+message SessionInfo {
+  // SessionId is an opaque 16-byte session identifier, valid only for the owner's calls.
+  bytes session_id = 1;
+  // Device is a human-readable device and system label.
+  string device = 2;
+  // Browser is a human-readable browser label.
+  string browser = 3;
+  // Ip is the last seen IP address of the session.
+  string ip = 4;
+  // Location is the approximate city and country derived from the IP.
+  string location = 5;
+  // CreatedAtUnix is the session creation time in whole Unix seconds.
+  int64 created_at_unix = 6;
+  // LastSeenAtUnix is the last activity time in whole Unix seconds.
+  int64 last_seen_at_unix = 7;
+  // Current is true for the session presenting this request.
+  bool current = 8;
+}
+
+// ListSessionsRequest has no caller-selected identity; the access cookie selects the subject.
+message ListSessionsRequest {}
+
+// ListSessionsResponse contains only the caller's own sessions.
+message ListSessionsResponse {
+  // Sessions lists the caller's sessions, current first.
+  repeated SessionInfo sessions = 1;
+}
+
+// RevokeSessionRequest ends one owned session, never a session of another subject.
+message RevokeSessionRequest {
+  // SessionId selects a session of the authenticated caller only.
+  bytes session_id = 1;
+}
+
+// RevokeSessionResponse is empty; revoking the current session equals Logout.
+message RevokeSessionResponse {}
+
+// RequestAccountDeletionRequest requires the password as proof of intent.
+message RequestAccountDeletionRequest {
+  // Password is the raw secret and must not be persisted, logged, or traced.
+  bytes password = 1;
+}
+
+// RequestAccountDeletionResponse reports the scheduled deletion date.
+message RequestAccountDeletionResponse {
+  // DeletionScheduledAtUnix is the moment after which the account is erased;
+  // until then the cancellation token from the email restores the account.
+  int64 deletion_scheduled_at_unix = 1;
+}
+
+// CancelAccountDeletionRequest carries the token from the deletion email.
+message CancelAccountDeletionRequest {
+  // Token is the emailed single-use cancellation token.
+  string token = 1;
+}
+
+// CancelAccountDeletionResponse is empty; success reopens sign-in.
+message CancelAccountDeletionResponse {}
+
+// ResendLoginCodeRequest selects a pending challenge started by StartLogin.
+message ResendLoginCodeRequest {
+  // LoginChallengeId selects the pending login; a new code invalidates the previous one.
+  bytes login_challenge_id = 1;
+}
+
+// ResendLoginCodeResponse reports the lifetime of the replacement code.
+message ResendLoginCodeResponse {
+  // CodeExpiresInSeconds is the lifetime of the new code in whole seconds.
+  int64 code_expires_in_seconds = 1;
 }

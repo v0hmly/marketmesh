@@ -7,8 +7,8 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/nats-io/nats.go v1.53.1
 	github.com/redis/go-redis/v9 v9.22.0
-	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260901082009-a40753f98ac5
-	github.com/v0hmly/marketmesh/platform v0.0.0-20260901082211-0511bbc88b77
+	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260921181519-8fd69c786937
+	github.com/v0hmly/marketmesh/platform v0.0.0-20260921181519-8fd69c786937
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0

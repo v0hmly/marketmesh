@@ -79,6 +79,9 @@ func WithSessions(service SessionLifecycle, config SessionConfig) Option {
 
 // Handler maps transport DTOs and sanitizes every outward error.
 type Handler struct {
+	// New contract methods remain unavailable until their use cases are implemented.
+	authv1connect.UnimplementedAuthServiceHandler
+
 	registration Registration
 	verification Verification
 	log          *logger.Logger

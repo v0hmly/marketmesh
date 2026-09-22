@@ -20,7 +20,7 @@ readonly MODULES=(
 )
 
 usage() {
-  echo "usage: $0 {arch|build|fmt|fmt-check|test|test-race|vet}" >&2
+  echo "usage: $0 {arch|build|fmt|fmt-check|test|test-race|vet|isolated|mod-verify|vuln}" >&2
 }
 
 module_packages() {
@@ -266,7 +266,50 @@ verify_architecture() {
   echo "Architecture checks passed"
 }
 
+verify_isolated_modules() {
+  local module
+  for module in "${MODULES[@]}"; do
+    (
+      cd "${REPOSITORY_ROOT}/${module%%|*}"
+      echo "==> ${module%%|*}: GOWORK=off go test/build -mod=readonly"
+      GOWORK=off go test -mod=readonly ./...
+      GOWORK=off go build -mod=readonly ./...
+    )
+  done
+}
+
+verify_module_downloads() {
+  local module
+  for module in "${MODULES[@]}"; do
+    (
+      cd "${REPOSITORY_ROOT}/${module%%|*}"
+      echo "==> ${module%%|*}: go mod verify"
+      GOWORK=off go mod verify
+    )
+  done
+}
+
+check_vulnerabilities() {
+  local module
+  for module in "${MODULES[@]}"; do
+    (
+      cd "${REPOSITORY_ROOT}/${module%%|*}"
+      echo "==> ${module%%|*}: govulncheck"
+      "${REPOSITORY_ROOT}/bin/govulncheck" ./...
+    )
+  done
+}
+
 case "${1:-}" in
+  isolated)
+    verify_isolated_modules
+    ;;
+  mod-verify)
+    verify_module_downloads
+    ;;
+  vuln)
+    check_vulnerabilities
+    ;;
   arch)
     verify_architecture
     ;;

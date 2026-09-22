@@ -47,6 +47,50 @@ const (
 	AuthServiceLogoutProcedure = "/auth.v1.AuthService/Logout"
 	// AuthServiceLogoutAllProcedure is the fully-qualified name of the AuthService's LogoutAll RPC.
 	AuthServiceLogoutAllProcedure = "/auth.v1.AuthService/LogoutAll"
+	// AuthServiceStartLoginProcedure is the fully-qualified name of the AuthService's StartLogin RPC.
+	AuthServiceStartLoginProcedure = "/auth.v1.AuthService/StartLogin"
+	// AuthServiceCompleteLoginProcedure is the fully-qualified name of the AuthService's CompleteLogin
+	// RPC.
+	AuthServiceCompleteLoginProcedure = "/auth.v1.AuthService/CompleteLogin"
+	// AuthServiceResendLoginCodeProcedure is the fully-qualified name of the AuthService's
+	// ResendLoginCode RPC.
+	AuthServiceResendLoginCodeProcedure = "/auth.v1.AuthService/ResendLoginCode"
+	// AuthServiceRequestEmailVerificationProcedure is the fully-qualified name of the AuthService's
+	// RequestEmailVerification RPC.
+	AuthServiceRequestEmailVerificationProcedure = "/auth.v1.AuthService/RequestEmailVerification"
+	// AuthServiceConfirmEmailProcedure is the fully-qualified name of the AuthService's ConfirmEmail
+	// RPC.
+	AuthServiceConfirmEmailProcedure = "/auth.v1.AuthService/ConfirmEmail"
+	// AuthServiceRequestPasswordResetProcedure is the fully-qualified name of the AuthService's
+	// RequestPasswordReset RPC.
+	AuthServiceRequestPasswordResetProcedure = "/auth.v1.AuthService/RequestPasswordReset"
+	// AuthServiceConfirmPasswordResetProcedure is the fully-qualified name of the AuthService's
+	// ConfirmPasswordReset RPC.
+	AuthServiceConfirmPasswordResetProcedure = "/auth.v1.AuthService/ConfirmPasswordReset"
+	// AuthServiceGetCredentialsProcedure is the fully-qualified name of the AuthService's
+	// GetCredentials RPC.
+	AuthServiceGetCredentialsProcedure = "/auth.v1.AuthService/GetCredentials"
+	// AuthServiceStartEmailChangeProcedure is the fully-qualified name of the AuthService's
+	// StartEmailChange RPC.
+	AuthServiceStartEmailChangeProcedure = "/auth.v1.AuthService/StartEmailChange"
+	// AuthServiceConfirmEmailChangeProcedure is the fully-qualified name of the AuthService's
+	// ConfirmEmailChange RPC.
+	AuthServiceConfirmEmailChangeProcedure = "/auth.v1.AuthService/ConfirmEmailChange"
+	// AuthServiceCancelEmailChangeProcedure is the fully-qualified name of the AuthService's
+	// CancelEmailChange RPC.
+	AuthServiceCancelEmailChangeProcedure = "/auth.v1.AuthService/CancelEmailChange"
+	// AuthServiceListSessionsProcedure is the fully-qualified name of the AuthService's ListSessions
+	// RPC.
+	AuthServiceListSessionsProcedure = "/auth.v1.AuthService/ListSessions"
+	// AuthServiceRevokeSessionProcedure is the fully-qualified name of the AuthService's RevokeSession
+	// RPC.
+	AuthServiceRevokeSessionProcedure = "/auth.v1.AuthService/RevokeSession"
+	// AuthServiceRequestAccountDeletionProcedure is the fully-qualified name of the AuthService's
+	// RequestAccountDeletion RPC.
+	AuthServiceRequestAccountDeletionProcedure = "/auth.v1.AuthService/RequestAccountDeletion"
+	// AuthServiceCancelAccountDeletionProcedure is the fully-qualified name of the AuthService's
+	// CancelAccountDeletion RPC.
+	AuthServiceCancelAccountDeletionProcedure = "/auth.v1.AuthService/CancelAccountDeletion"
 	// AuthBrowserServiceBrowserRegisterCredentialsProcedure is the fully-qualified name of the
 	// AuthBrowserService's BrowserRegisterCredentials RPC.
 	AuthBrowserServiceBrowserRegisterCredentialsProcedure = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
@@ -76,6 +120,36 @@ type AuthServiceClient interface {
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	// LogoutAll revokes every session of the authenticated subject.
 	LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error)
+	// StartLogin verifies the password and, on success, emails a one-time login code.
+	StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error)
+	// CompleteLogin verifies the emailed code and establishes the session.
+	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
+	// ResendLoginCode replaces the code of a pending challenge without asking the password again.
+	ResendLoginCode(context.Context, *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error)
+	// RequestEmailVerification emails a confirmation link without disclosing account existence.
+	RequestEmailVerification(context.Context, *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error)
+	// ConfirmEmail applies the emailed confirmation token.
+	ConfirmEmail(context.Context, *connect.Request[v1.ConfirmEmailRequest]) (*connect.Response[v1.ConfirmEmailResponse], error)
+	// RequestPasswordReset emails a reset link without disclosing account existence.
+	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[v1.RequestPasswordResetResponse], error)
+	// ConfirmPasswordReset sets a new password and revokes every existing session.
+	ConfirmPasswordReset(context.Context, *connect.Request[v1.ConfirmPasswordResetRequest]) (*connect.Response[v1.ConfirmPasswordResetResponse], error)
+	// GetCredentials returns the authenticated caller's contact and security state.
+	GetCredentials(context.Context, *connect.Request[v1.GetCredentialsRequest]) (*connect.Response[v1.GetCredentialsResponse], error)
+	// StartEmailChange begins the two-letter email change for the authenticated caller.
+	StartEmailChange(context.Context, *connect.Request[v1.StartEmailChangeRequest]) (*connect.Response[v1.StartEmailChangeResponse], error)
+	// ConfirmEmailChange applies the token sent to the new address.
+	ConfirmEmailChange(context.Context, *connect.Request[v1.ConfirmEmailChangeRequest]) (*connect.Response[v1.ConfirmEmailChangeResponse], error)
+	// CancelEmailChange cancels a pending change via the token sent to the old address.
+	CancelEmailChange(context.Context, *connect.Request[v1.CancelEmailChangeRequest]) (*connect.Response[v1.CancelEmailChangeResponse], error)
+	// ListSessions returns the authenticated caller's own sessions.
+	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	// RevokeSession ends one of the authenticated caller's sessions.
+	RevokeSession(context.Context, *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error)
+	// RequestAccountDeletion schedules deletion after a grace period and closes the sessions.
+	RequestAccountDeletion(context.Context, *connect.Request[v1.RequestAccountDeletionRequest]) (*connect.Response[v1.RequestAccountDeletionResponse], error)
+	// CancelAccountDeletion restores the account via the token sent by email.
+	CancelAccountDeletion(context.Context, *connect.Request[v1.CancelAccountDeletionRequest]) (*connect.Response[v1.CancelAccountDeletionResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the auth.v1.AuthService service. By default, it uses
@@ -119,16 +193,121 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("LogoutAll")),
 			connect.WithClientOptions(opts...),
 		),
+		startLogin: connect.NewClient[v1.StartLoginRequest, v1.StartLoginResponse](
+			httpClient,
+			baseURL+AuthServiceStartLoginProcedure,
+			connect.WithSchema(authServiceMethods.ByName("StartLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		completeLogin: connect.NewClient[v1.CompleteLoginRequest, v1.CompleteLoginResponse](
+			httpClient,
+			baseURL+AuthServiceCompleteLoginProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CompleteLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		resendLoginCode: connect.NewClient[v1.ResendLoginCodeRequest, v1.ResendLoginCodeResponse](
+			httpClient,
+			baseURL+AuthServiceResendLoginCodeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ResendLoginCode")),
+			connect.WithClientOptions(opts...),
+		),
+		requestEmailVerification: connect.NewClient[v1.RequestEmailVerificationRequest, v1.RequestEmailVerificationResponse](
+			httpClient,
+			baseURL+AuthServiceRequestEmailVerificationProcedure,
+			connect.WithSchema(authServiceMethods.ByName("RequestEmailVerification")),
+			connect.WithClientOptions(opts...),
+		),
+		confirmEmail: connect.NewClient[v1.ConfirmEmailRequest, v1.ConfirmEmailResponse](
+			httpClient,
+			baseURL+AuthServiceConfirmEmailProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ConfirmEmail")),
+			connect.WithClientOptions(opts...),
+		),
+		requestPasswordReset: connect.NewClient[v1.RequestPasswordResetRequest, v1.RequestPasswordResetResponse](
+			httpClient,
+			baseURL+AuthServiceRequestPasswordResetProcedure,
+			connect.WithSchema(authServiceMethods.ByName("RequestPasswordReset")),
+			connect.WithClientOptions(opts...),
+		),
+		confirmPasswordReset: connect.NewClient[v1.ConfirmPasswordResetRequest, v1.ConfirmPasswordResetResponse](
+			httpClient,
+			baseURL+AuthServiceConfirmPasswordResetProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ConfirmPasswordReset")),
+			connect.WithClientOptions(opts...),
+		),
+		getCredentials: connect.NewClient[v1.GetCredentialsRequest, v1.GetCredentialsResponse](
+			httpClient,
+			baseURL+AuthServiceGetCredentialsProcedure,
+			connect.WithSchema(authServiceMethods.ByName("GetCredentials")),
+			connect.WithClientOptions(opts...),
+		),
+		startEmailChange: connect.NewClient[v1.StartEmailChangeRequest, v1.StartEmailChangeResponse](
+			httpClient,
+			baseURL+AuthServiceStartEmailChangeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("StartEmailChange")),
+			connect.WithClientOptions(opts...),
+		),
+		confirmEmailChange: connect.NewClient[v1.ConfirmEmailChangeRequest, v1.ConfirmEmailChangeResponse](
+			httpClient,
+			baseURL+AuthServiceConfirmEmailChangeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ConfirmEmailChange")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelEmailChange: connect.NewClient[v1.CancelEmailChangeRequest, v1.CancelEmailChangeResponse](
+			httpClient,
+			baseURL+AuthServiceCancelEmailChangeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CancelEmailChange")),
+			connect.WithClientOptions(opts...),
+		),
+		listSessions: connect.NewClient[v1.ListSessionsRequest, v1.ListSessionsResponse](
+			httpClient,
+			baseURL+AuthServiceListSessionsProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ListSessions")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeSession: connect.NewClient[v1.RevokeSessionRequest, v1.RevokeSessionResponse](
+			httpClient,
+			baseURL+AuthServiceRevokeSessionProcedure,
+			connect.WithSchema(authServiceMethods.ByName("RevokeSession")),
+			connect.WithClientOptions(opts...),
+		),
+		requestAccountDeletion: connect.NewClient[v1.RequestAccountDeletionRequest, v1.RequestAccountDeletionResponse](
+			httpClient,
+			baseURL+AuthServiceRequestAccountDeletionProcedure,
+			connect.WithSchema(authServiceMethods.ByName("RequestAccountDeletion")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelAccountDeletion: connect.NewClient[v1.CancelAccountDeletionRequest, v1.CancelAccountDeletionResponse](
+			httpClient,
+			baseURL+AuthServiceCancelAccountDeletionProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CancelAccountDeletion")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	registerCredentials *connect.Client[v1.RegisterCredentialsRequest, v1.RegisterCredentialsResponse]
-	login               *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	refreshSession      *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
-	logout              *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
-	logoutAll           *connect.Client[v1.LogoutAllRequest, v1.LogoutAllResponse]
+	registerCredentials      *connect.Client[v1.RegisterCredentialsRequest, v1.RegisterCredentialsResponse]
+	login                    *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	refreshSession           *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
+	logout                   *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
+	logoutAll                *connect.Client[v1.LogoutAllRequest, v1.LogoutAllResponse]
+	startLogin               *connect.Client[v1.StartLoginRequest, v1.StartLoginResponse]
+	completeLogin            *connect.Client[v1.CompleteLoginRequest, v1.CompleteLoginResponse]
+	resendLoginCode          *connect.Client[v1.ResendLoginCodeRequest, v1.ResendLoginCodeResponse]
+	requestEmailVerification *connect.Client[v1.RequestEmailVerificationRequest, v1.RequestEmailVerificationResponse]
+	confirmEmail             *connect.Client[v1.ConfirmEmailRequest, v1.ConfirmEmailResponse]
+	requestPasswordReset     *connect.Client[v1.RequestPasswordResetRequest, v1.RequestPasswordResetResponse]
+	confirmPasswordReset     *connect.Client[v1.ConfirmPasswordResetRequest, v1.ConfirmPasswordResetResponse]
+	getCredentials           *connect.Client[v1.GetCredentialsRequest, v1.GetCredentialsResponse]
+	startEmailChange         *connect.Client[v1.StartEmailChangeRequest, v1.StartEmailChangeResponse]
+	confirmEmailChange       *connect.Client[v1.ConfirmEmailChangeRequest, v1.ConfirmEmailChangeResponse]
+	cancelEmailChange        *connect.Client[v1.CancelEmailChangeRequest, v1.CancelEmailChangeResponse]
+	listSessions             *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	revokeSession            *connect.Client[v1.RevokeSessionRequest, v1.RevokeSessionResponse]
+	requestAccountDeletion   *connect.Client[v1.RequestAccountDeletionRequest, v1.RequestAccountDeletionResponse]
+	cancelAccountDeletion    *connect.Client[v1.CancelAccountDeletionRequest, v1.CancelAccountDeletionResponse]
 }
 
 // RegisterCredentials calls auth.v1.AuthService.RegisterCredentials.
@@ -156,6 +335,81 @@ func (c *authServiceClient) LogoutAll(ctx context.Context, req *connect.Request[
 	return c.logoutAll.CallUnary(ctx, req)
 }
 
+// StartLogin calls auth.v1.AuthService.StartLogin.
+func (c *authServiceClient) StartLogin(ctx context.Context, req *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error) {
+	return c.startLogin.CallUnary(ctx, req)
+}
+
+// CompleteLogin calls auth.v1.AuthService.CompleteLogin.
+func (c *authServiceClient) CompleteLogin(ctx context.Context, req *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error) {
+	return c.completeLogin.CallUnary(ctx, req)
+}
+
+// ResendLoginCode calls auth.v1.AuthService.ResendLoginCode.
+func (c *authServiceClient) ResendLoginCode(ctx context.Context, req *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error) {
+	return c.resendLoginCode.CallUnary(ctx, req)
+}
+
+// RequestEmailVerification calls auth.v1.AuthService.RequestEmailVerification.
+func (c *authServiceClient) RequestEmailVerification(ctx context.Context, req *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error) {
+	return c.requestEmailVerification.CallUnary(ctx, req)
+}
+
+// ConfirmEmail calls auth.v1.AuthService.ConfirmEmail.
+func (c *authServiceClient) ConfirmEmail(ctx context.Context, req *connect.Request[v1.ConfirmEmailRequest]) (*connect.Response[v1.ConfirmEmailResponse], error) {
+	return c.confirmEmail.CallUnary(ctx, req)
+}
+
+// RequestPasswordReset calls auth.v1.AuthService.RequestPasswordReset.
+func (c *authServiceClient) RequestPasswordReset(ctx context.Context, req *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[v1.RequestPasswordResetResponse], error) {
+	return c.requestPasswordReset.CallUnary(ctx, req)
+}
+
+// ConfirmPasswordReset calls auth.v1.AuthService.ConfirmPasswordReset.
+func (c *authServiceClient) ConfirmPasswordReset(ctx context.Context, req *connect.Request[v1.ConfirmPasswordResetRequest]) (*connect.Response[v1.ConfirmPasswordResetResponse], error) {
+	return c.confirmPasswordReset.CallUnary(ctx, req)
+}
+
+// GetCredentials calls auth.v1.AuthService.GetCredentials.
+func (c *authServiceClient) GetCredentials(ctx context.Context, req *connect.Request[v1.GetCredentialsRequest]) (*connect.Response[v1.GetCredentialsResponse], error) {
+	return c.getCredentials.CallUnary(ctx, req)
+}
+
+// StartEmailChange calls auth.v1.AuthService.StartEmailChange.
+func (c *authServiceClient) StartEmailChange(ctx context.Context, req *connect.Request[v1.StartEmailChangeRequest]) (*connect.Response[v1.StartEmailChangeResponse], error) {
+	return c.startEmailChange.CallUnary(ctx, req)
+}
+
+// ConfirmEmailChange calls auth.v1.AuthService.ConfirmEmailChange.
+func (c *authServiceClient) ConfirmEmailChange(ctx context.Context, req *connect.Request[v1.ConfirmEmailChangeRequest]) (*connect.Response[v1.ConfirmEmailChangeResponse], error) {
+	return c.confirmEmailChange.CallUnary(ctx, req)
+}
+
+// CancelEmailChange calls auth.v1.AuthService.CancelEmailChange.
+func (c *authServiceClient) CancelEmailChange(ctx context.Context, req *connect.Request[v1.CancelEmailChangeRequest]) (*connect.Response[v1.CancelEmailChangeResponse], error) {
+	return c.cancelEmailChange.CallUnary(ctx, req)
+}
+
+// ListSessions calls auth.v1.AuthService.ListSessions.
+func (c *authServiceClient) ListSessions(ctx context.Context, req *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
+	return c.listSessions.CallUnary(ctx, req)
+}
+
+// RevokeSession calls auth.v1.AuthService.RevokeSession.
+func (c *authServiceClient) RevokeSession(ctx context.Context, req *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error) {
+	return c.revokeSession.CallUnary(ctx, req)
+}
+
+// RequestAccountDeletion calls auth.v1.AuthService.RequestAccountDeletion.
+func (c *authServiceClient) RequestAccountDeletion(ctx context.Context, req *connect.Request[v1.RequestAccountDeletionRequest]) (*connect.Response[v1.RequestAccountDeletionResponse], error) {
+	return c.requestAccountDeletion.CallUnary(ctx, req)
+}
+
+// CancelAccountDeletion calls auth.v1.AuthService.CancelAccountDeletion.
+func (c *authServiceClient) CancelAccountDeletion(ctx context.Context, req *connect.Request[v1.CancelAccountDeletionRequest]) (*connect.Response[v1.CancelAccountDeletionResponse], error) {
+	return c.cancelAccountDeletion.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the auth.v1.AuthService service.
 type AuthServiceHandler interface {
 	// RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
@@ -168,6 +422,36 @@ type AuthServiceHandler interface {
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	// LogoutAll revokes every session of the authenticated subject.
 	LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error)
+	// StartLogin verifies the password and, on success, emails a one-time login code.
+	StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error)
+	// CompleteLogin verifies the emailed code and establishes the session.
+	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
+	// ResendLoginCode replaces the code of a pending challenge without asking the password again.
+	ResendLoginCode(context.Context, *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error)
+	// RequestEmailVerification emails a confirmation link without disclosing account existence.
+	RequestEmailVerification(context.Context, *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error)
+	// ConfirmEmail applies the emailed confirmation token.
+	ConfirmEmail(context.Context, *connect.Request[v1.ConfirmEmailRequest]) (*connect.Response[v1.ConfirmEmailResponse], error)
+	// RequestPasswordReset emails a reset link without disclosing account existence.
+	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[v1.RequestPasswordResetResponse], error)
+	// ConfirmPasswordReset sets a new password and revokes every existing session.
+	ConfirmPasswordReset(context.Context, *connect.Request[v1.ConfirmPasswordResetRequest]) (*connect.Response[v1.ConfirmPasswordResetResponse], error)
+	// GetCredentials returns the authenticated caller's contact and security state.
+	GetCredentials(context.Context, *connect.Request[v1.GetCredentialsRequest]) (*connect.Response[v1.GetCredentialsResponse], error)
+	// StartEmailChange begins the two-letter email change for the authenticated caller.
+	StartEmailChange(context.Context, *connect.Request[v1.StartEmailChangeRequest]) (*connect.Response[v1.StartEmailChangeResponse], error)
+	// ConfirmEmailChange applies the token sent to the new address.
+	ConfirmEmailChange(context.Context, *connect.Request[v1.ConfirmEmailChangeRequest]) (*connect.Response[v1.ConfirmEmailChangeResponse], error)
+	// CancelEmailChange cancels a pending change via the token sent to the old address.
+	CancelEmailChange(context.Context, *connect.Request[v1.CancelEmailChangeRequest]) (*connect.Response[v1.CancelEmailChangeResponse], error)
+	// ListSessions returns the authenticated caller's own sessions.
+	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	// RevokeSession ends one of the authenticated caller's sessions.
+	RevokeSession(context.Context, *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error)
+	// RequestAccountDeletion schedules deletion after a grace period and closes the sessions.
+	RequestAccountDeletion(context.Context, *connect.Request[v1.RequestAccountDeletionRequest]) (*connect.Response[v1.RequestAccountDeletionResponse], error)
+	// CancelAccountDeletion restores the account via the token sent by email.
+	CancelAccountDeletion(context.Context, *connect.Request[v1.CancelAccountDeletionRequest]) (*connect.Response[v1.CancelAccountDeletionResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -207,6 +491,96 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("LogoutAll")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceStartLoginHandler := connect.NewUnaryHandler(
+		AuthServiceStartLoginProcedure,
+		svc.StartLogin,
+		connect.WithSchema(authServiceMethods.ByName("StartLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceCompleteLoginHandler := connect.NewUnaryHandler(
+		AuthServiceCompleteLoginProcedure,
+		svc.CompleteLogin,
+		connect.WithSchema(authServiceMethods.ByName("CompleteLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceResendLoginCodeHandler := connect.NewUnaryHandler(
+		AuthServiceResendLoginCodeProcedure,
+		svc.ResendLoginCode,
+		connect.WithSchema(authServiceMethods.ByName("ResendLoginCode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceRequestEmailVerificationHandler := connect.NewUnaryHandler(
+		AuthServiceRequestEmailVerificationProcedure,
+		svc.RequestEmailVerification,
+		connect.WithSchema(authServiceMethods.ByName("RequestEmailVerification")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceConfirmEmailHandler := connect.NewUnaryHandler(
+		AuthServiceConfirmEmailProcedure,
+		svc.ConfirmEmail,
+		connect.WithSchema(authServiceMethods.ByName("ConfirmEmail")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceRequestPasswordResetHandler := connect.NewUnaryHandler(
+		AuthServiceRequestPasswordResetProcedure,
+		svc.RequestPasswordReset,
+		connect.WithSchema(authServiceMethods.ByName("RequestPasswordReset")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceConfirmPasswordResetHandler := connect.NewUnaryHandler(
+		AuthServiceConfirmPasswordResetProcedure,
+		svc.ConfirmPasswordReset,
+		connect.WithSchema(authServiceMethods.ByName("ConfirmPasswordReset")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceGetCredentialsHandler := connect.NewUnaryHandler(
+		AuthServiceGetCredentialsProcedure,
+		svc.GetCredentials,
+		connect.WithSchema(authServiceMethods.ByName("GetCredentials")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceStartEmailChangeHandler := connect.NewUnaryHandler(
+		AuthServiceStartEmailChangeProcedure,
+		svc.StartEmailChange,
+		connect.WithSchema(authServiceMethods.ByName("StartEmailChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceConfirmEmailChangeHandler := connect.NewUnaryHandler(
+		AuthServiceConfirmEmailChangeProcedure,
+		svc.ConfirmEmailChange,
+		connect.WithSchema(authServiceMethods.ByName("ConfirmEmailChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceCancelEmailChangeHandler := connect.NewUnaryHandler(
+		AuthServiceCancelEmailChangeProcedure,
+		svc.CancelEmailChange,
+		connect.WithSchema(authServiceMethods.ByName("CancelEmailChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceListSessionsHandler := connect.NewUnaryHandler(
+		AuthServiceListSessionsProcedure,
+		svc.ListSessions,
+		connect.WithSchema(authServiceMethods.ByName("ListSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceRevokeSessionHandler := connect.NewUnaryHandler(
+		AuthServiceRevokeSessionProcedure,
+		svc.RevokeSession,
+		connect.WithSchema(authServiceMethods.ByName("RevokeSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceRequestAccountDeletionHandler := connect.NewUnaryHandler(
+		AuthServiceRequestAccountDeletionProcedure,
+		svc.RequestAccountDeletion,
+		connect.WithSchema(authServiceMethods.ByName("RequestAccountDeletion")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceCancelAccountDeletionHandler := connect.NewUnaryHandler(
+		AuthServiceCancelAccountDeletionProcedure,
+		svc.CancelAccountDeletion,
+		connect.WithSchema(authServiceMethods.ByName("CancelAccountDeletion")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/auth.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceRegisterCredentialsProcedure:
@@ -219,6 +593,36 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceLogoutHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutAllProcedure:
 			authServiceLogoutAllHandler.ServeHTTP(w, r)
+		case AuthServiceStartLoginProcedure:
+			authServiceStartLoginHandler.ServeHTTP(w, r)
+		case AuthServiceCompleteLoginProcedure:
+			authServiceCompleteLoginHandler.ServeHTTP(w, r)
+		case AuthServiceResendLoginCodeProcedure:
+			authServiceResendLoginCodeHandler.ServeHTTP(w, r)
+		case AuthServiceRequestEmailVerificationProcedure:
+			authServiceRequestEmailVerificationHandler.ServeHTTP(w, r)
+		case AuthServiceConfirmEmailProcedure:
+			authServiceConfirmEmailHandler.ServeHTTP(w, r)
+		case AuthServiceRequestPasswordResetProcedure:
+			authServiceRequestPasswordResetHandler.ServeHTTP(w, r)
+		case AuthServiceConfirmPasswordResetProcedure:
+			authServiceConfirmPasswordResetHandler.ServeHTTP(w, r)
+		case AuthServiceGetCredentialsProcedure:
+			authServiceGetCredentialsHandler.ServeHTTP(w, r)
+		case AuthServiceStartEmailChangeProcedure:
+			authServiceStartEmailChangeHandler.ServeHTTP(w, r)
+		case AuthServiceConfirmEmailChangeProcedure:
+			authServiceConfirmEmailChangeHandler.ServeHTTP(w, r)
+		case AuthServiceCancelEmailChangeProcedure:
+			authServiceCancelEmailChangeHandler.ServeHTTP(w, r)
+		case AuthServiceListSessionsProcedure:
+			authServiceListSessionsHandler.ServeHTTP(w, r)
+		case AuthServiceRevokeSessionProcedure:
+			authServiceRevokeSessionHandler.ServeHTTP(w, r)
+		case AuthServiceRequestAccountDeletionProcedure:
+			authServiceRequestAccountDeletionHandler.ServeHTTP(w, r)
+		case AuthServiceCancelAccountDeletionProcedure:
+			authServiceCancelAccountDeletionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -246,6 +650,66 @@ func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[
 
 func (UnimplementedAuthServiceHandler) LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.LogoutAll is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.StartLogin is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.CompleteLogin is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ResendLoginCode(context.Context, *connect.Request[v1.ResendLoginCodeRequest]) (*connect.Response[v1.ResendLoginCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ResendLoginCode is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) RequestEmailVerification(context.Context, *connect.Request[v1.RequestEmailVerificationRequest]) (*connect.Response[v1.RequestEmailVerificationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.RequestEmailVerification is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ConfirmEmail(context.Context, *connect.Request[v1.ConfirmEmailRequest]) (*connect.Response[v1.ConfirmEmailResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ConfirmEmail is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[v1.RequestPasswordResetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.RequestPasswordReset is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ConfirmPasswordReset(context.Context, *connect.Request[v1.ConfirmPasswordResetRequest]) (*connect.Response[v1.ConfirmPasswordResetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ConfirmPasswordReset is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) GetCredentials(context.Context, *connect.Request[v1.GetCredentialsRequest]) (*connect.Response[v1.GetCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.GetCredentials is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) StartEmailChange(context.Context, *connect.Request[v1.StartEmailChangeRequest]) (*connect.Response[v1.StartEmailChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.StartEmailChange is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ConfirmEmailChange(context.Context, *connect.Request[v1.ConfirmEmailChangeRequest]) (*connect.Response[v1.ConfirmEmailChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ConfirmEmailChange is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) CancelEmailChange(context.Context, *connect.Request[v1.CancelEmailChangeRequest]) (*connect.Response[v1.CancelEmailChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.CancelEmailChange is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ListSessions is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) RevokeSession(context.Context, *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.RevokeSession is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) RequestAccountDeletion(context.Context, *connect.Request[v1.RequestAccountDeletionRequest]) (*connect.Response[v1.RequestAccountDeletionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.RequestAccountDeletion is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) CancelAccountDeletion(context.Context, *connect.Request[v1.CancelAccountDeletionRequest]) (*connect.Response[v1.CancelAccountDeletionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.CancelAccountDeletion is not implemented"))
 }
 
 // AuthBrowserServiceClient is a client for the auth.v1.AuthBrowserService service.
