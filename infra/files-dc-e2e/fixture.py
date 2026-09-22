@@ -36,6 +36,10 @@ ZONES = {"quarantine": ("dc-a-dmz", 8333), "delivery-a": ("dc-a-dmz", 8334),
          "delivery-b": ("dc-b-dmz", 8335), "internal-clean": ("dc-a-internal", 8333)}
 
 
+class OwnershipError(Exception):
+    """Нарушение identity не является повторяемой ошибкой доступности API."""
+
+
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     path.write_text(value if isinstance(value, str) else json.dumps(value))
@@ -176,10 +180,32 @@ class Fixture:
 
     def restart(self, node, name):
         self.validate(node)
-        self.kubectl(node, "delete", "pod", name, "--ignore-not-found", "--wait=true", "--timeout=45s")
+        self.delete_pod(node,name)
         pod = self.pods[(node, name)]
         pod["spec"]["hostAliases"] = self.aliases(node)
         self.apply(node, pod)
+
+    def delete_pod(self,node,name):
+        # A watch can stall while the k3s API recovers after a VM restart. A
+        # successful DELETE is followed by fresh GETs, never by force deletion
+        # or treating an API/ownership error as proof of absence.
+        def get():
+            result=self.kubectl(node,"get","pod",name,"--ignore-not-found","-o","json","--request-timeout=5s",timeout=15)
+            return json.loads(result.stdout) if result.stdout.strip() else None
+        pod=get()
+        if pod is None:return
+        labels=pod["metadata"].get("labels",{})
+        if labels.get("marketmesh.task")!="MM-43" or labels.get("marketmesh.run")!=self.instance:
+            raise RuntimeError("refusing unowned pod deletion")
+        uid=pod["metadata"]["uid"]
+        self.kubectl(node,"delete","--raw","/api/v1/namespaces/"+NAMESPACE+"/pods/"+name,"-f","-","--request-timeout=10s",
+            input=json.dumps({"apiVersion":"v1","kind":"DeleteOptions","preconditions":{"uid":uid}}).encode(),timeout=20)
+        def absent():
+            current=get()
+            if current is None:return True
+            if current["metadata"]["uid"]!=uid:raise OwnershipError("pod identity changed while deleting")
+            return False
+        self.wait(absent,"owned pod deletion "+name,90)
 
     def wait(self, check, label, timeout=120):
         deadline = time.monotonic() + timeout
@@ -569,7 +595,7 @@ class Fixture:
         try:
             self.check_parsers(node)
         finally:
-            self.kubectl(node,"delete","pod","network-control","--ignore-not-found","--wait=true","--timeout=30s")
+            self.delete_pod(node,"network-control")
             self.pods.pop((node,"network-control"),None)
 
     def check_parsers(self,node):
@@ -638,7 +664,7 @@ class Fixture:
         self.vm(node,"install","-d","-o","999","-g","999","-m","700",REMOTE+"/data/pg-local")
         self.vm(node,"chown","-R","999:999",REMOTE+"/pg-local")
         if rebuild:
-            self.kubectl(node,"delete","pod","pg-local","--ignore-not-found","--wait=true","--timeout=45s")
+            self.delete_pod(node,"pg-local")
             self.validate(node)
             self.vm(node,"rm","-rf",REMOTE+"/data/pg-local/pg")
         self.apply(node,self.pod(node,"pg-local",PG,command=["bash","/config/start.sh"],

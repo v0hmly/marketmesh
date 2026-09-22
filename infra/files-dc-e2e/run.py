@@ -109,7 +109,7 @@ class DCTest:
         unavailable = f.kubectl(node,"exec","pg","--","pg_isready","-h","127.0.0.1", check=False)
         if unavailable.returncode != 2:
             raise RuntimeError("old primary fence did not prove absence of a PostgreSQL listener")
-        f.kubectl(node,"delete","pod","pg","--wait=true","--timeout=45s")
+        f.delete_pod(node,"pg")
         f.validate(node)
         # This directory belongs to this disposable fixture, never dev data. A
         # fresh basebackup from the promoted timeline also proves usable recovery.

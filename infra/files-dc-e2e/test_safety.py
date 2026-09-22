@@ -2,12 +2,13 @@
 import json
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 import tempfile
 import time
 import unittest
 from unittest.mock import Mock
 
-from fixture import Fixture
+from fixture import Fixture, OwnershipError
 from run import DCTest
 
 
@@ -127,6 +128,42 @@ class SafetyTests(unittest.TestCase):
         test.rejoin=Mock()
         with self.assertRaisesRegex(RuntimeError,"start failed"):test.restore("dc-a")
         test.rejoin.assert_not_called()
+
+    def deletion_fixture(self):
+        fixture=Fixture.__new__(Fixture)
+        fixture.instance="mm43-owned"
+        pod={"metadata":{"uid":"owned-uid","labels":{"marketmesh.task":"MM-43","marketmesh.run":fixture.instance}}}
+        return fixture,pod
+
+    def test_pod_deletion_requires_fresh_successful_absence_proof(self):
+        fixture,pod=self.deletion_fixture()
+        fixture.kubectl=Mock(side_effect=[SimpleNamespace(stdout=json.dumps(pod).encode()),SimpleNamespace(stdout=b"deleted"),SimpleNamespace(stdout=b"")])
+        fixture.wait=lambda check,label,timeout:self.assertTrue(check())
+        fixture.delete_pod("dc-a-internal","auth")
+        deletion=fixture.kubectl.call_args_list[1]
+        self.assertEqual(deletion.args,("dc-a-internal","delete","--raw","/api/v1/namespaces/mm43-files/pods/auth","-f","-","--request-timeout=10s"))
+        self.assertEqual(json.loads(deletion.kwargs["input"])["preconditions"],{"uid":"owned-uid"})
+        self.assertEqual(fixture.kubectl.call_count,3)
+
+    def test_api_error_is_not_proof_of_pod_deletion(self):
+        fixture,pod=self.deletion_fixture()
+        fixture.kubectl=Mock(side_effect=[SimpleNamespace(stdout=json.dumps(pod).encode()),SimpleNamespace(stdout=b"deleted"),RuntimeError("API unavailable")])
+        fixture.wait=lambda check,label,timeout:check()
+        with self.assertRaisesRegex(RuntimeError,"API unavailable"):fixture.delete_pod("dc-a-internal","auth")
+
+    def test_unowned_pod_cannot_be_deleted(self):
+        fixture,pod=self.deletion_fixture()
+        pod["metadata"]["labels"]["marketmesh.run"]="unrelated"
+        fixture.kubectl=Mock(return_value=SimpleNamespace(stdout=json.dumps(pod).encode()))
+        with self.assertRaisesRegex(RuntimeError,"unowned"):fixture.delete_pod("dc-a-internal","auth")
+        self.assertEqual(fixture.kubectl.call_count,1)
+
+    def test_replaced_pod_then_not_found_cannot_pass_real_wait(self):
+        fixture,pod=self.deletion_fixture()
+        replacement={"metadata":{"uid":"new-uid"}}
+        fixture.kubectl=Mock(side_effect=[SimpleNamespace(stdout=json.dumps(pod).encode()),SimpleNamespace(stdout=b"deleted"),SimpleNamespace(stdout=json.dumps(replacement).encode()),SimpleNamespace(stdout=b"")])
+        with self.assertRaisesRegex(OwnershipError,"identity changed"):fixture.delete_pod("dc-a-internal","auth")
+        self.assertEqual(fixture.kubectl.call_count,3)
 
 
 if __name__=="__main__":unittest.main()
