@@ -100,6 +100,7 @@ func testIntegrationProfileRuntime(t *testing.T, withAddresses, withSettings boo
 		}
 	}
 	exec(migrations.ProfilesUp)
+	exec(migrations.IdentityUp)
 	if withSettings {
 		exec(migrations.SettingsUp)
 	}

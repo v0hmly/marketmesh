@@ -113,13 +113,27 @@ func TestWorkloadAndProfileBoundary(t *testing.T) {
 	if err != nil || response.GetProfile().GetSubjectId()[0] != 1 || strings.Join(headers.Get("cache-control"), ",") != "no-store" {
 		t.Fatalf("get=%v %v", response, err)
 	}
-	updateRequest := &userv1.UpdateMeRequest{DisplayName: "changed", Bio: "private", ExpectedVersion: 1}
+	updateRequest := &userv1.UpdateMeRequest{DisplayName: "changed", Bio: "private", ExpectedVersion: 1, LastName: " Фамилия ", BirthDate: "2000-02-29", Gender: userv1.Gender_GENDER_FEMALE, Phone: "+7 (999) 123-45-67", City: " Город ", ShowAge: true}
 	if _, err = gateway.UpdateMe(metadata.NewOutgoingContext(ctx, metadata.Pairs(AssertionMetadata, "read")), updateRequest); status.Code(err) != codes.PermissionDenied {
 		t.Fatal(err)
 	}
 	changed, err := gateway.UpdateMe(metadata.NewOutgoingContext(ctx, metadata.Pairs(AssertionMetadata, "write")), updateRequest)
 	if err != nil || changed.GetProfile().GetVersion() != 2 || changed.GetProfile().GetDisplayName() != "changed" {
 		t.Fatalf("update=%v %v", changed, err)
+	}
+	p := changed.GetProfile()
+	if p.GetLastName() != "Фамилия" || p.GetBirthDate() != "2000-02-29" || p.GetGender() != userv1.Gender_GENDER_FEMALE || p.GetPhone() != updateRequest.Phone || p.GetCity() != "Город" || !p.GetShowAge() {
+		t.Fatal("private fields lost across RPC boundary")
+	}
+	for _, invalid := range []*userv1.UpdateMeRequest{
+		{ExpectedVersion: 1, Gender: userv1.Gender(65536)},
+		{ExpectedVersion: 1, BirthDate: "2026-02-30"},
+		{ExpectedVersion: 1, Phone: "1234567secret"},
+	} {
+		before := store.calls.Load()
+		if _, err := gateway.UpdateMe(metadata.NewOutgoingContext(ctx, metadata.Pairs(AssertionMetadata, "write")), invalid); status.Code(err) != codes.InvalidArgument || store.calls.Load() != before {
+			t.Fatal("invalid identity reached repository")
+		}
 	}
 	if _, err = gateway.GetMe(metadata.NewOutgoingContext(ctx, metadata.Pairs(AssertionMetadata, "write")), &userv1.GetMeRequest{}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal(err)

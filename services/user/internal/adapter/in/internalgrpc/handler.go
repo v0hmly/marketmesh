@@ -73,7 +73,11 @@ func (h *Handler) UpdateMe(ctx context.Context, request *userv1.UpdateMeRequest)
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
-	result, err := h.update.Execute(ctx, principal, updateme.Command{DisplayName: request.GetDisplayName(), Bio: request.GetBio(), ExpectedVersion: request.GetExpectedVersion()})
+	result, err := h.update.Execute(ctx, principal, updateme.Command{
+		DisplayName: request.GetDisplayName(), Bio: request.GetBio(), ExpectedVersion: request.GetExpectedVersion(),
+		LastName: request.GetLastName(), BirthDate: request.GetBirthDate(), Gender: profile.Gender(request.GetGender()),
+		Phone: request.GetPhone(), City: request.GetCity(), ShowAge: request.GetShowAge(),
+	})
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -102,7 +106,12 @@ func noStore(ctx context.Context) {
 	_ = grpc.SetHeader(ctx, metadata.Pairs("cache-control", "no-store"))
 }
 func wireProfile(value profile.Profile) *userv1.Profile {
-	return &userv1.Profile{SubjectId: append([]byte(nil), value.SubjectID[:]...), DisplayName: value.Fields.DisplayName, Bio: value.Fields.Bio, Version: value.Version, CreatedAtUnix: value.CreatedAt.Unix(), UpdatedAtUnix: value.UpdatedAt.Unix()}
+	return &userv1.Profile{
+		SubjectId: append([]byte(nil), value.SubjectID[:]...), DisplayName: value.Fields.DisplayName, Bio: value.Fields.Bio,
+		Version: value.Version, CreatedAtUnix: value.CreatedAt.Unix(), UpdatedAtUnix: value.UpdatedAt.Unix(),
+		LastName: value.Fields.LastName, BirthDate: value.Fields.BirthDate, Gender: userv1.Gender(value.Fields.Gender),
+		Phone: value.Fields.Phone, City: value.Fields.City, ShowAge: value.Fields.ShowAge,
+	}
 }
 func mapError(err error) error {
 	switch {

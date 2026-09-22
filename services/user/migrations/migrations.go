@@ -30,3 +30,10 @@ var (
 	//go:embed 000004_settings.down.sql
 	SettingsDown string
 )
+
+var (
+	//go:embed 000005_identity.up.sql
+	IdentityUp string
+	//go:embed 000005_identity.down.sql
+	IdentityDown string
+)

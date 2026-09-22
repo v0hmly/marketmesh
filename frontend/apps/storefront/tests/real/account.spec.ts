@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:https';
 import { verifyEmail } from './mail';
+import AxeBuilder from '@axe-core/playwright';
 
 const run = process.env.ACCOUNT_E2E_RUN_ID!;
 const account = (suffix: string) => ({
@@ -123,7 +124,18 @@ async function rpc(page: Page, method = 'GetMe', body: Record<string, unknown> =
             }[];
           };
           settings?: { subjectId: string; version: string; theme: string };
-          profile?: { subjectId: string; version: string; displayName: string; bio: string };
+          profile?: {
+            subjectId: string;
+            version: string;
+            displayName: string;
+            bio: string;
+            lastName?: string;
+            birthDate?: string;
+            gender?: string;
+            phone?: string;
+            city?: string;
+            showAge?: boolean;
+          };
         },
       };
     },
@@ -720,4 +732,151 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
   await expect(page.getByRole('radio')).toHaveCount(0);
   await second.close();
+});
+
+test('real identity fields persist with CAS, owner isolation and an ambiguous committed reply', async ({
+  page,
+  context,
+  browser,
+}) => {
+  test.skip(process.env.ACCOUNT_E2E_PHASE !== 'core');
+  const owner = account('identity-a');
+  await register(page, owner);
+  await login(page, owner);
+  await ready(page);
+  await save(page, 'Вера', 'Существующая биография');
+  await page.goto('/account/id');
+  const edit = (target: Page) =>
+    target.getByRole('button', { name: 'Изменить данные', exact: true });
+  const submit = (target: Page) => target.locator('form button[type="submit"]');
+  await edit(page).click();
+  const values = {
+    'id-first': 'Вера',
+    'id-last': 'Ильина 😀',
+    'id-birth': '2000-02-29',
+    'id-phone': '+7 (999) 123-45-67',
+    'id-city': 'Санкт-Петербург',
+  };
+  for (const [id, value] of Object.entries(values)) await page.locator(`#${id}`).fill(value);
+  await page.getByRole('radio', { name: 'Женский', exact: true }).check();
+  expect((await new AxeBuilder({ page }).analyze()).violations.map((item) => item.id)).toEqual([]);
+  await submit(page).click();
+  await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
+  let saved = (await rpc(page)).body.profile!;
+  expect(saved).toMatchObject({
+    displayName: 'Вера',
+    lastName: 'Ильина 😀',
+    birthDate: '2000-02-29',
+    gender: 'GENDER_FEMALE',
+    phone: values['id-phone'],
+    city: 'Санкт-Петербург',
+    bio: 'Существующая биография',
+  });
+  await page.getByRole('checkbox', { name: /Показывать возраст в отзывах/ }).check();
+  await expect(page.getByRole('checkbox', { name: /Показывать возраст в отзывах/ })).toBeEnabled();
+  expect((await rpc(page)).body.profile?.showAge).toBe(true);
+  await page.reload();
+  await expect(edit(page)).toBeVisible();
+  await expect(page.locator('.id-rows').first()).toContainText('29 февраля 2000 года');
+  await expect(page.locator('.preview-name')).toContainText('Санкт-Петербург');
+  await expect(page.locator('.public-preview')).not.toContainText(values['id-last']);
+  await expect(page.locator('.public-preview')).not.toContainText(values['id-phone']);
+  await expect(page.locator('.public-preview')).not.toContainText('2000');
+  // The original profile editor preserves the additional fields.
+  await page.goto('/account');
+  await ready(page);
+  await save(page, 'Вера', 'Новая биография');
+  expect((await rpc(page)).body.profile).toMatchObject({
+    lastName: 'Ильина 😀',
+    birthDate: '2000-02-29',
+    city: 'Санкт-Петербург',
+    showAge: true,
+  });
+  await page.goto('/account/id');
+  await expect(edit(page)).toBeVisible();
+  saved = (await rpc(page)).body.profile!;
+  const validInput = {
+    displayName: saved.displayName,
+    bio: saved.bio,
+    lastName: saved.lastName,
+    birthDate: saved.birthDate,
+    gender: saved.gender,
+    phone: saved.phone,
+    city: saved.city,
+    showAge: saved.showAge,
+    expectedVersion: saved.version,
+  };
+  for (const invalid of [
+    { birthDate: '2026-02-30' },
+    { gender: 65536 },
+    { phone: '1234567bad' },
+    { lastName: 'x'.repeat(81) },
+  ]) {
+    expect((await rpc(page, 'UpdateMe', { ...validInput, ...invalid })).status).toBe(400);
+  }
+  expect((await rpc(page)).body.profile?.version).toBe(saved.version);
+  const second = await context.newPage();
+  await second.goto('/account/id');
+  await edit(second).click();
+  await second.locator('#id-city').fill('Казань');
+  await edit(page).click();
+  await page.locator('#id-city').fill('Москва');
+  await submit(page).click();
+  await expect(edit(page)).toBeVisible();
+  await submit(second).click();
+  await expect(second.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
+  await expect(second.locator('#id-city')).toHaveValue('Казань');
+  await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  await expect(second.locator('.latest-profile')).toContainText('Москва');
+  await second.getByRole('button', { name: 'Оставить мой черновик для сохранения' }).click();
+  await submit(second).click();
+  await expect(edit(second)).toBeVisible();
+  await second.close();
+  await page.reload();
+  await edit(page).click();
+  await page.locator('#id-last').fill('Сохранено при потере ответа');
+  let writes = 0;
+  await page.route('**/user.v1.UserService/UpdateMe', async (route) => {
+    writes++;
+    expect((await route.fetch()).status()).toBe(200);
+    await route.abort('failed');
+  });
+  await submit(page).click();
+  await expect(page.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
+  expect(writes).toBe(1);
+  await page.unroute('**/user.v1.UserService/UpdateMe');
+  await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  await expect(page.locator('.latest-profile')).toContainText('Сохранено при потере ответа');
+  await page.getByRole('button', { name: 'Принять актуальные данные', exact: true }).click();
+  await expect(edit(page)).toBeVisible();
+  const other = await browser.newContext({
+    baseURL: process.env.BASE_URL,
+    ignoreHTTPSErrors: false,
+  });
+  const otherPage = await other.newPage();
+  await register(otherPage, account('identity-b'));
+  await login(otherPage, account('identity-b'));
+  await ready(otherPage);
+  await otherPage.goto('/account/id');
+  await expect(edit(otherPage)).toBeVisible();
+  await expect(otherPage.locator('.id-content')).not.toContainText('Сохранено при потере ответа');
+  const foreign = await rpc(otherPage, 'GetMe', { subjectId: saved.subjectId });
+  expect(
+    foreign.status === 400 ||
+      (foreign.status === 200 && foreign.body.profile?.subjectId !== saved.subjectId),
+  ).toBe(true);
+  await other.close();
+  await confirmedLogout(page, 'profile');
+  await login(page, owner);
+  await ready(page);
+  await page.goto('/account/id');
+  await expect(edit(page)).toBeVisible();
+  expect((await rpc(page)).body.profile).toMatchObject({
+    lastName: 'Сохранено при потере ответа',
+    birthDate: '2000-02-29',
+    gender: 'GENDER_FEMALE',
+    city: 'Казань',
+    showAge: true,
+    bio: 'Новая биография',
+  });
 });

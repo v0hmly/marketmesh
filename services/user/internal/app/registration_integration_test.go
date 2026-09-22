@@ -88,7 +88,7 @@ func TestIntegrationRegistrationDelivery(t *testing.T) {
 	authDown := migration("000003_registration_outbox.down.sql") + migration("000001_credentials.down.sql")
 	sql(authDB, migration("000001_credentials.up.sql")+migration("000003_registration_outbox.up.sql"))
 	sql(authDB, `CREATE ROLE delivery_auth_rw LOGIN PASSWORD 'fixture-auth-rw'; CREATE ROLE delivery_auth_ro LOGIN PASSWORD 'fixture-auth-ro'; GRANT USAGE ON SCHEMA auth TO delivery_auth_rw,delivery_auth_ro; GRANT SELECT,INSERT,UPDATE ON auth.credentials,auth.registration_outbox TO delivery_auth_rw; GRANT SELECT ON auth.credentials TO delivery_auth_ro; CREATE ROLE delivery_backfill LOGIN PASSWORD 'fixture-backfill'; GRANT USAGE ON SCHEMA auth TO delivery_backfill; GRANT SELECT(subject_id) ON auth.credentials TO delivery_backfill; GRANT SELECT,INSERT ON auth.registration_outbox TO delivery_backfill; GRANT UPDATE(published_at,next_attempt_at) ON auth.registration_outbox TO delivery_backfill`)
-	sql(userDB, migrations.ProfilesUp+migrations.RegistrationInboxUp)
+	sql(userDB, migrations.ProfilesUp+migrations.IdentityUp+migrations.RegistrationInboxUp)
 	sql(userDB, `CREATE ROLE registration_user_rw LOGIN PASSWORD 'fixture-rw'; CREATE ROLE registration_user_ro LOGIN PASSWORD 'fixture-ro'; GRANT USAGE ON SCHEMA users TO registration_user_rw,registration_user_ro; GRANT SELECT,INSERT,UPDATE ON users.profiles,users.registration_inbox TO registration_user_rw; GRANT SELECT ON users.profiles TO registration_user_ro`)
 	t.Cleanup(func() {
 		if _, err := authDB.Exec(context.Background(), `DROP OWNED BY delivery_auth_rw,delivery_auth_ro,delivery_backfill;DROP ROLE delivery_auth_rw,delivery_auth_ro,delivery_backfill;`+authDown); err != nil {
