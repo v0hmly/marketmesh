@@ -61,6 +61,26 @@ func TestHandlerServesConnectContractAndSanitizesAuthenticationFailures(t *testi
 	}
 }
 
+func TestHandlerRejectsUnimplementedAccountOperations(t *testing.T) {
+	t.Parallel()
+
+	var logs bytes.Buffer
+	handler := newHandler(t, &registrationStub{}, &verificationStub{}, &logs)
+	_, httpHandler := authv1connect.NewAuthServiceHandler(handler)
+	server := httptest.NewServer(httpHandler)
+	t.Cleanup(server.Close)
+	client := authv1connect.NewAuthServiceClient(server.Client(), server.URL)
+
+	_, err := client.CancelAccountDeletion(context.Background(), connect.NewRequest(&authv1.CancelAccountDeletionRequest{}))
+	if connect.CodeOf(err) != connect.CodeUnimplemented {
+		t.Fatalf("CancelAccountDeletion() code = %v, want unimplemented", connect.CodeOf(err))
+	}
+	_, err = client.StartLogin(context.Background(), connect.NewRequest(&authv1.StartLoginRequest{}))
+	if connect.CodeOf(err) != connect.CodeUnimplemented {
+		t.Fatalf("StartLogin() code = %v, want unimplemented", connect.CodeOf(err))
+	}
+}
+
 func TestHandlerReturnsSubjectAndSanitizesInternalErrors(t *testing.T) {
 	t.Parallel()
 
