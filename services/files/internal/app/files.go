@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -222,11 +223,10 @@ func RunFiles() error {
 		if err != nil {
 			return err
 		}
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 		for ctx.Err() == nil {
 			err = worker.Step(ctx)
-			if err != nil && !errors.Is(err, file.ErrNotFound) && !errors.Is(err, file.ErrConflict) {
-				os.Stderr.WriteString("files worker: job deferred or rejected\n")
-			}
+			logWorkerError(ctx, logger, err)
 			timer := time.NewTimer(time.Second)
 			select {
 			case <-ctx.Done():

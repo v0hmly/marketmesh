@@ -3,12 +3,13 @@ module github.com/v0hmly/marketmesh/services/gateway-out
 go 1.27.0
 
 require (
-	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260921181519-8fd69c786937
-	github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260921181519-8fd69c786937
-	github.com/v0hmly/marketmesh/platform v0.0.0-20260921181519-8fd69c786937
+	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922082005-210a89db5688
+	github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260922082005-210a89db5688
+	github.com/v0hmly/marketmesh/platform v0.0.0-20260922082005-210a89db5688
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 )
@@ -37,5 +38,4 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688 // indirect
 )

@@ -4,16 +4,19 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/v0hmly/marketmesh/services/files/internal/domain/file"
 )
 
 type repository struct {
-	record    file.Record
-	markError bool
+	record          file.Record
+	markError       bool
+	transitionError error
 }
 
 func (r *repository) Claim(context.Context) (file.Record, error) {
@@ -21,12 +24,32 @@ func (r *repository) Claim(context.Context) (file.Record, error) {
 	return r.record, nil
 }
 func (r *repository) Transition(_ context.Context, expected file.Record, to file.State) (file.Record, error) {
+	if r.transitionError != nil {
+		return file.Record{}, r.transitionError
+	}
 	if r.record.Version != expected.Version || !file.CanTransition(r.record.State, to) {
 		return file.Record{}, file.ErrConflict
 	}
 	r.record.State = to
 	r.record.Version++
 	return r.record, nil
+}
+
+func TestFailedRejectionReportsPersistenceFailureWithoutRawCause(t *testing.T) {
+	w, r, _, _, cdr := workerFixture(t)
+	cdr.err = fmt.Errorf("private document: %w", file.ErrRejected)
+	r.transitionError = fmt.Errorf("private database: %w", file.ErrUnavailable)
+	err := w.Step(context.Background())
+	var failure *JobError
+	if !errors.Is(err, file.ErrRejected) || !errors.Is(err, file.ErrUnavailable) || !errors.As(err, &failure) {
+		t.Fatal("joined causes lost", err)
+	}
+	if failure.Stage != "mark_rejected" || failure.Class() != "unavailable" || failure.FileID != r.record.ID || failure.State != file.Scanning || r.record.State != file.Scanning {
+		t.Fatal("failed rejection classified as successful rejection", err)
+	}
+	if strings.Contains(err.Error(), "private") {
+		t.Fatal("raw dependency detail leaked")
+	}
 }
 func (r *repository) MarkClean(ctx context.Context, expected file.Record, format file.Format, size int64, sum file.Digest) (file.Record, error) {
 	if r.markError {
@@ -130,6 +153,11 @@ func TestReadyRequiresSuccessfulAVCDRAndReplication(t *testing.T) {
 			}
 			if err == nil || r.record.State == file.Ready {
 				t.Fatal("failed dependency published file")
+			}
+			var failure *JobError
+			wantStage := map[string]string{"AV unavailable": "scan_source", "AV rejected": "scan_source", "CDR unavailable": "reconstruct", "CDR rejected": "reconstruct", "replica unavailable": "replicate"}[stage]
+			if !errors.As(err, &failure) || failure.FileID != r.record.ID || failure.Stage != wantStage {
+				t.Fatal("missing job failure context", err)
 			}
 			if av.err != nil && s.puts != 0 {
 				t.Fatal("AV bypassed")

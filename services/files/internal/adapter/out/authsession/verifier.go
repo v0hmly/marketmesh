@@ -103,7 +103,8 @@ func (v *Verifier) Verify(ctx context.Context, token string) (identity.Principal
 	if err != nil || verified == nil || !bytes.Equal(verified.GetSubjectId(), raw) || verified.GetSessionId() != claims.SessionID || verified.GetExpiresAtUnix() != claims.ExpiresAt.Unix() || ctx.Err() != nil || !v.config.Clock().Before(claims.ExpiresAt) {
 		return denied()
 	}
-	return identity.Principal{Owner: file.Owner{Tenant: subject, Subject: subject}, CanRead: claims.HasScope(readScope), CanWrite: claims.HasScope(writeScope)}, nil
+	// ADR-0015: personal namespaces only until Auth supplies trusted tenant membership.
+	return identity.Principal{Owner: file.Owner{Tenant: subject, Subject: subject}, SessionID: claims.SessionID, CanRead: claims.HasScope(readScope), CanWrite: claims.HasScope(writeScope)}, nil
 }
 
 type publicKey struct {

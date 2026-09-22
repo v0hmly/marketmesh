@@ -54,100 +54,120 @@ func New(repo Repository, storage Storage, scanner Scanner, reconstructor Recons
 	return &Worker{repo: repo, storage: storage, scanner: scanner, reconstructor: reconstructor, tempDir: tempDir}, nil
 }
 
-// Step claims at most one job. ErrNotFound means the durable queue is empty.
-func (w *Worker) Step(parent context.Context) error {
+// Step claims at most one job. ErrNotFound at the claim stage means an empty queue;
+// the same cause at a later stage describes a missing dependency object.
+func (w *Worker) Step(parent context.Context) (err error) {
+	var r file.Record
+	stage := "claim"
+	defer func() {
+		if err != nil {
+			err = &JobError{FileID: r.ID, State: r.State, Stage: stage, cause: err}
+		}
+	}()
 	ctx, cancel := context.WithTimeout(parent, JobTimeout)
 	defer cancel()
-	r, err := w.repo.Claim(ctx)
+	r, err = w.repo.Claim(ctx)
 	if err != nil {
 		return err
 	}
 	if (r.State == file.Scanning || r.State == file.Replicating) && !r.CreatedAt.IsZero() && time.Now().After(r.CreatedAt.Add(file.ProcessingTTL)) {
+		stage = "expire"
 		_, err = w.repo.Transition(ctx, r, file.Expired)
 		return err
 	}
 	switch r.State {
 	case file.Uploading:
+		stage = "expire"
 		_, err = w.repo.Transition(ctx, r, file.Expired)
 	case file.Scanning:
-		err = w.scan(ctx, r)
+		stage, err = w.scan(ctx, r)
 	case file.Replicating:
+		stage = "replicate"
 		err = w.storage.Replicate(ctx, r)
 		if err == nil {
+			stage = "mark_ready"
 			_, err = w.repo.Transition(ctx, r, file.Ready)
 		}
 	case file.Rejected, file.Expired, file.Deleted:
+		stage = "purge"
 		err = w.storage.Purge(ctx, r)
 		if err == nil {
+			stage = "defer_cleanup"
 			err = w.repo.DeferCleanup(ctx, r)
 		}
 	case file.Ready:
+		stage = "cleanup_ready"
 		err = w.storage.CleanupReady(ctx, r)
 		if err == nil {
+			stage = "defer_cleanup"
 			err = w.repo.DeferCleanup(ctx, r)
 		}
 	default:
+		stage = "dispatch"
 		return file.ErrConflict
 	}
 	if errors.Is(err, file.ErrRejected) && (r.State == file.Scanning || r.State == file.Replicating) {
 		_, transitionErr := w.repo.Transition(ctx, r, file.Rejected)
+		if transitionErr != nil {
+			stage = "mark_rejected"
+		}
 		return errors.Join(err, transitionErr)
 	}
 	return err // Unavailable jobs retain their lease and retry after its expiry.
 }
 
-func (w *Worker) scan(ctx context.Context, r file.Record) error {
+func (w *Worker) scan(ctx context.Context, r file.Record) (string, error) {
 	source, err := os.CreateTemp(w.tempDir, "source-*")
 	if err != nil {
-		return file.ErrUnavailable
+		return "prepare_source", file.ErrUnavailable
 	}
 	defer os.Remove(source.Name())
 	defer source.Close()
 	if err = w.storage.ReadUpload(ctx, r, source); err != nil {
-		return err
+		return "read_upload", err
 	}
 	if _, err = source.Seek(0, io.SeekStart); err != nil {
-		return file.ErrUnavailable
+		return "prepare_source", file.ErrUnavailable
 	}
 	clean, err := os.CreateTemp(w.tempDir, "clean-*")
 	if err != nil {
-		return file.ErrUnavailable
+		return "prepare_derivative", file.ErrUnavailable
 	}
 	defer os.Remove(clean.Name())
 	defer clean.Close()
 	output := &boundedWriter{dest: clean, remaining: file.MaxSize}
 	format, err := w.reconstructor.Clean(ctx, source, r.Manifest.Size, r.Manifest.Format, output)
 	if err != nil {
-		return err
+		return "reconstruct", err
 	}
 	size := file.MaxSize - output.remaining
 	if size <= 0 || (format != file.PNG && format != file.PDF) {
-		return file.ErrRejected
+		return "reconstruct", file.ErrRejected
 	}
 	if _, err = clean.Seek(0, io.SeekStart); err != nil {
-		return file.ErrUnavailable
+		return "prepare_derivative", file.ErrUnavailable
 	}
 	// AV verdicts alone do not prove archive completeness (ClamAV #633).
 	// The isolated structural/CDR limits must succeed first; scan both the bounded
 	// original and the independently reconstructed passive derivative before upload.
 	if _, err = source.Seek(0, io.SeekStart); err != nil {
-		return file.ErrUnavailable
+		return "prepare_source", file.ErrUnavailable
 	}
 	if err = w.scanner.Scan(ctx, source, r.Manifest.Size); err != nil {
-		return err
+		return "scan_source", err
 	}
 	if err = w.scanner.Scan(ctx, clean, size); err != nil {
-		return err
+		return "scan_derivative", err
 	}
 	if _, err = clean.Seek(0, io.SeekStart); err != nil {
-		return file.ErrUnavailable
+		return "prepare_derivative", file.ErrUnavailable
 	}
 	digest, err := w.storage.PutClean(ctx, r, format, clean, size)
 	if err != nil {
-		return err
+		return "put_clean", err
 	}
 	_, err = w.repo.MarkClean(ctx, r, format, size, digest)
-	return err
+	return "mark_clean", err
 }
 
 type boundedWriter struct {

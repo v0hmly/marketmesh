@@ -76,7 +76,7 @@ func fixture(t *testing.T) (*fakeAuth, *Verifier, string, func(string, string, [
 func TestVerifyFreshRevocationAndScopes(t *testing.T) {
 	client, v, token, issue, _ := fixture(t)
 	p, err := v.Verify(context.Background(), token)
-	if err != nil || !p.CanRead || !p.CanWrite {
+	if err != nil || !p.CanRead || !p.CanWrite || p.SessionID != "session" || p.Owner.Tenant != p.Owner.Subject || !bytes.Equal(p.Owner.Subject[:], client.response.SubjectId) {
 		t.Fatalf("verification = %+v %v", p, err)
 	}
 	token = issue("auth", "files", []string{readScope})

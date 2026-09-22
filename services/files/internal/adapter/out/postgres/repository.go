@@ -85,11 +85,14 @@ WHERE tenant_id=$1 AND owner_id=$2 AND id=$3 AND version=$4 AND state=$5 RETURNI
 
 // Claim fences previous workers by incrementing the row version. Worker deadlines
 // must be shorter than this lease; stale workers cannot publish READY after takeover.
+// Foreground processing takes precedence over the recurring cleanup backlog.
 func (r *Repository) Claim(ctx context.Context) (file.Record, error) {
 	return decode(r.rw.QueryRow(ctx, `UPDATE files.uploads SET lease_until=clock_timestamp()+interval '10 minutes',version=version+1
 WHERE id=(SELECT id FROM files.uploads WHERE
 (state IN ('SCANNING','REPLICATING') OR (state='UPLOADING' AND expires_at<=clock_timestamp()) OR (state IN ('READY','DELETED','EXPIRED','REJECTED') AND (cleanup_after IS NULL OR cleanup_after<=clock_timestamp())))
-AND (lease_until IS NULL OR lease_until<clock_timestamp()) ORDER BY updated_at LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING `+columns))
+AND (lease_until IS NULL OR lease_until<clock_timestamp())
+ORDER BY CASE WHEN state IN ('SCANNING','REPLICATING') THEN 0 WHEN state='UPLOADING' THEN 1 ELSE 2 END,
+updated_at, id LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING `+columns))
 }
 
 // MarkClean binds the output manifest before replication. A stale scanner loses CAS.

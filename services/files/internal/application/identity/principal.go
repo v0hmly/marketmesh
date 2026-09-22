@@ -11,5 +11,6 @@ var ErrForbidden = errors.New("file permission denied")
 
 type Principal struct {
 	Owner             file.Owner
+	SessionID         string // Verified Auth session identifier, never a bearer token.
 	CanRead, CanWrite bool
 }

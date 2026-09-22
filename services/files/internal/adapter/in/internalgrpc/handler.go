@@ -51,6 +51,7 @@ func (h *Handler) owner(ctx context.Context, write bool) (file.Owner, error) {
 	if err != nil {
 		return file.Owner{}, mapError(err)
 	}
+	recordAuditPrincipal(ctx, principal)
 	if !principal.Owner.Valid() || (write && !principal.CanWrite) || (!write && !principal.CanRead) {
 		return file.Owner{}, mapError(identity.ErrForbidden)
 	}
