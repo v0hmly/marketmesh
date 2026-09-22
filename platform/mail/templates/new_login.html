@@ -1,6 +1,6 @@
 {{ define "content" }}
-<div class="em-ink" style="font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 32px; line-height: 1.25; letter-spacing: -0.02em; color: #203d30;">В аккаунт вошли с нового устройства.</div>
-<p class="em-ink" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #203d30;">Раньше с этого устройства и адреса в аккаунт {{ .Data.RecipientEmail }} не заходили. Если это вы — письмо можно удалить.</p>
+<div class="em-ink" style="font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 32px; line-height: 1.25; letter-spacing: -0.02em; color: #203d30;">В аккаунт выполнен вход.</div>
+<p class="em-ink" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #203d30;">В аккаунте {{ .Data.RecipientEmail }} начат новый сеанс. Если это вы — письмо можно удалить.</p>
 <div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="em-tint" style="background-color: #eff1e7; border-radius: 10px;">
   <tr>
@@ -25,7 +25,7 @@
   </tr>
 </table>
 <div style="height: 16px; line-height: 16px; font-size: 0;">&nbsp;</div>
-<p class="em-muted" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Город определяется по IP-адресу и может отличаться от настоящего — особенно если вы пользуетесь мобильным интернетом или VPN.</p>
+<p class="em-muted" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Сведения об устройстве и местоположении могут быть недоступны.</p>
 <div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
   <tr>
@@ -34,10 +34,10 @@
     </td>
   </tr>
 </table>
-<p class="em-muted" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.7; color: #5d6c61;">После смены пароля мы закроем все сессии, кроме текущей, и пришлём об этом отдельное письмо.</p>
+<p class="em-muted" style="margin: 12px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.7; color: #5d6c61;">После смены пароля мы закроем все сессии и пришлём об этом отдельное письмо.</p>
 <div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
 <div class="em-hr" style="border-top: 1px solid #dce1d6; padding-top: 20px;">
-  <p class="em-muted" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Такое письмо приходит при каждом входе с незнакомого устройства — так аккаунт остаётся под контролем.</p>
+  <p class="em-muted" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Такое письмо приходит при каждом новом входе — так аккаунт остаётся под контролем.</p>
   <p class="em-muted" style="margin: 6px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #5d6c61;">Вопросы — <a href="mailto:{{ supportEmail }}" class="em-link" style="color: #244c3b;">{{ supportEmail }}</a></p>
 </div>
 {{ end }}

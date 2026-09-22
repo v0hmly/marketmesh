@@ -5,8 +5,8 @@
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr>
     <td class="em-tint" style="background-color: #eff1e7; border-radius: 10px; padding: 20px;">
-      <p class="em-ink" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65; color: #203d30;">Сохраните резервные коды — они выручат, если доступа к почте не окажется.</p>
-      <p style="margin: 10px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65;"><a href="{{ .Data.BackupCodesURL }}" class="em-link" style="color: #244c3b;">Открыть резервные коды</a></p>
+      <p class="em-ink" style="margin: 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65; color: #203d30;">{{ if .Data.BackupCodesURL }}Сохраните резервные коды — они выручат, если доступа к почте не окажется.{{ else }}Сохраняйте доступ к вашей почте.{{ end }}</p>
+      <p style="margin: 10px 0 0; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.65;"><a href="{{ if .Data.BackupCodesURL }}{{ .Data.BackupCodesURL }}{{ else }}{{ .Data.SecurityURL }}{{ end }}" class="em-link" style="color: #244c3b;">{{ if .Data.BackupCodesURL }}Открыть резервные коды{{ else }}Открыть настройки безопасности{{ end }}</a></p>
     </td>
   </tr>
 </table>

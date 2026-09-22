@@ -16,7 +16,13 @@ service AuthService {
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   // LogoutAll revokes every session of the authenticated subject.
   rpc LogoutAll(LogoutAllRequest) returns (LogoutAllResponse);
-  // StartLogin verifies the password and, on success, emails a one-time login code.
+  // StartLoginCodeChange manages the authenticated caller's account security.
+  rpc StartLoginCodeChange(StartLoginCodeChangeRequest) returns (StartLoginCodeChangeResponse);
+  // CompleteLoginCodeChange manages the authenticated caller's account security.
+  rpc CompleteLoginCodeChange(CompleteLoginCodeChangeRequest) returns (CompleteLoginCodeChangeResponse);
+  // ChangePassword manages the authenticated caller's account security.
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  // StartLogin verifies the password and either creates a session or emails a required login code.
   rpc StartLogin(StartLoginRequest) returns (StartLoginResponse);
   // CompleteLogin verifies the emailed code and establishes the session.
   rpc CompleteLogin(CompleteLoginRequest) returns (CompleteLoginResponse);
@@ -103,6 +109,42 @@ service AuthBrowserService {
   rpc BrowserLogout(BrowserLogoutRequest) returns (BrowserLogoutResponse);
   // LogoutAll delegates to the same public Auth handler and browser security policy.
   rpc BrowserLogoutAll(BrowserLogoutAllRequest) returns (BrowserLogoutAllResponse);
+  // BrowserStartLoginCodeChange applies the same public browser policy on the private listener.
+  rpc BrowserStartLoginCodeChange(BrowserStartLoginCodeChangeRequest) returns (BrowserStartLoginCodeChangeResponse);
+  // BrowserCompleteLoginCodeChange applies the same public browser policy on the private listener.
+  rpc BrowserCompleteLoginCodeChange(BrowserCompleteLoginCodeChangeRequest) returns (BrowserCompleteLoginCodeChangeResponse);
+  // BrowserChangePassword applies the same public browser policy on the private listener.
+  rpc BrowserChangePassword(BrowserChangePasswordRequest) returns (BrowserChangePasswordResponse);
+  // BrowserStartLogin applies the same public browser policy on the private listener.
+  rpc BrowserStartLogin(BrowserStartLoginRequest) returns (BrowserStartLoginResponse);
+  // BrowserCompleteLogin applies the same public browser policy on the private listener.
+  rpc BrowserCompleteLogin(BrowserCompleteLoginRequest) returns (BrowserCompleteLoginResponse);
+  // BrowserResendLoginCode applies the same public browser policy on the private listener.
+  rpc BrowserResendLoginCode(BrowserResendLoginCodeRequest) returns (BrowserResendLoginCodeResponse);
+  // BrowserRequestEmailVerification applies the same public browser policy on the private listener.
+  rpc BrowserRequestEmailVerification(BrowserRequestEmailVerificationRequest) returns (BrowserRequestEmailVerificationResponse);
+  // BrowserConfirmEmail applies the same public browser policy on the private listener.
+  rpc BrowserConfirmEmail(BrowserConfirmEmailRequest) returns (BrowserConfirmEmailResponse);
+  // BrowserRequestPasswordReset applies the same public browser policy on the private listener.
+  rpc BrowserRequestPasswordReset(BrowserRequestPasswordResetRequest) returns (BrowserRequestPasswordResetResponse);
+  // BrowserConfirmPasswordReset applies the same public browser policy on the private listener.
+  rpc BrowserConfirmPasswordReset(BrowserConfirmPasswordResetRequest) returns (BrowserConfirmPasswordResetResponse);
+  // BrowserGetCredentials applies the same public browser policy on the private listener.
+  rpc BrowserGetCredentials(BrowserGetCredentialsRequest) returns (BrowserGetCredentialsResponse);
+  // BrowserStartEmailChange applies the same public browser policy on the private listener.
+  rpc BrowserStartEmailChange(BrowserStartEmailChangeRequest) returns (BrowserStartEmailChangeResponse);
+  // BrowserConfirmEmailChange applies the same public browser policy on the private listener.
+  rpc BrowserConfirmEmailChange(BrowserConfirmEmailChangeRequest) returns (BrowserConfirmEmailChangeResponse);
+  // BrowserCancelEmailChange applies the same public browser policy on the private listener.
+  rpc BrowserCancelEmailChange(BrowserCancelEmailChangeRequest) returns (BrowserCancelEmailChangeResponse);
+  // BrowserListSessions applies the same public browser policy on the private listener.
+  rpc BrowserListSessions(BrowserListSessionsRequest) returns (BrowserListSessionsResponse);
+  // BrowserRevokeSession applies the same public browser policy on the private listener.
+  rpc BrowserRevokeSession(BrowserRevokeSessionRequest) returns (BrowserRevokeSessionResponse);
+  // BrowserRequestAccountDeletion applies the same public browser policy on the private listener.
+  rpc BrowserRequestAccountDeletion(BrowserRequestAccountDeletionRequest) returns (BrowserRequestAccountDeletionResponse);
+  // BrowserCancelAccountDeletion applies the same public browser policy on the private listener.
+  rpc BrowserCancelAccountDeletion(BrowserCancelAccountDeletionRequest) returns (BrowserCancelAccountDeletionResponse);
 }
 
 // BrowserContext is private transport data, never a public request body or log payload.
@@ -132,6 +174,8 @@ message BrowserRegisterCredentialsResponse {
   RegisterCredentialsResponse response = 1;
   // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
   repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
 }
 
 // BrowserLoginRequest carries only typed Auth input and browser context.
@@ -148,6 +192,8 @@ message BrowserLoginResponse {
   LoginResponse response = 1;
   // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
   repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
 }
 
 // BrowserRefreshSessionRequest carries only typed Auth input and browser context.
@@ -164,6 +210,8 @@ message BrowserRefreshSessionResponse {
   RefreshSessionResponse response = 1;
   // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
   repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
 }
 
 // BrowserLogoutRequest carries only typed Auth input and browser context.
@@ -180,6 +228,8 @@ message BrowserLogoutResponse {
   LogoutResponse response = 1;
   // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
   repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
 }
 
 // BrowserLogoutAllRequest carries only typed Auth input and browser context.
@@ -196,6 +246,8 @@ message BrowserLogoutAllResponse {
   LogoutAllResponse response = 1;
   // SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
   repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
 }
 
 // StartLoginRequest carries the secret material needed for the first login step.
@@ -215,6 +267,9 @@ message StartLoginResponse {
   bytes login_challenge_id = 1;
   // CodeExpiresInSeconds is the lifetime of the emailed code in whole seconds.
   int64 code_expires_in_seconds = 2;
+  // SubjectId is set only when code confirmation is disabled and session cookies were issued.
+  // In this case login_challenge_id is empty and code_expires_in_seconds is zero.
+  bytes subject_id = 3;
 }
 
 // CompleteLoginRequest carries the emailed six-digit code for a pending challenge.
@@ -228,7 +283,7 @@ message CompleteLoginRequest {
 // CompleteLoginResponse establishes identity; the session cookies travel via the
 // browser bridge. A wrong code yields InvalidArgument with ErrorInfo domain
 // "marketmesh.auth", reason "CODE_MISMATCH"; after three wrong codes the challenge
-// is replaced ("CODE_REISSUED"); an expired challenge yields FailedPrecondition
+// is replaced (FailedPrecondition, "CODE_REISSUED"); an expired challenge yields FailedPrecondition
 // with reason "CODE_EXPIRED".
 message CompleteLoginResponse {
   // SubjectId is an opaque 16-byte identifier and is never an authentication secret.
@@ -286,8 +341,8 @@ message GetCredentialsResponse {
   // LoginCodeEnabled is true when sign-in requires the emailed one-time code.
   bool login_code_enabled = 3;
   // NewDeviceCooldownUntilUnix is the exclusive end of the protection window after
-  // a login from a new device; zero when no cooldown applies. While it is active,
-  // RevokeSession of other sessions and RequestAccountDeletion fail with
+  // every new session; zero when no cooldown applies. While it is active,
+  // LogoutAll, RevokeSession of other sessions and RequestAccountDeletion fail with
   // FailedPrecondition, reason "NEW_DEVICE_COOLDOWN".
   int64 new_device_cooldown_until_unix = 4;
 }
@@ -296,6 +351,8 @@ message GetCredentialsResponse {
 message StartEmailChangeRequest {
   // NewEmail is the case-insensitive new account email.
   string new_email = 1;
+  // Password reauthenticates the caller before changing the sign-in address.
+  bytes password = 2;
 }
 
 // StartEmailChangeResponse is empty; the alert goes to the old address and the
@@ -390,4 +447,377 @@ message ResendLoginCodeRequest {
 message ResendLoginCodeResponse {
   // CodeExpiresInSeconds is the lifetime of the new code in whole seconds.
   int64 code_expires_in_seconds = 1;
+}
+
+// StartLoginCodeChangeRequest requires the current password and an authenticated session.
+message StartLoginCodeChangeRequest {
+  // Password proves the caller knows the current secret; never log it.
+  bytes password = 1;
+  // Enabled is the desired code policy; the emailed code must confirm it.
+  bool enabled = 2;
+}
+// StartLoginCodeChangeResponse identifies the pending policy change.
+message StartLoginCodeChangeResponse {
+  // ChallengeId is an opaque 16-byte ID.
+  bytes challenge_id = 1;
+  // CodeExpiresInSeconds bounds the confirmation lifetime.
+  int64 code_expires_in_seconds = 2;
+}
+// CompleteLoginCodeChangeRequest confirms a change with an emailed six-digit code.
+message CompleteLoginCodeChangeRequest {
+  // ChallengeId selects the caller's pending change.
+  bytes challenge_id = 1;
+  // Code is six ASCII digits.
+  string code = 2;
+  // Enabled must match the pending purpose.
+  bool enabled = 3;
+}
+// CompleteLoginCodeChangeResponse revokes existing sessions; a new login is required.
+message CompleteLoginCodeChangeResponse {}
+// ChangePasswordRequest changes the caller's password and revokes all sessions.
+message ChangePasswordRequest {
+  // CurrentPassword proves knowledge of the current secret.
+  bytes current_password = 1;
+  // NewPassword is the replacement secret; never log it.
+  bytes new_password = 2;
+}
+// ChangePasswordResponse requires a new login after success.
+message ChangePasswordResponse {}
+
+// BrowserStartLoginCodeChangeRequest carries typed input and trusted browser headers.
+message BrowserStartLoginCodeChangeRequest {
+  // Request is the original public input.
+  StartLoginCodeChangeRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserStartLoginCodeChangeResponse is private and must never be returned directly to a browser.
+message BrowserStartLoginCodeChangeResponse {
+  // Response is the public result; absent for a bounded failure.
+  StartLoginCodeChangeResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserCompleteLoginCodeChangeRequest carries typed input and trusted browser headers.
+message BrowserCompleteLoginCodeChangeRequest {
+  // Request is the original public input.
+  CompleteLoginCodeChangeRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserCompleteLoginCodeChangeResponse is private and must never be returned directly to a browser.
+message BrowserCompleteLoginCodeChangeResponse {
+  // Response is the public result; absent for a bounded failure.
+  CompleteLoginCodeChangeResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserChangePasswordRequest carries typed input and trusted browser headers.
+message BrowserChangePasswordRequest {
+  // Request is the original public input.
+  ChangePasswordRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserChangePasswordResponse is private and must never be returned directly to a browser.
+message BrowserChangePasswordResponse {
+  // Response is the public result; absent for a bounded failure.
+  ChangePasswordResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserStartLoginRequest carries typed input and trusted browser headers.
+message BrowserStartLoginRequest {
+  // Request is the original public input.
+  StartLoginRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserStartLoginResponse is private and must never be returned directly to a browser.
+message BrowserStartLoginResponse {
+  // Response is the public result; absent for a bounded failure.
+  StartLoginResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserCompleteLoginRequest carries typed input and trusted browser headers.
+message BrowserCompleteLoginRequest {
+  // Request is the original public input.
+  CompleteLoginRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserCompleteLoginResponse is private and must never be returned directly to a browser.
+message BrowserCompleteLoginResponse {
+  // Response is the public result; absent for a bounded failure.
+  CompleteLoginResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserResendLoginCodeRequest carries typed input and trusted browser headers.
+message BrowserResendLoginCodeRequest {
+  // Request is the original public input.
+  ResendLoginCodeRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserResendLoginCodeResponse is private and must never be returned directly to a browser.
+message BrowserResendLoginCodeResponse {
+  // Response is the public result; absent for a bounded failure.
+  ResendLoginCodeResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserRequestEmailVerificationRequest carries typed input and trusted browser headers.
+message BrowserRequestEmailVerificationRequest {
+  // Request is the original public input.
+  RequestEmailVerificationRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserRequestEmailVerificationResponse is private and must never be returned directly to a browser.
+message BrowserRequestEmailVerificationResponse {
+  // Response is the public result; absent for a bounded failure.
+  RequestEmailVerificationResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserConfirmEmailRequest carries typed input and trusted browser headers.
+message BrowserConfirmEmailRequest {
+  // Request is the original public input.
+  ConfirmEmailRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserConfirmEmailResponse is private and must never be returned directly to a browser.
+message BrowserConfirmEmailResponse {
+  // Response is the public result; absent for a bounded failure.
+  ConfirmEmailResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserRequestPasswordResetRequest carries typed input and trusted browser headers.
+message BrowserRequestPasswordResetRequest {
+  // Request is the original public input.
+  RequestPasswordResetRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserRequestPasswordResetResponse is private and must never be returned directly to a browser.
+message BrowserRequestPasswordResetResponse {
+  // Response is the public result; absent for a bounded failure.
+  RequestPasswordResetResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserConfirmPasswordResetRequest carries typed input and trusted browser headers.
+message BrowserConfirmPasswordResetRequest {
+  // Request is the original public input.
+  ConfirmPasswordResetRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserConfirmPasswordResetResponse is private and must never be returned directly to a browser.
+message BrowserConfirmPasswordResetResponse {
+  // Response is the public result; absent for a bounded failure.
+  ConfirmPasswordResetResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserGetCredentialsRequest carries typed input and trusted browser headers.
+message BrowserGetCredentialsRequest {
+  // Request is the original public input.
+  GetCredentialsRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserGetCredentialsResponse is private and must never be returned directly to a browser.
+message BrowserGetCredentialsResponse {
+  // Response is the public result; absent for a bounded failure.
+  GetCredentialsResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserStartEmailChangeRequest carries typed input and trusted browser headers.
+message BrowserStartEmailChangeRequest {
+  // Request is the original public input.
+  StartEmailChangeRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserStartEmailChangeResponse is private and must never be returned directly to a browser.
+message BrowserStartEmailChangeResponse {
+  // Response is the public result; absent for a bounded failure.
+  StartEmailChangeResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserConfirmEmailChangeRequest carries typed input and trusted browser headers.
+message BrowserConfirmEmailChangeRequest {
+  // Request is the original public input.
+  ConfirmEmailChangeRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserConfirmEmailChangeResponse is private and must never be returned directly to a browser.
+message BrowserConfirmEmailChangeResponse {
+  // Response is the public result; absent for a bounded failure.
+  ConfirmEmailChangeResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserCancelEmailChangeRequest carries typed input and trusted browser headers.
+message BrowserCancelEmailChangeRequest {
+  // Request is the original public input.
+  CancelEmailChangeRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserCancelEmailChangeResponse is private and must never be returned directly to a browser.
+message BrowserCancelEmailChangeResponse {
+  // Response is the public result; absent for a bounded failure.
+  CancelEmailChangeResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserListSessionsRequest carries typed input and trusted browser headers.
+message BrowserListSessionsRequest {
+  // Request is the original public input.
+  ListSessionsRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserListSessionsResponse is private and must never be returned directly to a browser.
+message BrowserListSessionsResponse {
+  // Response is the public result; absent for a bounded failure.
+  ListSessionsResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserRevokeSessionRequest carries typed input and trusted browser headers.
+message BrowserRevokeSessionRequest {
+  // Request is the original public input.
+  RevokeSessionRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserRevokeSessionResponse is private and must never be returned directly to a browser.
+message BrowserRevokeSessionResponse {
+  // Response is the public result; absent for a bounded failure.
+  RevokeSessionResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserRequestAccountDeletionRequest carries typed input and trusted browser headers.
+message BrowserRequestAccountDeletionRequest {
+  // Request is the original public input.
+  RequestAccountDeletionRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserRequestAccountDeletionResponse is private and must never be returned directly to a browser.
+message BrowserRequestAccountDeletionResponse {
+  // Response is the public result; absent for a bounded failure.
+  RequestAccountDeletionResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// BrowserCancelAccountDeletionRequest carries typed input and trusted browser headers.
+message BrowserCancelAccountDeletionRequest {
+  // Request is the original public input.
+  CancelAccountDeletionRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserCancelAccountDeletionResponse is private and must never be returned directly to a browser.
+message BrowserCancelAccountDeletionResponse {
+  // Response is the public result; absent for a bounded failure.
+  CancelAccountDeletionResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+// AuthBrowserFailure preserves only explicitly allowed account-security outcomes.
+enum AuthBrowserFailure {
+  // AUTH_BROWSER_FAILURE_UNSPECIFIED indicates success or an unrelated transport failure.
+  AUTH_BROWSER_FAILURE_UNSPECIFIED = 0;
+  // AUTH_BROWSER_FAILURE_INVALID_INPUT identifies the bounded invalid_input rejection.
+  AUTH_BROWSER_FAILURE_INVALID_INPUT = 1;
+  // AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS identifies the bounded invalid_credentials rejection.
+  AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS = 2;
+  // AUTH_BROWSER_FAILURE_LOGIN_LOCKED identifies the bounded login_locked rejection.
+  AUTH_BROWSER_FAILURE_LOGIN_LOCKED = 3;
+  // AUTH_BROWSER_FAILURE_CODE_MISMATCH identifies the bounded code_mismatch rejection.
+  AUTH_BROWSER_FAILURE_CODE_MISMATCH = 4;
+  // AUTH_BROWSER_FAILURE_CODE_REISSUED identifies the bounded code_reissued rejection.
+  AUTH_BROWSER_FAILURE_CODE_REISSUED = 5;
+  // AUTH_BROWSER_FAILURE_CODE_EXPIRED identifies the bounded code_expired rejection.
+  AUTH_BROWSER_FAILURE_CODE_EXPIRED = 6;
+  // AUTH_BROWSER_FAILURE_TOKEN_EXPIRED identifies the bounded token_expired rejection.
+  AUTH_BROWSER_FAILURE_TOKEN_EXPIRED = 7;
+  // AUTH_BROWSER_FAILURE_TOKEN_USED identifies the bounded token_used rejection.
+  AUTH_BROWSER_FAILURE_TOKEN_USED = 8;
+  // AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED identifies the bounded email_unverified rejection.
+  AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED = 9;
+  // AUTH_BROWSER_FAILURE_CODE_REQUIRED identifies the bounded code_required rejection.
+  AUTH_BROWSER_FAILURE_CODE_REQUIRED = 10;
+  // AUTH_BROWSER_FAILURE_RATE_LIMITED identifies the bounded rate_limited rejection.
+  AUTH_BROWSER_FAILURE_RATE_LIMITED = 11;
+  // AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN identifies the bounded new_device_cooldown rejection.
+  AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN = 12;
+  // AUTH_BROWSER_FAILURE_NOT_FOUND identifies the bounded not_found rejection.
+  AUTH_BROWSER_FAILURE_NOT_FOUND = 13;
 }

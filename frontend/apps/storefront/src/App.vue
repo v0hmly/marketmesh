@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Code } from '@connectrpc/connect';
+import { authErrorReason } from './shared/api/errors';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { settingsEnabled } from './shared/features';
@@ -51,9 +53,10 @@ async function logout(all: boolean) {
   try {
     await session.logout(all);
     await router.push('/login');
-  } catch {
-    logoutFailure.value =
-      'Сервер не подтвердил выход. Сессия может оставаться активной. Проверьте соединение.';
+  } catch (error) {
+    logoutFailure.value = authErrorReason(error, Code.FailedPrecondition, 'NEW_DEVICE_COOLDOWN')
+      ? 'После нового входа другие сеансы защищены на 24 часа. Выход не выполнен. Текущий сеанс можно закрыть кнопкой «Выйти».'
+      : 'Сервер не подтвердил выход. Сессия может оставаться активной. Проверьте соединение.';
   } finally {
     busy.value = false;
   }

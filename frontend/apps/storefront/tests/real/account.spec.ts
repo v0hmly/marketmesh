@@ -7,15 +7,18 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:https';
+import { verifyEmail } from './mail';
 
 const run = process.env.ACCOUNT_E2E_RUN_ID!;
 const account = (suffix: string) => ({
-  identifier: `mm64-${run}-${suffix}`,
+  identifier: `mm90-${run}-${suffix}@example.test`,
   // Exercise both agreed ASCII boundaries through the real registration/login flow.
-  password: createHash('sha256')
-    .update(`${run}:${suffix}`)
-    .digest('hex')
-    .slice(0, suffix === 'a' ? 8 : 64),
+  password:
+    'Aa1!' +
+    createHash('sha256')
+      .update(`${run}:${suffix}`)
+      .digest('hex')
+      .slice(0, suffix === 'a' ? 4 : 60),
 });
 const a = account('a');
 const b = account('b');
@@ -45,7 +48,7 @@ function observeRpc(page: Page) {
   page.on('response', (response) => {
     const path = new URL(response.url()).pathname;
     const match =
-      /^\/(?:auth\.v1\.AuthService\/(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll)|user\.v1\.UserService\/(GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress|GetSettings|UpdateSettings))$/.exec(
+      /^\/(?:auth\.v1\.AuthService\/(RegisterCredentials|StartLogin|CompleteLogin|Login|RefreshSession|Logout|LogoutAll)|user\.v1\.UserService\/(GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress|GetSettings|UpdateSettings))$/.exec(
         path,
       );
     if (match && info.annotations.filter((item) => item.type === 'account-rpc').length < 80)
@@ -56,7 +59,7 @@ function observeRpc(page: Page) {
   });
 }
 async function credentials(page: Page, who: typeof a) {
-  await page.getByLabel('Логин', { exact: true }).fill(who.identifier);
+  await page.getByLabel('Почта', { exact: true }).fill(who.identifier);
   await page.getByLabel('Пароль', { exact: true }).fill(who.password);
 }
 async function register(page: Page, who: typeof a, stage: AccountStage = 'profile') {
@@ -64,10 +67,10 @@ async function register(page: Page, who: typeof a, stage: AccountStage = 'profil
   step(stage, 'register', 'start');
   await page.goto('/register');
   await credentials(page, who);
-  await page.getByRole('button', { name: 'Создать аккаунт', exact: true }).click();
-  await expect(
-    page.getByText('Запрос обработан. Теперь войдите с вашим логином и паролем.'),
-  ).toBeVisible();
+  await page.getByLabel('Повторите пароль', { exact: true }).fill(who.password);
+  await page.getByRole('button', { name: 'Зарегистрироваться', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Аккаунт создан.' })).toBeVisible();
+  await verifyEmail(page, who.identifier);
   step(stage, 'register', 'done');
 }
 async function login(page: Page, who: typeof a, stage: AccountStage = 'profile') {
@@ -92,7 +95,7 @@ async function confirmedLogout(page: Page, stage: AccountStage) {
   expect((await response).status()).toBe(200);
   // App navigates only after the durable session journal is settled.
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByLabel('Логин', { exact: true })).toBeEnabled();
+  await expect(page.getByLabel('Почта', { exact: true })).toBeEnabled();
   step(stage, 'logout', 'done');
 }
 async function rpc(page: Page, method = 'GetMe', body: Record<string, unknown> = {}) {
@@ -337,9 +340,9 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
     response.url().endsWith('/auth.v1.AuthService/LogoutAll'),
   );
   await page.getByRole('button', { name: 'Выйти на всех устройствах', exact: true }).click();
-  expect((await logoutAllResponse).status()).toBe(200);
-  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toHaveCount(0);
-  expect((await rpc(parallelPage)).status).toBe(401);
+  expect((await logoutAllResponse).status()).toBe(400);
+  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toBeVisible();
+  expect((await rpc(parallelPage)).status).toBe(200);
   expect((await rpc(otherPage)).status).toBe(200);
   await other.setOffline(true);
   await otherPage.getByRole('button', { name: 'Выйти', exact: true }).click();

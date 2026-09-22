@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { useSession } from '../../../shell/context';
 import { authErrorReason } from '../../../shared/api/errors';
-import type { LoginChallenge } from '../../../shared/api/types';
+import type { LoginChallenge, LoginStart } from '../../../shared/api/types';
 import { analytics } from '../../../shared/analytics';
 import {
   formatCodeTtl,
@@ -29,7 +29,9 @@ const passwordStarted = ref(false);
 const submitting = ref(false);
 const succeeded = ref(false);
 const failedAttempts = ref(0);
-const serverError = ref<'' | 'wrongCredentials' | 'serverError' | 'locked'>('');
+const serverError = ref<
+  '' | 'wrongCredentials' | 'serverError' | 'locked' | 'unverified' | 'limited'
+>('');
 
 const step = ref<'credentials' | 'code'>('credentials');
 const challenge = ref<LoginChallenge | null>(null);
@@ -75,6 +77,10 @@ const fieldsDisabled = computed(
 );
 const noticeText = computed(() => {
   switch (serverError.value) {
+    case 'unverified':
+      return 'Подтвердите почту по ссылке из письма. Ниже можно запросить новое письмо.';
+    case 'limited':
+      return 'Слишком много запросов. Подождите 10 минут перед новой попыткой.';
     case 'wrongCredentials':
       return 'Почта или пароль указаны неверно. Проверьте данные и попробуйте снова.';
     case 'locked':
@@ -197,7 +203,7 @@ async function submitLogin() {
   const address = email.value.trim();
   const bytes = new TextEncoder().encode(password.value);
   try {
-    let pending: LoginChallenge;
+    let pending: LoginStart;
     try {
       pending = await session.startLogin(address, bytes);
     } catch (error) {
@@ -212,12 +218,23 @@ async function submitLogin() {
       return;
     }
     if (!active || sequence !== requestSequence) return;
+    if ('subjectId' in pending) {
+      succeeded.value = true;
+      email.value = '';
+      analytics.event('login_succeeded');
+      await router.push('/account');
+      return;
+    }
     challenge.value = pending;
     step.value = 'code';
     password.value = '';
   } catch (error) {
     if (!active || sequence !== requestSequence) return;
-    if (authErrorReason(error, Code.FailedPrecondition, 'LOGIN_LOCKED')) {
+    if (authErrorReason(error, Code.FailedPrecondition, 'EMAIL_UNVERIFIED')) {
+      serverError.value = 'unverified';
+    } else if (authErrorReason(error, Code.ResourceExhausted, 'RATE_LIMITED')) {
+      serverError.value = 'limited';
+    } else if (authErrorReason(error, Code.FailedPrecondition, 'LOGIN_LOCKED')) {
       serverError.value = 'locked';
     } else if (error instanceof ConnectError && error.code === Code.Unauthenticated) {
       failedAttempts.value += 1;
@@ -257,7 +274,7 @@ async function submitCode() {
       } else {
         codeError.value = 'wrongCode';
       }
-    } else if (authErrorReason(error, Code.InvalidArgument, 'CODE_REISSUED')) {
+    } else if (authErrorReason(error, Code.FailedPrecondition, 'CODE_REISSUED')) {
       codeError.value = 'tooMany';
       code.value = '';
       codeAttempted.value = false;
@@ -407,6 +424,12 @@ function submit() {
         @submit.prevent="submit"
       >
         <p v-if="noticeText" class="notice error" role="alert">{{ noticeText }}</p>
+        <RouterLink
+          v-if="serverError === 'unverified'"
+          class="button secondary"
+          to="/account/security/verify"
+          >Запросить письмо подтверждения</RouterLink
+        >
         <p v-if="succeeded" role="status" class="auth-progress">
           <span class="loading-dot" aria-hidden="true"></span>Вход выполнен. Переходим в личный
           кабинет…
@@ -565,6 +588,12 @@ function submit() {
         </template>
       </form>
 
+      <RouterLink
+        v-if="!isRegister && step === 'credentials'"
+        class="button text-button"
+        to="/account/security/reset"
+        >Восстановить пароль</RouterLink
+      >
       <p v-if="step === 'credentials'" class="auth-alternative">
         {{ isRegister ? 'Уже есть аккаунт?' : 'Нет аккаунта?' }}
         <RouterLink :to="isRegister ? '/login' : '/register'">{{

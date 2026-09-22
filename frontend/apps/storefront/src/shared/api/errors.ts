@@ -11,7 +11,10 @@ export function authErrorReason(
     | 'CODE_REISSUED'
     | 'CODE_EXPIRED'
     | 'TOKEN_EXPIRED'
-    | 'TOKEN_USED',
+    | 'TOKEN_USED'
+    | 'EMAIL_UNVERIFIED'
+    | 'RATE_LIMITED'
+    | 'NEW_DEVICE_COOLDOWN',
 ): boolean {
   if (!(error instanceof ConnectError) || error.code !== code) return false;
   const details = error.findDetails(ErrorInfoSchema);

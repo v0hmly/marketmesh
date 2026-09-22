@@ -25,7 +25,7 @@ func (f *authInvoker) Invoke(ctx context.Context, call tunnel.Call) (tunnel.Resp
 	return f.fakeInvoker.Invoke(ctx, call)
 }
 func (*authInvoker) RoutePolicy(route contractv1.RouteId) (tunnel.RoutePolicy, bool) {
-	return tunnel.RoutePolicy{MaxRequestBytes: 16384, MaxResponseBytes: 16384}, route >= 1 && route <= 6 && route != 5
+	return tunnel.RoutePolicy{MaxRequestBytes: 16384, MaxResponseBytes: 16384}, strings.HasPrefix(route.String(), "ROUTE_ID_AUTH_") && route != contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION
 }
 func authHTTP(t *testing.T, invoker *authInvoker, method, procedure, body string, secure bool, headers http.Header) *httptest.ResponseRecorder {
 	t.Helper()
@@ -63,6 +63,24 @@ func TestAuthFixedRoutesAndPrivateContext(t *testing.T) {
 		{"RefreshSession", 3, &authv1.BrowserRefreshSessionRequest{}, &authv1.BrowserRefreshSessionResponse{Response: &authv1.RefreshSessionResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
 		{"Logout", 4, &authv1.BrowserLogoutRequest{}, &authv1.BrowserLogoutResponse{Response: &authv1.LogoutResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
 		{"LogoutAll", 6, &authv1.BrowserLogoutAllRequest{}, &authv1.BrowserLogoutAllResponse{Response: &authv1.LogoutAllResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"StartLoginCodeChange", contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE, &authv1.BrowserStartLoginCodeChangeRequest{}, &authv1.BrowserStartLoginCodeChangeResponse{Response: &authv1.StartLoginCodeChangeResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"CompleteLoginCodeChange", contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE, &authv1.BrowserCompleteLoginCodeChangeRequest{}, &authv1.BrowserCompleteLoginCodeChangeResponse{Response: &authv1.CompleteLoginCodeChangeResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"ChangePassword", contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD, &authv1.BrowserChangePasswordRequest{}, &authv1.BrowserChangePasswordResponse{Response: &authv1.ChangePasswordResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"StartLogin", contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN, &authv1.BrowserStartLoginRequest{}, &authv1.BrowserStartLoginResponse{Response: &authv1.StartLoginResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"CompleteLogin", contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN, &authv1.BrowserCompleteLoginRequest{}, &authv1.BrowserCompleteLoginResponse{Response: &authv1.CompleteLoginResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"ResendLoginCode", contractv1.RouteId_ROUTE_ID_AUTH_RESEND_LOGIN_CODE, &authv1.BrowserResendLoginCodeRequest{}, &authv1.BrowserResendLoginCodeResponse{Response: &authv1.ResendLoginCodeResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"RequestEmailVerification", contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_EMAIL_VERIFICATION, &authv1.BrowserRequestEmailVerificationRequest{}, &authv1.BrowserRequestEmailVerificationResponse{Response: &authv1.RequestEmailVerificationResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"ConfirmEmail", contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL, &authv1.BrowserConfirmEmailRequest{}, &authv1.BrowserConfirmEmailResponse{Response: &authv1.ConfirmEmailResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"RequestPasswordReset", contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_PASSWORD_RESET, &authv1.BrowserRequestPasswordResetRequest{}, &authv1.BrowserRequestPasswordResetResponse{Response: &authv1.RequestPasswordResetResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"ConfirmPasswordReset", contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_PASSWORD_RESET, &authv1.BrowserConfirmPasswordResetRequest{}, &authv1.BrowserConfirmPasswordResetResponse{Response: &authv1.ConfirmPasswordResetResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"GetCredentials", contractv1.RouteId_ROUTE_ID_AUTH_GET_CREDENTIALS, &authv1.BrowserGetCredentialsRequest{}, &authv1.BrowserGetCredentialsResponse{Response: &authv1.GetCredentialsResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"StartEmailChange", contractv1.RouteId_ROUTE_ID_AUTH_START_EMAIL_CHANGE, &authv1.BrowserStartEmailChangeRequest{}, &authv1.BrowserStartEmailChangeResponse{Response: &authv1.StartEmailChangeResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"ConfirmEmailChange", contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL_CHANGE, &authv1.BrowserConfirmEmailChangeRequest{}, &authv1.BrowserConfirmEmailChangeResponse{Response: &authv1.ConfirmEmailChangeResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"CancelEmailChange", contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_EMAIL_CHANGE, &authv1.BrowserCancelEmailChangeRequest{}, &authv1.BrowserCancelEmailChangeResponse{Response: &authv1.CancelEmailChangeResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"ListSessions", contractv1.RouteId_ROUTE_ID_AUTH_LIST_SESSIONS, &authv1.BrowserListSessionsRequest{}, &authv1.BrowserListSessionsResponse{Response: &authv1.ListSessionsResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"RevokeSession", contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_OWNED_SESSION, &authv1.BrowserRevokeSessionRequest{}, &authv1.BrowserRevokeSessionResponse{Response: &authv1.RevokeSessionResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"RequestAccountDeletion", contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION, &authv1.BrowserRequestAccountDeletionRequest{}, &authv1.BrowserRequestAccountDeletionResponse{Response: &authv1.RequestAccountDeletionResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
+		{"CancelAccountDeletion", contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION, &authv1.BrowserCancelAccountDeletionRequest{}, &authv1.BrowserCancelAccountDeletionResponse{Response: &authv1.CancelAccountDeletionResponse{}, SetCookie: []string{"a=secret; Secure", "b=secret; HttpOnly"}}, `{}`},
 	} {
 		t.Run(test.method, func(t *testing.T) {
 			payload, err := proto.Marshal(test.response)

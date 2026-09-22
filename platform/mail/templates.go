@@ -33,7 +33,7 @@ var specs = map[Template]spec{
 	},
 	TemplateNewLogin: {
 		dataType:  reflect.TypeOf(NewLoginData{}),
-		subject:   "Вход в аккаунт с нового устройства",
+		subject:   "Вход в аккаунт MarketMesh",
 		preheader: "Если это вы — ничего делать не нужно.",
 	},
 	TemplatePasswordReset: {

@@ -234,6 +234,42 @@ enum RouteId {
   ROUTE_ID_AUTH_SESSION_ASSERTION = 5;
   // ROUTE_ID_AUTH_LOGOUT_ALL revokes every session of the authenticated subject.
   ROUTE_ID_AUTH_LOGOUT_ALL = 6;
+  // ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE routes the typed StartLoginCodeChange browser operation.
+  ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE = 7;
+  // ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE routes the typed CompleteLoginCodeChange browser operation.
+  ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE = 8;
+  // ROUTE_ID_AUTH_CHANGE_PASSWORD routes the typed ChangePassword browser operation.
+  ROUTE_ID_AUTH_CHANGE_PASSWORD = 9;
+  // ROUTE_ID_AUTH_START_LOGIN routes the typed StartLogin browser operation.
+  ROUTE_ID_AUTH_START_LOGIN = 10;
+  // ROUTE_ID_AUTH_COMPLETE_LOGIN routes the typed CompleteLogin browser operation.
+  ROUTE_ID_AUTH_COMPLETE_LOGIN = 11;
+  // ROUTE_ID_AUTH_RESEND_LOGIN_CODE routes the typed ResendLoginCode browser operation.
+  ROUTE_ID_AUTH_RESEND_LOGIN_CODE = 12;
+  // ROUTE_ID_AUTH_REQUEST_EMAIL_VERIFICATION routes the typed RequestEmailVerification browser operation.
+  ROUTE_ID_AUTH_REQUEST_EMAIL_VERIFICATION = 13;
+  // ROUTE_ID_AUTH_CONFIRM_EMAIL routes the typed ConfirmEmail browser operation.
+  ROUTE_ID_AUTH_CONFIRM_EMAIL = 14;
+  // ROUTE_ID_AUTH_REQUEST_PASSWORD_RESET routes the typed RequestPasswordReset browser operation.
+  ROUTE_ID_AUTH_REQUEST_PASSWORD_RESET = 15;
+  // ROUTE_ID_AUTH_CONFIRM_PASSWORD_RESET routes the typed ConfirmPasswordReset browser operation.
+  ROUTE_ID_AUTH_CONFIRM_PASSWORD_RESET = 16;
+  // ROUTE_ID_AUTH_GET_CREDENTIALS routes the typed GetCredentials browser operation.
+  ROUTE_ID_AUTH_GET_CREDENTIALS = 17;
+  // ROUTE_ID_AUTH_START_EMAIL_CHANGE routes the typed StartEmailChange browser operation.
+  ROUTE_ID_AUTH_START_EMAIL_CHANGE = 18;
+  // ROUTE_ID_AUTH_CONFIRM_EMAIL_CHANGE routes the typed ConfirmEmailChange browser operation.
+  ROUTE_ID_AUTH_CONFIRM_EMAIL_CHANGE = 19;
+  // ROUTE_ID_AUTH_CANCEL_EMAIL_CHANGE routes the typed CancelEmailChange browser operation.
+  ROUTE_ID_AUTH_CANCEL_EMAIL_CHANGE = 20;
+  // ROUTE_ID_AUTH_LIST_SESSIONS routes the typed ListSessions browser operation.
+  ROUTE_ID_AUTH_LIST_SESSIONS = 21;
+  // ROUTE_ID_AUTH_REVOKE_OWNED_SESSION routes the typed RevokeSession browser operation.
+  ROUTE_ID_AUTH_REVOKE_OWNED_SESSION = 22;
+  // ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION routes the typed RequestAccountDeletion browser operation.
+  ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION = 23;
+  // ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION routes the typed CancelAccountDeletion browser operation.
+  ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION = 24;
   // ROUTE_ID_USER_GET_ME retains the legacy FakeInternal read codec for isolated E2E.
   ROUTE_ID_USER_GET_ME = 100;
   // ROUTE_ID_USER_UPDATE_ME retains the legacy FakeInternal mutation codec for isolated E2E.

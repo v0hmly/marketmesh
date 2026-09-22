@@ -82,6 +82,16 @@ export function createPublicApi(
     },
     async startLogin(identifier, password) {
       const result = await auth.startLogin({ identifier, password });
+      if (result.subjectId.length !== 0) {
+        if (
+          result.subjectId.length !== 16 ||
+          result.subjectId.every((v) => v === 0) ||
+          result.loginChallengeId.length !== 0 ||
+          result.codeExpiresInSeconds !== 0n
+        )
+          throw new ConnectError('Invalid start login response', Code.DataLoss);
+        return { subjectId: result.subjectId };
+      }
       if (
         result.loginChallengeId.length !== 16 ||
         result.loginChallengeId.every((v) => v === 0) ||

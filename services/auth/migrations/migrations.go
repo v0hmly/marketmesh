@@ -4,6 +4,14 @@ package migrations
 import _ "embed"
 
 var (
+	// SecurityUp adds email challenges and the encrypted transactional mail queue.
+	//go:embed 000004_security.up.sql
+	SecurityUp string
+
+	// SecurityDown removes email security after traffic and sessions are stopped.
+	//go:embed 000004_security.down.sql
+	SecurityDown string
+
 	// RegistrationOutboxUp creates the durable registration publication queue.
 	//go:embed 000003_registration_outbox.up.sql
 	RegistrationOutboxUp string

@@ -4,6 +4,15 @@ MM-43, [ADR-0015](../adr/0015-private-file-data-plane.md),
 [решение для текущего dev](../security/files-dev-acceptance.md).
 Harness: [`infra/files-dc-e2e`](../../infra/files-dc-e2e/run.py).
 
+
+Начиная с MM-90 Auth здесь использует фиксированную схему миграций 000001–000003
+и режим password/session без email-runtime. Это отдельный тест scoped-сессий Files,
+а не проверка почты или 2FA. Ключ mail outbox в VM не переносится. Нельзя добавлять
+миграцию 000004, сохраняя этот режим: Auth намеренно отвергает такую конфигурацию,
+чтобы выключение email-runtime не обходило включённое подтверждение входа.
+Полный актуальный почтовый сценарий выполняется в
+[account-local с Mailpit](../../infra/account-local/README.md).
+
 ## Топология и границы результата
 
 Используются четыре одноразовые OrbStack VM с k3s из

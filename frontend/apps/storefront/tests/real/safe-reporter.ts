@@ -12,7 +12,9 @@ export default class SafeReporter implements Reporter {
   onTestEnd(test: TestCase, result: TestResult) {
     const locations = new Set<string>();
     for (const error of result.errors) {
-      for (const location of error.stack?.match(/account\.spec\.ts:\d+:\d+/g) ?? []) {
+      for (const location of error.stack?.match(
+        /(?:account|security|mail)\.(?:spec\.)?ts:\d+:\d+/g,
+      ) ?? []) {
         if (locations.size < 5) locations.add(location);
       }
     }
@@ -25,7 +27,7 @@ export default class SafeReporter implements Reporter {
               item.description ?? '',
             )) ||
           (item.type === 'account-rpc' &&
-            /^(RegisterCredentials|Login|RefreshSession|Logout|LogoutAll|GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress|GetSettings|UpdateSettings):[1-5][0-9]{2}$/.test(
+            /^(RegisterCredentials|StartLogin|CompleteLogin|Login|RefreshSession|Logout|LogoutAll|GetMe|UpdateMe|ListAddresses|CreateAddress|UpdateAddress|DeleteAddress|SetDefaultAddress|GetSettings|UpdateSettings):[1-5][0-9]{2}$/.test(
               item.description ?? '',
             )),
       );

@@ -682,3 +682,60 @@ describe('settings session isolation', () => {
     controller.dispose();
   });
 });
+
+describe('email authentication session transitions', () => {
+  it('serializes immediate StartLogin cookie writes with guarded reads', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const gate = deferred<void>();
+    const reading = controller.withSession(controller.capture(), () => gate.promise);
+    const rejected = expect(reading).rejects.toBeInstanceOf(GuardMismatchError);
+    await settle();
+    vi.mocked(backend.startLogin).mockResolvedValue({ subjectId: profile(2).subjectId });
+    vi.mocked(backend.getProfile).mockResolvedValue(profile(2));
+    const signingIn = controller.startLogin('buyer@example.test', new Uint8Array());
+    await settle();
+    expect(backend.startLogin).not.toHaveBeenCalled();
+    gate.resolve();
+    await rejected;
+    await signingIn;
+    expect(controller.state.value.subjectId).toBe('02'.repeat(16));
+    expect(controller.state.value.status).toBe('authenticated');
+    controller.dispose();
+  });
+  it('keeps an unknown cookie-changing result uncertain and never repeats it', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const write = vi.fn().mockRejectedValue(new ConnectError('lost reply', Code.Unavailable));
+    await expect(controller.endSession(write, controller.capture())).rejects.toMatchObject({
+      code: Code.Unavailable,
+    });
+    expect(controller.state.value.status).toBe('uncertain');
+    expect(write).toHaveBeenCalledTimes(1);
+    controller.dispose();
+  });
+  it('restores the confirmed identity after rejected security proof and invalidates old guards', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    const owner = controller.capture();
+    const write = vi.fn().mockRejectedValue(new ConnectError('wrong code', Code.InvalidArgument));
+    await expect(controller.endSession(write, owner)).rejects.toMatchObject({
+      code: Code.InvalidArgument,
+    });
+    expect(controller.state.value.status).toBe('authenticated');
+    expect(controller.state.value.subjectId).toBe(owner.subjectId);
+    const staleWrite = vi.fn();
+    await expect(controller.endSession(staleWrite, owner)).rejects.toBeInstanceOf(
+      GuardMismatchError,
+    );
+    expect(staleWrite).not.toHaveBeenCalled();
+    expect(write).toHaveBeenCalledTimes(1);
+    controller.dispose();
+  });
+});

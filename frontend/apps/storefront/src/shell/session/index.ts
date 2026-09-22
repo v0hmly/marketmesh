@@ -10,6 +10,7 @@ import type {
   AccountSettings,
   SettingsInput,
   LoginChallenge,
+  LoginStart,
 } from '../../shared/api/types';
 import { isProfilePending } from '../../shared/api/errors';
 
@@ -62,8 +63,8 @@ export interface SessionController {
   bootstrap(): Promise<void>;
   register(identifier: string, password: Uint8Array): Promise<void>;
   login(identifier: string, password: Uint8Array): Promise<void>;
-  /** Starts the code-confirmation login; no session state changes yet. */
-  startLogin(identifier: string, password: Uint8Array): Promise<LoginChallenge>;
+  /** Starts login under the cookie mutation lock; may establish a session directly. */
+  startLogin(identifier: string, password: Uint8Array): Promise<LoginStart>;
   /** Completes a pending login with the emailed code; journals like login(). */
   completeLogin(challenge: LoginChallenge, code: string): Promise<void>;
   /** Replaces the code of a pending login; no session state changes. */
@@ -72,6 +73,9 @@ export interface SessionController {
   requestEmailVerification(email: string): Promise<void>;
   logout(all?: boolean): Promise<void>;
   capture(): SessionGuard;
+  withSession<T>(guard: SessionGuard, action: () => Promise<T>): Promise<T>;
+  /** Serializes a confirmed security mutation that ends the current session. */
+  endSession<T>(action: () => Promise<T>, guard?: SessionGuard): Promise<T>;
   readProfile(guard?: SessionGuard): Promise<Profile>;
   updateProfile(input: ProfileInput, guard: SessionGuard): Promise<Profile>;
   readSettings(guard: SessionGuard): Promise<AccountSettings>;
@@ -163,7 +167,15 @@ const unauthenticated = (error: unknown): boolean =>
   error instanceof ConnectError && error.code === Code.Unauthenticated;
 const definitive = (error: unknown): boolean =>
   error instanceof ConnectError &&
-  [Code.Unauthenticated, Code.InvalidArgument, Code.PermissionDenied].includes(error.code);
+  [
+    Code.Unauthenticated,
+    Code.InvalidArgument,
+    Code.PermissionDenied,
+    Code.FailedPrecondition,
+    Code.ResourceExhausted,
+    Code.Unimplemented,
+    Code.NotFound,
+  ].includes(error.code);
 
 export function createSessionController(
   api: PublicApi,
@@ -431,13 +443,17 @@ export function createSessionController(
     }
   }
   /** Journals a login-kind operation, then probes the fresh session identity. */
-  async function establish(verify: () => Promise<Uint8Array>) {
+  async function establish(verify: () => Promise<Uint8Array | null>) {
     intent('login');
     await available().lock('exclusive', async () => {
       const operation = begin('login');
       try {
         const id = await verify();
         finish(operation, 'settled');
+        if (id === null) {
+          set('anonymous', operation.generation, null);
+          return;
+        }
         rememberIdentity(operation.generation, subject(id));
         set('checking', operation.generation, subject(id));
       } catch (error) {
@@ -493,8 +509,18 @@ export function createSessionController(
         if (all) await api.logoutAll();
         else await api.logout();
       } catch (error) {
-        finish(operation, 'uncertain');
-        set('uncertain', operation.generation, null);
+        if (definitive(error)) {
+          operation.kind = 'bootstrap';
+          finish(operation, 'settled');
+          try {
+            await probe(operation.generation);
+          } catch {
+            set('anonymous', operation.generation, null);
+          }
+        } else {
+          finish(operation, 'uncertain');
+          set('uncertain', operation.generation, null);
+        }
         throw error;
       }
       finish(operation, 'settled');
@@ -614,8 +640,13 @@ export function createSessionController(
     login,
     completeLogin,
     async startLogin(identifier, password) {
-      available();
-      return api.startLogin(identifier, password);
+      let result: LoginStart | undefined;
+      await establish(async () => {
+        result = await api.startLogin(identifier, password);
+        return 'subjectId' in result ? result.subjectId : null;
+      });
+      if (!result) throw new SessionUncertainError();
+      return result;
     },
     async resendLoginCode(challenge) {
       available();
@@ -627,6 +658,35 @@ export function createSessionController(
     },
     logout,
     capture,
+    withSession: guarded,
+    async endSession(action, guard) {
+      return available().lock('exclusive', async () => {
+        if (guard) assertGuard(guard, readJournal());
+        intent('logoutAll');
+        const operation = begin('logoutAll');
+        try {
+          const result = await action();
+          finish(operation, 'settled');
+          set('anonymous', operation.generation, null);
+          return result;
+        } catch (error) {
+          if (definitive(error)) {
+            operation.kind = 'bootstrap';
+            finish(operation, 'settled');
+            set('checking', operation.generation, null);
+            try {
+              await probe(operation.generation);
+            } catch {
+              set('anonymous', operation.generation, null);
+            }
+          } else {
+            finish(operation, 'uncertain');
+            set('uncertain', operation.generation, null);
+          }
+          throw error;
+        }
+      });
+    },
     async register(identifier, password) {
       available();
       await api.register(identifier, password);

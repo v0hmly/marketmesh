@@ -16,6 +16,9 @@ describe('email as the login identifier', () => {
     expect(validateEmail('')).toBeTruthy();
     expect(validateEmail('   ')).toBeTruthy();
     expect(validateEmail('anna')).toBeTruthy();
+    expect(validateEmail('анна@example.ru')).toBeTruthy();
+    expect(validateEmail('Anna <anna@example.ru>')).toBeTruthy();
+    expect(validateEmail('a'.repeat(250) + '@example.ru')).toBeTruthy();
     expect(validateEmail('anna@')).toBeTruthy();
     expect(validateEmail('anna@example')).toBeTruthy();
     expect(validateEmail('an na@example.ru')).toBeTruthy();
@@ -49,6 +52,9 @@ describe('password strength checklist', () => {
     expect(validatePasswordStrength('Aa1!' + 'b'.repeat(61))).toContain('Не более 64');
     expect(validatePasswordStrength('abcdefgh')).toContain('требованиям надёжности');
     expect(validatePasswordStrength('Aa1!bcde')).toBeNull();
+    expect(validatePasswordStrength('Aa1 bcde')).toBeTruthy();
+    expect(validatePasswordStrength('Aa1Жbcde')).toBeTruthy();
+    expect(validatePasswordStrength('Aa1😀bcde')).toBeNull();
   });
   it('rejects malformed Unicode and oversized UTF-8 secrets', () => {
     expect(validatePasswordStrength('Aa1!bcd' + String.fromCharCode(0xd800))).toBeTruthy();

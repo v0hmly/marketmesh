@@ -7,6 +7,26 @@ x-app: &app
   restart: "no"
 
 services:
+  mailpit:
+    image: axllent/mailpit:v1.31.2@sha256:74d609a42ec279aa63c6b4622a6fa9b5408d1ad5b1d76a1c4be40a265ce0863d
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 5000
+      MP_MAX_MESSAGE_SIZE: 10
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_SMTP_DISABLE_RDNS: "true"
+      MP_BLOCK_REMOTE_CSS_AND_FONTS: "true"
+      MP_ALLOWED_HOSTS: localhost,127.0.0.1,mailpit
+    ports:
+      - "127.0.0.1:${ACCOUNT_MAILPIT_PORT:-8025}:8025"
+    volumes:
+      - mailpit:/data
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [internal, mail, ingress]
   postgres-primary:
     image: postgres:18.6-bookworm
     env_file: ${ACCOUNT_LOCAL_STATE}/postgres-primary/env
@@ -114,14 +134,19 @@ services:
       dockerfile: infra/account-local/Dockerfile.browser
     environment:
       BASE_URL: https://frontdoor:8443
+      MAILPIT_URL: http://mailpit:8025
       PUBLIC_CA: /certs/ca.pem
       ACCOUNT_E2E_RUN_ID: ${ACCOUNT_E2E_RUN_ID:-unset}
       ACCOUNT_E2E_PHASE: ${ACCOUNT_E2E_PHASE:-core}
     volumes:
       - ${ACCOUNT_LOCAL_STATE}/browser:/certs:ro
       - ${ACCOUNT_LOCAL_STATE}/artifacts:/artifacts
-    networks: [dmz]
+    networks: [dmz, mail]
 networks:
+  mail:
+    internal: true
+    labels:
+      marketmesh.account.workspace: ${ACCOUNT_LOCAL_WORKSPACE}
   internal:
     internal: true
     labels: &ownership
@@ -132,6 +157,8 @@ networks:
   ingress:
     labels: *ownership
 volumes:
+  mailpit:
+    labels: *ownership
   postgres-primary:
     labels: *ownership
   postgres-replica:

@@ -154,7 +154,15 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 			resultErr = errors.Join(resultErr, sessions.close(shutdownCtx))
 		}
 	}()
-	connectHandler, err := connectadapter.New(registration, verification, log, sessions.connectOptions(config)...)
+	security, err := newSecurityResources(ctx, config, database, hasher, sessions, log)
+	if err != nil {
+		return err
+	}
+	connectOptions := sessions.connectOptions(config)
+	if security != nil {
+		connectOptions = append(connectOptions, connectadapter.WithSecurity(security.service))
+	}
+	connectHandler, err := connectadapter.New(registration, verification, log, connectOptions...)
 	if err != nil {
 		return fmt.Errorf("creating Connect handler: %w", err)
 	}
@@ -168,6 +176,9 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 
 	dependencies := append(database.ReadinessDependencies(), sessions.dependencies()...)
 	dependencies = append(dependencies, events.dependencies()...)
+	if security != nil {
+		dependencies = append(dependencies, security.dependency)
+	}
 	health, err := serviceruntime.NewHealth(serviceruntime.HealthConfig{
 		CheckTimeout: config.healthCheckTimeout,
 		Dependencies: dependencies,
@@ -231,6 +242,9 @@ func runService(ctx context.Context, config config, log *logger.Logger, listen l
 		return fmt.Errorf("creating HTTP component: %w", err)
 	}
 	components := []serviceruntime.Component{telemetryComponent, databaseComponent}
+	if security != nil {
+		components = append(components, security.component)
+	}
 	if sessions != nil {
 		components = append(components, sessions.components...)
 	}

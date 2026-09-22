@@ -14,6 +14,7 @@ import (
 	"github.com/v0hmly/marketmesh/api/gen/go/auth/v1/authv1connect"
 	"github.com/v0hmly/marketmesh/platform/logger"
 	"github.com/v0hmly/marketmesh/services/auth/internal/application/login"
+	security "github.com/v0hmly/marketmesh/services/auth/internal/application/security"
 	applicationsession "github.com/v0hmly/marketmesh/services/auth/internal/application/session"
 	"github.com/v0hmly/marketmesh/services/auth/internal/domain/credential"
 	domainsession "github.com/v0hmly/marketmesh/services/auth/internal/domain/session"
@@ -88,6 +89,7 @@ type Handler struct {
 	sessions     SessionLifecycle
 	origins      *BrowserOriginPolicy
 	clock        func() time.Time
+	security     *security.Service
 }
 
 // New constructs an Auth Connect handler.
@@ -120,6 +122,14 @@ func (handler *Handler) RegisterCredentials(
 	if handler.sessions != nil && !handler.validOrigin(request.Header()) {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
 	}
+	if handler.security != nil {
+		if err := handler.security.Register(ctx, request.Msg.GetIdentifier(), password); err != nil {
+			return nil, securityFailure(err)
+		}
+		response := connect.NewResponse(&authv1.RegisterCredentialsResponse{})
+		response.Header().Set("Cache-Control", "no-store")
+		return response, nil
+	}
 	if err := handler.registration.Execute(ctx, request.Msg.GetIdentifier(), password); err != nil {
 		if isDomainInputError(err) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(invalidInputMessage))
@@ -143,6 +153,15 @@ func (handler *Handler) Login(
 	defer clear(password)
 	if handler.sessions != nil && !handler.validOrigin(request.Header()) {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
+	}
+	if handler.security != nil {
+		result, err := handler.security.Login(ctx, request.Msg.GetIdentifier(), password, false)
+		if err != nil {
+			return nil, securityFailure(err)
+		}
+		response := connect.NewResponse(&authv1.LoginResponse{SubjectId: result.Tokens.Record.SubjectID.Bytes()})
+		handler.setCookies(response.Header(), result.Tokens)
+		return response, nil
 	}
 	subjectID, err := handler.verification.Execute(ctx, request.Msg.GetIdentifier(), password)
 	if errors.Is(err, login.ErrInvalidCredentials) {
@@ -219,7 +238,15 @@ func (handler *Handler) LogoutAll(ctx context.Context, request *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
 	}
-	if err := handler.sessions.RevokeAll(ctx, access); err != nil {
+	if handler.security != nil {
+		actor, err := handler.sessions.Authenticate(ctx, access)
+		if err != nil {
+			return nil, sessionFailure(ctx, handler.log, err)
+		}
+		if err := handler.security.LogoutAll(ctx, actor); err != nil {
+			return nil, securityFailure(err)
+		}
+	} else if err := handler.sessions.RevokeAll(ctx, access); err != nil {
 		return nil, sessionFailure(ctx, handler.log, err)
 	}
 	response := connect.NewResponse(&authv1.LogoutAllResponse{})

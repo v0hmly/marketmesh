@@ -24,6 +24,9 @@ const (
 	AuthService_RefreshSession_FullMethodName           = "/auth.v1.AuthService/RefreshSession"
 	AuthService_Logout_FullMethodName                   = "/auth.v1.AuthService/Logout"
 	AuthService_LogoutAll_FullMethodName                = "/auth.v1.AuthService/LogoutAll"
+	AuthService_StartLoginCodeChange_FullMethodName     = "/auth.v1.AuthService/StartLoginCodeChange"
+	AuthService_CompleteLoginCodeChange_FullMethodName  = "/auth.v1.AuthService/CompleteLoginCodeChange"
+	AuthService_ChangePassword_FullMethodName           = "/auth.v1.AuthService/ChangePassword"
 	AuthService_StartLogin_FullMethodName               = "/auth.v1.AuthService/StartLogin"
 	AuthService_CompleteLogin_FullMethodName            = "/auth.v1.AuthService/CompleteLogin"
 	AuthService_ResendLoginCode_FullMethodName          = "/auth.v1.AuthService/ResendLoginCode"
@@ -57,7 +60,13 @@ type AuthServiceClient interface {
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 	// LogoutAll revokes every session of the authenticated subject.
 	LogoutAll(ctx context.Context, in *LogoutAllRequest, opts ...grpc.CallOption) (*LogoutAllResponse, error)
-	// StartLogin verifies the password and, on success, emails a one-time login code.
+	// StartLoginCodeChange manages the authenticated caller's account security.
+	StartLoginCodeChange(ctx context.Context, in *StartLoginCodeChangeRequest, opts ...grpc.CallOption) (*StartLoginCodeChangeResponse, error)
+	// CompleteLoginCodeChange manages the authenticated caller's account security.
+	CompleteLoginCodeChange(ctx context.Context, in *CompleteLoginCodeChangeRequest, opts ...grpc.CallOption) (*CompleteLoginCodeChangeResponse, error)
+	// ChangePassword manages the authenticated caller's account security.
+	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
+	// StartLogin verifies the password and either creates a session or emails a required login code.
 	StartLogin(ctx context.Context, in *StartLoginRequest, opts ...grpc.CallOption) (*StartLoginResponse, error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(ctx context.Context, in *CompleteLoginRequest, opts ...grpc.CallOption) (*CompleteLoginResponse, error)
@@ -141,6 +150,36 @@ func (c *authServiceClient) LogoutAll(ctx context.Context, in *LogoutAllRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LogoutAllResponse)
 	err := c.cc.Invoke(ctx, AuthService_LogoutAll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) StartLoginCodeChange(ctx context.Context, in *StartLoginCodeChangeRequest, opts ...grpc.CallOption) (*StartLoginCodeChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartLoginCodeChangeResponse)
+	err := c.cc.Invoke(ctx, AuthService_StartLoginCodeChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) CompleteLoginCodeChange(ctx context.Context, in *CompleteLoginCodeChangeRequest, opts ...grpc.CallOption) (*CompleteLoginCodeChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteLoginCodeChangeResponse)
+	err := c.cc.Invoke(ctx, AuthService_CompleteLoginCodeChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangePasswordResponse)
+	err := c.cc.Invoke(ctx, AuthService_ChangePassword_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +352,13 @@ type AuthServiceServer interface {
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
 	// LogoutAll revokes every session of the authenticated subject.
 	LogoutAll(context.Context, *LogoutAllRequest) (*LogoutAllResponse, error)
-	// StartLogin verifies the password and, on success, emails a one-time login code.
+	// StartLoginCodeChange manages the authenticated caller's account security.
+	StartLoginCodeChange(context.Context, *StartLoginCodeChangeRequest) (*StartLoginCodeChangeResponse, error)
+	// CompleteLoginCodeChange manages the authenticated caller's account security.
+	CompleteLoginCodeChange(context.Context, *CompleteLoginCodeChangeRequest) (*CompleteLoginCodeChangeResponse, error)
+	// ChangePassword manages the authenticated caller's account security.
+	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
+	// StartLogin verifies the password and either creates a session or emails a required login code.
 	StartLogin(context.Context, *StartLoginRequest) (*StartLoginResponse, error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(context.Context, *CompleteLoginRequest) (*CompleteLoginResponse, error)
@@ -367,6 +412,15 @@ func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*
 }
 func (UnimplementedAuthServiceServer) LogoutAll(context.Context, *LogoutAllRequest) (*LogoutAllResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LogoutAll not implemented")
+}
+func (UnimplementedAuthServiceServer) StartLoginCodeChange(context.Context, *StartLoginCodeChangeRequest) (*StartLoginCodeChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartLoginCodeChange not implemented")
+}
+func (UnimplementedAuthServiceServer) CompleteLoginCodeChange(context.Context, *CompleteLoginCodeChangeRequest) (*CompleteLoginCodeChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteLoginCodeChange not implemented")
+}
+func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
 }
 func (UnimplementedAuthServiceServer) StartLogin(context.Context, *StartLoginRequest) (*StartLoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartLogin not implemented")
@@ -520,6 +574,60 @@ func _AuthService_LogoutAll_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).LogoutAll(ctx, req.(*LogoutAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_StartLoginCodeChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartLoginCodeChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).StartLoginCodeChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_StartLoginCodeChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).StartLoginCodeChange(ctx, req.(*StartLoginCodeChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_CompleteLoginCodeChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteLoginCodeChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CompleteLoginCodeChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_CompleteLoginCodeChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CompleteLoginCodeChange(ctx, req.(*CompleteLoginCodeChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ChangePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ChangePassword(ctx, req.(*ChangePasswordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -822,6 +930,18 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_LogoutAll_Handler,
 		},
 		{
+			MethodName: "StartLoginCodeChange",
+			Handler:    _AuthService_StartLoginCodeChange_Handler,
+		},
+		{
+			MethodName: "CompleteLoginCodeChange",
+			Handler:    _AuthService_CompleteLoginCodeChange_Handler,
+		},
+		{
+			MethodName: "ChangePassword",
+			Handler:    _AuthService_ChangePassword_Handler,
+		},
+		{
 			MethodName: "StartLogin",
 			Handler:    _AuthService_StartLogin_Handler,
 		},
@@ -887,11 +1007,29 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	AuthBrowserService_BrowserRegisterCredentials_FullMethodName = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
-	AuthBrowserService_BrowserLogin_FullMethodName               = "/auth.v1.AuthBrowserService/BrowserLogin"
-	AuthBrowserService_BrowserRefreshSession_FullMethodName      = "/auth.v1.AuthBrowserService/BrowserRefreshSession"
-	AuthBrowserService_BrowserLogout_FullMethodName              = "/auth.v1.AuthBrowserService/BrowserLogout"
-	AuthBrowserService_BrowserLogoutAll_FullMethodName           = "/auth.v1.AuthBrowserService/BrowserLogoutAll"
+	AuthBrowserService_BrowserRegisterCredentials_FullMethodName      = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
+	AuthBrowserService_BrowserLogin_FullMethodName                    = "/auth.v1.AuthBrowserService/BrowserLogin"
+	AuthBrowserService_BrowserRefreshSession_FullMethodName           = "/auth.v1.AuthBrowserService/BrowserRefreshSession"
+	AuthBrowserService_BrowserLogout_FullMethodName                   = "/auth.v1.AuthBrowserService/BrowserLogout"
+	AuthBrowserService_BrowserLogoutAll_FullMethodName                = "/auth.v1.AuthBrowserService/BrowserLogoutAll"
+	AuthBrowserService_BrowserStartLoginCodeChange_FullMethodName     = "/auth.v1.AuthBrowserService/BrowserStartLoginCodeChange"
+	AuthBrowserService_BrowserCompleteLoginCodeChange_FullMethodName  = "/auth.v1.AuthBrowserService/BrowserCompleteLoginCodeChange"
+	AuthBrowserService_BrowserChangePassword_FullMethodName           = "/auth.v1.AuthBrowserService/BrowserChangePassword"
+	AuthBrowserService_BrowserStartLogin_FullMethodName               = "/auth.v1.AuthBrowserService/BrowserStartLogin"
+	AuthBrowserService_BrowserCompleteLogin_FullMethodName            = "/auth.v1.AuthBrowserService/BrowserCompleteLogin"
+	AuthBrowserService_BrowserResendLoginCode_FullMethodName          = "/auth.v1.AuthBrowserService/BrowserResendLoginCode"
+	AuthBrowserService_BrowserRequestEmailVerification_FullMethodName = "/auth.v1.AuthBrowserService/BrowserRequestEmailVerification"
+	AuthBrowserService_BrowserConfirmEmail_FullMethodName             = "/auth.v1.AuthBrowserService/BrowserConfirmEmail"
+	AuthBrowserService_BrowserRequestPasswordReset_FullMethodName     = "/auth.v1.AuthBrowserService/BrowserRequestPasswordReset"
+	AuthBrowserService_BrowserConfirmPasswordReset_FullMethodName     = "/auth.v1.AuthBrowserService/BrowserConfirmPasswordReset"
+	AuthBrowserService_BrowserGetCredentials_FullMethodName           = "/auth.v1.AuthBrowserService/BrowserGetCredentials"
+	AuthBrowserService_BrowserStartEmailChange_FullMethodName         = "/auth.v1.AuthBrowserService/BrowserStartEmailChange"
+	AuthBrowserService_BrowserConfirmEmailChange_FullMethodName       = "/auth.v1.AuthBrowserService/BrowserConfirmEmailChange"
+	AuthBrowserService_BrowserCancelEmailChange_FullMethodName        = "/auth.v1.AuthBrowserService/BrowserCancelEmailChange"
+	AuthBrowserService_BrowserListSessions_FullMethodName             = "/auth.v1.AuthBrowserService/BrowserListSessions"
+	AuthBrowserService_BrowserRevokeSession_FullMethodName            = "/auth.v1.AuthBrowserService/BrowserRevokeSession"
+	AuthBrowserService_BrowserRequestAccountDeletion_FullMethodName   = "/auth.v1.AuthBrowserService/BrowserRequestAccountDeletion"
+	AuthBrowserService_BrowserCancelAccountDeletion_FullMethodName    = "/auth.v1.AuthBrowserService/BrowserCancelAccountDeletion"
 )
 
 // AuthBrowserServiceClient is the client API for AuthBrowserService service.
@@ -910,6 +1048,42 @@ type AuthBrowserServiceClient interface {
 	BrowserLogout(ctx context.Context, in *BrowserLogoutRequest, opts ...grpc.CallOption) (*BrowserLogoutResponse, error)
 	// LogoutAll delegates to the same public Auth handler and browser security policy.
 	BrowserLogoutAll(ctx context.Context, in *BrowserLogoutAllRequest, opts ...grpc.CallOption) (*BrowserLogoutAllResponse, error)
+	// BrowserStartLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserStartLoginCodeChange(ctx context.Context, in *BrowserStartLoginCodeChangeRequest, opts ...grpc.CallOption) (*BrowserStartLoginCodeChangeResponse, error)
+	// BrowserCompleteLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserCompleteLoginCodeChange(ctx context.Context, in *BrowserCompleteLoginCodeChangeRequest, opts ...grpc.CallOption) (*BrowserCompleteLoginCodeChangeResponse, error)
+	// BrowserChangePassword applies the same public browser policy on the private listener.
+	BrowserChangePassword(ctx context.Context, in *BrowserChangePasswordRequest, opts ...grpc.CallOption) (*BrowserChangePasswordResponse, error)
+	// BrowserStartLogin applies the same public browser policy on the private listener.
+	BrowserStartLogin(ctx context.Context, in *BrowserStartLoginRequest, opts ...grpc.CallOption) (*BrowserStartLoginResponse, error)
+	// BrowserCompleteLogin applies the same public browser policy on the private listener.
+	BrowserCompleteLogin(ctx context.Context, in *BrowserCompleteLoginRequest, opts ...grpc.CallOption) (*BrowserCompleteLoginResponse, error)
+	// BrowserResendLoginCode applies the same public browser policy on the private listener.
+	BrowserResendLoginCode(ctx context.Context, in *BrowserResendLoginCodeRequest, opts ...grpc.CallOption) (*BrowserResendLoginCodeResponse, error)
+	// BrowserRequestEmailVerification applies the same public browser policy on the private listener.
+	BrowserRequestEmailVerification(ctx context.Context, in *BrowserRequestEmailVerificationRequest, opts ...grpc.CallOption) (*BrowserRequestEmailVerificationResponse, error)
+	// BrowserConfirmEmail applies the same public browser policy on the private listener.
+	BrowserConfirmEmail(ctx context.Context, in *BrowserConfirmEmailRequest, opts ...grpc.CallOption) (*BrowserConfirmEmailResponse, error)
+	// BrowserRequestPasswordReset applies the same public browser policy on the private listener.
+	BrowserRequestPasswordReset(ctx context.Context, in *BrowserRequestPasswordResetRequest, opts ...grpc.CallOption) (*BrowserRequestPasswordResetResponse, error)
+	// BrowserConfirmPasswordReset applies the same public browser policy on the private listener.
+	BrowserConfirmPasswordReset(ctx context.Context, in *BrowserConfirmPasswordResetRequest, opts ...grpc.CallOption) (*BrowserConfirmPasswordResetResponse, error)
+	// BrowserGetCredentials applies the same public browser policy on the private listener.
+	BrowserGetCredentials(ctx context.Context, in *BrowserGetCredentialsRequest, opts ...grpc.CallOption) (*BrowserGetCredentialsResponse, error)
+	// BrowserStartEmailChange applies the same public browser policy on the private listener.
+	BrowserStartEmailChange(ctx context.Context, in *BrowserStartEmailChangeRequest, opts ...grpc.CallOption) (*BrowserStartEmailChangeResponse, error)
+	// BrowserConfirmEmailChange applies the same public browser policy on the private listener.
+	BrowserConfirmEmailChange(ctx context.Context, in *BrowserConfirmEmailChangeRequest, opts ...grpc.CallOption) (*BrowserConfirmEmailChangeResponse, error)
+	// BrowserCancelEmailChange applies the same public browser policy on the private listener.
+	BrowserCancelEmailChange(ctx context.Context, in *BrowserCancelEmailChangeRequest, opts ...grpc.CallOption) (*BrowserCancelEmailChangeResponse, error)
+	// BrowserListSessions applies the same public browser policy on the private listener.
+	BrowserListSessions(ctx context.Context, in *BrowserListSessionsRequest, opts ...grpc.CallOption) (*BrowserListSessionsResponse, error)
+	// BrowserRevokeSession applies the same public browser policy on the private listener.
+	BrowserRevokeSession(ctx context.Context, in *BrowserRevokeSessionRequest, opts ...grpc.CallOption) (*BrowserRevokeSessionResponse, error)
+	// BrowserRequestAccountDeletion applies the same public browser policy on the private listener.
+	BrowserRequestAccountDeletion(ctx context.Context, in *BrowserRequestAccountDeletionRequest, opts ...grpc.CallOption) (*BrowserRequestAccountDeletionResponse, error)
+	// BrowserCancelAccountDeletion applies the same public browser policy on the private listener.
+	BrowserCancelAccountDeletion(ctx context.Context, in *BrowserCancelAccountDeletionRequest, opts ...grpc.CallOption) (*BrowserCancelAccountDeletionResponse, error)
 }
 
 type authBrowserServiceClient struct {
@@ -970,6 +1144,186 @@ func (c *authBrowserServiceClient) BrowserLogoutAll(ctx context.Context, in *Bro
 	return out, nil
 }
 
+func (c *authBrowserServiceClient) BrowserStartLoginCodeChange(ctx context.Context, in *BrowserStartLoginCodeChangeRequest, opts ...grpc.CallOption) (*BrowserStartLoginCodeChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserStartLoginCodeChangeResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserStartLoginCodeChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserCompleteLoginCodeChange(ctx context.Context, in *BrowserCompleteLoginCodeChangeRequest, opts ...grpc.CallOption) (*BrowserCompleteLoginCodeChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserCompleteLoginCodeChangeResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserCompleteLoginCodeChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserChangePassword(ctx context.Context, in *BrowserChangePasswordRequest, opts ...grpc.CallOption) (*BrowserChangePasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserChangePasswordResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserChangePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserStartLogin(ctx context.Context, in *BrowserStartLoginRequest, opts ...grpc.CallOption) (*BrowserStartLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserStartLoginResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserStartLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserCompleteLogin(ctx context.Context, in *BrowserCompleteLoginRequest, opts ...grpc.CallOption) (*BrowserCompleteLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserCompleteLoginResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserCompleteLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserResendLoginCode(ctx context.Context, in *BrowserResendLoginCodeRequest, opts ...grpc.CallOption) (*BrowserResendLoginCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserResendLoginCodeResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserResendLoginCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserRequestEmailVerification(ctx context.Context, in *BrowserRequestEmailVerificationRequest, opts ...grpc.CallOption) (*BrowserRequestEmailVerificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserRequestEmailVerificationResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserRequestEmailVerification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserConfirmEmail(ctx context.Context, in *BrowserConfirmEmailRequest, opts ...grpc.CallOption) (*BrowserConfirmEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserConfirmEmailResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserConfirmEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserRequestPasswordReset(ctx context.Context, in *BrowserRequestPasswordResetRequest, opts ...grpc.CallOption) (*BrowserRequestPasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserRequestPasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserRequestPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserConfirmPasswordReset(ctx context.Context, in *BrowserConfirmPasswordResetRequest, opts ...grpc.CallOption) (*BrowserConfirmPasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserConfirmPasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserConfirmPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserGetCredentials(ctx context.Context, in *BrowserGetCredentialsRequest, opts ...grpc.CallOption) (*BrowserGetCredentialsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserGetCredentialsResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserGetCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserStartEmailChange(ctx context.Context, in *BrowserStartEmailChangeRequest, opts ...grpc.CallOption) (*BrowserStartEmailChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserStartEmailChangeResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserStartEmailChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserConfirmEmailChange(ctx context.Context, in *BrowserConfirmEmailChangeRequest, opts ...grpc.CallOption) (*BrowserConfirmEmailChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserConfirmEmailChangeResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserConfirmEmailChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserCancelEmailChange(ctx context.Context, in *BrowserCancelEmailChangeRequest, opts ...grpc.CallOption) (*BrowserCancelEmailChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserCancelEmailChangeResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserCancelEmailChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserListSessions(ctx context.Context, in *BrowserListSessionsRequest, opts ...grpc.CallOption) (*BrowserListSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserListSessionsResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserListSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserRevokeSession(ctx context.Context, in *BrowserRevokeSessionRequest, opts ...grpc.CallOption) (*BrowserRevokeSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserRevokeSessionResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserRevokeSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserRequestAccountDeletion(ctx context.Context, in *BrowserRequestAccountDeletionRequest, opts ...grpc.CallOption) (*BrowserRequestAccountDeletionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserRequestAccountDeletionResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserRequestAccountDeletion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserCancelAccountDeletion(ctx context.Context, in *BrowserCancelAccountDeletionRequest, opts ...grpc.CallOption) (*BrowserCancelAccountDeletionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserCancelAccountDeletionResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserCancelAccountDeletion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthBrowserServiceServer is the server API for AuthBrowserService service.
 // All implementations must embed UnimplementedAuthBrowserServiceServer
 // for forward compatibility.
@@ -986,6 +1340,42 @@ type AuthBrowserServiceServer interface {
 	BrowserLogout(context.Context, *BrowserLogoutRequest) (*BrowserLogoutResponse, error)
 	// LogoutAll delegates to the same public Auth handler and browser security policy.
 	BrowserLogoutAll(context.Context, *BrowserLogoutAllRequest) (*BrowserLogoutAllResponse, error)
+	// BrowserStartLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserStartLoginCodeChange(context.Context, *BrowserStartLoginCodeChangeRequest) (*BrowserStartLoginCodeChangeResponse, error)
+	// BrowserCompleteLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserCompleteLoginCodeChange(context.Context, *BrowserCompleteLoginCodeChangeRequest) (*BrowserCompleteLoginCodeChangeResponse, error)
+	// BrowserChangePassword applies the same public browser policy on the private listener.
+	BrowserChangePassword(context.Context, *BrowserChangePasswordRequest) (*BrowserChangePasswordResponse, error)
+	// BrowserStartLogin applies the same public browser policy on the private listener.
+	BrowserStartLogin(context.Context, *BrowserStartLoginRequest) (*BrowserStartLoginResponse, error)
+	// BrowserCompleteLogin applies the same public browser policy on the private listener.
+	BrowserCompleteLogin(context.Context, *BrowserCompleteLoginRequest) (*BrowserCompleteLoginResponse, error)
+	// BrowserResendLoginCode applies the same public browser policy on the private listener.
+	BrowserResendLoginCode(context.Context, *BrowserResendLoginCodeRequest) (*BrowserResendLoginCodeResponse, error)
+	// BrowserRequestEmailVerification applies the same public browser policy on the private listener.
+	BrowserRequestEmailVerification(context.Context, *BrowserRequestEmailVerificationRequest) (*BrowserRequestEmailVerificationResponse, error)
+	// BrowserConfirmEmail applies the same public browser policy on the private listener.
+	BrowserConfirmEmail(context.Context, *BrowserConfirmEmailRequest) (*BrowserConfirmEmailResponse, error)
+	// BrowserRequestPasswordReset applies the same public browser policy on the private listener.
+	BrowserRequestPasswordReset(context.Context, *BrowserRequestPasswordResetRequest) (*BrowserRequestPasswordResetResponse, error)
+	// BrowserConfirmPasswordReset applies the same public browser policy on the private listener.
+	BrowserConfirmPasswordReset(context.Context, *BrowserConfirmPasswordResetRequest) (*BrowserConfirmPasswordResetResponse, error)
+	// BrowserGetCredentials applies the same public browser policy on the private listener.
+	BrowserGetCredentials(context.Context, *BrowserGetCredentialsRequest) (*BrowserGetCredentialsResponse, error)
+	// BrowserStartEmailChange applies the same public browser policy on the private listener.
+	BrowserStartEmailChange(context.Context, *BrowserStartEmailChangeRequest) (*BrowserStartEmailChangeResponse, error)
+	// BrowserConfirmEmailChange applies the same public browser policy on the private listener.
+	BrowserConfirmEmailChange(context.Context, *BrowserConfirmEmailChangeRequest) (*BrowserConfirmEmailChangeResponse, error)
+	// BrowserCancelEmailChange applies the same public browser policy on the private listener.
+	BrowserCancelEmailChange(context.Context, *BrowserCancelEmailChangeRequest) (*BrowserCancelEmailChangeResponse, error)
+	// BrowserListSessions applies the same public browser policy on the private listener.
+	BrowserListSessions(context.Context, *BrowserListSessionsRequest) (*BrowserListSessionsResponse, error)
+	// BrowserRevokeSession applies the same public browser policy on the private listener.
+	BrowserRevokeSession(context.Context, *BrowserRevokeSessionRequest) (*BrowserRevokeSessionResponse, error)
+	// BrowserRequestAccountDeletion applies the same public browser policy on the private listener.
+	BrowserRequestAccountDeletion(context.Context, *BrowserRequestAccountDeletionRequest) (*BrowserRequestAccountDeletionResponse, error)
+	// BrowserCancelAccountDeletion applies the same public browser policy on the private listener.
+	BrowserCancelAccountDeletion(context.Context, *BrowserCancelAccountDeletionRequest) (*BrowserCancelAccountDeletionResponse, error)
 	mustEmbedUnimplementedAuthBrowserServiceServer()
 }
 
@@ -1010,6 +1400,60 @@ func (UnimplementedAuthBrowserServiceServer) BrowserLogout(context.Context, *Bro
 }
 func (UnimplementedAuthBrowserServiceServer) BrowserLogoutAll(context.Context, *BrowserLogoutAllRequest) (*BrowserLogoutAllResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BrowserLogoutAll not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserStartLoginCodeChange(context.Context, *BrowserStartLoginCodeChangeRequest) (*BrowserStartLoginCodeChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserStartLoginCodeChange not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserCompleteLoginCodeChange(context.Context, *BrowserCompleteLoginCodeChangeRequest) (*BrowserCompleteLoginCodeChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserCompleteLoginCodeChange not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserChangePassword(context.Context, *BrowserChangePasswordRequest) (*BrowserChangePasswordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserChangePassword not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserStartLogin(context.Context, *BrowserStartLoginRequest) (*BrowserStartLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserStartLogin not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserCompleteLogin(context.Context, *BrowserCompleteLoginRequest) (*BrowserCompleteLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserCompleteLogin not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserResendLoginCode(context.Context, *BrowserResendLoginCodeRequest) (*BrowserResendLoginCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserResendLoginCode not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserRequestEmailVerification(context.Context, *BrowserRequestEmailVerificationRequest) (*BrowserRequestEmailVerificationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserRequestEmailVerification not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserConfirmEmail(context.Context, *BrowserConfirmEmailRequest) (*BrowserConfirmEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserConfirmEmail not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserRequestPasswordReset(context.Context, *BrowserRequestPasswordResetRequest) (*BrowserRequestPasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserRequestPasswordReset not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserConfirmPasswordReset(context.Context, *BrowserConfirmPasswordResetRequest) (*BrowserConfirmPasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserConfirmPasswordReset not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserGetCredentials(context.Context, *BrowserGetCredentialsRequest) (*BrowserGetCredentialsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserGetCredentials not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserStartEmailChange(context.Context, *BrowserStartEmailChangeRequest) (*BrowserStartEmailChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserStartEmailChange not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserConfirmEmailChange(context.Context, *BrowserConfirmEmailChangeRequest) (*BrowserConfirmEmailChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserConfirmEmailChange not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserCancelEmailChange(context.Context, *BrowserCancelEmailChangeRequest) (*BrowserCancelEmailChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserCancelEmailChange not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserListSessions(context.Context, *BrowserListSessionsRequest) (*BrowserListSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserListSessions not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserRevokeSession(context.Context, *BrowserRevokeSessionRequest) (*BrowserRevokeSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserRevokeSession not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserRequestAccountDeletion(context.Context, *BrowserRequestAccountDeletionRequest) (*BrowserRequestAccountDeletionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserRequestAccountDeletion not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserCancelAccountDeletion(context.Context, *BrowserCancelAccountDeletionRequest) (*BrowserCancelAccountDeletionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserCancelAccountDeletion not implemented")
 }
 func (UnimplementedAuthBrowserServiceServer) mustEmbedUnimplementedAuthBrowserServiceServer() {}
 func (UnimplementedAuthBrowserServiceServer) testEmbeddedByValue()                            {}
@@ -1122,6 +1566,330 @@ func _AuthBrowserService_BrowserLogoutAll_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthBrowserService_BrowserStartLoginCodeChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserStartLoginCodeChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserStartLoginCodeChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserStartLoginCodeChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserStartLoginCodeChange(ctx, req.(*BrowserStartLoginCodeChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserCompleteLoginCodeChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserCompleteLoginCodeChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserCompleteLoginCodeChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserCompleteLoginCodeChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserCompleteLoginCodeChange(ctx, req.(*BrowserCompleteLoginCodeChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserChangePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserChangePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserChangePassword(ctx, req.(*BrowserChangePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserStartLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserStartLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserStartLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserStartLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserStartLogin(ctx, req.(*BrowserStartLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserCompleteLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserCompleteLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserCompleteLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserCompleteLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserCompleteLogin(ctx, req.(*BrowserCompleteLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserResendLoginCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserResendLoginCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserResendLoginCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserResendLoginCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserResendLoginCode(ctx, req.(*BrowserResendLoginCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserRequestEmailVerification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserRequestEmailVerificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserRequestEmailVerification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserRequestEmailVerification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserRequestEmailVerification(ctx, req.(*BrowserRequestEmailVerificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserConfirmEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserConfirmEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserConfirmEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserConfirmEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserConfirmEmail(ctx, req.(*BrowserConfirmEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserRequestPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserRequestPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserRequestPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserRequestPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserRequestPasswordReset(ctx, req.(*BrowserRequestPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserConfirmPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserConfirmPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserConfirmPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserConfirmPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserConfirmPasswordReset(ctx, req.(*BrowserConfirmPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserGetCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserGetCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserGetCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserGetCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserGetCredentials(ctx, req.(*BrowserGetCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserStartEmailChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserStartEmailChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserStartEmailChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserStartEmailChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserStartEmailChange(ctx, req.(*BrowserStartEmailChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserConfirmEmailChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserConfirmEmailChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserConfirmEmailChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserConfirmEmailChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserConfirmEmailChange(ctx, req.(*BrowserConfirmEmailChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserCancelEmailChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserCancelEmailChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserCancelEmailChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserCancelEmailChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserCancelEmailChange(ctx, req.(*BrowserCancelEmailChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserListSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserListSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserListSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserListSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserListSessions(ctx, req.(*BrowserListSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserRevokeSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserRevokeSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserRevokeSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserRevokeSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserRevokeSession(ctx, req.(*BrowserRevokeSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserRequestAccountDeletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserRequestAccountDeletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserRequestAccountDeletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserRequestAccountDeletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserRequestAccountDeletion(ctx, req.(*BrowserRequestAccountDeletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserCancelAccountDeletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserCancelAccountDeletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserCancelAccountDeletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserCancelAccountDeletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserCancelAccountDeletion(ctx, req.(*BrowserCancelAccountDeletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthBrowserService_ServiceDesc is the grpc.ServiceDesc for AuthBrowserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1148,6 +1916,78 @@ var AuthBrowserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BrowserLogoutAll",
 			Handler:    _AuthBrowserService_BrowserLogoutAll_Handler,
+		},
+		{
+			MethodName: "BrowserStartLoginCodeChange",
+			Handler:    _AuthBrowserService_BrowserStartLoginCodeChange_Handler,
+		},
+		{
+			MethodName: "BrowserCompleteLoginCodeChange",
+			Handler:    _AuthBrowserService_BrowserCompleteLoginCodeChange_Handler,
+		},
+		{
+			MethodName: "BrowserChangePassword",
+			Handler:    _AuthBrowserService_BrowserChangePassword_Handler,
+		},
+		{
+			MethodName: "BrowserStartLogin",
+			Handler:    _AuthBrowserService_BrowserStartLogin_Handler,
+		},
+		{
+			MethodName: "BrowserCompleteLogin",
+			Handler:    _AuthBrowserService_BrowserCompleteLogin_Handler,
+		},
+		{
+			MethodName: "BrowserResendLoginCode",
+			Handler:    _AuthBrowserService_BrowserResendLoginCode_Handler,
+		},
+		{
+			MethodName: "BrowserRequestEmailVerification",
+			Handler:    _AuthBrowserService_BrowserRequestEmailVerification_Handler,
+		},
+		{
+			MethodName: "BrowserConfirmEmail",
+			Handler:    _AuthBrowserService_BrowserConfirmEmail_Handler,
+		},
+		{
+			MethodName: "BrowserRequestPasswordReset",
+			Handler:    _AuthBrowserService_BrowserRequestPasswordReset_Handler,
+		},
+		{
+			MethodName: "BrowserConfirmPasswordReset",
+			Handler:    _AuthBrowserService_BrowserConfirmPasswordReset_Handler,
+		},
+		{
+			MethodName: "BrowserGetCredentials",
+			Handler:    _AuthBrowserService_BrowserGetCredentials_Handler,
+		},
+		{
+			MethodName: "BrowserStartEmailChange",
+			Handler:    _AuthBrowserService_BrowserStartEmailChange_Handler,
+		},
+		{
+			MethodName: "BrowserConfirmEmailChange",
+			Handler:    _AuthBrowserService_BrowserConfirmEmailChange_Handler,
+		},
+		{
+			MethodName: "BrowserCancelEmailChange",
+			Handler:    _AuthBrowserService_BrowserCancelEmailChange_Handler,
+		},
+		{
+			MethodName: "BrowserListSessions",
+			Handler:    _AuthBrowserService_BrowserListSessions_Handler,
+		},
+		{
+			MethodName: "BrowserRevokeSession",
+			Handler:    _AuthBrowserService_BrowserRevokeSession_Handler,
+		},
+		{
+			MethodName: "BrowserRequestAccountDeletion",
+			Handler:    _AuthBrowserService_BrowserRequestAccountDeletion_Handler,
+		},
+		{
+			MethodName: "BrowserCancelAccountDeletion",
+			Handler:    _AuthBrowserService_BrowserCancelAccountDeletion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

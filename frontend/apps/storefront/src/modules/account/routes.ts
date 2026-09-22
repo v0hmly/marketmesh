@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 import AuthView from './views/AuthView.vue';
+import SecurityView from './views/SecurityView.vue';
+import SecurityLinkView from './views/SecurityLinkView.vue';
 import SettingsView from './views/SettingsView.vue';
 import AddressesView from './views/AddressesView.vue';
 import OrdersView from './views/OrdersView.vue';
@@ -18,6 +20,13 @@ import {
 
 /** Маршруты области покупателя; композицию выполняет shell/router. */
 export const accountRoutes: RouteRecordRaw[] = [
+  { path: '/account/security', name: 'security', component: SecurityView, meta: { area: 'buyer' } },
+  {
+    path: '/account/security/:action(verify|reset|change_email|cancel_email)',
+    name: 'security-link',
+    component: SecurityLinkView,
+    meta: { area: 'buyer' },
+  },
   {
     path: '/login',
     name: 'login',

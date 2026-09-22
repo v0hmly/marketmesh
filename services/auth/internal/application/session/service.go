@@ -60,23 +60,46 @@ func (service *Service) Start(ctx context.Context, subject credential.SubjectID)
 	if ctx == nil || subject == (credential.SubjectID{}) {
 		return Tokens{}, domain.ErrInvalidSession
 	}
+	tokens, err := service.Prepare(subject)
+	if err != nil {
+		return Tokens{}, err
+	}
+	if err := service.store.Create(ctx, tokens.Record, tokens.Refresh.Digest()); err != nil {
+		return Tokens{}, safeError(err)
+	}
+	return service.Activate(ctx, tokens)
+}
+
+// Prepare mints a session without persisting or exposing it. An Auth security
+// transaction can insert this record atomically with consuming a login challenge.
+func (service *Service) Prepare(subject credential.SubjectID) (Tokens, error) {
+	if subject == (credential.SubjectID{}) {
+		return Tokens{}, domain.ErrInvalidSession
+	}
 	var id domain.ID
 	if _, err := io.ReadFull(service.config.Random, id[:]); err != nil || id == (domain.ID{}) {
 		return Tokens{}, domain.ErrUnavailable
 	}
 	now := service.now()
 	record := domain.Record{ID: id, SubjectID: subject, Version: 1, CreatedAt: now, AccessExpiresAt: now.Add(service.config.AccessTTL), RefreshExpiresAt: now.Add(service.config.IdleTTL), ExpiresAt: now.Add(service.config.AbsoluteTTL)}
-	tokens, err := service.mint(record)
-	if err != nil {
-		return Tokens{}, err
+	return service.mint(record)
+}
+
+// Activate publishes access state only after the canonical session commit.
+// Tokens must stay inside trusted Auth until this returns successfully.
+func (service *Service) Activate(ctx context.Context, tokens Tokens) (Tokens, error) {
+	record, err := service.store.Find(ctx, tokens.Record.ID)
+	prepared := tokens.Record
+	if err != nil || record.ID != prepared.ID || record.SubjectID != prepared.SubjectID || record.Version != prepared.Version ||
+		!record.CreatedAt.Equal(prepared.CreatedAt) || !record.AccessExpiresAt.Equal(prepared.AccessExpiresAt) ||
+		!record.RefreshExpiresAt.Equal(prepared.RefreshExpiresAt) || !record.ExpiresAt.Equal(prepared.ExpiresAt) ||
+		!record.Active(service.now()) {
+		return Tokens{}, domain.ErrInvalidSession
 	}
-	if err := service.store.Create(ctx, record, tokens.Refresh.Digest()); err != nil {
-		return Tokens{}, safeError(err)
-	}
-	if err := service.access.Put(ctx, record, tokens.Access.Digest(), now); err != nil {
+	if err := service.access.Put(ctx, record, tokens.Access.Digest(), service.now()); err != nil {
 		// Creation without an acknowledged access write never exposes credentials.
 		// Even if cleanup fails, absent Redis state remains fail-closed.
-		_ = service.store.Revoke(ctx, id, service.now(), "issuance_failed")
+		_ = service.store.Revoke(ctx, record.ID, service.now(), "issuance_failed")
 		return Tokens{}, domain.ErrUnavailable
 	}
 	return tokens, nil

@@ -47,6 +47,15 @@ const (
 	AuthServiceLogoutProcedure = "/auth.v1.AuthService/Logout"
 	// AuthServiceLogoutAllProcedure is the fully-qualified name of the AuthService's LogoutAll RPC.
 	AuthServiceLogoutAllProcedure = "/auth.v1.AuthService/LogoutAll"
+	// AuthServiceStartLoginCodeChangeProcedure is the fully-qualified name of the AuthService's
+	// StartLoginCodeChange RPC.
+	AuthServiceStartLoginCodeChangeProcedure = "/auth.v1.AuthService/StartLoginCodeChange"
+	// AuthServiceCompleteLoginCodeChangeProcedure is the fully-qualified name of the AuthService's
+	// CompleteLoginCodeChange RPC.
+	AuthServiceCompleteLoginCodeChangeProcedure = "/auth.v1.AuthService/CompleteLoginCodeChange"
+	// AuthServiceChangePasswordProcedure is the fully-qualified name of the AuthService's
+	// ChangePassword RPC.
+	AuthServiceChangePasswordProcedure = "/auth.v1.AuthService/ChangePassword"
 	// AuthServiceStartLoginProcedure is the fully-qualified name of the AuthService's StartLogin RPC.
 	AuthServiceStartLoginProcedure = "/auth.v1.AuthService/StartLogin"
 	// AuthServiceCompleteLoginProcedure is the fully-qualified name of the AuthService's CompleteLogin
@@ -106,6 +115,60 @@ const (
 	// AuthBrowserServiceBrowserLogoutAllProcedure is the fully-qualified name of the
 	// AuthBrowserService's BrowserLogoutAll RPC.
 	AuthBrowserServiceBrowserLogoutAllProcedure = "/auth.v1.AuthBrowserService/BrowserLogoutAll"
+	// AuthBrowserServiceBrowserStartLoginCodeChangeProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserStartLoginCodeChange RPC.
+	AuthBrowserServiceBrowserStartLoginCodeChangeProcedure = "/auth.v1.AuthBrowserService/BrowserStartLoginCodeChange"
+	// AuthBrowserServiceBrowserCompleteLoginCodeChangeProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserCompleteLoginCodeChange RPC.
+	AuthBrowserServiceBrowserCompleteLoginCodeChangeProcedure = "/auth.v1.AuthBrowserService/BrowserCompleteLoginCodeChange"
+	// AuthBrowserServiceBrowserChangePasswordProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserChangePassword RPC.
+	AuthBrowserServiceBrowserChangePasswordProcedure = "/auth.v1.AuthBrowserService/BrowserChangePassword"
+	// AuthBrowserServiceBrowserStartLoginProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserStartLogin RPC.
+	AuthBrowserServiceBrowserStartLoginProcedure = "/auth.v1.AuthBrowserService/BrowserStartLogin"
+	// AuthBrowserServiceBrowserCompleteLoginProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserCompleteLogin RPC.
+	AuthBrowserServiceBrowserCompleteLoginProcedure = "/auth.v1.AuthBrowserService/BrowserCompleteLogin"
+	// AuthBrowserServiceBrowserResendLoginCodeProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserResendLoginCode RPC.
+	AuthBrowserServiceBrowserResendLoginCodeProcedure = "/auth.v1.AuthBrowserService/BrowserResendLoginCode"
+	// AuthBrowserServiceBrowserRequestEmailVerificationProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserRequestEmailVerification RPC.
+	AuthBrowserServiceBrowserRequestEmailVerificationProcedure = "/auth.v1.AuthBrowserService/BrowserRequestEmailVerification"
+	// AuthBrowserServiceBrowserConfirmEmailProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserConfirmEmail RPC.
+	AuthBrowserServiceBrowserConfirmEmailProcedure = "/auth.v1.AuthBrowserService/BrowserConfirmEmail"
+	// AuthBrowserServiceBrowserRequestPasswordResetProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserRequestPasswordReset RPC.
+	AuthBrowserServiceBrowserRequestPasswordResetProcedure = "/auth.v1.AuthBrowserService/BrowserRequestPasswordReset"
+	// AuthBrowserServiceBrowserConfirmPasswordResetProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserConfirmPasswordReset RPC.
+	AuthBrowserServiceBrowserConfirmPasswordResetProcedure = "/auth.v1.AuthBrowserService/BrowserConfirmPasswordReset"
+	// AuthBrowserServiceBrowserGetCredentialsProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserGetCredentials RPC.
+	AuthBrowserServiceBrowserGetCredentialsProcedure = "/auth.v1.AuthBrowserService/BrowserGetCredentials"
+	// AuthBrowserServiceBrowserStartEmailChangeProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserStartEmailChange RPC.
+	AuthBrowserServiceBrowserStartEmailChangeProcedure = "/auth.v1.AuthBrowserService/BrowserStartEmailChange"
+	// AuthBrowserServiceBrowserConfirmEmailChangeProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserConfirmEmailChange RPC.
+	AuthBrowserServiceBrowserConfirmEmailChangeProcedure = "/auth.v1.AuthBrowserService/BrowserConfirmEmailChange"
+	// AuthBrowserServiceBrowserCancelEmailChangeProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserCancelEmailChange RPC.
+	AuthBrowserServiceBrowserCancelEmailChangeProcedure = "/auth.v1.AuthBrowserService/BrowserCancelEmailChange"
+	// AuthBrowserServiceBrowserListSessionsProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserListSessions RPC.
+	AuthBrowserServiceBrowserListSessionsProcedure = "/auth.v1.AuthBrowserService/BrowserListSessions"
+	// AuthBrowserServiceBrowserRevokeSessionProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserRevokeSession RPC.
+	AuthBrowserServiceBrowserRevokeSessionProcedure = "/auth.v1.AuthBrowserService/BrowserRevokeSession"
+	// AuthBrowserServiceBrowserRequestAccountDeletionProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserRequestAccountDeletion RPC.
+	AuthBrowserServiceBrowserRequestAccountDeletionProcedure = "/auth.v1.AuthBrowserService/BrowserRequestAccountDeletion"
+	// AuthBrowserServiceBrowserCancelAccountDeletionProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserCancelAccountDeletion RPC.
+	AuthBrowserServiceBrowserCancelAccountDeletionProcedure = "/auth.v1.AuthBrowserService/BrowserCancelAccountDeletion"
 )
 
 // AuthServiceClient is a client for the auth.v1.AuthService service.
@@ -120,7 +183,13 @@ type AuthServiceClient interface {
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	// LogoutAll revokes every session of the authenticated subject.
 	LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error)
-	// StartLogin verifies the password and, on success, emails a one-time login code.
+	// StartLoginCodeChange manages the authenticated caller's account security.
+	StartLoginCodeChange(context.Context, *connect.Request[v1.StartLoginCodeChangeRequest]) (*connect.Response[v1.StartLoginCodeChangeResponse], error)
+	// CompleteLoginCodeChange manages the authenticated caller's account security.
+	CompleteLoginCodeChange(context.Context, *connect.Request[v1.CompleteLoginCodeChangeRequest]) (*connect.Response[v1.CompleteLoginCodeChangeResponse], error)
+	// ChangePassword manages the authenticated caller's account security.
+	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
+	// StartLogin verifies the password and either creates a session or emails a required login code.
 	StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
@@ -191,6 +260,24 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			httpClient,
 			baseURL+AuthServiceLogoutAllProcedure,
 			connect.WithSchema(authServiceMethods.ByName("LogoutAll")),
+			connect.WithClientOptions(opts...),
+		),
+		startLoginCodeChange: connect.NewClient[v1.StartLoginCodeChangeRequest, v1.StartLoginCodeChangeResponse](
+			httpClient,
+			baseURL+AuthServiceStartLoginCodeChangeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("StartLoginCodeChange")),
+			connect.WithClientOptions(opts...),
+		),
+		completeLoginCodeChange: connect.NewClient[v1.CompleteLoginCodeChangeRequest, v1.CompleteLoginCodeChangeResponse](
+			httpClient,
+			baseURL+AuthServiceCompleteLoginCodeChangeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CompleteLoginCodeChange")),
+			connect.WithClientOptions(opts...),
+		),
+		changePassword: connect.NewClient[v1.ChangePasswordRequest, v1.ChangePasswordResponse](
+			httpClient,
+			baseURL+AuthServiceChangePasswordProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ChangePassword")),
 			connect.WithClientOptions(opts...),
 		),
 		startLogin: connect.NewClient[v1.StartLoginRequest, v1.StartLoginResponse](
@@ -293,6 +380,9 @@ type authServiceClient struct {
 	refreshSession           *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
 	logout                   *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
 	logoutAll                *connect.Client[v1.LogoutAllRequest, v1.LogoutAllResponse]
+	startLoginCodeChange     *connect.Client[v1.StartLoginCodeChangeRequest, v1.StartLoginCodeChangeResponse]
+	completeLoginCodeChange  *connect.Client[v1.CompleteLoginCodeChangeRequest, v1.CompleteLoginCodeChangeResponse]
+	changePassword           *connect.Client[v1.ChangePasswordRequest, v1.ChangePasswordResponse]
 	startLogin               *connect.Client[v1.StartLoginRequest, v1.StartLoginResponse]
 	completeLogin            *connect.Client[v1.CompleteLoginRequest, v1.CompleteLoginResponse]
 	resendLoginCode          *connect.Client[v1.ResendLoginCodeRequest, v1.ResendLoginCodeResponse]
@@ -333,6 +423,21 @@ func (c *authServiceClient) Logout(ctx context.Context, req *connect.Request[v1.
 // LogoutAll calls auth.v1.AuthService.LogoutAll.
 func (c *authServiceClient) LogoutAll(ctx context.Context, req *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error) {
 	return c.logoutAll.CallUnary(ctx, req)
+}
+
+// StartLoginCodeChange calls auth.v1.AuthService.StartLoginCodeChange.
+func (c *authServiceClient) StartLoginCodeChange(ctx context.Context, req *connect.Request[v1.StartLoginCodeChangeRequest]) (*connect.Response[v1.StartLoginCodeChangeResponse], error) {
+	return c.startLoginCodeChange.CallUnary(ctx, req)
+}
+
+// CompleteLoginCodeChange calls auth.v1.AuthService.CompleteLoginCodeChange.
+func (c *authServiceClient) CompleteLoginCodeChange(ctx context.Context, req *connect.Request[v1.CompleteLoginCodeChangeRequest]) (*connect.Response[v1.CompleteLoginCodeChangeResponse], error) {
+	return c.completeLoginCodeChange.CallUnary(ctx, req)
+}
+
+// ChangePassword calls auth.v1.AuthService.ChangePassword.
+func (c *authServiceClient) ChangePassword(ctx context.Context, req *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error) {
+	return c.changePassword.CallUnary(ctx, req)
 }
 
 // StartLogin calls auth.v1.AuthService.StartLogin.
@@ -422,7 +527,13 @@ type AuthServiceHandler interface {
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	// LogoutAll revokes every session of the authenticated subject.
 	LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error)
-	// StartLogin verifies the password and, on success, emails a one-time login code.
+	// StartLoginCodeChange manages the authenticated caller's account security.
+	StartLoginCodeChange(context.Context, *connect.Request[v1.StartLoginCodeChangeRequest]) (*connect.Response[v1.StartLoginCodeChangeResponse], error)
+	// CompleteLoginCodeChange manages the authenticated caller's account security.
+	CompleteLoginCodeChange(context.Context, *connect.Request[v1.CompleteLoginCodeChangeRequest]) (*connect.Response[v1.CompleteLoginCodeChangeResponse], error)
+	// ChangePassword manages the authenticated caller's account security.
+	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
+	// StartLogin verifies the password and either creates a session or emails a required login code.
 	StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error)
 	// CompleteLogin verifies the emailed code and establishes the session.
 	CompleteLogin(context.Context, *connect.Request[v1.CompleteLoginRequest]) (*connect.Response[v1.CompleteLoginResponse], error)
@@ -489,6 +600,24 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		AuthServiceLogoutAllProcedure,
 		svc.LogoutAll,
 		connect.WithSchema(authServiceMethods.ByName("LogoutAll")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceStartLoginCodeChangeHandler := connect.NewUnaryHandler(
+		AuthServiceStartLoginCodeChangeProcedure,
+		svc.StartLoginCodeChange,
+		connect.WithSchema(authServiceMethods.ByName("StartLoginCodeChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceCompleteLoginCodeChangeHandler := connect.NewUnaryHandler(
+		AuthServiceCompleteLoginCodeChangeProcedure,
+		svc.CompleteLoginCodeChange,
+		connect.WithSchema(authServiceMethods.ByName("CompleteLoginCodeChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceChangePasswordHandler := connect.NewUnaryHandler(
+		AuthServiceChangePasswordProcedure,
+		svc.ChangePassword,
+		connect.WithSchema(authServiceMethods.ByName("ChangePassword")),
 		connect.WithHandlerOptions(opts...),
 	)
 	authServiceStartLoginHandler := connect.NewUnaryHandler(
@@ -593,6 +722,12 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceLogoutHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutAllProcedure:
 			authServiceLogoutAllHandler.ServeHTTP(w, r)
+		case AuthServiceStartLoginCodeChangeProcedure:
+			authServiceStartLoginCodeChangeHandler.ServeHTTP(w, r)
+		case AuthServiceCompleteLoginCodeChangeProcedure:
+			authServiceCompleteLoginCodeChangeHandler.ServeHTTP(w, r)
+		case AuthServiceChangePasswordProcedure:
+			authServiceChangePasswordHandler.ServeHTTP(w, r)
 		case AuthServiceStartLoginProcedure:
 			authServiceStartLoginHandler.ServeHTTP(w, r)
 		case AuthServiceCompleteLoginProcedure:
@@ -650,6 +785,18 @@ func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[
 
 func (UnimplementedAuthServiceHandler) LogoutAll(context.Context, *connect.Request[v1.LogoutAllRequest]) (*connect.Response[v1.LogoutAllResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.LogoutAll is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) StartLoginCodeChange(context.Context, *connect.Request[v1.StartLoginCodeChangeRequest]) (*connect.Response[v1.StartLoginCodeChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.StartLoginCodeChange is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) CompleteLoginCodeChange(context.Context, *connect.Request[v1.CompleteLoginCodeChangeRequest]) (*connect.Response[v1.CompleteLoginCodeChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.CompleteLoginCodeChange is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.ChangePassword is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) StartLogin(context.Context, *connect.Request[v1.StartLoginRequest]) (*connect.Response[v1.StartLoginResponse], error) {
@@ -724,6 +871,42 @@ type AuthBrowserServiceClient interface {
 	BrowserLogout(context.Context, *connect.Request[v1.BrowserLogoutRequest]) (*connect.Response[v1.BrowserLogoutResponse], error)
 	// LogoutAll delegates to the same public Auth handler and browser security policy.
 	BrowserLogoutAll(context.Context, *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error)
+	// BrowserStartLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserStartLoginCodeChange(context.Context, *connect.Request[v1.BrowserStartLoginCodeChangeRequest]) (*connect.Response[v1.BrowserStartLoginCodeChangeResponse], error)
+	// BrowserCompleteLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserCompleteLoginCodeChange(context.Context, *connect.Request[v1.BrowserCompleteLoginCodeChangeRequest]) (*connect.Response[v1.BrowserCompleteLoginCodeChangeResponse], error)
+	// BrowserChangePassword applies the same public browser policy on the private listener.
+	BrowserChangePassword(context.Context, *connect.Request[v1.BrowserChangePasswordRequest]) (*connect.Response[v1.BrowserChangePasswordResponse], error)
+	// BrowserStartLogin applies the same public browser policy on the private listener.
+	BrowserStartLogin(context.Context, *connect.Request[v1.BrowserStartLoginRequest]) (*connect.Response[v1.BrowserStartLoginResponse], error)
+	// BrowserCompleteLogin applies the same public browser policy on the private listener.
+	BrowserCompleteLogin(context.Context, *connect.Request[v1.BrowserCompleteLoginRequest]) (*connect.Response[v1.BrowserCompleteLoginResponse], error)
+	// BrowserResendLoginCode applies the same public browser policy on the private listener.
+	BrowserResendLoginCode(context.Context, *connect.Request[v1.BrowserResendLoginCodeRequest]) (*connect.Response[v1.BrowserResendLoginCodeResponse], error)
+	// BrowserRequestEmailVerification applies the same public browser policy on the private listener.
+	BrowserRequestEmailVerification(context.Context, *connect.Request[v1.BrowserRequestEmailVerificationRequest]) (*connect.Response[v1.BrowserRequestEmailVerificationResponse], error)
+	// BrowserConfirmEmail applies the same public browser policy on the private listener.
+	BrowserConfirmEmail(context.Context, *connect.Request[v1.BrowserConfirmEmailRequest]) (*connect.Response[v1.BrowserConfirmEmailResponse], error)
+	// BrowserRequestPasswordReset applies the same public browser policy on the private listener.
+	BrowserRequestPasswordReset(context.Context, *connect.Request[v1.BrowserRequestPasswordResetRequest]) (*connect.Response[v1.BrowserRequestPasswordResetResponse], error)
+	// BrowserConfirmPasswordReset applies the same public browser policy on the private listener.
+	BrowserConfirmPasswordReset(context.Context, *connect.Request[v1.BrowserConfirmPasswordResetRequest]) (*connect.Response[v1.BrowserConfirmPasswordResetResponse], error)
+	// BrowserGetCredentials applies the same public browser policy on the private listener.
+	BrowserGetCredentials(context.Context, *connect.Request[v1.BrowserGetCredentialsRequest]) (*connect.Response[v1.BrowserGetCredentialsResponse], error)
+	// BrowserStartEmailChange applies the same public browser policy on the private listener.
+	BrowserStartEmailChange(context.Context, *connect.Request[v1.BrowserStartEmailChangeRequest]) (*connect.Response[v1.BrowserStartEmailChangeResponse], error)
+	// BrowserConfirmEmailChange applies the same public browser policy on the private listener.
+	BrowserConfirmEmailChange(context.Context, *connect.Request[v1.BrowserConfirmEmailChangeRequest]) (*connect.Response[v1.BrowserConfirmEmailChangeResponse], error)
+	// BrowserCancelEmailChange applies the same public browser policy on the private listener.
+	BrowserCancelEmailChange(context.Context, *connect.Request[v1.BrowserCancelEmailChangeRequest]) (*connect.Response[v1.BrowserCancelEmailChangeResponse], error)
+	// BrowserListSessions applies the same public browser policy on the private listener.
+	BrowserListSessions(context.Context, *connect.Request[v1.BrowserListSessionsRequest]) (*connect.Response[v1.BrowserListSessionsResponse], error)
+	// BrowserRevokeSession applies the same public browser policy on the private listener.
+	BrowserRevokeSession(context.Context, *connect.Request[v1.BrowserRevokeSessionRequest]) (*connect.Response[v1.BrowserRevokeSessionResponse], error)
+	// BrowserRequestAccountDeletion applies the same public browser policy on the private listener.
+	BrowserRequestAccountDeletion(context.Context, *connect.Request[v1.BrowserRequestAccountDeletionRequest]) (*connect.Response[v1.BrowserRequestAccountDeletionResponse], error)
+	// BrowserCancelAccountDeletion applies the same public browser policy on the private listener.
+	BrowserCancelAccountDeletion(context.Context, *connect.Request[v1.BrowserCancelAccountDeletionRequest]) (*connect.Response[v1.BrowserCancelAccountDeletionResponse], error)
 }
 
 // NewAuthBrowserServiceClient constructs a client for the auth.v1.AuthBrowserService service. By
@@ -767,16 +950,142 @@ func NewAuthBrowserServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogoutAll")),
 			connect.WithClientOptions(opts...),
 		),
+		browserStartLoginCodeChange: connect.NewClient[v1.BrowserStartLoginCodeChangeRequest, v1.BrowserStartLoginCodeChangeResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserStartLoginCodeChangeProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartLoginCodeChange")),
+			connect.WithClientOptions(opts...),
+		),
+		browserCompleteLoginCodeChange: connect.NewClient[v1.BrowserCompleteLoginCodeChangeRequest, v1.BrowserCompleteLoginCodeChangeResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserCompleteLoginCodeChangeProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCompleteLoginCodeChange")),
+			connect.WithClientOptions(opts...),
+		),
+		browserChangePassword: connect.NewClient[v1.BrowserChangePasswordRequest, v1.BrowserChangePasswordResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserChangePasswordProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserChangePassword")),
+			connect.WithClientOptions(opts...),
+		),
+		browserStartLogin: connect.NewClient[v1.BrowserStartLoginRequest, v1.BrowserStartLoginResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserStartLoginProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		browserCompleteLogin: connect.NewClient[v1.BrowserCompleteLoginRequest, v1.BrowserCompleteLoginResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserCompleteLoginProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCompleteLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		browserResendLoginCode: connect.NewClient[v1.BrowserResendLoginCodeRequest, v1.BrowserResendLoginCodeResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserResendLoginCodeProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserResendLoginCode")),
+			connect.WithClientOptions(opts...),
+		),
+		browserRequestEmailVerification: connect.NewClient[v1.BrowserRequestEmailVerificationRequest, v1.BrowserRequestEmailVerificationResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserRequestEmailVerificationProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRequestEmailVerification")),
+			connect.WithClientOptions(opts...),
+		),
+		browserConfirmEmail: connect.NewClient[v1.BrowserConfirmEmailRequest, v1.BrowserConfirmEmailResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserConfirmEmailProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserConfirmEmail")),
+			connect.WithClientOptions(opts...),
+		),
+		browserRequestPasswordReset: connect.NewClient[v1.BrowserRequestPasswordResetRequest, v1.BrowserRequestPasswordResetResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserRequestPasswordResetProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRequestPasswordReset")),
+			connect.WithClientOptions(opts...),
+		),
+		browserConfirmPasswordReset: connect.NewClient[v1.BrowserConfirmPasswordResetRequest, v1.BrowserConfirmPasswordResetResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserConfirmPasswordResetProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserConfirmPasswordReset")),
+			connect.WithClientOptions(opts...),
+		),
+		browserGetCredentials: connect.NewClient[v1.BrowserGetCredentialsRequest, v1.BrowserGetCredentialsResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserGetCredentialsProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserGetCredentials")),
+			connect.WithClientOptions(opts...),
+		),
+		browserStartEmailChange: connect.NewClient[v1.BrowserStartEmailChangeRequest, v1.BrowserStartEmailChangeResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserStartEmailChangeProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartEmailChange")),
+			connect.WithClientOptions(opts...),
+		),
+		browserConfirmEmailChange: connect.NewClient[v1.BrowserConfirmEmailChangeRequest, v1.BrowserConfirmEmailChangeResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserConfirmEmailChangeProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserConfirmEmailChange")),
+			connect.WithClientOptions(opts...),
+		),
+		browserCancelEmailChange: connect.NewClient[v1.BrowserCancelEmailChangeRequest, v1.BrowserCancelEmailChangeResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserCancelEmailChangeProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCancelEmailChange")),
+			connect.WithClientOptions(opts...),
+		),
+		browserListSessions: connect.NewClient[v1.BrowserListSessionsRequest, v1.BrowserListSessionsResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserListSessionsProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserListSessions")),
+			connect.WithClientOptions(opts...),
+		),
+		browserRevokeSession: connect.NewClient[v1.BrowserRevokeSessionRequest, v1.BrowserRevokeSessionResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserRevokeSessionProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRevokeSession")),
+			connect.WithClientOptions(opts...),
+		),
+		browserRequestAccountDeletion: connect.NewClient[v1.BrowserRequestAccountDeletionRequest, v1.BrowserRequestAccountDeletionResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserRequestAccountDeletionProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRequestAccountDeletion")),
+			connect.WithClientOptions(opts...),
+		),
+		browserCancelAccountDeletion: connect.NewClient[v1.BrowserCancelAccountDeletionRequest, v1.BrowserCancelAccountDeletionResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserCancelAccountDeletionProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCancelAccountDeletion")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // authBrowserServiceClient implements AuthBrowserServiceClient.
 type authBrowserServiceClient struct {
-	browserRegisterCredentials *connect.Client[v1.BrowserRegisterCredentialsRequest, v1.BrowserRegisterCredentialsResponse]
-	browserLogin               *connect.Client[v1.BrowserLoginRequest, v1.BrowserLoginResponse]
-	browserRefreshSession      *connect.Client[v1.BrowserRefreshSessionRequest, v1.BrowserRefreshSessionResponse]
-	browserLogout              *connect.Client[v1.BrowserLogoutRequest, v1.BrowserLogoutResponse]
-	browserLogoutAll           *connect.Client[v1.BrowserLogoutAllRequest, v1.BrowserLogoutAllResponse]
+	browserRegisterCredentials      *connect.Client[v1.BrowserRegisterCredentialsRequest, v1.BrowserRegisterCredentialsResponse]
+	browserLogin                    *connect.Client[v1.BrowserLoginRequest, v1.BrowserLoginResponse]
+	browserRefreshSession           *connect.Client[v1.BrowserRefreshSessionRequest, v1.BrowserRefreshSessionResponse]
+	browserLogout                   *connect.Client[v1.BrowserLogoutRequest, v1.BrowserLogoutResponse]
+	browserLogoutAll                *connect.Client[v1.BrowserLogoutAllRequest, v1.BrowserLogoutAllResponse]
+	browserStartLoginCodeChange     *connect.Client[v1.BrowserStartLoginCodeChangeRequest, v1.BrowserStartLoginCodeChangeResponse]
+	browserCompleteLoginCodeChange  *connect.Client[v1.BrowserCompleteLoginCodeChangeRequest, v1.BrowserCompleteLoginCodeChangeResponse]
+	browserChangePassword           *connect.Client[v1.BrowserChangePasswordRequest, v1.BrowserChangePasswordResponse]
+	browserStartLogin               *connect.Client[v1.BrowserStartLoginRequest, v1.BrowserStartLoginResponse]
+	browserCompleteLogin            *connect.Client[v1.BrowserCompleteLoginRequest, v1.BrowserCompleteLoginResponse]
+	browserResendLoginCode          *connect.Client[v1.BrowserResendLoginCodeRequest, v1.BrowserResendLoginCodeResponse]
+	browserRequestEmailVerification *connect.Client[v1.BrowserRequestEmailVerificationRequest, v1.BrowserRequestEmailVerificationResponse]
+	browserConfirmEmail             *connect.Client[v1.BrowserConfirmEmailRequest, v1.BrowserConfirmEmailResponse]
+	browserRequestPasswordReset     *connect.Client[v1.BrowserRequestPasswordResetRequest, v1.BrowserRequestPasswordResetResponse]
+	browserConfirmPasswordReset     *connect.Client[v1.BrowserConfirmPasswordResetRequest, v1.BrowserConfirmPasswordResetResponse]
+	browserGetCredentials           *connect.Client[v1.BrowserGetCredentialsRequest, v1.BrowserGetCredentialsResponse]
+	browserStartEmailChange         *connect.Client[v1.BrowserStartEmailChangeRequest, v1.BrowserStartEmailChangeResponse]
+	browserConfirmEmailChange       *connect.Client[v1.BrowserConfirmEmailChangeRequest, v1.BrowserConfirmEmailChangeResponse]
+	browserCancelEmailChange        *connect.Client[v1.BrowserCancelEmailChangeRequest, v1.BrowserCancelEmailChangeResponse]
+	browserListSessions             *connect.Client[v1.BrowserListSessionsRequest, v1.BrowserListSessionsResponse]
+	browserRevokeSession            *connect.Client[v1.BrowserRevokeSessionRequest, v1.BrowserRevokeSessionResponse]
+	browserRequestAccountDeletion   *connect.Client[v1.BrowserRequestAccountDeletionRequest, v1.BrowserRequestAccountDeletionResponse]
+	browserCancelAccountDeletion    *connect.Client[v1.BrowserCancelAccountDeletionRequest, v1.BrowserCancelAccountDeletionResponse]
 }
 
 // BrowserRegisterCredentials calls auth.v1.AuthBrowserService.BrowserRegisterCredentials.
@@ -804,6 +1113,96 @@ func (c *authBrowserServiceClient) BrowserLogoutAll(ctx context.Context, req *co
 	return c.browserLogoutAll.CallUnary(ctx, req)
 }
 
+// BrowserStartLoginCodeChange calls auth.v1.AuthBrowserService.BrowserStartLoginCodeChange.
+func (c *authBrowserServiceClient) BrowserStartLoginCodeChange(ctx context.Context, req *connect.Request[v1.BrowserStartLoginCodeChangeRequest]) (*connect.Response[v1.BrowserStartLoginCodeChangeResponse], error) {
+	return c.browserStartLoginCodeChange.CallUnary(ctx, req)
+}
+
+// BrowserCompleteLoginCodeChange calls auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange.
+func (c *authBrowserServiceClient) BrowserCompleteLoginCodeChange(ctx context.Context, req *connect.Request[v1.BrowserCompleteLoginCodeChangeRequest]) (*connect.Response[v1.BrowserCompleteLoginCodeChangeResponse], error) {
+	return c.browserCompleteLoginCodeChange.CallUnary(ctx, req)
+}
+
+// BrowserChangePassword calls auth.v1.AuthBrowserService.BrowserChangePassword.
+func (c *authBrowserServiceClient) BrowserChangePassword(ctx context.Context, req *connect.Request[v1.BrowserChangePasswordRequest]) (*connect.Response[v1.BrowserChangePasswordResponse], error) {
+	return c.browserChangePassword.CallUnary(ctx, req)
+}
+
+// BrowserStartLogin calls auth.v1.AuthBrowserService.BrowserStartLogin.
+func (c *authBrowserServiceClient) BrowserStartLogin(ctx context.Context, req *connect.Request[v1.BrowserStartLoginRequest]) (*connect.Response[v1.BrowserStartLoginResponse], error) {
+	return c.browserStartLogin.CallUnary(ctx, req)
+}
+
+// BrowserCompleteLogin calls auth.v1.AuthBrowserService.BrowserCompleteLogin.
+func (c *authBrowserServiceClient) BrowserCompleteLogin(ctx context.Context, req *connect.Request[v1.BrowserCompleteLoginRequest]) (*connect.Response[v1.BrowserCompleteLoginResponse], error) {
+	return c.browserCompleteLogin.CallUnary(ctx, req)
+}
+
+// BrowserResendLoginCode calls auth.v1.AuthBrowserService.BrowserResendLoginCode.
+func (c *authBrowserServiceClient) BrowserResendLoginCode(ctx context.Context, req *connect.Request[v1.BrowserResendLoginCodeRequest]) (*connect.Response[v1.BrowserResendLoginCodeResponse], error) {
+	return c.browserResendLoginCode.CallUnary(ctx, req)
+}
+
+// BrowserRequestEmailVerification calls auth.v1.AuthBrowserService.BrowserRequestEmailVerification.
+func (c *authBrowserServiceClient) BrowserRequestEmailVerification(ctx context.Context, req *connect.Request[v1.BrowserRequestEmailVerificationRequest]) (*connect.Response[v1.BrowserRequestEmailVerificationResponse], error) {
+	return c.browserRequestEmailVerification.CallUnary(ctx, req)
+}
+
+// BrowserConfirmEmail calls auth.v1.AuthBrowserService.BrowserConfirmEmail.
+func (c *authBrowserServiceClient) BrowserConfirmEmail(ctx context.Context, req *connect.Request[v1.BrowserConfirmEmailRequest]) (*connect.Response[v1.BrowserConfirmEmailResponse], error) {
+	return c.browserConfirmEmail.CallUnary(ctx, req)
+}
+
+// BrowserRequestPasswordReset calls auth.v1.AuthBrowserService.BrowserRequestPasswordReset.
+func (c *authBrowserServiceClient) BrowserRequestPasswordReset(ctx context.Context, req *connect.Request[v1.BrowserRequestPasswordResetRequest]) (*connect.Response[v1.BrowserRequestPasswordResetResponse], error) {
+	return c.browserRequestPasswordReset.CallUnary(ctx, req)
+}
+
+// BrowserConfirmPasswordReset calls auth.v1.AuthBrowserService.BrowserConfirmPasswordReset.
+func (c *authBrowserServiceClient) BrowserConfirmPasswordReset(ctx context.Context, req *connect.Request[v1.BrowserConfirmPasswordResetRequest]) (*connect.Response[v1.BrowserConfirmPasswordResetResponse], error) {
+	return c.browserConfirmPasswordReset.CallUnary(ctx, req)
+}
+
+// BrowserGetCredentials calls auth.v1.AuthBrowserService.BrowserGetCredentials.
+func (c *authBrowserServiceClient) BrowserGetCredentials(ctx context.Context, req *connect.Request[v1.BrowserGetCredentialsRequest]) (*connect.Response[v1.BrowserGetCredentialsResponse], error) {
+	return c.browserGetCredentials.CallUnary(ctx, req)
+}
+
+// BrowserStartEmailChange calls auth.v1.AuthBrowserService.BrowserStartEmailChange.
+func (c *authBrowserServiceClient) BrowserStartEmailChange(ctx context.Context, req *connect.Request[v1.BrowserStartEmailChangeRequest]) (*connect.Response[v1.BrowserStartEmailChangeResponse], error) {
+	return c.browserStartEmailChange.CallUnary(ctx, req)
+}
+
+// BrowserConfirmEmailChange calls auth.v1.AuthBrowserService.BrowserConfirmEmailChange.
+func (c *authBrowserServiceClient) BrowserConfirmEmailChange(ctx context.Context, req *connect.Request[v1.BrowserConfirmEmailChangeRequest]) (*connect.Response[v1.BrowserConfirmEmailChangeResponse], error) {
+	return c.browserConfirmEmailChange.CallUnary(ctx, req)
+}
+
+// BrowserCancelEmailChange calls auth.v1.AuthBrowserService.BrowserCancelEmailChange.
+func (c *authBrowserServiceClient) BrowserCancelEmailChange(ctx context.Context, req *connect.Request[v1.BrowserCancelEmailChangeRequest]) (*connect.Response[v1.BrowserCancelEmailChangeResponse], error) {
+	return c.browserCancelEmailChange.CallUnary(ctx, req)
+}
+
+// BrowserListSessions calls auth.v1.AuthBrowserService.BrowserListSessions.
+func (c *authBrowserServiceClient) BrowserListSessions(ctx context.Context, req *connect.Request[v1.BrowserListSessionsRequest]) (*connect.Response[v1.BrowserListSessionsResponse], error) {
+	return c.browserListSessions.CallUnary(ctx, req)
+}
+
+// BrowserRevokeSession calls auth.v1.AuthBrowserService.BrowserRevokeSession.
+func (c *authBrowserServiceClient) BrowserRevokeSession(ctx context.Context, req *connect.Request[v1.BrowserRevokeSessionRequest]) (*connect.Response[v1.BrowserRevokeSessionResponse], error) {
+	return c.browserRevokeSession.CallUnary(ctx, req)
+}
+
+// BrowserRequestAccountDeletion calls auth.v1.AuthBrowserService.BrowserRequestAccountDeletion.
+func (c *authBrowserServiceClient) BrowserRequestAccountDeletion(ctx context.Context, req *connect.Request[v1.BrowserRequestAccountDeletionRequest]) (*connect.Response[v1.BrowserRequestAccountDeletionResponse], error) {
+	return c.browserRequestAccountDeletion.CallUnary(ctx, req)
+}
+
+// BrowserCancelAccountDeletion calls auth.v1.AuthBrowserService.BrowserCancelAccountDeletion.
+func (c *authBrowserServiceClient) BrowserCancelAccountDeletion(ctx context.Context, req *connect.Request[v1.BrowserCancelAccountDeletionRequest]) (*connect.Response[v1.BrowserCancelAccountDeletionResponse], error) {
+	return c.browserCancelAccountDeletion.CallUnary(ctx, req)
+}
+
 // AuthBrowserServiceHandler is an implementation of the auth.v1.AuthBrowserService service.
 type AuthBrowserServiceHandler interface {
 	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
@@ -816,6 +1215,42 @@ type AuthBrowserServiceHandler interface {
 	BrowserLogout(context.Context, *connect.Request[v1.BrowserLogoutRequest]) (*connect.Response[v1.BrowserLogoutResponse], error)
 	// LogoutAll delegates to the same public Auth handler and browser security policy.
 	BrowserLogoutAll(context.Context, *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error)
+	// BrowserStartLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserStartLoginCodeChange(context.Context, *connect.Request[v1.BrowserStartLoginCodeChangeRequest]) (*connect.Response[v1.BrowserStartLoginCodeChangeResponse], error)
+	// BrowserCompleteLoginCodeChange applies the same public browser policy on the private listener.
+	BrowserCompleteLoginCodeChange(context.Context, *connect.Request[v1.BrowserCompleteLoginCodeChangeRequest]) (*connect.Response[v1.BrowserCompleteLoginCodeChangeResponse], error)
+	// BrowserChangePassword applies the same public browser policy on the private listener.
+	BrowserChangePassword(context.Context, *connect.Request[v1.BrowserChangePasswordRequest]) (*connect.Response[v1.BrowserChangePasswordResponse], error)
+	// BrowserStartLogin applies the same public browser policy on the private listener.
+	BrowserStartLogin(context.Context, *connect.Request[v1.BrowserStartLoginRequest]) (*connect.Response[v1.BrowserStartLoginResponse], error)
+	// BrowserCompleteLogin applies the same public browser policy on the private listener.
+	BrowserCompleteLogin(context.Context, *connect.Request[v1.BrowserCompleteLoginRequest]) (*connect.Response[v1.BrowserCompleteLoginResponse], error)
+	// BrowserResendLoginCode applies the same public browser policy on the private listener.
+	BrowserResendLoginCode(context.Context, *connect.Request[v1.BrowserResendLoginCodeRequest]) (*connect.Response[v1.BrowserResendLoginCodeResponse], error)
+	// BrowserRequestEmailVerification applies the same public browser policy on the private listener.
+	BrowserRequestEmailVerification(context.Context, *connect.Request[v1.BrowserRequestEmailVerificationRequest]) (*connect.Response[v1.BrowserRequestEmailVerificationResponse], error)
+	// BrowserConfirmEmail applies the same public browser policy on the private listener.
+	BrowserConfirmEmail(context.Context, *connect.Request[v1.BrowserConfirmEmailRequest]) (*connect.Response[v1.BrowserConfirmEmailResponse], error)
+	// BrowserRequestPasswordReset applies the same public browser policy on the private listener.
+	BrowserRequestPasswordReset(context.Context, *connect.Request[v1.BrowserRequestPasswordResetRequest]) (*connect.Response[v1.BrowserRequestPasswordResetResponse], error)
+	// BrowserConfirmPasswordReset applies the same public browser policy on the private listener.
+	BrowserConfirmPasswordReset(context.Context, *connect.Request[v1.BrowserConfirmPasswordResetRequest]) (*connect.Response[v1.BrowserConfirmPasswordResetResponse], error)
+	// BrowserGetCredentials applies the same public browser policy on the private listener.
+	BrowserGetCredentials(context.Context, *connect.Request[v1.BrowserGetCredentialsRequest]) (*connect.Response[v1.BrowserGetCredentialsResponse], error)
+	// BrowserStartEmailChange applies the same public browser policy on the private listener.
+	BrowserStartEmailChange(context.Context, *connect.Request[v1.BrowserStartEmailChangeRequest]) (*connect.Response[v1.BrowserStartEmailChangeResponse], error)
+	// BrowserConfirmEmailChange applies the same public browser policy on the private listener.
+	BrowserConfirmEmailChange(context.Context, *connect.Request[v1.BrowserConfirmEmailChangeRequest]) (*connect.Response[v1.BrowserConfirmEmailChangeResponse], error)
+	// BrowserCancelEmailChange applies the same public browser policy on the private listener.
+	BrowserCancelEmailChange(context.Context, *connect.Request[v1.BrowserCancelEmailChangeRequest]) (*connect.Response[v1.BrowserCancelEmailChangeResponse], error)
+	// BrowserListSessions applies the same public browser policy on the private listener.
+	BrowserListSessions(context.Context, *connect.Request[v1.BrowserListSessionsRequest]) (*connect.Response[v1.BrowserListSessionsResponse], error)
+	// BrowserRevokeSession applies the same public browser policy on the private listener.
+	BrowserRevokeSession(context.Context, *connect.Request[v1.BrowserRevokeSessionRequest]) (*connect.Response[v1.BrowserRevokeSessionResponse], error)
+	// BrowserRequestAccountDeletion applies the same public browser policy on the private listener.
+	BrowserRequestAccountDeletion(context.Context, *connect.Request[v1.BrowserRequestAccountDeletionRequest]) (*connect.Response[v1.BrowserRequestAccountDeletionResponse], error)
+	// BrowserCancelAccountDeletion applies the same public browser policy on the private listener.
+	BrowserCancelAccountDeletion(context.Context, *connect.Request[v1.BrowserCancelAccountDeletionRequest]) (*connect.Response[v1.BrowserCancelAccountDeletionResponse], error)
 }
 
 // NewAuthBrowserServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -855,6 +1290,114 @@ func NewAuthBrowserServiceHandler(svc AuthBrowserServiceHandler, opts ...connect
 		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserLogoutAll")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authBrowserServiceBrowserStartLoginCodeChangeHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserStartLoginCodeChangeProcedure,
+		svc.BrowserStartLoginCodeChange,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartLoginCodeChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserCompleteLoginCodeChangeHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserCompleteLoginCodeChangeProcedure,
+		svc.BrowserCompleteLoginCodeChange,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCompleteLoginCodeChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserChangePasswordHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserChangePasswordProcedure,
+		svc.BrowserChangePassword,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserChangePassword")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserStartLoginHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserStartLoginProcedure,
+		svc.BrowserStartLogin,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserCompleteLoginHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserCompleteLoginProcedure,
+		svc.BrowserCompleteLogin,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCompleteLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserResendLoginCodeHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserResendLoginCodeProcedure,
+		svc.BrowserResendLoginCode,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserResendLoginCode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserRequestEmailVerificationHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserRequestEmailVerificationProcedure,
+		svc.BrowserRequestEmailVerification,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRequestEmailVerification")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserConfirmEmailHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserConfirmEmailProcedure,
+		svc.BrowserConfirmEmail,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserConfirmEmail")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserRequestPasswordResetHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserRequestPasswordResetProcedure,
+		svc.BrowserRequestPasswordReset,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRequestPasswordReset")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserConfirmPasswordResetHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserConfirmPasswordResetProcedure,
+		svc.BrowserConfirmPasswordReset,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserConfirmPasswordReset")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserGetCredentialsHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserGetCredentialsProcedure,
+		svc.BrowserGetCredentials,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserGetCredentials")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserStartEmailChangeHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserStartEmailChangeProcedure,
+		svc.BrowserStartEmailChange,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartEmailChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserConfirmEmailChangeHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserConfirmEmailChangeProcedure,
+		svc.BrowserConfirmEmailChange,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserConfirmEmailChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserCancelEmailChangeHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserCancelEmailChangeProcedure,
+		svc.BrowserCancelEmailChange,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCancelEmailChange")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserListSessionsHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserListSessionsProcedure,
+		svc.BrowserListSessions,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserListSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserRevokeSessionHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserRevokeSessionProcedure,
+		svc.BrowserRevokeSession,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRevokeSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserRequestAccountDeletionHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserRequestAccountDeletionProcedure,
+		svc.BrowserRequestAccountDeletion,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserRequestAccountDeletion")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserCancelAccountDeletionHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserCancelAccountDeletionProcedure,
+		svc.BrowserCancelAccountDeletion,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCancelAccountDeletion")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/auth.v1.AuthBrowserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthBrowserServiceBrowserRegisterCredentialsProcedure:
@@ -867,6 +1410,42 @@ func NewAuthBrowserServiceHandler(svc AuthBrowserServiceHandler, opts ...connect
 			authBrowserServiceBrowserLogoutHandler.ServeHTTP(w, r)
 		case AuthBrowserServiceBrowserLogoutAllProcedure:
 			authBrowserServiceBrowserLogoutAllHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserStartLoginCodeChangeProcedure:
+			authBrowserServiceBrowserStartLoginCodeChangeHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserCompleteLoginCodeChangeProcedure:
+			authBrowserServiceBrowserCompleteLoginCodeChangeHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserChangePasswordProcedure:
+			authBrowserServiceBrowserChangePasswordHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserStartLoginProcedure:
+			authBrowserServiceBrowserStartLoginHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserCompleteLoginProcedure:
+			authBrowserServiceBrowserCompleteLoginHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserResendLoginCodeProcedure:
+			authBrowserServiceBrowserResendLoginCodeHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserRequestEmailVerificationProcedure:
+			authBrowserServiceBrowserRequestEmailVerificationHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserConfirmEmailProcedure:
+			authBrowserServiceBrowserConfirmEmailHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserRequestPasswordResetProcedure:
+			authBrowserServiceBrowserRequestPasswordResetHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserConfirmPasswordResetProcedure:
+			authBrowserServiceBrowserConfirmPasswordResetHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserGetCredentialsProcedure:
+			authBrowserServiceBrowserGetCredentialsHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserStartEmailChangeProcedure:
+			authBrowserServiceBrowserStartEmailChangeHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserConfirmEmailChangeProcedure:
+			authBrowserServiceBrowserConfirmEmailChangeHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserCancelEmailChangeProcedure:
+			authBrowserServiceBrowserCancelEmailChangeHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserListSessionsProcedure:
+			authBrowserServiceBrowserListSessionsHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserRevokeSessionProcedure:
+			authBrowserServiceBrowserRevokeSessionHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserRequestAccountDeletionProcedure:
+			authBrowserServiceBrowserRequestAccountDeletionHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserCancelAccountDeletionProcedure:
+			authBrowserServiceBrowserCancelAccountDeletionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -894,4 +1473,76 @@ func (UnimplementedAuthBrowserServiceHandler) BrowserLogout(context.Context, *co
 
 func (UnimplementedAuthBrowserServiceHandler) BrowserLogoutAll(context.Context, *connect.Request[v1.BrowserLogoutAllRequest]) (*connect.Response[v1.BrowserLogoutAllResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserLogoutAll is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserStartLoginCodeChange(context.Context, *connect.Request[v1.BrowserStartLoginCodeChangeRequest]) (*connect.Response[v1.BrowserStartLoginCodeChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserStartLoginCodeChange is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserCompleteLoginCodeChange(context.Context, *connect.Request[v1.BrowserCompleteLoginCodeChangeRequest]) (*connect.Response[v1.BrowserCompleteLoginCodeChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserChangePassword(context.Context, *connect.Request[v1.BrowserChangePasswordRequest]) (*connect.Response[v1.BrowserChangePasswordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserChangePassword is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserStartLogin(context.Context, *connect.Request[v1.BrowserStartLoginRequest]) (*connect.Response[v1.BrowserStartLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserStartLogin is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserCompleteLogin(context.Context, *connect.Request[v1.BrowserCompleteLoginRequest]) (*connect.Response[v1.BrowserCompleteLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserCompleteLogin is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserResendLoginCode(context.Context, *connect.Request[v1.BrowserResendLoginCodeRequest]) (*connect.Response[v1.BrowserResendLoginCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserResendLoginCode is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserRequestEmailVerification(context.Context, *connect.Request[v1.BrowserRequestEmailVerificationRequest]) (*connect.Response[v1.BrowserRequestEmailVerificationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRequestEmailVerification is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserConfirmEmail(context.Context, *connect.Request[v1.BrowserConfirmEmailRequest]) (*connect.Response[v1.BrowserConfirmEmailResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserConfirmEmail is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserRequestPasswordReset(context.Context, *connect.Request[v1.BrowserRequestPasswordResetRequest]) (*connect.Response[v1.BrowserRequestPasswordResetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRequestPasswordReset is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserConfirmPasswordReset(context.Context, *connect.Request[v1.BrowserConfirmPasswordResetRequest]) (*connect.Response[v1.BrowserConfirmPasswordResetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserConfirmPasswordReset is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserGetCredentials(context.Context, *connect.Request[v1.BrowserGetCredentialsRequest]) (*connect.Response[v1.BrowserGetCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserGetCredentials is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserStartEmailChange(context.Context, *connect.Request[v1.BrowserStartEmailChangeRequest]) (*connect.Response[v1.BrowserStartEmailChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserStartEmailChange is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserConfirmEmailChange(context.Context, *connect.Request[v1.BrowserConfirmEmailChangeRequest]) (*connect.Response[v1.BrowserConfirmEmailChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserConfirmEmailChange is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserCancelEmailChange(context.Context, *connect.Request[v1.BrowserCancelEmailChangeRequest]) (*connect.Response[v1.BrowserCancelEmailChangeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserCancelEmailChange is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserListSessions(context.Context, *connect.Request[v1.BrowserListSessionsRequest]) (*connect.Response[v1.BrowserListSessionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserListSessions is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserRevokeSession(context.Context, *connect.Request[v1.BrowserRevokeSessionRequest]) (*connect.Response[v1.BrowserRevokeSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRevokeSession is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserRequestAccountDeletion(context.Context, *connect.Request[v1.BrowserRequestAccountDeletionRequest]) (*connect.Response[v1.BrowserRequestAccountDeletionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRequestAccountDeletion is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserCancelAccountDeletion(context.Context, *connect.Request[v1.BrowserCancelAccountDeletionRequest]) (*connect.Response[v1.BrowserCancelAccountDeletionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserCancelAccountDeletion is not implemented"))
 }

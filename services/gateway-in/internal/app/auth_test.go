@@ -65,7 +65,7 @@ func TestBrowserAuthPoliciesAreFiniteAndDisabledByDefault(t *testing.T) {
 		t.Fatal("Auth routes enabled by default")
 	}
 	addAuthPolicies(config{authBrowserEnabled: true, requestTimeout: time.Second}, routes)
-	if len(routes) != 5 {
+	if len(routes) != 23 {
 		t.Fatalf("got %d routes", len(routes))
 	}
 	if _, exists := routes[contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION]; exists {
