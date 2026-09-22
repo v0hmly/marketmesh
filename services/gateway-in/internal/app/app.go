@@ -202,6 +202,12 @@ func tunnelConfig(
 		MaxCreditBytes: 32 * 1024,
 	}
 	routes := make(map[contractv1.RouteId]tunnel.RoutePolicy)
+	if cfg.filesBrowserEnabled {
+		for _, route := range fileRouteIDs() {
+			routes[route] = tunnel.RoutePolicy{TrafficClass: contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR, MaxRequestBytes: 16 * 1024, MaxResponseBytes: 64 * 1024, MaxDeadline: cfg.requestTimeout, MaxInFlight: 16}
+		}
+	}
+
 	for _, route := range profileRouteIDs(cfg) {
 		routes[route] = tunnel.RoutePolicy{
 			TrafficClass:    contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR,
@@ -249,7 +255,7 @@ func newHealth(cfg config, registry *tunnel.Registry) (*serviceruntime.Health, e
 		Dependencies: []serviceruntime.CriticalDependency{{
 			Name: "tunnel-routes",
 			Check: func(context.Context) error {
-				if !profileRoutesReady(cfg, registry) || !authRoutesReady(cfg, registry) {
+				if !profileRoutesReady(cfg, registry) || !authRoutesReady(cfg, registry) || !fileRoutesReady(cfg, registry) {
 					return errors.New("required routes are not ready")
 				}
 				return nil
@@ -272,6 +278,11 @@ func publicHandler(
 	mux.Handle("/", healthHandler)
 	if err := registerAuthHandler(mux, cfg, registry); err != nil {
 		return nil, err
+	}
+	if cfg.filesBrowserEnabled {
+		if err := registerFileHandler(mux, registry); err != nil {
+			return nil, err
+		}
 	}
 	if cfg.userBrowserEnabled {
 		if err := registerUserHandler(mux, cfg, registry); err != nil {

@@ -27,13 +27,15 @@ import (
 )
 
 type sessionResources struct {
-	service    *sessions.Service
-	redis      *platformredis.Client
-	keys       *sessionkeys.Manager
-	server     *platformgrpc.Server
-	policy     *workloadid.Policy
-	listener   net.Listener
-	components []serviceruntime.Component
+	filesServer   *platformgrpc.Server
+	filesListener net.Listener
+	service       *sessions.Service
+	redis         *platformredis.Client
+	keys          *sessionkeys.Manager
+	server        *platformgrpc.Server
+	policy        *workloadid.Policy
+	listener      net.Listener
+	components    []serviceruntime.Component
 }
 
 func newSessionResources(ctx context.Context, config config, log *logger.Logger, pipeline *telemetry.Telemetry, database *platformpostgres.Database, listen listenFunc) (*sessionResources, error) {
@@ -106,6 +108,11 @@ func newSessionResources(ctx context.Context, config config, log *logger.Logger,
 		return nil, err
 	}
 	resources.components = []serviceruntime.Component{redisComponent, grpcComponent}
+	if cfg.files.enabled {
+		if err := resources.startFilesListener(cfg.files, config, handler, log, pipeline, listen); err != nil {
+			return nil, err
+		}
+	}
 	owned = false
 	return resources, nil
 }
@@ -113,6 +120,12 @@ func newSessionResources(ctx context.Context, config config, log *logger.Logger,
 func (resources *sessionResources) close(ctx context.Context) error {
 	if resources == nil {
 		return nil
+	}
+	if resources.filesServer != nil {
+		resources.filesServer.GRPCServer().Stop()
+	}
+	if resources.filesListener != nil {
+		_ = resources.filesListener.Close()
 	}
 	if resources.server != nil {
 		resources.server.GRPCServer().Stop()
@@ -195,7 +208,7 @@ func sessionRedisConfig(config sessionConfig) (platformredis.Config, error) {
 	}
 	return platformredis.Config{Role: platformredis.RoleAuth, Address: config.redisAddress, Authentication: platformredis.AuthenticationConfig{Username: config.redisUsername, Password: config.redisPassword}, Transport: transport,
 		Pool:     platformredis.PoolConfig{Size: 10, MinIdleConns: 1, MaxIdleConns: 10, MaxActiveConns: 10, MaxConcurrentDials: 2, ConnMaxIdleTime: 5 * time.Minute, ConnMaxLifetime: 30 * time.Minute},
-		Timeouts: platformredis.TimeoutConfig{Connect: time.Second, Command: 3 * time.Second, Pool: time.Second, Read: 2 * time.Second, Write: 2 * time.Second, Readiness: 2 * time.Second, Shutdown: 5 * time.Second},
+		Timeouts: platformredis.TimeoutConfig{Connect: config.redisConnectTimeout, Command: 3 * time.Second, Pool: time.Second, Read: 2 * time.Second, Write: 2 * time.Second, Readiness: 2 * time.Second, Shutdown: 5 * time.Second},
 	}, nil
 }
 

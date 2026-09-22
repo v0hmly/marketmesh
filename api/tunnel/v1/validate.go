@@ -783,7 +783,12 @@ func routeTrafficClass(route contractv1.RouteId) contractv1.TrafficClass {
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_DELETE_ADDRESS,
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS,
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_SETTINGS,
-		contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS:
+		contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS,
+		contractv1.RouteId_ROUTE_ID_FILE_CREATE_UPLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_COMPLETE_UPLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_GET_STATUS,
+		contractv1.RouteId_ROUTE_ID_FILE_CREATE_DOWNLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_DELETE:
 		return contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR
 	case contractv1.RouteId_ROUTE_ID_REALTIME_CHAT,
 		contractv1.RouteId_ROUTE_ID_REALTIME_NOTIFICATIONS:
@@ -838,7 +843,12 @@ func knownRoute(value contractv1.RouteId) bool {
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_SETTINGS,
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS,
 		contractv1.RouteId_ROUTE_ID_REALTIME_CHAT,
-		contractv1.RouteId_ROUTE_ID_REALTIME_NOTIFICATIONS:
+		contractv1.RouteId_ROUTE_ID_REALTIME_NOTIFICATIONS,
+		contractv1.RouteId_ROUTE_ID_FILE_CREATE_UPLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_COMPLETE_UPLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_GET_STATUS,
+		contractv1.RouteId_ROUTE_ID_FILE_CREATE_DOWNLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_DELETE:
 		return true
 	default:
 		return false

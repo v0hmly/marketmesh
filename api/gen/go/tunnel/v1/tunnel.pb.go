@@ -181,6 +181,16 @@ const (
 	RouteId_ROUTE_ID_REALTIME_CHAT RouteId = 200
 	// ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.
 	RouteId_ROUTE_ID_REALTIME_NOTIFICATIONS RouteId = 201
+	// ROUTE_ID_FILE_CREATE_UPLOAD carries control metadata only; file bytes use S3.
+	RouteId_ROUTE_ID_FILE_CREATE_UPLOAD RouteId = 300
+	// ROUTE_ID_FILE_COMPLETE_UPLOAD carries control metadata only; file bytes use S3.
+	RouteId_ROUTE_ID_FILE_COMPLETE_UPLOAD RouteId = 301
+	// ROUTE_ID_FILE_GET_STATUS carries control metadata only; file bytes use S3.
+	RouteId_ROUTE_ID_FILE_GET_STATUS RouteId = 302
+	// ROUTE_ID_FILE_CREATE_DOWNLOAD carries control metadata only; file bytes use S3.
+	RouteId_ROUTE_ID_FILE_CREATE_DOWNLOAD RouteId = 303
+	// ROUTE_ID_FILE_DELETE carries control metadata only; file bytes use S3.
+	RouteId_ROUTE_ID_FILE_DELETE RouteId = 304
 )
 
 // Enum value maps for RouteId.
@@ -206,6 +216,11 @@ var (
 		110: "ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS",
 		200: "ROUTE_ID_REALTIME_CHAT",
 		201: "ROUTE_ID_REALTIME_NOTIFICATIONS",
+		300: "ROUTE_ID_FILE_CREATE_UPLOAD",
+		301: "ROUTE_ID_FILE_COMPLETE_UPLOAD",
+		302: "ROUTE_ID_FILE_GET_STATUS",
+		303: "ROUTE_ID_FILE_CREATE_DOWNLOAD",
+		304: "ROUTE_ID_FILE_DELETE",
 	}
 	RouteId_value = map[string]int32{
 		"ROUTE_ID_UNSPECIFIED":                      0,
@@ -228,6 +243,11 @@ var (
 		"ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS":     110,
 		"ROUTE_ID_REALTIME_CHAT":                    200,
 		"ROUTE_ID_REALTIME_NOTIFICATIONS":           201,
+		"ROUTE_ID_FILE_CREATE_UPLOAD":               300,
+		"ROUTE_ID_FILE_COMPLETE_UPLOAD":             301,
+		"ROUTE_ID_FILE_GET_STATUS":                  302,
+		"ROUTE_ID_FILE_CREATE_DOWNLOAD":             303,
+		"ROUTE_ID_FILE_DELETE":                      304,
 	}
 )
 
@@ -1984,7 +2004,7 @@ const file_tunnel_v1_tunnel_proto_rawDesc = "" +
 	"\x16CAPABILITY_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10CAPABILITY_DRAIN\x10\x01\x12!\n" +
 	"\x1dCAPABILITY_SESSION_REVOCATION\x10\x02\x12\x17\n" +
-	"\x13CAPABILITY_REALTIME\x10\x03*\xd7\x05\n" +
+	"\x13CAPABILITY_REALTIME\x10\x03*\xfb\x06\n" +
 	"\aRouteId\x12\x18\n" +
 	"\x14ROUTE_ID_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"ROUTE_ID_AUTH_REGISTER_CREDENTIALS\x10\x01\x12\x17\n" +
@@ -2005,7 +2025,12 @@ const file_tunnel_v1_tunnel_proto_rawDesc = "" +
 	"\"ROUTE_ID_USER_BROWSER_GET_SETTINGS\x10m\x12)\n" +
 	"%ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS\x10n\x12\x1b\n" +
 	"\x16ROUTE_ID_REALTIME_CHAT\x10\xc8\x01\x12$\n" +
-	"\x1fROUTE_ID_REALTIME_NOTIFICATIONS\x10\xc9\x01*\xa9\x01\n" +
+	"\x1fROUTE_ID_REALTIME_NOTIFICATIONS\x10\xc9\x01\x12 \n" +
+	"\x1bROUTE_ID_FILE_CREATE_UPLOAD\x10\xac\x02\x12\"\n" +
+	"\x1dROUTE_ID_FILE_COMPLETE_UPLOAD\x10\xad\x02\x12\x1d\n" +
+	"\x18ROUTE_ID_FILE_GET_STATUS\x10\xae\x02\x12\"\n" +
+	"\x1dROUTE_ID_FILE_CREATE_DOWNLOAD\x10\xaf\x02\x12\x19\n" +
+	"\x14ROUTE_ID_FILE_DELETE\x10\xb0\x02*\xa9\x01\n" +
 	"\vMetadataKey\x12\x1c\n" +
 	"\x18METADATA_KEY_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19METADATA_KEY_CONTENT_TYPE\x10\x01\x12\x1c\n" +

@@ -71,7 +71,7 @@ func TestPrivateRPCMTLSBoundary(t *testing.T) {
 	if err = os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	audiences := map[string][]string{"user-service": {"profile:read"}, "other-service": {"read"}}
+	audiences := map[string][]string{"user-service": {"profile:read"}, "other-service": {"read"}, "files": {"files:read", "files:write"}}
 	keys, err := sessionkeys.New(sessionkeys.Config{Path: path, Issuer: "auth.marketmesh", MaxTTL: time.Minute, Clock: func() time.Time { return now }, Audiences: audiences})
 	if err != nil {
 		t.Fatal(err)
@@ -145,6 +145,67 @@ func TestPrivateRPCMTLSBoundary(t *testing.T) {
 		}
 		if credentialsOps.calls.Load() != 1 {
 			t.Fatal("unauthorized caller reached registration")
+		}
+	})
+	t.Run("files require full scope and current session", func(t *testing.T) {
+		own := workloadid.Scope{TrustDomain: "marketmesh.test", Environment: "dev", Cluster: "dc-a", Namespace: "marketmesh", ServiceAccount: "auth"}
+		expected := own
+		expected.ServiceAccount = "files"
+		secured, err := workloadid.ScopedTLS(issueCertificate(t, ca, caKey, own.String(), true), roots, own, expected, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		server := grpc.NewServer(grpc.Creds(credentials.NewTLS(secured)))
+		scoped, err := NewScopedFiles(handler, expected)
+		if err != nil {
+			t.Fatal(err)
+		}
+		authv1.RegisterAuthInternalServiceServer(server, scoped)
+		go func() { _ = server.Serve(listener) }()
+		defer server.Stop()
+		token, err := keys.Issue(ctx, ops.record, "files", now.Add(time.Minute))
+		if err != nil {
+			t.Fatal(err)
+		}
+		identities := []string{"", "spiffe://marketmesh.test/dev/files", strings.Replace(expected.String(), "/env/dev/", "/env/prod/", 1), strings.Replace(expected.String(), "/cluster/dc-a/", "/cluster/dc-b/", 1), strings.Replace(expected.String(), "/ns/marketmesh/", "/ns/foreign/", 1), strings.Replace(expected.String(), "/sa/files", "/sa/worker", 1), expected.String(), expected.String() + "/pod/01234567-89ab-cdef-0123-456789abcdef"}
+		for _, identity := range identities {
+			cfg := &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ServerName: "localhost"}
+			if identity != "" {
+				cfg.Certificates = []tls.Certificate{issueCertificate(t, ca, caKey, identity, false)}
+			}
+			conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			consumer := authv1.NewAuthInternalServiceClient(conn)
+			result, err := consumer.VerifyAssertion(ctx, &authv1.VerifyAssertionRequest{Assertion: token})
+			allowed := identity == expected.String() || strings.HasPrefix(identity, expected.String()+"/pod/")
+			if allowed {
+				if err != nil || len(result.GetSubjectId()) != 16 {
+					t.Fatal("valid scoped assertion rejected", err)
+				}
+				if _, err := consumer.ExchangeBrowserSession(ctx, &authv1.ExchangeBrowserSessionRequest{}); status.Code(err) != codes.Unimplemented {
+					t.Fatal("scoped listener exposes browser sessions")
+				}
+				ops.revoked.Store(true)
+				if _, err := consumer.VerifyAssertion(ctx, &authv1.VerifyAssertionRequest{Assertion: token}); status.Code(err) != codes.Unauthenticated {
+					t.Fatal("revoked session accepted")
+				}
+				ops.revoked.Store(false)
+			} else if err == nil {
+				t.Fatal("foreign scope accepted")
+			}
+			conn.Close()
+		}
+		if _, err := client(t, "spiffe://marketmesh.test/dev/files").VerifyAssertion(ctx, &authv1.VerifyAssertionRequest{Assertion: token}); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("legacy identity bypassed scoped listener", err)
+		}
+		if _, err := scoped.GetSigningKeys(context.Background(), &authv1.GetSigningKeysRequest{}); status.Code(err) != codes.Unauthenticated {
+			t.Fatal("direct call lacks TLS authorization")
 		}
 	})
 	gateway := client(t, "spiffe://marketmesh.test/dev/gateway-out")
@@ -343,7 +404,8 @@ func issueCertificate(t *testing.T, ca *x509.Certificate, caKey ed25519.PrivateK
 	if server {
 		template.DNSNames = []string{"localhost"}
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-	} else {
+	}
+	if identity != "" {
 		u, err := url.Parse(identity)
 		if err != nil {
 			t.Fatal(err)

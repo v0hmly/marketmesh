@@ -1,0 +1,40 @@
+{
+  "task": "MM-43",
+  "scan_date": "2026-09-22",
+  "scanner": "Trivy 0.74.0",
+  "scanner_image": "aquasec/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969",
+  "images": {
+    "runtime": {
+      "tested_image": {
+        "image_id": "sha256:1a16290b794617cbf8d18360cce911dc12d572b3c25e934a2a77d8c598f29375",
+        "config_id": "sha256:2accbf4ae235fea0aaf22feb823f04d3ce1e8d0091a66f585e247ee5b8b2c911",
+        "local_reference": "mm43-proof22-1a16290b794617cb:local"
+      },
+      "scan_config_id": "sha256:2accbf4ae235fea0aaf22feb823f04d3ce1e8d0091a66f585e247ee5b8b2c911",
+      "raw_report_sha256": "9d8afe05308557d47e4702e14c9ff11cf20ef6fb184bf7355b5cb2a46c0e6491",
+      "findings": {}
+    },
+    "sandbox": {
+      "tested_image": {
+        "image_id": "sha256:d6ffb94795adcbfa5978c7a59ae34301891c93c9c47ebf09aa0ba88cf1a24cf6",
+        "config_id": "sha256:9a4a985d8d2ed8f97d66f93e5af51890a8a03394718521a2536af41868e73ec4",
+        "local_reference": "mm43-proof22-d6ffb94795adcbfa:local"
+      },
+      "scan_config_id": "sha256:9a4a985d8d2ed8f97d66f93e5af51890a8a03394718521a2536af41868e73ec4",
+      "raw_report_sha256": "077d42cc6181b4cb6ddf9e2fea48bd9940ab1d7d9da6f8ef7205d18722a7652f",
+      "findings": {
+        "LOW": 214,
+        "HIGH": 72,
+        "MEDIUM": 126,
+        "UNKNOWN": 11,
+        "CRITICAL": 1
+      }
+    }
+  },
+  "vulnerability_database": {
+    "Version": 2,
+    "NextUpdate": "2026-09-23T07:24:27.402428948Z",
+    "UpdatedAt": "2026-09-22T07:24:27.402429319Z",
+    "DownloadedAt": "2026-09-22T08:37:21.157356181Z"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "task": "MM-43",
+  "instance": "mm43-proof22",
+  "result": "pass",
+  "phases": [
+    "fault-dc-a",
+    "blocked-dc-a",
+    "restore-dc-a",
+    "fault-dc-b",
+    "blocked-dc-b",
+    "restore-dc-b"
+  ],
+  "head": "35fefac3489859dac9ed0d885b400632a5dc6d9a",
+  "tested_tree_sha256": "8524cc7460d97ceb5924b9d13e5304e269a73d814b765f0546f7c225e9f4b89e",
+  "build": {
+    "source_tree_sha256": "8524cc7460d97ceb5924b9d13e5304e269a73d814b765f0546f7c225e9f4b89e",
+    "images": {
+      "chrislusf/seaweedfs@sha256:43b768cd62b00d132439cda881b93fd1adebf1b315e996e794087743821d771d": {
+        "image_id": "sha256:43b768cd62b00d132439cda881b93fd1adebf1b315e996e794087743821d771d",
+        "config_id": "sha256:7cdd765c17fb5e7a0b9f7ed43cfd3b4e8aad610c0a7d200e3cef215a90e37a94",
+        "local_reference": "mm43-proof22-43b768cd62b00d13:local"
+      },
+      "marketmesh-mm43-account:local": {
+        "image_id": "sha256:2714fd557ade15a532a61be36f77c6c7bb6faea151a21f3f238cfbe92a419db8",
+        "config_id": "sha256:92cdf0df86cb3aa9c78a1fbd5ccd8d2de89223541742a9d26ab01a628cc3253d",
+        "local_reference": "mm43-proof22-2714fd557ade15a5:local"
+      },
+      "marketmesh-mm43-antivirus:local": {
+        "image_id": "sha256:a6241bfd67e4a76da2d75a66dad9f0668d51b6a361760f7733b46ee5fd7e09dc",
+        "config_id": "sha256:63ec696b260edd2b011e4c9973f0abbd4377575c683ee1603f8cd12c972e9ae0",
+        "local_reference": "mm43-proof22-a6241bfd67e4a76d:local"
+      },
+      "marketmesh-mm43-files:local": {
+        "image_id": "sha256:1a16290b794617cbf8d18360cce911dc12d572b3c25e934a2a77d8c598f29375",
+        "config_id": "sha256:2accbf4ae235fea0aaf22feb823f04d3ce1e8d0091a66f585e247ee5b8b2c911",
+        "local_reference": "mm43-proof22-1a16290b794617cb:local"
+      },
+      "marketmesh-mm43-sandbox:local": {
+        "image_id": "sha256:d6ffb94795adcbfa5978c7a59ae34301891c93c9c47ebf09aa0ba88cf1a24cf6",
+        "config_id": "sha256:9a4a985d8d2ed8f97d66f93e5af51890a8a03394718521a2536af41868e73ec4",
+        "local_reference": "mm43-proof22-d6ffb94795adcbfa:local"
+      },
+      "postgres@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af": {
+        "image_id": "sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af",
+        "config_id": "sha256:b85269e8c6aa961524542eb4dcca44c4aa1deba2cf507e9e28d5ba8f971aeab9",
+        "local_reference": "mm43-proof22-1c59e2c3c818eaa0:local"
+      },
+      "quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641": {
+        "image_id": "sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641",
+        "config_id": "sha256:1b4e1aaccd32b7ccec7f24bf86a867743c6392fac6b08b5a0c318f67681d3901",
+        "local_reference": "mm43-proof22-11fd73a2102cda9c:local"
+      },
+      "redis:8.10.1-alpine3.23": {
+        "image_id": "sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576",
+        "config_id": "sha256:59c08762bdbcf53fa132aa0bae464a57a1309dc3fff8a034bb3e16d7a0b30ec5",
+        "local_reference": "mm43-proof22-becdda6c7f4b3fb4:local"
+      }
+    },
+    "balancer_sha256": "67794b2210a17445262d6a8c5d29d1c636c4098cd69a57fe529976f213c07de2"
+  },
+  "probe_sha256": "a8508a1659fb20fe859e587e60206b7466e89c7334dbcd144652631b3bc0a3a7",
+  "physical_hosts": 1,
+  "logical_dcs": 2,
+  "vm_count": 4,
+  "fault": "stop both owned VMs; verified persistent PostgreSQL fencing",
+  "time_utc": "2026-09-22T13:36:07Z"
+}

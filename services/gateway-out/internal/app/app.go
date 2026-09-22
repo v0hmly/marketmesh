@@ -14,6 +14,7 @@ import (
 
 	authv1 "github.com/v0hmly/marketmesh/api/gen/go/auth/v1"
 	e2ev1 "github.com/v0hmly/marketmesh/api/gen/go/e2e/v1"
+	filesv1 "github.com/v0hmly/marketmesh/api/gen/go/files/v1"
 	contractv1 "github.com/v0hmly/marketmesh/api/gen/go/tunnel/v1"
 	userv1 "github.com/v0hmly/marketmesh/api/gen/go/user/v1"
 	protocolv1 "github.com/v0hmly/marketmesh/api/tunnel/v1"
@@ -23,6 +24,7 @@ import (
 	serviceruntime "github.com/v0hmly/marketmesh/platform/runtime"
 	"github.com/v0hmly/marketmesh/platform/telemetry"
 	"github.com/v0hmly/marketmesh/services/gateway-out/internal/tunnel"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -140,6 +142,16 @@ func runService(
 		clients.ControlAuth = authClient.Connection()
 		specs = append(specs, authRoutes(cfg.callTimeout)...)
 	}
+	var fileConnection *grpc.ClientConn
+	if cfg.filesBrowserEnabled {
+		fileConnection, err = newFilesClient(ctx, cfg)
+		if err != nil {
+			return err
+		}
+		defer fileConnection.Close()
+		clients.Regular = &fileBrowserClient{auth: authv1.NewAuthInternalServiceClient(authClient.Connection()), files: filesv1.NewFileServiceClient(fileConnection), next: clients.Regular}
+		specs = append(specs, fileRoutes(cfg.callTimeout)...)
+	}
 	registry, err := tunnel.NewRegistry(clients, specs...)
 	if err != nil {
 		return fmt.Errorf("creating static route registry: %w", err)
@@ -169,18 +181,16 @@ func runService(
 	if err != nil {
 		return err
 	}
-	health, err := serviceruntime.NewHealth(serviceruntime.HealthConfig{
-		CheckTimeout: cfg.healthTimeout,
-		Dependencies: []serviceruntime.CriticalDependency{{
-			Name: "tunnel-session",
-			Check: func(context.Context) error {
-				if !pool.IsReady() {
-					return errors.New("tunnel is not ready")
-				}
-				return nil
-			},
-		}},
-	})
+	dependencies := []serviceruntime.CriticalDependency{{Name: "tunnel-session", Check: func(context.Context) error {
+		if !pool.IsReady() {
+			return errors.New("tunnel is not ready")
+		}
+		return nil
+	}}}
+	if fileConnection != nil {
+		dependencies = append(dependencies, serviceruntime.CriticalDependency{Name: "files", Check: func(ctx context.Context) error { return checkFiles(ctx, fileConnection) }})
+	}
+	health, err := serviceruntime.NewHealth(serviceruntime.HealthConfig{CheckTimeout: cfg.healthTimeout, Dependencies: dependencies})
 	if err != nil {
 		return fmt.Errorf("creating health checks: %w", err)
 	}
@@ -216,7 +226,7 @@ func runService(
 		internalClientComponent(internalClient),
 		pool.Component(),
 	}
-	if cfg.authBrowserEnabled || cfg.userBrowserEnabled {
+	if cfg.authBrowserEnabled || cfg.userBrowserEnabled || cfg.filesBrowserEnabled {
 		component := internalClientComponent(authClient)
 		component.Name = "auth-grpc"
 		components = append(components, component)

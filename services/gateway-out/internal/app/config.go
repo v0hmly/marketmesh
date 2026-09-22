@@ -17,6 +17,9 @@ const (
 )
 
 type config struct {
+	filesBrowserEnabled                                                                            bool
+	filesTarget, filesServerName, expectedFilesURI, filesCertificate, filesPrivateKey, filesRootCA string
+
 	periodicRediscoveryEnabled bool
 
 	serviceVersion              string
@@ -144,7 +147,20 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	if result.userAddressesBrowserEnabled && !result.userBrowserEnabled {
 		return config{}, errors.New("USER_ADDRESSES_BROWSER_ENABLED requires USER_BROWSER_ENABLED")
 	}
-	if result.authBrowserEnabled || result.userBrowserEnabled {
+	if result.filesBrowserEnabled, err = env.Bool("FILES_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.filesBrowserEnabled {
+		for _, item := range []struct {
+			name   string
+			target *string
+		}{{"FILES_TARGET", &result.filesTarget}, {"FILES_SERVER_NAME", &result.filesServerName}, {"EXPECTED_FILES_URI", &result.expectedFilesURI}, {"FILES_TLS_CERT_FILE", &result.filesCertificate}, {"FILES_TLS_KEY_FILE", &result.filesPrivateKey}, {"FILES_TLS_ROOT_CA_FILE", &result.filesRootCA}} {
+			if *item.target, err = env.RequiredString(item.name); err != nil {
+				return config{}, err
+			}
+		}
+	}
+	if result.authBrowserEnabled || result.userBrowserEnabled || result.filesBrowserEnabled {
 		for _, item := range []struct {
 			name  string
 			value *string

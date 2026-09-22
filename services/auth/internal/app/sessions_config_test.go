@@ -66,6 +66,19 @@ func TestSessionConfigurationBoundsAndAuthRedisIsolation(t *testing.T) {
 	if redis.Role != platformredis.RoleAuth || redis.Transport.TLS == nil || redis.Transport.TLS.MinVersion != tls.VersionTLS13 || redis.Transport.PlaintextException != nil || !redis.Authentication.Password.Present() {
 		t.Fatal("Auth Redis isolation or TLS missing")
 	}
+	if redis.Timeouts.Connect != time.Second {
+		t.Fatal("Redis default connect timeout changed")
+	}
+	values := sessionEnvironment()
+	values["AUTH_REDIS_CONNECT_TIMEOUT"] = "5s"
+	cfg, err = loadSessionConfig(serviceruntime.MapEnv(values), "production")
+	if err != nil {
+		t.Fatal(err)
+	}
+	redis, err = sessionRedisConfig(cfg)
+	if err != nil || redis.Timeouts.Connect != 5*time.Second {
+		t.Fatal("configured Redis connect timeout not propagated")
+	}
 }
 
 func TestSessionConfigurationRejectsUnsafeRollout(t *testing.T) {
@@ -83,6 +96,8 @@ func TestSessionConfigurationRejectsUnsafeRollout(t *testing.T) {
 		{"bad trust domain", "AUTH_TRUST_DOMAIN", "bad/domain", "dev"},
 		{"missing Redis password", "AUTH_REDIS_PASSWORD", "", "dev"},
 		{"unverified Redis", "AUTH_REDIS_TLS_SERVER_NAME", "", "dev"},
+		{"zero Redis connect timeout", "AUTH_REDIS_CONNECT_TIMEOUT", "0s", "dev"},
+		{"excessive Redis connect timeout", "AUTH_REDIS_CONNECT_TIMEOUT", "11s", "dev"},
 		{"TLS and plaintext", "AUTH_REDIS_PLAINTEXT_REASON", "test exception", "dev"},
 		{"zero access", "AUTH_ACCESS_TTL", "0s", "dev"},
 		{"subsecond assertion", "AUTH_ASSERTION_TTL", "500ms", "dev"},

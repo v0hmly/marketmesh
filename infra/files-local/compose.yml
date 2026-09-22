@@ -1,0 +1,230 @@
+name: marketmesh-files-local
+
+x-restricted: &restricted
+  user: "${MM_FILES_UID:?}:${MM_FILES_GID:?}"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  pids_limit: 128
+  labels: {marketmesh.task: MM-43}
+  logging: {driver: none}
+
+x-store: &store
+  <<: *restricted
+  image: chrislusf/seaweedfs@sha256:43b768cd62b00d132439cda881b93fd1adebf1b315e996e794087743821d771d
+  mem_limit: 512m
+  cpus: 1
+  tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+  depends_on: {volume-init: {condition: service_completed_successfully}}
+
+services:
+  volume-init:
+    image: alpine:3.23.5@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
+    network_mode: none
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER, DAC_OVERRIDE]
+    security_opt: ["no-new-privileges:true"]
+    command: ["sh", "-ec", "chown -R ${MM_FILES_UID}:${MM_FILES_GID} /bao /quarantine /internal /a /b /av /sandbox /signatures; chmod 700 /bao /quarantine /internal /a /b /av /sandbox /signatures"]
+    volumes: ["bao:/bao", "quarantine:/quarantine", "internal-clean:/internal", "delivery-a:/a", "delivery-b:/b", "av-socket:/av", "sandbox-socket:/sandbox", "signatures:/signatures"]
+    labels: {marketmesh.task: MM-43}
+
+  bao:
+    <<: *restricted
+    image: quay.io/openbao/openbao@sha256:11fd73a2102cda9c55d5d881a8c3210303146a7ec1e8ac76f526e175c6d24641
+    command: ["server", "-config=/run/bao.hcl"]
+    depends_on: {volume-init: {condition: service_completed_successfully}}
+    ports: ["127.0.0.1:18210:8200"]
+    networks: [kms-q, kms-internal, kms-a, kms-b, bootstrap]
+    mem_limit: 256m
+    cpus: 0.5
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    volumes:
+      - bao:/data
+      - ${MM_FILES_STATE}/bao.hcl:/run/bao.hcl:ro
+      - ${MM_FILES_STATE}/pki/bao.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/bao.key:/pki/server.key:ro
+
+  quarantine:
+    <<: *store
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0", "-master.volumeSizeLimitMB=128", "-master.telemetry=false", "-bucket=quarantine", "-s3.config=/etc/seaweedfs/s3.json", "-s3.cert.file=/pki/server.crt", "-s3.key.file=/pki/server.key"]
+    ports: ["127.0.0.1:18343:8333"]
+    networks: [quarantine-dmz, kms-q]
+    volumes:
+      - quarantine:/data
+      - ${MM_FILES_STATE}/quarantine.json:/etc/seaweedfs/s3.json:ro
+      - ${MM_FILES_STATE}/filer.toml:/etc/seaweedfs/filer.toml:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - ${MM_FILES_STATE}/pki/quarantine.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/quarantine.key:/pki/server.key:ro
+
+  internal-clean:
+    <<: *store
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0", "-master.volumeSizeLimitMB=128", "-master.telemetry=false", "-bucket=internal-clean", "-s3.config=/etc/seaweedfs/s3.json", "-s3.cert.file=/pki/server.crt", "-s3.key.file=/pki/server.key"]
+    networks: [files-internal, kms-internal]
+    volumes:
+      - internal-clean:/data
+      - ${MM_FILES_STATE}/internal-clean.json:/etc/seaweedfs/s3.json:ro
+      - ${MM_FILES_STATE}/filer.toml:/etc/seaweedfs/filer.toml:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - ${MM_FILES_STATE}/pki/internal-clean.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/internal-clean.key:/pki/server.key:ro
+
+  delivery-a:
+    <<: *store
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0", "-master.volumeSizeLimitMB=128", "-master.telemetry=false", "-bucket=delivery-a", "-s3.config=/etc/seaweedfs/s3.json", "-s3.cert.file=/pki/server.crt", "-s3.key.file=/pki/server.key"]
+    ports: ["127.0.0.1:18344:8333"]
+    networks: [delivery-a-dmz, kms-a]
+    volumes:
+      - delivery-a:/data
+      - ${MM_FILES_STATE}/delivery-a.json:/etc/seaweedfs/s3.json:ro
+      - ${MM_FILES_STATE}/filer.toml:/etc/seaweedfs/filer.toml:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - ${MM_FILES_STATE}/pki/delivery-a.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/delivery-a.key:/pki/server.key:ro
+
+  delivery-b:
+    <<: *store
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0", "-master.volumeSizeLimitMB=128", "-master.telemetry=false", "-bucket=delivery-b", "-s3.config=/etc/seaweedfs/s3.json", "-s3.cert.file=/pki/server.crt", "-s3.key.file=/pki/server.key"]
+    ports: ["127.0.0.1:18345:8333"]
+    networks: [delivery-b-dmz, kms-b]
+    volumes:
+      - delivery-b:/data
+      - ${MM_FILES_STATE}/delivery-b.json:/etc/seaweedfs/s3.json:ro
+      - ${MM_FILES_STATE}/filer.toml:/etc/seaweedfs/filer.toml:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - ${MM_FILES_STATE}/pki/delivery-b.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/delivery-b.key:/pki/server.key:ro
+
+  pg-primary:
+    image: postgres@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af
+    entrypoint: ["bash", "/scripts/primary.sh"]
+    environment: {POSTGRES_PASSWORD_FILE: /run/admin-password, PGDATA: /var/lib/postgresql/18/primary}
+    networks: [files-internal]
+    mem_limit: 384m
+    cpus: 1
+    security_opt: ["no-new-privileges:true"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -q -h 127.0.0.1 -U postgres"], interval: 2s, timeout: 2s, retries: 30}
+    volumes:
+      - pg-primary:/var/lib/postgresql
+      - ./primary.sh:/scripts/primary.sh:ro
+      - ./primary-init.sh:/docker-entrypoint-initdb.d/01-files.sh:ro
+      - ../../services/files/migrations:/migrations:ro
+      - ${MM_FILES_STATE}/db-init.sql:/run/files-init.sql:ro
+      - ${MM_FILES_STATE}/admin-password:/run/admin-password:ro
+      - ${MM_FILES_STATE}/pki/pg-primary.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/pg-primary.key:/pki/server.key:ro
+    labels: {marketmesh.task: MM-43}
+    logging: {driver: none}
+
+  pg-replica:
+    image: postgres@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af
+    entrypoint: ["bash", "/scripts/replica.sh"]
+    depends_on: {pg-primary: {condition: service_healthy}}
+    networks: [files-internal]
+    mem_limit: 384m
+    cpus: 1
+    security_opt: ["no-new-privileges:true"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -q -U postgres"], interval: 2s, timeout: 2s, retries: 30}
+    volumes:
+      - pg-replica:/var/lib/postgresql
+      - ./replica.sh:/scripts/replica.sh:ro
+      - ${MM_FILES_STATE}/replication.pgpass:/run/replication.pgpass:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - ${MM_FILES_STATE}/pki/pg-replica.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/pg-replica.key:/pki/server.key:ro
+    labels: {marketmesh.task: MM-43}
+    logging: {driver: none}
+
+  sandbox:
+    <<: *restricted
+    image: marketmesh-mm43-sandbox:local
+    build: {context: ../.., dockerfile: infra/files-local/Dockerfile, target: sandbox}
+    network_mode: none
+    restart: always
+    depends_on: {volume-init: {condition: service_completed_successfully}}
+    mem_limit: 1g
+    cpus: 1
+    tmpfs:
+      - /work:rw,noexec,nosuid,size=512m,uid=${MM_FILES_UID},gid=${MM_FILES_GID},mode=700
+      - /tmp:rw,noexec,nosuid,size=32m,uid=${MM_FILES_UID},gid=${MM_FILES_GID},mode=700
+    volumes: ["sandbox-socket:/run/files-sandbox"]
+
+  antivirus:
+    <<: *restricted
+    image: marketmesh-mm43-antivirus:local
+    build: {context: ../.., dockerfile: infra/files-local/Dockerfile, target: antivirus}
+    network_mode: none
+    depends_on: {volume-init: {condition: service_completed_successfully}}
+    mem_limit: 2g
+    cpus: 1
+    tmpfs: ["/work:rw,noexec,nosuid,size=600m,uid=${MM_FILES_UID},gid=${MM_FILES_GID},mode=700", "/tmp:rw,noexec,nosuid,size=16m"]
+    volumes: ["signatures:/signatures:ro", "av-socket:/run/files-clamav"]
+
+  signatures:
+    <<: *restricted
+    image: marketmesh-mm43-antivirus:local
+    entrypoint: ["freshclam", "--config-file=/run/freshclam.conf", "--datadir=/signatures", "--stdout"]
+    profiles: [tools]
+    depends_on: {volume-init: {condition: service_completed_successfully}}
+    networks: [bootstrap]
+    mem_limit: 512m
+    cpus: 1
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    volumes: ["signatures:/signatures", "${MM_FILES_STATE}/freshclam.conf:/run/freshclam.conf:ro"]
+
+  integration:
+    <<: *restricted
+    image: marketmesh-mm43-integration:local
+    build: {context: ../.., dockerfile: infra/files-local/Dockerfile, target: integration}
+    profiles: [tools]
+    environment: {FILES_FIXTURE: /fixture, TMPDIR: /work}
+    networks: [files-internal, quarantine-dmz, delivery-a-dmz, delivery-b-dmz]
+    mem_limit: 2g
+    cpus: 2
+    tmpfs: ["/work:rw,noexec,nosuid,size=256m,uid=${MM_FILES_UID},gid=${MM_FILES_GID},mode=700"]
+    volumes:
+      - ${MM_FILES_STATE}:/fixture:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - sandbox-socket:/run/files-sandbox:ro
+      - av-socket:/run/files-clamav:ro
+
+  worker:
+    <<: *restricted
+    image: marketmesh-mm43-files:local
+    build: {context: ../.., dockerfile: infra/files-local/Dockerfile, target: runtime}
+    environment: {FILES_CONFIG_FILE: /run/files-config.json}
+    depends_on: {pg-primary: {condition: service_healthy}, pg-replica: {condition: service_healthy}}
+    networks: [files-internal, quarantine-dmz, delivery-a-dmz, delivery-b-dmz]
+    mem_limit: 1g
+    cpus: 1
+    tmpfs: ["/work:rw,noexec,nosuid,size=256m,uid=${MM_FILES_UID},gid=${MM_FILES_GID},mode=700"]
+    volumes:
+      - ${MM_FILES_STATE}/worker.json:/run/files-config.json:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - sandbox-socket:/run/files-sandbox:ro
+      - av-socket:/run/files-clamav:ro
+
+networks:
+  bootstrap: {}
+  quarantine-dmz: {}
+  delivery-a-dmz: {}
+  delivery-b-dmz: {}
+  files-internal: {internal: true}
+  kms-q: {internal: true}
+  kms-internal: {internal: true}
+  kms-a: {internal: true}
+  kms-b: {internal: true}
+
+volumes:
+  bao: {}
+  quarantine: {}
+  internal-clean: {}
+  delivery-a: {}
+  delivery-b: {}
+  pg-primary: {}
+  pg-replica: {}
+  signatures: {}
+  sandbox-socket: {}
+  av-socket: {}

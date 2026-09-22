@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package gateway.v1;
+
+import "auth/v1/auth.proto";
+import "files/v1/files.proto";
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/gateway/v1;gatewayv1";
+
+// FileBrowserService defines fixed private tunnel envelopes, never a public proxy.
+service FileBrowserService {
+  // BrowserFileCreateUpload exchanges the browser session before the owner-scoped call.
+  rpc BrowserFileCreateUpload(BrowserFileCreateUploadRequest) returns (BrowserFileCreateUploadResponse);
+  // BrowserFileCompleteUpload exchanges the browser session before the owner-scoped call.
+  rpc BrowserFileCompleteUpload(BrowserFileCompleteUploadRequest) returns (BrowserFileCompleteUploadResponse);
+  // BrowserFileGetStatus exchanges the browser session before the owner-scoped call.
+  rpc BrowserFileGetStatus(BrowserFileGetStatusRequest) returns (BrowserFileGetStatusResponse);
+  // BrowserFileCreateDownload exchanges the browser session before the owner-scoped call.
+  rpc BrowserFileCreateDownload(BrowserFileCreateDownloadRequest) returns (BrowserFileCreateDownloadResponse);
+  // BrowserFileDelete exchanges the browser session before the owner-scoped call.
+  rpc BrowserFileDelete(BrowserFileDeleteRequest) returns (BrowserFileDeleteResponse);
+}
+
+// FileBrowserFailure preserves only finite domain outcomes without upstream messages.
+enum FileBrowserFailure {
+  // FILE_BROWSER_FAILURE_UNSPECIFIED is a bounded outcome of the control operation.
+  FILE_BROWSER_FAILURE_UNSPECIFIED = 0;
+  // FILE_BROWSER_FAILURE_NOT_FOUND is a bounded outcome of the control operation.
+  FILE_BROWSER_FAILURE_NOT_FOUND = 1;
+  // FILE_BROWSER_FAILURE_CONFLICT is a bounded outcome of the control operation.
+  FILE_BROWSER_FAILURE_CONFLICT = 2;
+  // FILE_BROWSER_FAILURE_NOT_READY is a bounded outcome of the control operation.
+  FILE_BROWSER_FAILURE_NOT_READY = 3;
+}
+
+// BrowserFileCreateUploadRequest separates public input from opaque browser credentials.
+message BrowserFileCreateUploadRequest {
+  // Request contains only typed control metadata, never file content.
+  files.v1.CreateUploadRequest request = 1;
+  // Context is reconstructed from allowed HTTP headers and never logged.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserFileCreateUploadResponse contains one successful result or one finite failure.
+message BrowserFileCreateUploadResponse {
+  // Response is present only for a successful authenticated call.
+  files.v1.CreateUploadResponse response = 1;
+  // Failure never contains storage URLs, scanner output or dependency errors.
+  FileBrowserFailure failure = 2;
+}
+
+// BrowserFileCompleteUploadRequest separates public input from opaque browser credentials.
+message BrowserFileCompleteUploadRequest {
+  // Request contains only typed control metadata, never file content.
+  files.v1.CompleteUploadRequest request = 1;
+  // Context is reconstructed from allowed HTTP headers and never logged.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserFileCompleteUploadResponse contains one successful result or one finite failure.
+message BrowserFileCompleteUploadResponse {
+  // Response is present only for a successful authenticated call.
+  files.v1.CompleteUploadResponse response = 1;
+  // Failure never contains storage URLs, scanner output or dependency errors.
+  FileBrowserFailure failure = 2;
+}
+
+// BrowserFileGetStatusRequest separates public input from opaque browser credentials.
+message BrowserFileGetStatusRequest {
+  // Request contains only typed control metadata, never file content.
+  files.v1.GetStatusRequest request = 1;
+  // Context is reconstructed from allowed HTTP headers and never logged.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserFileGetStatusResponse contains one successful result or one finite failure.
+message BrowserFileGetStatusResponse {
+  // Response is present only for a successful authenticated call.
+  files.v1.GetStatusResponse response = 1;
+  // Failure never contains storage URLs, scanner output or dependency errors.
+  FileBrowserFailure failure = 2;
+}
+
+// BrowserFileCreateDownloadRequest separates public input from opaque browser credentials.
+message BrowserFileCreateDownloadRequest {
+  // Request contains only typed control metadata, never file content.
+  files.v1.CreateDownloadRequest request = 1;
+  // Context is reconstructed from allowed HTTP headers and never logged.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserFileCreateDownloadResponse contains one successful result or one finite failure.
+message BrowserFileCreateDownloadResponse {
+  // Response is present only for a successful authenticated call.
+  files.v1.CreateDownloadResponse response = 1;
+  // Failure never contains storage URLs, scanner output or dependency errors.
+  FileBrowserFailure failure = 2;
+}
+
+// BrowserFileDeleteRequest separates public input from opaque browser credentials.
+message BrowserFileDeleteRequest {
+  // Request contains only typed control metadata, never file content.
+  files.v1.DeleteRequest request = 1;
+  // Context is reconstructed from allowed HTTP headers and never logged.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserFileDeleteResponse contains one successful result or one finite failure.
+message BrowserFileDeleteResponse {
+  // Response is present only for a successful authenticated call.
+  files.v1.DeleteResponse response = 1;
+  // Failure never contains storage URLs, scanner output or dependency errors.
+  FileBrowserFailure failure = 2;
+}

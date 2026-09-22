@@ -166,3 +166,21 @@ func TestRegistry_RoutePolicyIsStatic(t *testing.T) {
 		t.Fatal("RoutePolicy() found unconfigured route")
 	}
 }
+
+func TestFileRoutesRegisterWithTunnel(t *testing.T) {
+	cfg := testConfig()
+	cfg.Limits.MaxMessageBytes = 64 * 1024
+	cfg.Limits.MaxInFlightRequests = 64
+	for _, route := range []contractv1.RouteId{
+		contractv1.RouteId_ROUTE_ID_FILE_CREATE_UPLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_COMPLETE_UPLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_GET_STATUS,
+		contractv1.RouteId_ROUTE_ID_FILE_CREATE_DOWNLOAD,
+		contractv1.RouteId_ROUTE_ID_FILE_DELETE,
+	} {
+		cfg.Routes[route] = RoutePolicy{TrafficClass: contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR, MaxRequestBytes: 16 * 1024, MaxResponseBytes: 64 * 1024, MaxDeadline: time.Second, MaxInFlight: 16}
+	}
+	if _, err := New(cfg); err != nil {
+		t.Fatalf("file route registration failed: %v", err)
+	}
+}

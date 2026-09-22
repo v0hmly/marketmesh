@@ -260,6 +260,17 @@ enum RouteId {
   ROUTE_ID_REALTIME_CHAT = 200;
   // ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.
   ROUTE_ID_REALTIME_NOTIFICATIONS = 201;
+  // ROUTE_ID_FILE_CREATE_UPLOAD carries control metadata only; file bytes use S3.
+  ROUTE_ID_FILE_CREATE_UPLOAD = 300;
+  // ROUTE_ID_FILE_COMPLETE_UPLOAD carries control metadata only; file bytes use S3.
+  ROUTE_ID_FILE_COMPLETE_UPLOAD = 301;
+  // ROUTE_ID_FILE_GET_STATUS carries control metadata only; file bytes use S3.
+  ROUTE_ID_FILE_GET_STATUS = 302;
+  // ROUTE_ID_FILE_CREATE_DOWNLOAD carries control metadata only; file bytes use S3.
+  ROUTE_ID_FILE_CREATE_DOWNLOAD = 303;
+  // ROUTE_ID_FILE_DELETE carries control metadata only; file bytes use S3.
+  ROUTE_ID_FILE_DELETE = 304;
+
 }
 
 // MetadataKey is the v1 metadata allowlist and intentionally excludes HTTP routing headers.
