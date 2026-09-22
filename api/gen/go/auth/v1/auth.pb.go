@@ -21,6 +21,103 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// AuthBrowserFailure preserves only explicitly allowed account-security outcomes.
+type AuthBrowserFailure int32
+
+const (
+	// AUTH_BROWSER_FAILURE_UNSPECIFIED indicates success or an unrelated transport failure.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED AuthBrowserFailure = 0
+	// AUTH_BROWSER_FAILURE_INVALID_INPUT identifies the bounded invalid_input rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_INVALID_INPUT AuthBrowserFailure = 1
+	// AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS identifies the bounded invalid_credentials rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS AuthBrowserFailure = 2
+	// AUTH_BROWSER_FAILURE_LOGIN_LOCKED identifies the bounded login_locked rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_LOGIN_LOCKED AuthBrowserFailure = 3
+	// AUTH_BROWSER_FAILURE_CODE_MISMATCH identifies the bounded code_mismatch rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_CODE_MISMATCH AuthBrowserFailure = 4
+	// AUTH_BROWSER_FAILURE_CODE_REISSUED identifies the bounded code_reissued rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_CODE_REISSUED AuthBrowserFailure = 5
+	// AUTH_BROWSER_FAILURE_CODE_EXPIRED identifies the bounded code_expired rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_CODE_EXPIRED AuthBrowserFailure = 6
+	// AUTH_BROWSER_FAILURE_TOKEN_EXPIRED identifies the bounded token_expired rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_TOKEN_EXPIRED AuthBrowserFailure = 7
+	// AUTH_BROWSER_FAILURE_TOKEN_USED identifies the bounded token_used rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_TOKEN_USED AuthBrowserFailure = 8
+	// AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED identifies the bounded email_unverified rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED AuthBrowserFailure = 9
+	// AUTH_BROWSER_FAILURE_CODE_REQUIRED identifies the bounded code_required rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_CODE_REQUIRED AuthBrowserFailure = 10
+	// AUTH_BROWSER_FAILURE_RATE_LIMITED identifies the bounded rate_limited rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_RATE_LIMITED AuthBrowserFailure = 11
+	// AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN identifies the bounded new_device_cooldown rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN AuthBrowserFailure = 12
+	// AUTH_BROWSER_FAILURE_NOT_FOUND identifies the bounded not_found rejection.
+	AuthBrowserFailure_AUTH_BROWSER_FAILURE_NOT_FOUND AuthBrowserFailure = 13
+)
+
+// Enum value maps for AuthBrowserFailure.
+var (
+	AuthBrowserFailure_name = map[int32]string{
+		0:  "AUTH_BROWSER_FAILURE_UNSPECIFIED",
+		1:  "AUTH_BROWSER_FAILURE_INVALID_INPUT",
+		2:  "AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS",
+		3:  "AUTH_BROWSER_FAILURE_LOGIN_LOCKED",
+		4:  "AUTH_BROWSER_FAILURE_CODE_MISMATCH",
+		5:  "AUTH_BROWSER_FAILURE_CODE_REISSUED",
+		6:  "AUTH_BROWSER_FAILURE_CODE_EXPIRED",
+		7:  "AUTH_BROWSER_FAILURE_TOKEN_EXPIRED",
+		8:  "AUTH_BROWSER_FAILURE_TOKEN_USED",
+		9:  "AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED",
+		10: "AUTH_BROWSER_FAILURE_CODE_REQUIRED",
+		11: "AUTH_BROWSER_FAILURE_RATE_LIMITED",
+		12: "AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN",
+		13: "AUTH_BROWSER_FAILURE_NOT_FOUND",
+	}
+	AuthBrowserFailure_value = map[string]int32{
+		"AUTH_BROWSER_FAILURE_UNSPECIFIED":         0,
+		"AUTH_BROWSER_FAILURE_INVALID_INPUT":       1,
+		"AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS": 2,
+		"AUTH_BROWSER_FAILURE_LOGIN_LOCKED":        3,
+		"AUTH_BROWSER_FAILURE_CODE_MISMATCH":       4,
+		"AUTH_BROWSER_FAILURE_CODE_REISSUED":       5,
+		"AUTH_BROWSER_FAILURE_CODE_EXPIRED":        6,
+		"AUTH_BROWSER_FAILURE_TOKEN_EXPIRED":       7,
+		"AUTH_BROWSER_FAILURE_TOKEN_USED":          8,
+		"AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED":    9,
+		"AUTH_BROWSER_FAILURE_CODE_REQUIRED":       10,
+		"AUTH_BROWSER_FAILURE_RATE_LIMITED":        11,
+		"AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN": 12,
+		"AUTH_BROWSER_FAILURE_NOT_FOUND":           13,
+	}
+)
+
+func (x AuthBrowserFailure) Enum() *AuthBrowserFailure {
+	p := new(AuthBrowserFailure)
+	*p = x
+	return p
+}
+
+func (x AuthBrowserFailure) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AuthBrowserFailure) Descriptor() protoreflect.EnumDescriptor {
+	return file_auth_v1_auth_proto_enumTypes[0].Descriptor()
+}
+
+func (AuthBrowserFailure) Type() protoreflect.EnumType {
+	return &file_auth_v1_auth_proto_enumTypes[0]
+}
+
+func (x AuthBrowserFailure) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AuthBrowserFailure.Descriptor instead.
+func (AuthBrowserFailure) EnumDescriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{0}
+}
+
 // RegisterCredentialsRequest carries the secret material needed for credential registration.
 type RegisterCredentialsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -564,7 +661,9 @@ type BrowserRegisterCredentialsResponse struct {
 	// Response is the original public response.
 	Response *RegisterCredentialsResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
-	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -611,6 +710,13 @@ func (x *BrowserRegisterCredentialsResponse) GetSetCookie() []string {
 		return x.SetCookie
 	}
 	return nil
+}
+
+func (x *BrowserRegisterCredentialsResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
 }
 
 // BrowserLoginRequest carries only typed Auth input and browser context.
@@ -674,7 +780,9 @@ type BrowserLoginResponse struct {
 	// Response is the original public response.
 	Response *LoginResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
-	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -721,6 +829,13 @@ func (x *BrowserLoginResponse) GetSetCookie() []string {
 		return x.SetCookie
 	}
 	return nil
+}
+
+func (x *BrowserLoginResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
 }
 
 // BrowserRefreshSessionRequest carries only typed Auth input and browser context.
@@ -784,7 +899,9 @@ type BrowserRefreshSessionResponse struct {
 	// Response is the original public response.
 	Response *RefreshSessionResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
-	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -831,6 +948,13 @@ func (x *BrowserRefreshSessionResponse) GetSetCookie() []string {
 		return x.SetCookie
 	}
 	return nil
+}
+
+func (x *BrowserRefreshSessionResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
 }
 
 // BrowserLogoutRequest carries only typed Auth input and browser context.
@@ -894,7 +1018,9 @@ type BrowserLogoutResponse struct {
 	// Response is the original public response.
 	Response *LogoutResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
-	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -941,6 +1067,13 @@ func (x *BrowserLogoutResponse) GetSetCookie() []string {
 		return x.SetCookie
 	}
 	return nil
+}
+
+func (x *BrowserLogoutResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
 }
 
 // BrowserLogoutAllRequest carries only typed Auth input and browser context.
@@ -1004,7 +1137,9 @@ type BrowserLogoutAllResponse struct {
 	// Response is the original public response.
 	Response *LogoutAllResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	// SetCookie contains separate Auth-issued HTTP Set-Cookie lines; never serialize into a public body.
-	SetCookie     []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1051,6 +1186,13 @@ func (x *BrowserLogoutAllResponse) GetSetCookie() []string {
 		return x.SetCookie
 	}
 	return nil
+}
+
+func (x *BrowserLogoutAllResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
 }
 
 // StartLoginRequest carries the secret material needed for the first login step.
@@ -1118,8 +1260,11 @@ type StartLoginResponse struct {
 	LoginChallengeId []byte `protobuf:"bytes,1,opt,name=login_challenge_id,json=loginChallengeId,proto3" json:"login_challenge_id,omitempty"`
 	// CodeExpiresInSeconds is the lifetime of the emailed code in whole seconds.
 	CodeExpiresInSeconds int64 `protobuf:"varint,2,opt,name=code_expires_in_seconds,json=codeExpiresInSeconds,proto3" json:"code_expires_in_seconds,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// SubjectId is set only when code confirmation is disabled and session cookies were issued.
+	// In this case login_challenge_id is empty and code_expires_in_seconds is zero.
+	SubjectId     []byte `protobuf:"bytes,3,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StartLoginResponse) Reset() {
@@ -1164,6 +1309,13 @@ func (x *StartLoginResponse) GetCodeExpiresInSeconds() int64 {
 		return x.CodeExpiresInSeconds
 	}
 	return 0
+}
+
+func (x *StartLoginResponse) GetSubjectId() []byte {
+	if x != nil {
+		return x.SubjectId
+	}
+	return nil
 }
 
 // CompleteLoginRequest carries the emailed six-digit code for a pending challenge.
@@ -1224,7 +1376,7 @@ func (x *CompleteLoginRequest) GetCode() string {
 // CompleteLoginResponse establishes identity; the session cookies travel via the
 // browser bridge. A wrong code yields InvalidArgument with ErrorInfo domain
 // "marketmesh.auth", reason "CODE_MISMATCH"; after three wrong codes the challenge
-// is replaced ("CODE_REISSUED"); an expired challenge yields FailedPrecondition
+// is replaced (FailedPrecondition, "CODE_REISSUED"); an expired challenge yields FailedPrecondition
 // with reason "CODE_EXPIRED".
 type CompleteLoginResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1660,8 +1812,8 @@ type GetCredentialsResponse struct {
 	// LoginCodeEnabled is true when sign-in requires the emailed one-time code.
 	LoginCodeEnabled bool `protobuf:"varint,3,opt,name=login_code_enabled,json=loginCodeEnabled,proto3" json:"login_code_enabled,omitempty"`
 	// NewDeviceCooldownUntilUnix is the exclusive end of the protection window after
-	// a login from a new device; zero when no cooldown applies. While it is active,
-	// RevokeSession of other sessions and RequestAccountDeletion fail with
+	// every new session; zero when no cooldown applies. While it is active,
+	// LogoutAll, RevokeSession of other sessions and RequestAccountDeletion fail with
 	// FailedPrecondition, reason "NEW_DEVICE_COOLDOWN".
 	NewDeviceCooldownUntilUnix int64 `protobuf:"varint,4,opt,name=new_device_cooldown_until_unix,json=newDeviceCooldownUntilUnix,proto3" json:"new_device_cooldown_until_unix,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -1730,7 +1882,9 @@ func (x *GetCredentialsResponse) GetNewDeviceCooldownUntilUnix() int64 {
 type StartEmailChangeRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// NewEmail is the case-insensitive new account email.
-	NewEmail      string `protobuf:"bytes,1,opt,name=new_email,json=newEmail,proto3" json:"new_email,omitempty"`
+	NewEmail string `protobuf:"bytes,1,opt,name=new_email,json=newEmail,proto3" json:"new_email,omitempty"`
+	// Password reauthenticates the caller before changing the sign-in address.
+	Password      []byte `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1770,6 +1924,13 @@ func (x *StartEmailChangeRequest) GetNewEmail() string {
 		return x.NewEmail
 	}
 	return ""
+}
+
+func (x *StartEmailChangeRequest) GetPassword() []byte {
+	if x != nil {
+		return x.Password
+	}
+	return nil
 }
 
 // StartEmailChangeResponse is empty; the alert goes to the old address and the
@@ -2519,6 +2680,2451 @@ func (x *ResendLoginCodeResponse) GetCodeExpiresInSeconds() int64 {
 	return 0
 }
 
+// StartLoginCodeChangeRequest requires the current password and an authenticated session.
+type StartLoginCodeChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Password proves the caller knows the current secret; never log it.
+	Password []byte `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
+	// Enabled is the desired code policy; the emailed code must confirm it.
+	Enabled       bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartLoginCodeChangeRequest) Reset() {
+	*x = StartLoginCodeChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartLoginCodeChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartLoginCodeChangeRequest) ProtoMessage() {}
+
+func (x *StartLoginCodeChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartLoginCodeChangeRequest.ProtoReflect.Descriptor instead.
+func (*StartLoginCodeChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *StartLoginCodeChangeRequest) GetPassword() []byte {
+	if x != nil {
+		return x.Password
+	}
+	return nil
+}
+
+func (x *StartLoginCodeChangeRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+// StartLoginCodeChangeResponse identifies the pending policy change.
+type StartLoginCodeChangeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ChallengeId is an opaque 16-byte ID.
+	ChallengeId []byte `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	// CodeExpiresInSeconds bounds the confirmation lifetime.
+	CodeExpiresInSeconds int64 `protobuf:"varint,2,opt,name=code_expires_in_seconds,json=codeExpiresInSeconds,proto3" json:"code_expires_in_seconds,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *StartLoginCodeChangeResponse) Reset() {
+	*x = StartLoginCodeChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartLoginCodeChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartLoginCodeChangeResponse) ProtoMessage() {}
+
+func (x *StartLoginCodeChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartLoginCodeChangeResponse.ProtoReflect.Descriptor instead.
+func (*StartLoginCodeChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *StartLoginCodeChangeResponse) GetChallengeId() []byte {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return nil
+}
+
+func (x *StartLoginCodeChangeResponse) GetCodeExpiresInSeconds() int64 {
+	if x != nil {
+		return x.CodeExpiresInSeconds
+	}
+	return 0
+}
+
+// CompleteLoginCodeChangeRequest confirms a change with an emailed six-digit code.
+type CompleteLoginCodeChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ChallengeId selects the caller's pending change.
+	ChallengeId []byte `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	// Code is six ASCII digits.
+	Code string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	// Enabled must match the pending purpose.
+	Enabled       bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteLoginCodeChangeRequest) Reset() {
+	*x = CompleteLoginCodeChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteLoginCodeChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteLoginCodeChangeRequest) ProtoMessage() {}
+
+func (x *CompleteLoginCodeChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteLoginCodeChangeRequest.ProtoReflect.Descriptor instead.
+func (*CompleteLoginCodeChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *CompleteLoginCodeChangeRequest) GetChallengeId() []byte {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return nil
+}
+
+func (x *CompleteLoginCodeChangeRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *CompleteLoginCodeChangeRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+// CompleteLoginCodeChangeResponse revokes existing sessions; a new login is required.
+type CompleteLoginCodeChangeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteLoginCodeChangeResponse) Reset() {
+	*x = CompleteLoginCodeChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteLoginCodeChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteLoginCodeChangeResponse) ProtoMessage() {}
+
+func (x *CompleteLoginCodeChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteLoginCodeChangeResponse.ProtoReflect.Descriptor instead.
+func (*CompleteLoginCodeChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{55}
+}
+
+// ChangePasswordRequest changes the caller's password and revokes all sessions.
+type ChangePasswordRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// CurrentPassword proves knowledge of the current secret.
+	CurrentPassword []byte `protobuf:"bytes,1,opt,name=current_password,json=currentPassword,proto3" json:"current_password,omitempty"`
+	// NewPassword is the replacement secret; never log it.
+	NewPassword   []byte `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangePasswordRequest) Reset() {
+	*x = ChangePasswordRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePasswordRequest) ProtoMessage() {}
+
+func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePasswordRequest.ProtoReflect.Descriptor instead.
+func (*ChangePasswordRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *ChangePasswordRequest) GetCurrentPassword() []byte {
+	if x != nil {
+		return x.CurrentPassword
+	}
+	return nil
+}
+
+func (x *ChangePasswordRequest) GetNewPassword() []byte {
+	if x != nil {
+		return x.NewPassword
+	}
+	return nil
+}
+
+// ChangePasswordResponse requires a new login after success.
+type ChangePasswordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangePasswordResponse) Reset() {
+	*x = ChangePasswordResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePasswordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePasswordResponse) ProtoMessage() {}
+
+func (x *ChangePasswordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePasswordResponse.ProtoReflect.Descriptor instead.
+func (*ChangePasswordResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{57}
+}
+
+// BrowserStartLoginCodeChangeRequest carries typed input and trusted browser headers.
+type BrowserStartLoginCodeChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *StartLoginCodeChangeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartLoginCodeChangeRequest) Reset() {
+	*x = BrowserStartLoginCodeChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartLoginCodeChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartLoginCodeChangeRequest) ProtoMessage() {}
+
+func (x *BrowserStartLoginCodeChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartLoginCodeChangeRequest.ProtoReflect.Descriptor instead.
+func (*BrowserStartLoginCodeChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *BrowserStartLoginCodeChangeRequest) GetRequest() *StartLoginCodeChangeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserStartLoginCodeChangeRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserStartLoginCodeChangeResponse is private and must never be returned directly to a browser.
+type BrowserStartLoginCodeChangeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *StartLoginCodeChangeResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartLoginCodeChangeResponse) Reset() {
+	*x = BrowserStartLoginCodeChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartLoginCodeChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartLoginCodeChangeResponse) ProtoMessage() {}
+
+func (x *BrowserStartLoginCodeChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartLoginCodeChangeResponse.ProtoReflect.Descriptor instead.
+func (*BrowserStartLoginCodeChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *BrowserStartLoginCodeChangeResponse) GetResponse() *StartLoginCodeChangeResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserStartLoginCodeChangeResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserStartLoginCodeChangeResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserCompleteLoginCodeChangeRequest carries typed input and trusted browser headers.
+type BrowserCompleteLoginCodeChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *CompleteLoginCodeChangeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCompleteLoginCodeChangeRequest) Reset() {
+	*x = BrowserCompleteLoginCodeChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCompleteLoginCodeChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCompleteLoginCodeChangeRequest) ProtoMessage() {}
+
+func (x *BrowserCompleteLoginCodeChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCompleteLoginCodeChangeRequest.ProtoReflect.Descriptor instead.
+func (*BrowserCompleteLoginCodeChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *BrowserCompleteLoginCodeChangeRequest) GetRequest() *CompleteLoginCodeChangeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserCompleteLoginCodeChangeRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserCompleteLoginCodeChangeResponse is private and must never be returned directly to a browser.
+type BrowserCompleteLoginCodeChangeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *CompleteLoginCodeChangeResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCompleteLoginCodeChangeResponse) Reset() {
+	*x = BrowserCompleteLoginCodeChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCompleteLoginCodeChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCompleteLoginCodeChangeResponse) ProtoMessage() {}
+
+func (x *BrowserCompleteLoginCodeChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCompleteLoginCodeChangeResponse.ProtoReflect.Descriptor instead.
+func (*BrowserCompleteLoginCodeChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *BrowserCompleteLoginCodeChangeResponse) GetResponse() *CompleteLoginCodeChangeResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserCompleteLoginCodeChangeResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserCompleteLoginCodeChangeResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserChangePasswordRequest carries typed input and trusted browser headers.
+type BrowserChangePasswordRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *ChangePasswordRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserChangePasswordRequest) Reset() {
+	*x = BrowserChangePasswordRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserChangePasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserChangePasswordRequest) ProtoMessage() {}
+
+func (x *BrowserChangePasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserChangePasswordRequest.ProtoReflect.Descriptor instead.
+func (*BrowserChangePasswordRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *BrowserChangePasswordRequest) GetRequest() *ChangePasswordRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserChangePasswordRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserChangePasswordResponse is private and must never be returned directly to a browser.
+type BrowserChangePasswordResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *ChangePasswordResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserChangePasswordResponse) Reset() {
+	*x = BrowserChangePasswordResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserChangePasswordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserChangePasswordResponse) ProtoMessage() {}
+
+func (x *BrowserChangePasswordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserChangePasswordResponse.ProtoReflect.Descriptor instead.
+func (*BrowserChangePasswordResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *BrowserChangePasswordResponse) GetResponse() *ChangePasswordResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserChangePasswordResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserChangePasswordResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserStartLoginRequest carries typed input and trusted browser headers.
+type BrowserStartLoginRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *StartLoginRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartLoginRequest) Reset() {
+	*x = BrowserStartLoginRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartLoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartLoginRequest) ProtoMessage() {}
+
+func (x *BrowserStartLoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartLoginRequest.ProtoReflect.Descriptor instead.
+func (*BrowserStartLoginRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *BrowserStartLoginRequest) GetRequest() *StartLoginRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserStartLoginRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserStartLoginResponse is private and must never be returned directly to a browser.
+type BrowserStartLoginResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *StartLoginResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartLoginResponse) Reset() {
+	*x = BrowserStartLoginResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartLoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartLoginResponse) ProtoMessage() {}
+
+func (x *BrowserStartLoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartLoginResponse.ProtoReflect.Descriptor instead.
+func (*BrowserStartLoginResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *BrowserStartLoginResponse) GetResponse() *StartLoginResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserStartLoginResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserStartLoginResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserCompleteLoginRequest carries typed input and trusted browser headers.
+type BrowserCompleteLoginRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *CompleteLoginRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCompleteLoginRequest) Reset() {
+	*x = BrowserCompleteLoginRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCompleteLoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCompleteLoginRequest) ProtoMessage() {}
+
+func (x *BrowserCompleteLoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCompleteLoginRequest.ProtoReflect.Descriptor instead.
+func (*BrowserCompleteLoginRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *BrowserCompleteLoginRequest) GetRequest() *CompleteLoginRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserCompleteLoginRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserCompleteLoginResponse is private and must never be returned directly to a browser.
+type BrowserCompleteLoginResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *CompleteLoginResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCompleteLoginResponse) Reset() {
+	*x = BrowserCompleteLoginResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCompleteLoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCompleteLoginResponse) ProtoMessage() {}
+
+func (x *BrowserCompleteLoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCompleteLoginResponse.ProtoReflect.Descriptor instead.
+func (*BrowserCompleteLoginResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *BrowserCompleteLoginResponse) GetResponse() *CompleteLoginResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserCompleteLoginResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserCompleteLoginResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserResendLoginCodeRequest carries typed input and trusted browser headers.
+type BrowserResendLoginCodeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *ResendLoginCodeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserResendLoginCodeRequest) Reset() {
+	*x = BrowserResendLoginCodeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserResendLoginCodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserResendLoginCodeRequest) ProtoMessage() {}
+
+func (x *BrowserResendLoginCodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserResendLoginCodeRequest.ProtoReflect.Descriptor instead.
+func (*BrowserResendLoginCodeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *BrowserResendLoginCodeRequest) GetRequest() *ResendLoginCodeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserResendLoginCodeRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserResendLoginCodeResponse is private and must never be returned directly to a browser.
+type BrowserResendLoginCodeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *ResendLoginCodeResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserResendLoginCodeResponse) Reset() {
+	*x = BrowserResendLoginCodeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserResendLoginCodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserResendLoginCodeResponse) ProtoMessage() {}
+
+func (x *BrowserResendLoginCodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserResendLoginCodeResponse.ProtoReflect.Descriptor instead.
+func (*BrowserResendLoginCodeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *BrowserResendLoginCodeResponse) GetResponse() *ResendLoginCodeResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserResendLoginCodeResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserResendLoginCodeResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserRequestEmailVerificationRequest carries typed input and trusted browser headers.
+type BrowserRequestEmailVerificationRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *RequestEmailVerificationRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRequestEmailVerificationRequest) Reset() {
+	*x = BrowserRequestEmailVerificationRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRequestEmailVerificationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRequestEmailVerificationRequest) ProtoMessage() {}
+
+func (x *BrowserRequestEmailVerificationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRequestEmailVerificationRequest.ProtoReflect.Descriptor instead.
+func (*BrowserRequestEmailVerificationRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *BrowserRequestEmailVerificationRequest) GetRequest() *RequestEmailVerificationRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserRequestEmailVerificationRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserRequestEmailVerificationResponse is private and must never be returned directly to a browser.
+type BrowserRequestEmailVerificationResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *RequestEmailVerificationResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRequestEmailVerificationResponse) Reset() {
+	*x = BrowserRequestEmailVerificationResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRequestEmailVerificationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRequestEmailVerificationResponse) ProtoMessage() {}
+
+func (x *BrowserRequestEmailVerificationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRequestEmailVerificationResponse.ProtoReflect.Descriptor instead.
+func (*BrowserRequestEmailVerificationResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *BrowserRequestEmailVerificationResponse) GetResponse() *RequestEmailVerificationResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserRequestEmailVerificationResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserRequestEmailVerificationResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserConfirmEmailRequest carries typed input and trusted browser headers.
+type BrowserConfirmEmailRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *ConfirmEmailRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserConfirmEmailRequest) Reset() {
+	*x = BrowserConfirmEmailRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserConfirmEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserConfirmEmailRequest) ProtoMessage() {}
+
+func (x *BrowserConfirmEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserConfirmEmailRequest.ProtoReflect.Descriptor instead.
+func (*BrowserConfirmEmailRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *BrowserConfirmEmailRequest) GetRequest() *ConfirmEmailRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserConfirmEmailRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserConfirmEmailResponse is private and must never be returned directly to a browser.
+type BrowserConfirmEmailResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *ConfirmEmailResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserConfirmEmailResponse) Reset() {
+	*x = BrowserConfirmEmailResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserConfirmEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserConfirmEmailResponse) ProtoMessage() {}
+
+func (x *BrowserConfirmEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserConfirmEmailResponse.ProtoReflect.Descriptor instead.
+func (*BrowserConfirmEmailResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *BrowserConfirmEmailResponse) GetResponse() *ConfirmEmailResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserConfirmEmailResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserConfirmEmailResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserRequestPasswordResetRequest carries typed input and trusted browser headers.
+type BrowserRequestPasswordResetRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *RequestPasswordResetRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRequestPasswordResetRequest) Reset() {
+	*x = BrowserRequestPasswordResetRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRequestPasswordResetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRequestPasswordResetRequest) ProtoMessage() {}
+
+func (x *BrowserRequestPasswordResetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRequestPasswordResetRequest.ProtoReflect.Descriptor instead.
+func (*BrowserRequestPasswordResetRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{74}
+}
+
+func (x *BrowserRequestPasswordResetRequest) GetRequest() *RequestPasswordResetRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserRequestPasswordResetRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserRequestPasswordResetResponse is private and must never be returned directly to a browser.
+type BrowserRequestPasswordResetResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *RequestPasswordResetResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRequestPasswordResetResponse) Reset() {
+	*x = BrowserRequestPasswordResetResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[75]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRequestPasswordResetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRequestPasswordResetResponse) ProtoMessage() {}
+
+func (x *BrowserRequestPasswordResetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[75]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRequestPasswordResetResponse.ProtoReflect.Descriptor instead.
+func (*BrowserRequestPasswordResetResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{75}
+}
+
+func (x *BrowserRequestPasswordResetResponse) GetResponse() *RequestPasswordResetResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserRequestPasswordResetResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserRequestPasswordResetResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserConfirmPasswordResetRequest carries typed input and trusted browser headers.
+type BrowserConfirmPasswordResetRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *ConfirmPasswordResetRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserConfirmPasswordResetRequest) Reset() {
+	*x = BrowserConfirmPasswordResetRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserConfirmPasswordResetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserConfirmPasswordResetRequest) ProtoMessage() {}
+
+func (x *BrowserConfirmPasswordResetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserConfirmPasswordResetRequest.ProtoReflect.Descriptor instead.
+func (*BrowserConfirmPasswordResetRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{76}
+}
+
+func (x *BrowserConfirmPasswordResetRequest) GetRequest() *ConfirmPasswordResetRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserConfirmPasswordResetRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserConfirmPasswordResetResponse is private and must never be returned directly to a browser.
+type BrowserConfirmPasswordResetResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *ConfirmPasswordResetResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserConfirmPasswordResetResponse) Reset() {
+	*x = BrowserConfirmPasswordResetResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserConfirmPasswordResetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserConfirmPasswordResetResponse) ProtoMessage() {}
+
+func (x *BrowserConfirmPasswordResetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserConfirmPasswordResetResponse.ProtoReflect.Descriptor instead.
+func (*BrowserConfirmPasswordResetResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *BrowserConfirmPasswordResetResponse) GetResponse() *ConfirmPasswordResetResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserConfirmPasswordResetResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserConfirmPasswordResetResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserGetCredentialsRequest carries typed input and trusted browser headers.
+type BrowserGetCredentialsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *GetCredentialsRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserGetCredentialsRequest) Reset() {
+	*x = BrowserGetCredentialsRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserGetCredentialsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserGetCredentialsRequest) ProtoMessage() {}
+
+func (x *BrowserGetCredentialsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserGetCredentialsRequest.ProtoReflect.Descriptor instead.
+func (*BrowserGetCredentialsRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *BrowserGetCredentialsRequest) GetRequest() *GetCredentialsRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserGetCredentialsRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserGetCredentialsResponse is private and must never be returned directly to a browser.
+type BrowserGetCredentialsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *GetCredentialsResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserGetCredentialsResponse) Reset() {
+	*x = BrowserGetCredentialsResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[79]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserGetCredentialsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserGetCredentialsResponse) ProtoMessage() {}
+
+func (x *BrowserGetCredentialsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[79]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserGetCredentialsResponse.ProtoReflect.Descriptor instead.
+func (*BrowserGetCredentialsResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{79}
+}
+
+func (x *BrowserGetCredentialsResponse) GetResponse() *GetCredentialsResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserGetCredentialsResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserGetCredentialsResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserStartEmailChangeRequest carries typed input and trusted browser headers.
+type BrowserStartEmailChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *StartEmailChangeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartEmailChangeRequest) Reset() {
+	*x = BrowserStartEmailChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[80]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartEmailChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartEmailChangeRequest) ProtoMessage() {}
+
+func (x *BrowserStartEmailChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[80]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartEmailChangeRequest.ProtoReflect.Descriptor instead.
+func (*BrowserStartEmailChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{80}
+}
+
+func (x *BrowserStartEmailChangeRequest) GetRequest() *StartEmailChangeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserStartEmailChangeRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserStartEmailChangeResponse is private and must never be returned directly to a browser.
+type BrowserStartEmailChangeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *StartEmailChangeResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartEmailChangeResponse) Reset() {
+	*x = BrowserStartEmailChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartEmailChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartEmailChangeResponse) ProtoMessage() {}
+
+func (x *BrowserStartEmailChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartEmailChangeResponse.ProtoReflect.Descriptor instead.
+func (*BrowserStartEmailChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *BrowserStartEmailChangeResponse) GetResponse() *StartEmailChangeResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserStartEmailChangeResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserStartEmailChangeResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserConfirmEmailChangeRequest carries typed input and trusted browser headers.
+type BrowserConfirmEmailChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *ConfirmEmailChangeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserConfirmEmailChangeRequest) Reset() {
+	*x = BrowserConfirmEmailChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[82]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserConfirmEmailChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserConfirmEmailChangeRequest) ProtoMessage() {}
+
+func (x *BrowserConfirmEmailChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[82]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserConfirmEmailChangeRequest.ProtoReflect.Descriptor instead.
+func (*BrowserConfirmEmailChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *BrowserConfirmEmailChangeRequest) GetRequest() *ConfirmEmailChangeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserConfirmEmailChangeRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserConfirmEmailChangeResponse is private and must never be returned directly to a browser.
+type BrowserConfirmEmailChangeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *ConfirmEmailChangeResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserConfirmEmailChangeResponse) Reset() {
+	*x = BrowserConfirmEmailChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[83]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserConfirmEmailChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserConfirmEmailChangeResponse) ProtoMessage() {}
+
+func (x *BrowserConfirmEmailChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[83]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserConfirmEmailChangeResponse.ProtoReflect.Descriptor instead.
+func (*BrowserConfirmEmailChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{83}
+}
+
+func (x *BrowserConfirmEmailChangeResponse) GetResponse() *ConfirmEmailChangeResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserConfirmEmailChangeResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserConfirmEmailChangeResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserCancelEmailChangeRequest carries typed input and trusted browser headers.
+type BrowserCancelEmailChangeRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *CancelEmailChangeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCancelEmailChangeRequest) Reset() {
+	*x = BrowserCancelEmailChangeRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[84]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCancelEmailChangeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCancelEmailChangeRequest) ProtoMessage() {}
+
+func (x *BrowserCancelEmailChangeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[84]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCancelEmailChangeRequest.ProtoReflect.Descriptor instead.
+func (*BrowserCancelEmailChangeRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *BrowserCancelEmailChangeRequest) GetRequest() *CancelEmailChangeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserCancelEmailChangeRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserCancelEmailChangeResponse is private and must never be returned directly to a browser.
+type BrowserCancelEmailChangeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *CancelEmailChangeResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCancelEmailChangeResponse) Reset() {
+	*x = BrowserCancelEmailChangeResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[85]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCancelEmailChangeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCancelEmailChangeResponse) ProtoMessage() {}
+
+func (x *BrowserCancelEmailChangeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[85]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCancelEmailChangeResponse.ProtoReflect.Descriptor instead.
+func (*BrowserCancelEmailChangeResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{85}
+}
+
+func (x *BrowserCancelEmailChangeResponse) GetResponse() *CancelEmailChangeResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserCancelEmailChangeResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserCancelEmailChangeResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserListSessionsRequest carries typed input and trusted browser headers.
+type BrowserListSessionsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *ListSessionsRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserListSessionsRequest) Reset() {
+	*x = BrowserListSessionsRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[86]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserListSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserListSessionsRequest) ProtoMessage() {}
+
+func (x *BrowserListSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[86]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserListSessionsRequest.ProtoReflect.Descriptor instead.
+func (*BrowserListSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{86}
+}
+
+func (x *BrowserListSessionsRequest) GetRequest() *ListSessionsRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserListSessionsRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserListSessionsResponse is private and must never be returned directly to a browser.
+type BrowserListSessionsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *ListSessionsResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserListSessionsResponse) Reset() {
+	*x = BrowserListSessionsResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[87]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserListSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserListSessionsResponse) ProtoMessage() {}
+
+func (x *BrowserListSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[87]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserListSessionsResponse.ProtoReflect.Descriptor instead.
+func (*BrowserListSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{87}
+}
+
+func (x *BrowserListSessionsResponse) GetResponse() *ListSessionsResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserListSessionsResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserListSessionsResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserRevokeSessionRequest carries typed input and trusted browser headers.
+type BrowserRevokeSessionRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *RevokeSessionRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRevokeSessionRequest) Reset() {
+	*x = BrowserRevokeSessionRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[88]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRevokeSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRevokeSessionRequest) ProtoMessage() {}
+
+func (x *BrowserRevokeSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[88]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRevokeSessionRequest.ProtoReflect.Descriptor instead.
+func (*BrowserRevokeSessionRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{88}
+}
+
+func (x *BrowserRevokeSessionRequest) GetRequest() *RevokeSessionRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserRevokeSessionRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserRevokeSessionResponse is private and must never be returned directly to a browser.
+type BrowserRevokeSessionResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *RevokeSessionResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRevokeSessionResponse) Reset() {
+	*x = BrowserRevokeSessionResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[89]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRevokeSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRevokeSessionResponse) ProtoMessage() {}
+
+func (x *BrowserRevokeSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[89]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRevokeSessionResponse.ProtoReflect.Descriptor instead.
+func (*BrowserRevokeSessionResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{89}
+}
+
+func (x *BrowserRevokeSessionResponse) GetResponse() *RevokeSessionResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserRevokeSessionResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserRevokeSessionResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserRequestAccountDeletionRequest carries typed input and trusted browser headers.
+type BrowserRequestAccountDeletionRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *RequestAccountDeletionRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRequestAccountDeletionRequest) Reset() {
+	*x = BrowserRequestAccountDeletionRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[90]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRequestAccountDeletionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRequestAccountDeletionRequest) ProtoMessage() {}
+
+func (x *BrowserRequestAccountDeletionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[90]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRequestAccountDeletionRequest.ProtoReflect.Descriptor instead.
+func (*BrowserRequestAccountDeletionRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{90}
+}
+
+func (x *BrowserRequestAccountDeletionRequest) GetRequest() *RequestAccountDeletionRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserRequestAccountDeletionRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserRequestAccountDeletionResponse is private and must never be returned directly to a browser.
+type BrowserRequestAccountDeletionResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *RequestAccountDeletionResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserRequestAccountDeletionResponse) Reset() {
+	*x = BrowserRequestAccountDeletionResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[91]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserRequestAccountDeletionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserRequestAccountDeletionResponse) ProtoMessage() {}
+
+func (x *BrowserRequestAccountDeletionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[91]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserRequestAccountDeletionResponse.ProtoReflect.Descriptor instead.
+func (*BrowserRequestAccountDeletionResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{91}
+}
+
+func (x *BrowserRequestAccountDeletionResponse) GetResponse() *RequestAccountDeletionResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserRequestAccountDeletionResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserRequestAccountDeletionResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserCancelAccountDeletionRequest carries typed input and trusted browser headers.
+type BrowserCancelAccountDeletionRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *CancelAccountDeletionRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCancelAccountDeletionRequest) Reset() {
+	*x = BrowserCancelAccountDeletionRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[92]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCancelAccountDeletionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCancelAccountDeletionRequest) ProtoMessage() {}
+
+func (x *BrowserCancelAccountDeletionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[92]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCancelAccountDeletionRequest.ProtoReflect.Descriptor instead.
+func (*BrowserCancelAccountDeletionRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{92}
+}
+
+func (x *BrowserCancelAccountDeletionRequest) GetRequest() *CancelAccountDeletionRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserCancelAccountDeletionRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserCancelAccountDeletionResponse is private and must never be returned directly to a browser.
+type BrowserCancelAccountDeletionResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *CancelAccountDeletionResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCancelAccountDeletionResponse) Reset() {
+	*x = BrowserCancelAccountDeletionResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[93]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCancelAccountDeletionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCancelAccountDeletionResponse) ProtoMessage() {}
+
+func (x *BrowserCancelAccountDeletionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[93]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCancelAccountDeletionResponse.ProtoReflect.Descriptor instead.
+func (*BrowserCancelAccountDeletionResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{93}
+}
+
+func (x *BrowserCancelAccountDeletionResponse) GetResponse() *CancelAccountDeletionResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserCancelAccountDeletionResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserCancelAccountDeletionResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
 
 const file_auth_v1_auth_proto_rawDesc = "" +
@@ -2550,47 +5156,54 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x0esec_fetch_site\x18\x03 \x03(\tR\fsecFetchSite\"\x95\x01\n" +
 	"!BrowserRegisterCredentialsRequest\x12=\n" +
 	"\arequest\x18\x01 \x01(\v2#.auth.v1.RegisterCredentialsRequestR\arequest\x121\n" +
-	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\x85\x01\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xbc\x01\n" +
 	"\"BrowserRegisterCredentialsResponse\x12@\n" +
 	"\bresponse\x18\x01 \x01(\v2$.auth.v1.RegisterCredentialsResponseR\bresponse\x12\x1d\n" +
 	"\n" +
-	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"y\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"y\n" +
 	"\x13BrowserLoginRequest\x12/\n" +
 	"\arequest\x18\x01 \x01(\v2\x15.auth.v1.LoginRequestR\arequest\x121\n" +
-	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"i\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xa0\x01\n" +
 	"\x14BrowserLoginResponse\x122\n" +
 	"\bresponse\x18\x01 \x01(\v2\x16.auth.v1.LoginResponseR\bresponse\x12\x1d\n" +
 	"\n" +
-	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"\x8b\x01\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x8b\x01\n" +
 	"\x1cBrowserRefreshSessionRequest\x128\n" +
 	"\arequest\x18\x01 \x01(\v2\x1e.auth.v1.RefreshSessionRequestR\arequest\x121\n" +
-	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"{\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb2\x01\n" +
 	"\x1dBrowserRefreshSessionResponse\x12;\n" +
 	"\bresponse\x18\x01 \x01(\v2\x1f.auth.v1.RefreshSessionResponseR\bresponse\x12\x1d\n" +
 	"\n" +
-	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"{\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"{\n" +
 	"\x14BrowserLogoutRequest\x120\n" +
 	"\arequest\x18\x01 \x01(\v2\x16.auth.v1.LogoutRequestR\arequest\x121\n" +
-	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"k\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xa2\x01\n" +
 	"\x15BrowserLogoutResponse\x123\n" +
 	"\bresponse\x18\x01 \x01(\v2\x17.auth.v1.LogoutResponseR\bresponse\x12\x1d\n" +
 	"\n" +
-	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"\x81\x01\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x81\x01\n" +
 	"\x17BrowserLogoutAllRequest\x123\n" +
 	"\arequest\x18\x01 \x01(\v2\x19.auth.v1.LogoutAllRequestR\arequest\x121\n" +
-	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"q\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xa8\x01\n" +
 	"\x18BrowserLogoutAllResponse\x126\n" +
 	"\bresponse\x18\x01 \x01(\v2\x1a.auth.v1.LogoutAllResponseR\bresponse\x12\x1d\n" +
 	"\n" +
-	"set_cookie\x18\x02 \x03(\tR\tsetCookie\"O\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"O\n" +
 	"\x11StartLoginRequest\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
 	"identifier\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\fR\bpassword\"y\n" +
+	"\bpassword\x18\x02 \x01(\fR\bpassword\"\x98\x01\n" +
 	"\x12StartLoginResponse\x12,\n" +
 	"\x12login_challenge_id\x18\x01 \x01(\fR\x10loginChallengeId\x125\n" +
-	"\x17code_expires_in_seconds\x18\x02 \x01(\x03R\x14codeExpiresInSeconds\"X\n" +
+	"\x17code_expires_in_seconds\x18\x02 \x01(\x03R\x14codeExpiresInSeconds\x12\x1d\n" +
+	"\n" +
+	"subject_id\x18\x03 \x01(\fR\tsubjectId\"X\n" +
 	"\x14CompleteLoginRequest\x12,\n" +
 	"\x12login_challenge_id\x18\x01 \x01(\fR\x10loginChallengeId\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\"6\n" +
@@ -2615,9 +5228,10 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12%\n" +
 	"\x0eemail_verified\x18\x02 \x01(\bR\remailVerified\x12,\n" +
 	"\x12login_code_enabled\x18\x03 \x01(\bR\x10loginCodeEnabled\x12B\n" +
-	"\x1enew_device_cooldown_until_unix\x18\x04 \x01(\x03R\x1anewDeviceCooldownUntilUnix\"6\n" +
+	"\x1enew_device_cooldown_until_unix\x18\x04 \x01(\x03R\x1anewDeviceCooldownUntilUnix\"R\n" +
 	"\x17StartEmailChangeRequest\x12\x1b\n" +
-	"\tnew_email\x18\x01 \x01(\tR\bnewEmail\"\x1a\n" +
+	"\tnew_email\x18\x01 \x01(\tR\bnewEmail\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\fR\bpassword\"\x1a\n" +
 	"\x18StartEmailChangeResponse\"1\n" +
 	"\x19ConfirmEmailChangeRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x1c\n" +
@@ -2652,13 +5266,191 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x16ResendLoginCodeRequest\x12,\n" +
 	"\x12login_challenge_id\x18\x01 \x01(\fR\x10loginChallengeId\"P\n" +
 	"\x17ResendLoginCodeResponse\x125\n" +
-	"\x17code_expires_in_seconds\x18\x01 \x01(\x03R\x14codeExpiresInSeconds2\xc5\r\n" +
+	"\x17code_expires_in_seconds\x18\x01 \x01(\x03R\x14codeExpiresInSeconds\"S\n" +
+	"\x1bStartLoginCodeChangeRequest\x12\x1a\n" +
+	"\bpassword\x18\x01 \x01(\fR\bpassword\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\"x\n" +
+	"\x1cStartLoginCodeChangeResponse\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\fR\vchallengeId\x125\n" +
+	"\x17code_expires_in_seconds\x18\x02 \x01(\x03R\x14codeExpiresInSeconds\"q\n" +
+	"\x1eCompleteLoginCodeChangeRequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\fR\vchallengeId\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\"!\n" +
+	"\x1fCompleteLoginCodeChangeResponse\"e\n" +
+	"\x15ChangePasswordRequest\x12)\n" +
+	"\x10current_password\x18\x01 \x01(\fR\x0fcurrentPassword\x12!\n" +
+	"\fnew_password\x18\x02 \x01(\fR\vnewPassword\"\x18\n" +
+	"\x16ChangePasswordResponse\"\x97\x01\n" +
+	"\"BrowserStartLoginCodeChangeRequest\x12>\n" +
+	"\arequest\x18\x01 \x01(\v2$.auth.v1.StartLoginCodeChangeRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xbe\x01\n" +
+	"#BrowserStartLoginCodeChangeResponse\x12A\n" +
+	"\bresponse\x18\x01 \x01(\v2%.auth.v1.StartLoginCodeChangeResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x9d\x01\n" +
+	"%BrowserCompleteLoginCodeChangeRequest\x12A\n" +
+	"\arequest\x18\x01 \x01(\v2'.auth.v1.CompleteLoginCodeChangeRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xc4\x01\n" +
+	"&BrowserCompleteLoginCodeChangeResponse\x12D\n" +
+	"\bresponse\x18\x01 \x01(\v2(.auth.v1.CompleteLoginCodeChangeResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x8b\x01\n" +
+	"\x1cBrowserChangePasswordRequest\x128\n" +
+	"\arequest\x18\x01 \x01(\v2\x1e.auth.v1.ChangePasswordRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb2\x01\n" +
+	"\x1dBrowserChangePasswordResponse\x12;\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1f.auth.v1.ChangePasswordResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x83\x01\n" +
+	"\x18BrowserStartLoginRequest\x124\n" +
+	"\arequest\x18\x01 \x01(\v2\x1a.auth.v1.StartLoginRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xaa\x01\n" +
+	"\x19BrowserStartLoginResponse\x127\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1b.auth.v1.StartLoginResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x89\x01\n" +
+	"\x1bBrowserCompleteLoginRequest\x127\n" +
+	"\arequest\x18\x01 \x01(\v2\x1d.auth.v1.CompleteLoginRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb0\x01\n" +
+	"\x1cBrowserCompleteLoginResponse\x12:\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1e.auth.v1.CompleteLoginResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x8d\x01\n" +
+	"\x1dBrowserResendLoginCodeRequest\x129\n" +
+	"\arequest\x18\x01 \x01(\v2\x1f.auth.v1.ResendLoginCodeRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb4\x01\n" +
+	"\x1eBrowserResendLoginCodeResponse\x12<\n" +
+	"\bresponse\x18\x01 \x01(\v2 .auth.v1.ResendLoginCodeResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x9f\x01\n" +
+	"&BrowserRequestEmailVerificationRequest\x12B\n" +
+	"\arequest\x18\x01 \x01(\v2(.auth.v1.RequestEmailVerificationRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xc6\x01\n" +
+	"'BrowserRequestEmailVerificationResponse\x12E\n" +
+	"\bresponse\x18\x01 \x01(\v2).auth.v1.RequestEmailVerificationResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x87\x01\n" +
+	"\x1aBrowserConfirmEmailRequest\x126\n" +
+	"\arequest\x18\x01 \x01(\v2\x1c.auth.v1.ConfirmEmailRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xae\x01\n" +
+	"\x1bBrowserConfirmEmailResponse\x129\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1d.auth.v1.ConfirmEmailResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x97\x01\n" +
+	"\"BrowserRequestPasswordResetRequest\x12>\n" +
+	"\arequest\x18\x01 \x01(\v2$.auth.v1.RequestPasswordResetRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xbe\x01\n" +
+	"#BrowserRequestPasswordResetResponse\x12A\n" +
+	"\bresponse\x18\x01 \x01(\v2%.auth.v1.RequestPasswordResetResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x97\x01\n" +
+	"\"BrowserConfirmPasswordResetRequest\x12>\n" +
+	"\arequest\x18\x01 \x01(\v2$.auth.v1.ConfirmPasswordResetRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xbe\x01\n" +
+	"#BrowserConfirmPasswordResetResponse\x12A\n" +
+	"\bresponse\x18\x01 \x01(\v2%.auth.v1.ConfirmPasswordResetResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x8b\x01\n" +
+	"\x1cBrowserGetCredentialsRequest\x128\n" +
+	"\arequest\x18\x01 \x01(\v2\x1e.auth.v1.GetCredentialsRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb2\x01\n" +
+	"\x1dBrowserGetCredentialsResponse\x12;\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1f.auth.v1.GetCredentialsResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x8f\x01\n" +
+	"\x1eBrowserStartEmailChangeRequest\x12:\n" +
+	"\arequest\x18\x01 \x01(\v2 .auth.v1.StartEmailChangeRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb6\x01\n" +
+	"\x1fBrowserStartEmailChangeResponse\x12=\n" +
+	"\bresponse\x18\x01 \x01(\v2!.auth.v1.StartEmailChangeResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x93\x01\n" +
+	" BrowserConfirmEmailChangeRequest\x12<\n" +
+	"\arequest\x18\x01 \x01(\v2\".auth.v1.ConfirmEmailChangeRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xba\x01\n" +
+	"!BrowserConfirmEmailChangeResponse\x12?\n" +
+	"\bresponse\x18\x01 \x01(\v2#.auth.v1.ConfirmEmailChangeResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x91\x01\n" +
+	"\x1fBrowserCancelEmailChangeRequest\x12;\n" +
+	"\arequest\x18\x01 \x01(\v2!.auth.v1.CancelEmailChangeRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb8\x01\n" +
+	" BrowserCancelEmailChangeResponse\x12>\n" +
+	"\bresponse\x18\x01 \x01(\v2\".auth.v1.CancelEmailChangeResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x87\x01\n" +
+	"\x1aBrowserListSessionsRequest\x126\n" +
+	"\arequest\x18\x01 \x01(\v2\x1c.auth.v1.ListSessionsRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xae\x01\n" +
+	"\x1bBrowserListSessionsResponse\x129\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1d.auth.v1.ListSessionsResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x89\x01\n" +
+	"\x1bBrowserRevokeSessionRequest\x127\n" +
+	"\arequest\x18\x01 \x01(\v2\x1d.auth.v1.RevokeSessionRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xb0\x01\n" +
+	"\x1cBrowserRevokeSessionResponse\x12:\n" +
+	"\bresponse\x18\x01 \x01(\v2\x1e.auth.v1.RevokeSessionResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x9b\x01\n" +
+	"$BrowserRequestAccountDeletionRequest\x12@\n" +
+	"\arequest\x18\x01 \x01(\v2&.auth.v1.RequestAccountDeletionRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xc2\x01\n" +
+	"%BrowserRequestAccountDeletionResponse\x12C\n" +
+	"\bresponse\x18\x01 \x01(\v2'.auth.v1.RequestAccountDeletionResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x99\x01\n" +
+	"#BrowserCancelAccountDeletionRequest\x12?\n" +
+	"\arequest\x18\x01 \x01(\v2%.auth.v1.CancelAccountDeletionRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xc0\x01\n" +
+	"$BrowserCancelAccountDeletionResponse\x12B\n" +
+	"\bresponse\x18\x01 \x01(\v2&.auth.v1.CancelAccountDeletionResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure*\xc7\x04\n" +
+	"\x12AuthBrowserFailure\x12$\n" +
+	" AUTH_BROWSER_FAILURE_UNSPECIFIED\x10\x00\x12&\n" +
+	"\"AUTH_BROWSER_FAILURE_INVALID_INPUT\x10\x01\x12,\n" +
+	"(AUTH_BROWSER_FAILURE_INVALID_CREDENTIALS\x10\x02\x12%\n" +
+	"!AUTH_BROWSER_FAILURE_LOGIN_LOCKED\x10\x03\x12&\n" +
+	"\"AUTH_BROWSER_FAILURE_CODE_MISMATCH\x10\x04\x12&\n" +
+	"\"AUTH_BROWSER_FAILURE_CODE_REISSUED\x10\x05\x12%\n" +
+	"!AUTH_BROWSER_FAILURE_CODE_EXPIRED\x10\x06\x12&\n" +
+	"\"AUTH_BROWSER_FAILURE_TOKEN_EXPIRED\x10\a\x12#\n" +
+	"\x1fAUTH_BROWSER_FAILURE_TOKEN_USED\x10\b\x12)\n" +
+	"%AUTH_BROWSER_FAILURE_EMAIL_UNVERIFIED\x10\t\x12&\n" +
+	"\"AUTH_BROWSER_FAILURE_CODE_REQUIRED\x10\n" +
+	"\x12%\n" +
+	"!AUTH_BROWSER_FAILURE_RATE_LIMITED\x10\v\x12,\n" +
+	"(AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN\x10\f\x12\"\n" +
+	"\x1eAUTH_BROWSER_FAILURE_NOT_FOUND\x10\r2\xeb\x0f\n" +
 	"\vAuthService\x12`\n" +
 	"\x13RegisterCredentials\x12#.auth.v1.RegisterCredentialsRequest\x1a$.auth.v1.RegisterCredentialsResponse\x126\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\x12Q\n" +
 	"\x0eRefreshSession\x12\x1e.auth.v1.RefreshSessionRequest\x1a\x1f.auth.v1.RefreshSessionResponse\x129\n" +
 	"\x06Logout\x12\x16.auth.v1.LogoutRequest\x1a\x17.auth.v1.LogoutResponse\x12B\n" +
-	"\tLogoutAll\x12\x19.auth.v1.LogoutAllRequest\x1a\x1a.auth.v1.LogoutAllResponse\x12E\n" +
+	"\tLogoutAll\x12\x19.auth.v1.LogoutAllRequest\x1a\x1a.auth.v1.LogoutAllResponse\x12c\n" +
+	"\x14StartLoginCodeChange\x12$.auth.v1.StartLoginCodeChangeRequest\x1a%.auth.v1.StartLoginCodeChangeResponse\x12l\n" +
+	"\x17CompleteLoginCodeChange\x12'.auth.v1.CompleteLoginCodeChangeRequest\x1a(.auth.v1.CompleteLoginCodeChangeResponse\x12Q\n" +
+	"\x0eChangePassword\x12\x1e.auth.v1.ChangePasswordRequest\x1a\x1f.auth.v1.ChangePasswordResponse\x12E\n" +
 	"\n" +
 	"StartLogin\x12\x1a.auth.v1.StartLoginRequest\x1a\x1b.auth.v1.StartLoginResponse\x12N\n" +
 	"\rCompleteLogin\x12\x1d.auth.v1.CompleteLoginRequest\x1a\x1e.auth.v1.CompleteLoginResponse\x12T\n" +
@@ -2674,13 +5466,31 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\fListSessions\x12\x1c.auth.v1.ListSessionsRequest\x1a\x1d.auth.v1.ListSessionsResponse\x12N\n" +
 	"\rRevokeSession\x12\x1d.auth.v1.RevokeSessionRequest\x1a\x1e.auth.v1.RevokeSessionResponse\x12i\n" +
 	"\x16RequestAccountDeletion\x12&.auth.v1.RequestAccountDeletionRequest\x1a'.auth.v1.RequestAccountDeletionResponse\x12f\n" +
-	"\x15CancelAccountDeletion\x12%.auth.v1.CancelAccountDeletionRequest\x1a&.auth.v1.CancelAccountDeletionResponse2\xe9\x03\n" +
+	"\x15CancelAccountDeletion\x12%.auth.v1.CancelAccountDeletionRequest\x1a&.auth.v1.CancelAccountDeletionResponse2\xd7\x13\n" +
 	"\x12AuthBrowserService\x12u\n" +
 	"\x1aBrowserRegisterCredentials\x12*.auth.v1.BrowserRegisterCredentialsRequest\x1a+.auth.v1.BrowserRegisterCredentialsResponse\x12K\n" +
 	"\fBrowserLogin\x12\x1c.auth.v1.BrowserLoginRequest\x1a\x1d.auth.v1.BrowserLoginResponse\x12f\n" +
 	"\x15BrowserRefreshSession\x12%.auth.v1.BrowserRefreshSessionRequest\x1a&.auth.v1.BrowserRefreshSessionResponse\x12N\n" +
 	"\rBrowserLogout\x12\x1d.auth.v1.BrowserLogoutRequest\x1a\x1e.auth.v1.BrowserLogoutResponse\x12W\n" +
-	"\x10BrowserLogoutAll\x12 .auth.v1.BrowserLogoutAllRequest\x1a!.auth.v1.BrowserLogoutAllResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1b\x06proto3"
+	"\x10BrowserLogoutAll\x12 .auth.v1.BrowserLogoutAllRequest\x1a!.auth.v1.BrowserLogoutAllResponse\x12x\n" +
+	"\x1bBrowserStartLoginCodeChange\x12+.auth.v1.BrowserStartLoginCodeChangeRequest\x1a,.auth.v1.BrowserStartLoginCodeChangeResponse\x12\x81\x01\n" +
+	"\x1eBrowserCompleteLoginCodeChange\x12..auth.v1.BrowserCompleteLoginCodeChangeRequest\x1a/.auth.v1.BrowserCompleteLoginCodeChangeResponse\x12f\n" +
+	"\x15BrowserChangePassword\x12%.auth.v1.BrowserChangePasswordRequest\x1a&.auth.v1.BrowserChangePasswordResponse\x12Z\n" +
+	"\x11BrowserStartLogin\x12!.auth.v1.BrowserStartLoginRequest\x1a\".auth.v1.BrowserStartLoginResponse\x12c\n" +
+	"\x14BrowserCompleteLogin\x12$.auth.v1.BrowserCompleteLoginRequest\x1a%.auth.v1.BrowserCompleteLoginResponse\x12i\n" +
+	"\x16BrowserResendLoginCode\x12&.auth.v1.BrowserResendLoginCodeRequest\x1a'.auth.v1.BrowserResendLoginCodeResponse\x12\x84\x01\n" +
+	"\x1fBrowserRequestEmailVerification\x12/.auth.v1.BrowserRequestEmailVerificationRequest\x1a0.auth.v1.BrowserRequestEmailVerificationResponse\x12`\n" +
+	"\x13BrowserConfirmEmail\x12#.auth.v1.BrowserConfirmEmailRequest\x1a$.auth.v1.BrowserConfirmEmailResponse\x12x\n" +
+	"\x1bBrowserRequestPasswordReset\x12+.auth.v1.BrowserRequestPasswordResetRequest\x1a,.auth.v1.BrowserRequestPasswordResetResponse\x12x\n" +
+	"\x1bBrowserConfirmPasswordReset\x12+.auth.v1.BrowserConfirmPasswordResetRequest\x1a,.auth.v1.BrowserConfirmPasswordResetResponse\x12f\n" +
+	"\x15BrowserGetCredentials\x12%.auth.v1.BrowserGetCredentialsRequest\x1a&.auth.v1.BrowserGetCredentialsResponse\x12l\n" +
+	"\x17BrowserStartEmailChange\x12'.auth.v1.BrowserStartEmailChangeRequest\x1a(.auth.v1.BrowserStartEmailChangeResponse\x12r\n" +
+	"\x19BrowserConfirmEmailChange\x12).auth.v1.BrowserConfirmEmailChangeRequest\x1a*.auth.v1.BrowserConfirmEmailChangeResponse\x12o\n" +
+	"\x18BrowserCancelEmailChange\x12(.auth.v1.BrowserCancelEmailChangeRequest\x1a).auth.v1.BrowserCancelEmailChangeResponse\x12`\n" +
+	"\x13BrowserListSessions\x12#.auth.v1.BrowserListSessionsRequest\x1a$.auth.v1.BrowserListSessionsResponse\x12c\n" +
+	"\x14BrowserRevokeSession\x12$.auth.v1.BrowserRevokeSessionRequest\x1a%.auth.v1.BrowserRevokeSessionResponse\x12~\n" +
+	"\x1dBrowserRequestAccountDeletion\x12-.auth.v1.BrowserRequestAccountDeletionRequest\x1a..auth.v1.BrowserRequestAccountDeletionResponse\x12{\n" +
+	"\x1cBrowserCancelAccountDeletion\x12,.auth.v1.BrowserCancelAccountDeletionRequest\x1a-.auth.v1.BrowserCancelAccountDeletionResponseB8Z6github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1b\x06proto3"
 
 var (
 	file_auth_v1_auth_proto_rawDescOnce sync.Once
@@ -2694,133 +5504,296 @@ func file_auth_v1_auth_proto_rawDescGZIP() []byte {
 	return file_auth_v1_auth_proto_rawDescData
 }
 
-var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
+var file_auth_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 94)
 var file_auth_v1_auth_proto_goTypes = []any{
-	(*RegisterCredentialsRequest)(nil),         // 0: auth.v1.RegisterCredentialsRequest
-	(*RegisterCredentialsResponse)(nil),        // 1: auth.v1.RegisterCredentialsResponse
-	(*LoginRequest)(nil),                       // 2: auth.v1.LoginRequest
-	(*LoginResponse)(nil),                      // 3: auth.v1.LoginResponse
-	(*RefreshSessionRequest)(nil),              // 4: auth.v1.RefreshSessionRequest
-	(*RefreshSessionResponse)(nil),             // 5: auth.v1.RefreshSessionResponse
-	(*LogoutRequest)(nil),                      // 6: auth.v1.LogoutRequest
-	(*LogoutResponse)(nil),                     // 7: auth.v1.LogoutResponse
-	(*LogoutAllRequest)(nil),                   // 8: auth.v1.LogoutAllRequest
-	(*LogoutAllResponse)(nil),                  // 9: auth.v1.LogoutAllResponse
-	(*BrowserContext)(nil),                     // 10: auth.v1.BrowserContext
-	(*BrowserRegisterCredentialsRequest)(nil),  // 11: auth.v1.BrowserRegisterCredentialsRequest
-	(*BrowserRegisterCredentialsResponse)(nil), // 12: auth.v1.BrowserRegisterCredentialsResponse
-	(*BrowserLoginRequest)(nil),                // 13: auth.v1.BrowserLoginRequest
-	(*BrowserLoginResponse)(nil),               // 14: auth.v1.BrowserLoginResponse
-	(*BrowserRefreshSessionRequest)(nil),       // 15: auth.v1.BrowserRefreshSessionRequest
-	(*BrowserRefreshSessionResponse)(nil),      // 16: auth.v1.BrowserRefreshSessionResponse
-	(*BrowserLogoutRequest)(nil),               // 17: auth.v1.BrowserLogoutRequest
-	(*BrowserLogoutResponse)(nil),              // 18: auth.v1.BrowserLogoutResponse
-	(*BrowserLogoutAllRequest)(nil),            // 19: auth.v1.BrowserLogoutAllRequest
-	(*BrowserLogoutAllResponse)(nil),           // 20: auth.v1.BrowserLogoutAllResponse
-	(*StartLoginRequest)(nil),                  // 21: auth.v1.StartLoginRequest
-	(*StartLoginResponse)(nil),                 // 22: auth.v1.StartLoginResponse
-	(*CompleteLoginRequest)(nil),               // 23: auth.v1.CompleteLoginRequest
-	(*CompleteLoginResponse)(nil),              // 24: auth.v1.CompleteLoginResponse
-	(*RequestEmailVerificationRequest)(nil),    // 25: auth.v1.RequestEmailVerificationRequest
-	(*RequestEmailVerificationResponse)(nil),   // 26: auth.v1.RequestEmailVerificationResponse
-	(*ConfirmEmailRequest)(nil),                // 27: auth.v1.ConfirmEmailRequest
-	(*ConfirmEmailResponse)(nil),               // 28: auth.v1.ConfirmEmailResponse
-	(*RequestPasswordResetRequest)(nil),        // 29: auth.v1.RequestPasswordResetRequest
-	(*RequestPasswordResetResponse)(nil),       // 30: auth.v1.RequestPasswordResetResponse
-	(*ConfirmPasswordResetRequest)(nil),        // 31: auth.v1.ConfirmPasswordResetRequest
-	(*ConfirmPasswordResetResponse)(nil),       // 32: auth.v1.ConfirmPasswordResetResponse
-	(*GetCredentialsRequest)(nil),              // 33: auth.v1.GetCredentialsRequest
-	(*GetCredentialsResponse)(nil),             // 34: auth.v1.GetCredentialsResponse
-	(*StartEmailChangeRequest)(nil),            // 35: auth.v1.StartEmailChangeRequest
-	(*StartEmailChangeResponse)(nil),           // 36: auth.v1.StartEmailChangeResponse
-	(*ConfirmEmailChangeRequest)(nil),          // 37: auth.v1.ConfirmEmailChangeRequest
-	(*ConfirmEmailChangeResponse)(nil),         // 38: auth.v1.ConfirmEmailChangeResponse
-	(*CancelEmailChangeRequest)(nil),           // 39: auth.v1.CancelEmailChangeRequest
-	(*CancelEmailChangeResponse)(nil),          // 40: auth.v1.CancelEmailChangeResponse
-	(*SessionInfo)(nil),                        // 41: auth.v1.SessionInfo
-	(*ListSessionsRequest)(nil),                // 42: auth.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),               // 43: auth.v1.ListSessionsResponse
-	(*RevokeSessionRequest)(nil),               // 44: auth.v1.RevokeSessionRequest
-	(*RevokeSessionResponse)(nil),              // 45: auth.v1.RevokeSessionResponse
-	(*RequestAccountDeletionRequest)(nil),      // 46: auth.v1.RequestAccountDeletionRequest
-	(*RequestAccountDeletionResponse)(nil),     // 47: auth.v1.RequestAccountDeletionResponse
-	(*CancelAccountDeletionRequest)(nil),       // 48: auth.v1.CancelAccountDeletionRequest
-	(*CancelAccountDeletionResponse)(nil),      // 49: auth.v1.CancelAccountDeletionResponse
-	(*ResendLoginCodeRequest)(nil),             // 50: auth.v1.ResendLoginCodeRequest
-	(*ResendLoginCodeResponse)(nil),            // 51: auth.v1.ResendLoginCodeResponse
+	(AuthBrowserFailure)(0),                         // 0: auth.v1.AuthBrowserFailure
+	(*RegisterCredentialsRequest)(nil),              // 1: auth.v1.RegisterCredentialsRequest
+	(*RegisterCredentialsResponse)(nil),             // 2: auth.v1.RegisterCredentialsResponse
+	(*LoginRequest)(nil),                            // 3: auth.v1.LoginRequest
+	(*LoginResponse)(nil),                           // 4: auth.v1.LoginResponse
+	(*RefreshSessionRequest)(nil),                   // 5: auth.v1.RefreshSessionRequest
+	(*RefreshSessionResponse)(nil),                  // 6: auth.v1.RefreshSessionResponse
+	(*LogoutRequest)(nil),                           // 7: auth.v1.LogoutRequest
+	(*LogoutResponse)(nil),                          // 8: auth.v1.LogoutResponse
+	(*LogoutAllRequest)(nil),                        // 9: auth.v1.LogoutAllRequest
+	(*LogoutAllResponse)(nil),                       // 10: auth.v1.LogoutAllResponse
+	(*BrowserContext)(nil),                          // 11: auth.v1.BrowserContext
+	(*BrowserRegisterCredentialsRequest)(nil),       // 12: auth.v1.BrowserRegisterCredentialsRequest
+	(*BrowserRegisterCredentialsResponse)(nil),      // 13: auth.v1.BrowserRegisterCredentialsResponse
+	(*BrowserLoginRequest)(nil),                     // 14: auth.v1.BrowserLoginRequest
+	(*BrowserLoginResponse)(nil),                    // 15: auth.v1.BrowserLoginResponse
+	(*BrowserRefreshSessionRequest)(nil),            // 16: auth.v1.BrowserRefreshSessionRequest
+	(*BrowserRefreshSessionResponse)(nil),           // 17: auth.v1.BrowserRefreshSessionResponse
+	(*BrowserLogoutRequest)(nil),                    // 18: auth.v1.BrowserLogoutRequest
+	(*BrowserLogoutResponse)(nil),                   // 19: auth.v1.BrowserLogoutResponse
+	(*BrowserLogoutAllRequest)(nil),                 // 20: auth.v1.BrowserLogoutAllRequest
+	(*BrowserLogoutAllResponse)(nil),                // 21: auth.v1.BrowserLogoutAllResponse
+	(*StartLoginRequest)(nil),                       // 22: auth.v1.StartLoginRequest
+	(*StartLoginResponse)(nil),                      // 23: auth.v1.StartLoginResponse
+	(*CompleteLoginRequest)(nil),                    // 24: auth.v1.CompleteLoginRequest
+	(*CompleteLoginResponse)(nil),                   // 25: auth.v1.CompleteLoginResponse
+	(*RequestEmailVerificationRequest)(nil),         // 26: auth.v1.RequestEmailVerificationRequest
+	(*RequestEmailVerificationResponse)(nil),        // 27: auth.v1.RequestEmailVerificationResponse
+	(*ConfirmEmailRequest)(nil),                     // 28: auth.v1.ConfirmEmailRequest
+	(*ConfirmEmailResponse)(nil),                    // 29: auth.v1.ConfirmEmailResponse
+	(*RequestPasswordResetRequest)(nil),             // 30: auth.v1.RequestPasswordResetRequest
+	(*RequestPasswordResetResponse)(nil),            // 31: auth.v1.RequestPasswordResetResponse
+	(*ConfirmPasswordResetRequest)(nil),             // 32: auth.v1.ConfirmPasswordResetRequest
+	(*ConfirmPasswordResetResponse)(nil),            // 33: auth.v1.ConfirmPasswordResetResponse
+	(*GetCredentialsRequest)(nil),                   // 34: auth.v1.GetCredentialsRequest
+	(*GetCredentialsResponse)(nil),                  // 35: auth.v1.GetCredentialsResponse
+	(*StartEmailChangeRequest)(nil),                 // 36: auth.v1.StartEmailChangeRequest
+	(*StartEmailChangeResponse)(nil),                // 37: auth.v1.StartEmailChangeResponse
+	(*ConfirmEmailChangeRequest)(nil),               // 38: auth.v1.ConfirmEmailChangeRequest
+	(*ConfirmEmailChangeResponse)(nil),              // 39: auth.v1.ConfirmEmailChangeResponse
+	(*CancelEmailChangeRequest)(nil),                // 40: auth.v1.CancelEmailChangeRequest
+	(*CancelEmailChangeResponse)(nil),               // 41: auth.v1.CancelEmailChangeResponse
+	(*SessionInfo)(nil),                             // 42: auth.v1.SessionInfo
+	(*ListSessionsRequest)(nil),                     // 43: auth.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),                    // 44: auth.v1.ListSessionsResponse
+	(*RevokeSessionRequest)(nil),                    // 45: auth.v1.RevokeSessionRequest
+	(*RevokeSessionResponse)(nil),                   // 46: auth.v1.RevokeSessionResponse
+	(*RequestAccountDeletionRequest)(nil),           // 47: auth.v1.RequestAccountDeletionRequest
+	(*RequestAccountDeletionResponse)(nil),          // 48: auth.v1.RequestAccountDeletionResponse
+	(*CancelAccountDeletionRequest)(nil),            // 49: auth.v1.CancelAccountDeletionRequest
+	(*CancelAccountDeletionResponse)(nil),           // 50: auth.v1.CancelAccountDeletionResponse
+	(*ResendLoginCodeRequest)(nil),                  // 51: auth.v1.ResendLoginCodeRequest
+	(*ResendLoginCodeResponse)(nil),                 // 52: auth.v1.ResendLoginCodeResponse
+	(*StartLoginCodeChangeRequest)(nil),             // 53: auth.v1.StartLoginCodeChangeRequest
+	(*StartLoginCodeChangeResponse)(nil),            // 54: auth.v1.StartLoginCodeChangeResponse
+	(*CompleteLoginCodeChangeRequest)(nil),          // 55: auth.v1.CompleteLoginCodeChangeRequest
+	(*CompleteLoginCodeChangeResponse)(nil),         // 56: auth.v1.CompleteLoginCodeChangeResponse
+	(*ChangePasswordRequest)(nil),                   // 57: auth.v1.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil),                  // 58: auth.v1.ChangePasswordResponse
+	(*BrowserStartLoginCodeChangeRequest)(nil),      // 59: auth.v1.BrowserStartLoginCodeChangeRequest
+	(*BrowserStartLoginCodeChangeResponse)(nil),     // 60: auth.v1.BrowserStartLoginCodeChangeResponse
+	(*BrowserCompleteLoginCodeChangeRequest)(nil),   // 61: auth.v1.BrowserCompleteLoginCodeChangeRequest
+	(*BrowserCompleteLoginCodeChangeResponse)(nil),  // 62: auth.v1.BrowserCompleteLoginCodeChangeResponse
+	(*BrowserChangePasswordRequest)(nil),            // 63: auth.v1.BrowserChangePasswordRequest
+	(*BrowserChangePasswordResponse)(nil),           // 64: auth.v1.BrowserChangePasswordResponse
+	(*BrowserStartLoginRequest)(nil),                // 65: auth.v1.BrowserStartLoginRequest
+	(*BrowserStartLoginResponse)(nil),               // 66: auth.v1.BrowserStartLoginResponse
+	(*BrowserCompleteLoginRequest)(nil),             // 67: auth.v1.BrowserCompleteLoginRequest
+	(*BrowserCompleteLoginResponse)(nil),            // 68: auth.v1.BrowserCompleteLoginResponse
+	(*BrowserResendLoginCodeRequest)(nil),           // 69: auth.v1.BrowserResendLoginCodeRequest
+	(*BrowserResendLoginCodeResponse)(nil),          // 70: auth.v1.BrowserResendLoginCodeResponse
+	(*BrowserRequestEmailVerificationRequest)(nil),  // 71: auth.v1.BrowserRequestEmailVerificationRequest
+	(*BrowserRequestEmailVerificationResponse)(nil), // 72: auth.v1.BrowserRequestEmailVerificationResponse
+	(*BrowserConfirmEmailRequest)(nil),              // 73: auth.v1.BrowserConfirmEmailRequest
+	(*BrowserConfirmEmailResponse)(nil),             // 74: auth.v1.BrowserConfirmEmailResponse
+	(*BrowserRequestPasswordResetRequest)(nil),      // 75: auth.v1.BrowserRequestPasswordResetRequest
+	(*BrowserRequestPasswordResetResponse)(nil),     // 76: auth.v1.BrowserRequestPasswordResetResponse
+	(*BrowserConfirmPasswordResetRequest)(nil),      // 77: auth.v1.BrowserConfirmPasswordResetRequest
+	(*BrowserConfirmPasswordResetResponse)(nil),     // 78: auth.v1.BrowserConfirmPasswordResetResponse
+	(*BrowserGetCredentialsRequest)(nil),            // 79: auth.v1.BrowserGetCredentialsRequest
+	(*BrowserGetCredentialsResponse)(nil),           // 80: auth.v1.BrowserGetCredentialsResponse
+	(*BrowserStartEmailChangeRequest)(nil),          // 81: auth.v1.BrowserStartEmailChangeRequest
+	(*BrowserStartEmailChangeResponse)(nil),         // 82: auth.v1.BrowserStartEmailChangeResponse
+	(*BrowserConfirmEmailChangeRequest)(nil),        // 83: auth.v1.BrowserConfirmEmailChangeRequest
+	(*BrowserConfirmEmailChangeResponse)(nil),       // 84: auth.v1.BrowserConfirmEmailChangeResponse
+	(*BrowserCancelEmailChangeRequest)(nil),         // 85: auth.v1.BrowserCancelEmailChangeRequest
+	(*BrowserCancelEmailChangeResponse)(nil),        // 86: auth.v1.BrowserCancelEmailChangeResponse
+	(*BrowserListSessionsRequest)(nil),              // 87: auth.v1.BrowserListSessionsRequest
+	(*BrowserListSessionsResponse)(nil),             // 88: auth.v1.BrowserListSessionsResponse
+	(*BrowserRevokeSessionRequest)(nil),             // 89: auth.v1.BrowserRevokeSessionRequest
+	(*BrowserRevokeSessionResponse)(nil),            // 90: auth.v1.BrowserRevokeSessionResponse
+	(*BrowserRequestAccountDeletionRequest)(nil),    // 91: auth.v1.BrowserRequestAccountDeletionRequest
+	(*BrowserRequestAccountDeletionResponse)(nil),   // 92: auth.v1.BrowserRequestAccountDeletionResponse
+	(*BrowserCancelAccountDeletionRequest)(nil),     // 93: auth.v1.BrowserCancelAccountDeletionRequest
+	(*BrowserCancelAccountDeletionResponse)(nil),    // 94: auth.v1.BrowserCancelAccountDeletionResponse
 }
 var file_auth_v1_auth_proto_depIdxs = []int32{
-	0,  // 0: auth.v1.BrowserRegisterCredentialsRequest.request:type_name -> auth.v1.RegisterCredentialsRequest
-	10, // 1: auth.v1.BrowserRegisterCredentialsRequest.context:type_name -> auth.v1.BrowserContext
-	1,  // 2: auth.v1.BrowserRegisterCredentialsResponse.response:type_name -> auth.v1.RegisterCredentialsResponse
-	2,  // 3: auth.v1.BrowserLoginRequest.request:type_name -> auth.v1.LoginRequest
-	10, // 4: auth.v1.BrowserLoginRequest.context:type_name -> auth.v1.BrowserContext
-	3,  // 5: auth.v1.BrowserLoginResponse.response:type_name -> auth.v1.LoginResponse
-	4,  // 6: auth.v1.BrowserRefreshSessionRequest.request:type_name -> auth.v1.RefreshSessionRequest
-	10, // 7: auth.v1.BrowserRefreshSessionRequest.context:type_name -> auth.v1.BrowserContext
-	5,  // 8: auth.v1.BrowserRefreshSessionResponse.response:type_name -> auth.v1.RefreshSessionResponse
-	6,  // 9: auth.v1.BrowserLogoutRequest.request:type_name -> auth.v1.LogoutRequest
-	10, // 10: auth.v1.BrowserLogoutRequest.context:type_name -> auth.v1.BrowserContext
-	7,  // 11: auth.v1.BrowserLogoutResponse.response:type_name -> auth.v1.LogoutResponse
-	8,  // 12: auth.v1.BrowserLogoutAllRequest.request:type_name -> auth.v1.LogoutAllRequest
-	10, // 13: auth.v1.BrowserLogoutAllRequest.context:type_name -> auth.v1.BrowserContext
-	9,  // 14: auth.v1.BrowserLogoutAllResponse.response:type_name -> auth.v1.LogoutAllResponse
-	41, // 15: auth.v1.ListSessionsResponse.sessions:type_name -> auth.v1.SessionInfo
-	0,  // 16: auth.v1.AuthService.RegisterCredentials:input_type -> auth.v1.RegisterCredentialsRequest
-	2,  // 17: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
-	4,  // 18: auth.v1.AuthService.RefreshSession:input_type -> auth.v1.RefreshSessionRequest
-	6,  // 19: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
-	8,  // 20: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
-	21, // 21: auth.v1.AuthService.StartLogin:input_type -> auth.v1.StartLoginRequest
-	23, // 22: auth.v1.AuthService.CompleteLogin:input_type -> auth.v1.CompleteLoginRequest
-	50, // 23: auth.v1.AuthService.ResendLoginCode:input_type -> auth.v1.ResendLoginCodeRequest
-	25, // 24: auth.v1.AuthService.RequestEmailVerification:input_type -> auth.v1.RequestEmailVerificationRequest
-	27, // 25: auth.v1.AuthService.ConfirmEmail:input_type -> auth.v1.ConfirmEmailRequest
-	29, // 26: auth.v1.AuthService.RequestPasswordReset:input_type -> auth.v1.RequestPasswordResetRequest
-	31, // 27: auth.v1.AuthService.ConfirmPasswordReset:input_type -> auth.v1.ConfirmPasswordResetRequest
-	33, // 28: auth.v1.AuthService.GetCredentials:input_type -> auth.v1.GetCredentialsRequest
-	35, // 29: auth.v1.AuthService.StartEmailChange:input_type -> auth.v1.StartEmailChangeRequest
-	37, // 30: auth.v1.AuthService.ConfirmEmailChange:input_type -> auth.v1.ConfirmEmailChangeRequest
-	39, // 31: auth.v1.AuthService.CancelEmailChange:input_type -> auth.v1.CancelEmailChangeRequest
-	42, // 32: auth.v1.AuthService.ListSessions:input_type -> auth.v1.ListSessionsRequest
-	44, // 33: auth.v1.AuthService.RevokeSession:input_type -> auth.v1.RevokeSessionRequest
-	46, // 34: auth.v1.AuthService.RequestAccountDeletion:input_type -> auth.v1.RequestAccountDeletionRequest
-	48, // 35: auth.v1.AuthService.CancelAccountDeletion:input_type -> auth.v1.CancelAccountDeletionRequest
-	11, // 36: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
-	13, // 37: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
-	15, // 38: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
-	17, // 39: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
-	19, // 40: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
-	1,  // 41: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
-	3,  // 42: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
-	5,  // 43: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
-	7,  // 44: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
-	9,  // 45: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
-	22, // 46: auth.v1.AuthService.StartLogin:output_type -> auth.v1.StartLoginResponse
-	24, // 47: auth.v1.AuthService.CompleteLogin:output_type -> auth.v1.CompleteLoginResponse
-	51, // 48: auth.v1.AuthService.ResendLoginCode:output_type -> auth.v1.ResendLoginCodeResponse
-	26, // 49: auth.v1.AuthService.RequestEmailVerification:output_type -> auth.v1.RequestEmailVerificationResponse
-	28, // 50: auth.v1.AuthService.ConfirmEmail:output_type -> auth.v1.ConfirmEmailResponse
-	30, // 51: auth.v1.AuthService.RequestPasswordReset:output_type -> auth.v1.RequestPasswordResetResponse
-	32, // 52: auth.v1.AuthService.ConfirmPasswordReset:output_type -> auth.v1.ConfirmPasswordResetResponse
-	34, // 53: auth.v1.AuthService.GetCredentials:output_type -> auth.v1.GetCredentialsResponse
-	36, // 54: auth.v1.AuthService.StartEmailChange:output_type -> auth.v1.StartEmailChangeResponse
-	38, // 55: auth.v1.AuthService.ConfirmEmailChange:output_type -> auth.v1.ConfirmEmailChangeResponse
-	40, // 56: auth.v1.AuthService.CancelEmailChange:output_type -> auth.v1.CancelEmailChangeResponse
-	43, // 57: auth.v1.AuthService.ListSessions:output_type -> auth.v1.ListSessionsResponse
-	45, // 58: auth.v1.AuthService.RevokeSession:output_type -> auth.v1.RevokeSessionResponse
-	47, // 59: auth.v1.AuthService.RequestAccountDeletion:output_type -> auth.v1.RequestAccountDeletionResponse
-	49, // 60: auth.v1.AuthService.CancelAccountDeletion:output_type -> auth.v1.CancelAccountDeletionResponse
-	12, // 61: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
-	14, // 62: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
-	16, // 63: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
-	18, // 64: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
-	20, // 65: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
-	41, // [41:66] is the sub-list for method output_type
-	16, // [16:41] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	1,   // 0: auth.v1.BrowserRegisterCredentialsRequest.request:type_name -> auth.v1.RegisterCredentialsRequest
+	11,  // 1: auth.v1.BrowserRegisterCredentialsRequest.context:type_name -> auth.v1.BrowserContext
+	2,   // 2: auth.v1.BrowserRegisterCredentialsResponse.response:type_name -> auth.v1.RegisterCredentialsResponse
+	0,   // 3: auth.v1.BrowserRegisterCredentialsResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	3,   // 4: auth.v1.BrowserLoginRequest.request:type_name -> auth.v1.LoginRequest
+	11,  // 5: auth.v1.BrowserLoginRequest.context:type_name -> auth.v1.BrowserContext
+	4,   // 6: auth.v1.BrowserLoginResponse.response:type_name -> auth.v1.LoginResponse
+	0,   // 7: auth.v1.BrowserLoginResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	5,   // 8: auth.v1.BrowserRefreshSessionRequest.request:type_name -> auth.v1.RefreshSessionRequest
+	11,  // 9: auth.v1.BrowserRefreshSessionRequest.context:type_name -> auth.v1.BrowserContext
+	6,   // 10: auth.v1.BrowserRefreshSessionResponse.response:type_name -> auth.v1.RefreshSessionResponse
+	0,   // 11: auth.v1.BrowserRefreshSessionResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	7,   // 12: auth.v1.BrowserLogoutRequest.request:type_name -> auth.v1.LogoutRequest
+	11,  // 13: auth.v1.BrowserLogoutRequest.context:type_name -> auth.v1.BrowserContext
+	8,   // 14: auth.v1.BrowserLogoutResponse.response:type_name -> auth.v1.LogoutResponse
+	0,   // 15: auth.v1.BrowserLogoutResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	9,   // 16: auth.v1.BrowserLogoutAllRequest.request:type_name -> auth.v1.LogoutAllRequest
+	11,  // 17: auth.v1.BrowserLogoutAllRequest.context:type_name -> auth.v1.BrowserContext
+	10,  // 18: auth.v1.BrowserLogoutAllResponse.response:type_name -> auth.v1.LogoutAllResponse
+	0,   // 19: auth.v1.BrowserLogoutAllResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	42,  // 20: auth.v1.ListSessionsResponse.sessions:type_name -> auth.v1.SessionInfo
+	53,  // 21: auth.v1.BrowserStartLoginCodeChangeRequest.request:type_name -> auth.v1.StartLoginCodeChangeRequest
+	11,  // 22: auth.v1.BrowserStartLoginCodeChangeRequest.context:type_name -> auth.v1.BrowserContext
+	54,  // 23: auth.v1.BrowserStartLoginCodeChangeResponse.response:type_name -> auth.v1.StartLoginCodeChangeResponse
+	0,   // 24: auth.v1.BrowserStartLoginCodeChangeResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	55,  // 25: auth.v1.BrowserCompleteLoginCodeChangeRequest.request:type_name -> auth.v1.CompleteLoginCodeChangeRequest
+	11,  // 26: auth.v1.BrowserCompleteLoginCodeChangeRequest.context:type_name -> auth.v1.BrowserContext
+	56,  // 27: auth.v1.BrowserCompleteLoginCodeChangeResponse.response:type_name -> auth.v1.CompleteLoginCodeChangeResponse
+	0,   // 28: auth.v1.BrowserCompleteLoginCodeChangeResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	57,  // 29: auth.v1.BrowserChangePasswordRequest.request:type_name -> auth.v1.ChangePasswordRequest
+	11,  // 30: auth.v1.BrowserChangePasswordRequest.context:type_name -> auth.v1.BrowserContext
+	58,  // 31: auth.v1.BrowserChangePasswordResponse.response:type_name -> auth.v1.ChangePasswordResponse
+	0,   // 32: auth.v1.BrowserChangePasswordResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	22,  // 33: auth.v1.BrowserStartLoginRequest.request:type_name -> auth.v1.StartLoginRequest
+	11,  // 34: auth.v1.BrowserStartLoginRequest.context:type_name -> auth.v1.BrowserContext
+	23,  // 35: auth.v1.BrowserStartLoginResponse.response:type_name -> auth.v1.StartLoginResponse
+	0,   // 36: auth.v1.BrowserStartLoginResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	24,  // 37: auth.v1.BrowserCompleteLoginRequest.request:type_name -> auth.v1.CompleteLoginRequest
+	11,  // 38: auth.v1.BrowserCompleteLoginRequest.context:type_name -> auth.v1.BrowserContext
+	25,  // 39: auth.v1.BrowserCompleteLoginResponse.response:type_name -> auth.v1.CompleteLoginResponse
+	0,   // 40: auth.v1.BrowserCompleteLoginResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	51,  // 41: auth.v1.BrowserResendLoginCodeRequest.request:type_name -> auth.v1.ResendLoginCodeRequest
+	11,  // 42: auth.v1.BrowserResendLoginCodeRequest.context:type_name -> auth.v1.BrowserContext
+	52,  // 43: auth.v1.BrowserResendLoginCodeResponse.response:type_name -> auth.v1.ResendLoginCodeResponse
+	0,   // 44: auth.v1.BrowserResendLoginCodeResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	26,  // 45: auth.v1.BrowserRequestEmailVerificationRequest.request:type_name -> auth.v1.RequestEmailVerificationRequest
+	11,  // 46: auth.v1.BrowserRequestEmailVerificationRequest.context:type_name -> auth.v1.BrowserContext
+	27,  // 47: auth.v1.BrowserRequestEmailVerificationResponse.response:type_name -> auth.v1.RequestEmailVerificationResponse
+	0,   // 48: auth.v1.BrowserRequestEmailVerificationResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	28,  // 49: auth.v1.BrowserConfirmEmailRequest.request:type_name -> auth.v1.ConfirmEmailRequest
+	11,  // 50: auth.v1.BrowserConfirmEmailRequest.context:type_name -> auth.v1.BrowserContext
+	29,  // 51: auth.v1.BrowserConfirmEmailResponse.response:type_name -> auth.v1.ConfirmEmailResponse
+	0,   // 52: auth.v1.BrowserConfirmEmailResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	30,  // 53: auth.v1.BrowserRequestPasswordResetRequest.request:type_name -> auth.v1.RequestPasswordResetRequest
+	11,  // 54: auth.v1.BrowserRequestPasswordResetRequest.context:type_name -> auth.v1.BrowserContext
+	31,  // 55: auth.v1.BrowserRequestPasswordResetResponse.response:type_name -> auth.v1.RequestPasswordResetResponse
+	0,   // 56: auth.v1.BrowserRequestPasswordResetResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	32,  // 57: auth.v1.BrowserConfirmPasswordResetRequest.request:type_name -> auth.v1.ConfirmPasswordResetRequest
+	11,  // 58: auth.v1.BrowserConfirmPasswordResetRequest.context:type_name -> auth.v1.BrowserContext
+	33,  // 59: auth.v1.BrowserConfirmPasswordResetResponse.response:type_name -> auth.v1.ConfirmPasswordResetResponse
+	0,   // 60: auth.v1.BrowserConfirmPasswordResetResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	34,  // 61: auth.v1.BrowserGetCredentialsRequest.request:type_name -> auth.v1.GetCredentialsRequest
+	11,  // 62: auth.v1.BrowserGetCredentialsRequest.context:type_name -> auth.v1.BrowserContext
+	35,  // 63: auth.v1.BrowserGetCredentialsResponse.response:type_name -> auth.v1.GetCredentialsResponse
+	0,   // 64: auth.v1.BrowserGetCredentialsResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	36,  // 65: auth.v1.BrowserStartEmailChangeRequest.request:type_name -> auth.v1.StartEmailChangeRequest
+	11,  // 66: auth.v1.BrowserStartEmailChangeRequest.context:type_name -> auth.v1.BrowserContext
+	37,  // 67: auth.v1.BrowserStartEmailChangeResponse.response:type_name -> auth.v1.StartEmailChangeResponse
+	0,   // 68: auth.v1.BrowserStartEmailChangeResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	38,  // 69: auth.v1.BrowserConfirmEmailChangeRequest.request:type_name -> auth.v1.ConfirmEmailChangeRequest
+	11,  // 70: auth.v1.BrowserConfirmEmailChangeRequest.context:type_name -> auth.v1.BrowserContext
+	39,  // 71: auth.v1.BrowserConfirmEmailChangeResponse.response:type_name -> auth.v1.ConfirmEmailChangeResponse
+	0,   // 72: auth.v1.BrowserConfirmEmailChangeResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	40,  // 73: auth.v1.BrowserCancelEmailChangeRequest.request:type_name -> auth.v1.CancelEmailChangeRequest
+	11,  // 74: auth.v1.BrowserCancelEmailChangeRequest.context:type_name -> auth.v1.BrowserContext
+	41,  // 75: auth.v1.BrowserCancelEmailChangeResponse.response:type_name -> auth.v1.CancelEmailChangeResponse
+	0,   // 76: auth.v1.BrowserCancelEmailChangeResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	43,  // 77: auth.v1.BrowserListSessionsRequest.request:type_name -> auth.v1.ListSessionsRequest
+	11,  // 78: auth.v1.BrowserListSessionsRequest.context:type_name -> auth.v1.BrowserContext
+	44,  // 79: auth.v1.BrowserListSessionsResponse.response:type_name -> auth.v1.ListSessionsResponse
+	0,   // 80: auth.v1.BrowserListSessionsResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	45,  // 81: auth.v1.BrowserRevokeSessionRequest.request:type_name -> auth.v1.RevokeSessionRequest
+	11,  // 82: auth.v1.BrowserRevokeSessionRequest.context:type_name -> auth.v1.BrowserContext
+	46,  // 83: auth.v1.BrowserRevokeSessionResponse.response:type_name -> auth.v1.RevokeSessionResponse
+	0,   // 84: auth.v1.BrowserRevokeSessionResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	47,  // 85: auth.v1.BrowserRequestAccountDeletionRequest.request:type_name -> auth.v1.RequestAccountDeletionRequest
+	11,  // 86: auth.v1.BrowserRequestAccountDeletionRequest.context:type_name -> auth.v1.BrowserContext
+	48,  // 87: auth.v1.BrowserRequestAccountDeletionResponse.response:type_name -> auth.v1.RequestAccountDeletionResponse
+	0,   // 88: auth.v1.BrowserRequestAccountDeletionResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	49,  // 89: auth.v1.BrowserCancelAccountDeletionRequest.request:type_name -> auth.v1.CancelAccountDeletionRequest
+	11,  // 90: auth.v1.BrowserCancelAccountDeletionRequest.context:type_name -> auth.v1.BrowserContext
+	50,  // 91: auth.v1.BrowserCancelAccountDeletionResponse.response:type_name -> auth.v1.CancelAccountDeletionResponse
+	0,   // 92: auth.v1.BrowserCancelAccountDeletionResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	1,   // 93: auth.v1.AuthService.RegisterCredentials:input_type -> auth.v1.RegisterCredentialsRequest
+	3,   // 94: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
+	5,   // 95: auth.v1.AuthService.RefreshSession:input_type -> auth.v1.RefreshSessionRequest
+	7,   // 96: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
+	9,   // 97: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
+	53,  // 98: auth.v1.AuthService.StartLoginCodeChange:input_type -> auth.v1.StartLoginCodeChangeRequest
+	55,  // 99: auth.v1.AuthService.CompleteLoginCodeChange:input_type -> auth.v1.CompleteLoginCodeChangeRequest
+	57,  // 100: auth.v1.AuthService.ChangePassword:input_type -> auth.v1.ChangePasswordRequest
+	22,  // 101: auth.v1.AuthService.StartLogin:input_type -> auth.v1.StartLoginRequest
+	24,  // 102: auth.v1.AuthService.CompleteLogin:input_type -> auth.v1.CompleteLoginRequest
+	51,  // 103: auth.v1.AuthService.ResendLoginCode:input_type -> auth.v1.ResendLoginCodeRequest
+	26,  // 104: auth.v1.AuthService.RequestEmailVerification:input_type -> auth.v1.RequestEmailVerificationRequest
+	28,  // 105: auth.v1.AuthService.ConfirmEmail:input_type -> auth.v1.ConfirmEmailRequest
+	30,  // 106: auth.v1.AuthService.RequestPasswordReset:input_type -> auth.v1.RequestPasswordResetRequest
+	32,  // 107: auth.v1.AuthService.ConfirmPasswordReset:input_type -> auth.v1.ConfirmPasswordResetRequest
+	34,  // 108: auth.v1.AuthService.GetCredentials:input_type -> auth.v1.GetCredentialsRequest
+	36,  // 109: auth.v1.AuthService.StartEmailChange:input_type -> auth.v1.StartEmailChangeRequest
+	38,  // 110: auth.v1.AuthService.ConfirmEmailChange:input_type -> auth.v1.ConfirmEmailChangeRequest
+	40,  // 111: auth.v1.AuthService.CancelEmailChange:input_type -> auth.v1.CancelEmailChangeRequest
+	43,  // 112: auth.v1.AuthService.ListSessions:input_type -> auth.v1.ListSessionsRequest
+	45,  // 113: auth.v1.AuthService.RevokeSession:input_type -> auth.v1.RevokeSessionRequest
+	47,  // 114: auth.v1.AuthService.RequestAccountDeletion:input_type -> auth.v1.RequestAccountDeletionRequest
+	49,  // 115: auth.v1.AuthService.CancelAccountDeletion:input_type -> auth.v1.CancelAccountDeletionRequest
+	12,  // 116: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
+	14,  // 117: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
+	16,  // 118: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
+	18,  // 119: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
+	20,  // 120: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
+	59,  // 121: auth.v1.AuthBrowserService.BrowserStartLoginCodeChange:input_type -> auth.v1.BrowserStartLoginCodeChangeRequest
+	61,  // 122: auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange:input_type -> auth.v1.BrowserCompleteLoginCodeChangeRequest
+	63,  // 123: auth.v1.AuthBrowserService.BrowserChangePassword:input_type -> auth.v1.BrowserChangePasswordRequest
+	65,  // 124: auth.v1.AuthBrowserService.BrowserStartLogin:input_type -> auth.v1.BrowserStartLoginRequest
+	67,  // 125: auth.v1.AuthBrowserService.BrowserCompleteLogin:input_type -> auth.v1.BrowserCompleteLoginRequest
+	69,  // 126: auth.v1.AuthBrowserService.BrowserResendLoginCode:input_type -> auth.v1.BrowserResendLoginCodeRequest
+	71,  // 127: auth.v1.AuthBrowserService.BrowserRequestEmailVerification:input_type -> auth.v1.BrowserRequestEmailVerificationRequest
+	73,  // 128: auth.v1.AuthBrowserService.BrowserConfirmEmail:input_type -> auth.v1.BrowserConfirmEmailRequest
+	75,  // 129: auth.v1.AuthBrowserService.BrowserRequestPasswordReset:input_type -> auth.v1.BrowserRequestPasswordResetRequest
+	77,  // 130: auth.v1.AuthBrowserService.BrowserConfirmPasswordReset:input_type -> auth.v1.BrowserConfirmPasswordResetRequest
+	79,  // 131: auth.v1.AuthBrowserService.BrowserGetCredentials:input_type -> auth.v1.BrowserGetCredentialsRequest
+	81,  // 132: auth.v1.AuthBrowserService.BrowserStartEmailChange:input_type -> auth.v1.BrowserStartEmailChangeRequest
+	83,  // 133: auth.v1.AuthBrowserService.BrowserConfirmEmailChange:input_type -> auth.v1.BrowserConfirmEmailChangeRequest
+	85,  // 134: auth.v1.AuthBrowserService.BrowserCancelEmailChange:input_type -> auth.v1.BrowserCancelEmailChangeRequest
+	87,  // 135: auth.v1.AuthBrowserService.BrowserListSessions:input_type -> auth.v1.BrowserListSessionsRequest
+	89,  // 136: auth.v1.AuthBrowserService.BrowserRevokeSession:input_type -> auth.v1.BrowserRevokeSessionRequest
+	91,  // 137: auth.v1.AuthBrowserService.BrowserRequestAccountDeletion:input_type -> auth.v1.BrowserRequestAccountDeletionRequest
+	93,  // 138: auth.v1.AuthBrowserService.BrowserCancelAccountDeletion:input_type -> auth.v1.BrowserCancelAccountDeletionRequest
+	2,   // 139: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
+	4,   // 140: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	6,   // 141: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
+	8,   // 142: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	10,  // 143: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
+	54,  // 144: auth.v1.AuthService.StartLoginCodeChange:output_type -> auth.v1.StartLoginCodeChangeResponse
+	56,  // 145: auth.v1.AuthService.CompleteLoginCodeChange:output_type -> auth.v1.CompleteLoginCodeChangeResponse
+	58,  // 146: auth.v1.AuthService.ChangePassword:output_type -> auth.v1.ChangePasswordResponse
+	23,  // 147: auth.v1.AuthService.StartLogin:output_type -> auth.v1.StartLoginResponse
+	25,  // 148: auth.v1.AuthService.CompleteLogin:output_type -> auth.v1.CompleteLoginResponse
+	52,  // 149: auth.v1.AuthService.ResendLoginCode:output_type -> auth.v1.ResendLoginCodeResponse
+	27,  // 150: auth.v1.AuthService.RequestEmailVerification:output_type -> auth.v1.RequestEmailVerificationResponse
+	29,  // 151: auth.v1.AuthService.ConfirmEmail:output_type -> auth.v1.ConfirmEmailResponse
+	31,  // 152: auth.v1.AuthService.RequestPasswordReset:output_type -> auth.v1.RequestPasswordResetResponse
+	33,  // 153: auth.v1.AuthService.ConfirmPasswordReset:output_type -> auth.v1.ConfirmPasswordResetResponse
+	35,  // 154: auth.v1.AuthService.GetCredentials:output_type -> auth.v1.GetCredentialsResponse
+	37,  // 155: auth.v1.AuthService.StartEmailChange:output_type -> auth.v1.StartEmailChangeResponse
+	39,  // 156: auth.v1.AuthService.ConfirmEmailChange:output_type -> auth.v1.ConfirmEmailChangeResponse
+	41,  // 157: auth.v1.AuthService.CancelEmailChange:output_type -> auth.v1.CancelEmailChangeResponse
+	44,  // 158: auth.v1.AuthService.ListSessions:output_type -> auth.v1.ListSessionsResponse
+	46,  // 159: auth.v1.AuthService.RevokeSession:output_type -> auth.v1.RevokeSessionResponse
+	48,  // 160: auth.v1.AuthService.RequestAccountDeletion:output_type -> auth.v1.RequestAccountDeletionResponse
+	50,  // 161: auth.v1.AuthService.CancelAccountDeletion:output_type -> auth.v1.CancelAccountDeletionResponse
+	13,  // 162: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
+	15,  // 163: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
+	17,  // 164: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
+	19,  // 165: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
+	21,  // 166: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
+	60,  // 167: auth.v1.AuthBrowserService.BrowserStartLoginCodeChange:output_type -> auth.v1.BrowserStartLoginCodeChangeResponse
+	62,  // 168: auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange:output_type -> auth.v1.BrowserCompleteLoginCodeChangeResponse
+	64,  // 169: auth.v1.AuthBrowserService.BrowserChangePassword:output_type -> auth.v1.BrowserChangePasswordResponse
+	66,  // 170: auth.v1.AuthBrowserService.BrowserStartLogin:output_type -> auth.v1.BrowserStartLoginResponse
+	68,  // 171: auth.v1.AuthBrowserService.BrowserCompleteLogin:output_type -> auth.v1.BrowserCompleteLoginResponse
+	70,  // 172: auth.v1.AuthBrowserService.BrowserResendLoginCode:output_type -> auth.v1.BrowserResendLoginCodeResponse
+	72,  // 173: auth.v1.AuthBrowserService.BrowserRequestEmailVerification:output_type -> auth.v1.BrowserRequestEmailVerificationResponse
+	74,  // 174: auth.v1.AuthBrowserService.BrowserConfirmEmail:output_type -> auth.v1.BrowserConfirmEmailResponse
+	76,  // 175: auth.v1.AuthBrowserService.BrowserRequestPasswordReset:output_type -> auth.v1.BrowserRequestPasswordResetResponse
+	78,  // 176: auth.v1.AuthBrowserService.BrowserConfirmPasswordReset:output_type -> auth.v1.BrowserConfirmPasswordResetResponse
+	80,  // 177: auth.v1.AuthBrowserService.BrowserGetCredentials:output_type -> auth.v1.BrowserGetCredentialsResponse
+	82,  // 178: auth.v1.AuthBrowserService.BrowserStartEmailChange:output_type -> auth.v1.BrowserStartEmailChangeResponse
+	84,  // 179: auth.v1.AuthBrowserService.BrowserConfirmEmailChange:output_type -> auth.v1.BrowserConfirmEmailChangeResponse
+	86,  // 180: auth.v1.AuthBrowserService.BrowserCancelEmailChange:output_type -> auth.v1.BrowserCancelEmailChangeResponse
+	88,  // 181: auth.v1.AuthBrowserService.BrowserListSessions:output_type -> auth.v1.BrowserListSessionsResponse
+	90,  // 182: auth.v1.AuthBrowserService.BrowserRevokeSession:output_type -> auth.v1.BrowserRevokeSessionResponse
+	92,  // 183: auth.v1.AuthBrowserService.BrowserRequestAccountDeletion:output_type -> auth.v1.BrowserRequestAccountDeletionResponse
+	94,  // 184: auth.v1.AuthBrowserService.BrowserCancelAccountDeletion:output_type -> auth.v1.BrowserCancelAccountDeletionResponse
+	139, // [139:185] is the sub-list for method output_type
+	93,  // [93:139] is the sub-list for method input_type
+	93,  // [93:93] is the sub-list for extension type_name
+	93,  // [93:93] is the sub-list for extension extendee
+	0,   // [0:93] is the sub-list for field type_name
 }
 
 func init() { file_auth_v1_auth_proto_init() }
@@ -2833,13 +5806,14 @@ func file_auth_v1_auth_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_v1_auth_proto_rawDesc), len(file_auth_v1_auth_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   52,
+			NumEnums:      1,
+			NumMessages:   94,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
 		GoTypes:           file_auth_v1_auth_proto_goTypes,
 		DependencyIndexes: file_auth_v1_auth_proto_depIdxs,
+		EnumInfos:         file_auth_v1_auth_proto_enumTypes,
 		MessageInfos:      file_auth_v1_auth_proto_msgTypes,
 	}.Build()
 	File_auth_v1_auth_proto = out.File

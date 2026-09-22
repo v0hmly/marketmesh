@@ -82,6 +82,7 @@ type config struct {
 	bcryptCost   int
 	sessions     sessionConfig
 	registration registrationConfig
+	security     securityConfig
 }
 
 func loadConfig(env serviceruntime.Env) (config, error) {
@@ -207,6 +208,10 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 		return config{}, err
 	}
 	result.registration, err = loadRegistrationConfig(env, result.environment, result.postgresQueryTimeout)
+	if err != nil {
+		return config{}, err
+	}
+	result.security, err = loadSecurityConfig(env, result)
 	if err != nil {
 		return config{}, err
 	}

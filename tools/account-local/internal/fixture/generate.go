@@ -25,7 +25,7 @@ import (
 )
 
 const lifetime = 7 * 24 * time.Hour
-const topologyVersion = 2
+const topologyVersion = 3
 
 func secret() string {
 	b := make([]byte, 32)
@@ -170,6 +170,14 @@ func Generate(root, port string) error {
 	if err = write(root, "auth/keys.json", keys); err != nil {
 		return err
 	}
+	mailKey := make([]byte, 32)
+	if _, err := rand.Read(mailKey); err != nil {
+		return err
+	}
+	if err := write(root, "auth/mail.key", mailKey); err != nil {
+		return err
+	}
+	clear(mailKey)
 	provision := map[string]string{}
 	apps := map[string]map[string]string{}
 	for _, name := range []string{"auth", "user", "gateway-in", "gateway-out"} {
@@ -203,7 +211,11 @@ func Generate(root, port string) error {
 		}
 	}
 	merge("auth", map[string]string{
-		"AUTH_SESSIONS_ENABLED": "true", "AUTH_REGISTRATION_EVENTS_ENABLED": "true", "AUTH_REGISTRATION_PUBLISH_ENABLED": "true", "AUTH_SESSION_ISSUER": "auth.marketmesh", "AUTH_SESSION_KEYS_FILE": "/secrets/keys.json", "AUTH_TRUST_DOMAIN": "marketmesh.test", "AUTH_INTERNAL_ADDRESS": ":9091", "AUTH_INTERNAL_TLS_CERT_FILE": "/secrets/cert.pem", "AUTH_INTERNAL_TLS_KEY_FILE": "/secrets/key.pem", "AUTH_INTERNAL_CLIENT_CA_FILE": "/secrets/ca.pem", "AUTH_ALLOWED_ORIGINS": "https://localhost:" + port + ",https://127.0.0.1:" + port + ",https://frontdoor:8443", "AUTH_SESSION_AUDIENCES": `{"user":["user:profile:read","user:profile:write","user:addresses:read","user:addresses:write","user:settings:read","user:settings:write"]}`, "AUTH_REDIS_ADDRESS": "redis:6379", "AUTH_REDIS_PASSWORD": redisPassword, "AUTH_REDIS_PLAINTEXT_REASON": "isolated local account network; loopback-only disposable fixture", "AUTH_NATS_URL": "tls://nats:4222", "AUTH_NATS_SERVER_NAME": "nats", "AUTH_EVENTS_TRUST_DOMAIN": "marketmesh.test", "AUTH_NATS_TLS_CERT_FILE": "/secrets/cert.pem", "AUTH_NATS_TLS_KEY_FILE": "/secrets/key.pem", "AUTH_NATS_TLS_CA_FILE": "/secrets/ca.pem",
+		"AUTH_EMAIL_ENABLED": "true", "AUTH_EMAIL_KEY_FILE": "/secrets/mail.key",
+		"AUTH_EMAIL_PUBLIC_ORIGIN":   "https://localhost:" + port,
+		"AUTH_SMTP_ADDRESS":          "mailpit:1025",
+		"AUTH_SMTP_PLAINTEXT_REASON": "isolated local Mailpit; external relay is not configured",
+		"AUTH_SESSIONS_ENABLED":      "true", "AUTH_REGISTRATION_EVENTS_ENABLED": "true", "AUTH_REGISTRATION_PUBLISH_ENABLED": "true", "AUTH_SESSION_ISSUER": "auth.marketmesh", "AUTH_SESSION_KEYS_FILE": "/secrets/keys.json", "AUTH_TRUST_DOMAIN": "marketmesh.test", "AUTH_INTERNAL_ADDRESS": ":9091", "AUTH_INTERNAL_TLS_CERT_FILE": "/secrets/cert.pem", "AUTH_INTERNAL_TLS_KEY_FILE": "/secrets/key.pem", "AUTH_INTERNAL_CLIENT_CA_FILE": "/secrets/ca.pem", "AUTH_ALLOWED_ORIGINS": "https://localhost:" + port + ",https://127.0.0.1:" + port + ",https://frontdoor:8443", "AUTH_SESSION_AUDIENCES": `{"user":["user:profile:read","user:profile:write","user:addresses:read","user:addresses:write","user:settings:read","user:settings:write"]}`, "AUTH_REDIS_ADDRESS": "redis:6379", "AUTH_REDIS_PASSWORD": redisPassword, "AUTH_REDIS_PLAINTEXT_REASON": "isolated local account network; loopback-only disposable fixture", "AUTH_NATS_URL": "tls://nats:4222", "AUTH_NATS_SERVER_NAME": "nats", "AUTH_EVENTS_TRUST_DOMAIN": "marketmesh.test", "AUTH_NATS_TLS_CERT_FILE": "/secrets/cert.pem", "AUTH_NATS_TLS_KEY_FILE": "/secrets/key.pem", "AUTH_NATS_TLS_CA_FILE": "/secrets/ca.pem",
 	})
 	merge("user", map[string]string{"USER_PROFILE_ENABLED": "true", "USER_ADDRESSES_ENABLED": "true", "USER_TRUST_DOMAIN": "marketmesh.test", "USER_TLS_CERT_FILE": "/secrets/cert.pem", "USER_TLS_KEY_FILE": "/secrets/key.pem", "USER_TLS_CLIENT_CA_FILE": "/secrets/ca.pem", "USER_GRPC_ADDRESS": ":9092", "USER_AUTH_TARGET": "auth:9091", "USER_AUTH_SERVER_NAME": "auth", "USER_AUTH_CA_FILE": "/secrets/ca.pem", "USER_AUTH_ISSUER": "auth.marketmesh", "USER_NATS_URL": "tls://nats:4222", "USER_NATS_SERVER_NAME": "nats", "USER_NATS_TLS_CERT_FILE": "/secrets/cert.pem", "USER_NATS_TLS_KEY_FILE": "/secrets/key.pem", "USER_NATS_TLS_CA_FILE": "/secrets/ca.pem"})
 	merge("gateway-in", map[string]string{"DATA_CENTER": "dc-a", "GRPC_ADDRESS": ":8443", "TLS_CERT_FILE": "/secrets/cert.pem", "TLS_KEY_FILE": "/secrets/key.pem", "TLS_CLIENT_CA_FILE": "/secrets/ca.pem", "EXPECTED_GATEWAY_OUT_URI": "spiffe://marketmesh.test/test/gateway-out", "AUTH_BROWSER_ENABLED": "true", "USER_BROWSER_ENABLED": "true", "USER_ADDRESSES_BROWSER_ENABLED": "true", "PUBLIC_TLS_CERT_FILE": "/secrets/cert.pem", "PUBLIC_TLS_KEY_FILE": "/secrets/key.pem"})

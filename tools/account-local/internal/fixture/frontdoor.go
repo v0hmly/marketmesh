@@ -14,14 +14,32 @@ import (
 )
 
 var publicRPC = map[string]bool{
-	"/files.v1.FileService/CreateUpload":       true,
-	"/files.v1.FileService/CompleteUpload":     true,
-	"/files.v1.FileService/GetStatus":          true,
-	"/files.v1.FileService/CreateDownload":     true,
-	"/files.v1.FileService/Delete":             true,
-	"/user.v1.UserService/GetSettings":         true,
-	"/user.v1.UserService/UpdateSettings":      true,
-	"/auth.v1.AuthService/RegisterCredentials": true, "/auth.v1.AuthService/Login": true,
+	"/auth.v1.AuthService/StartLoginCodeChange":     true,
+	"/auth.v1.AuthService/CompleteLoginCodeChange":  true,
+	"/auth.v1.AuthService/ChangePassword":           true,
+	"/auth.v1.AuthService/StartLogin":               true,
+	"/auth.v1.AuthService/CompleteLogin":            true,
+	"/auth.v1.AuthService/ResendLoginCode":          true,
+	"/auth.v1.AuthService/RequestEmailVerification": true,
+	"/auth.v1.AuthService/ConfirmEmail":             true,
+	"/auth.v1.AuthService/RequestPasswordReset":     true,
+	"/auth.v1.AuthService/ConfirmPasswordReset":     true,
+	"/auth.v1.AuthService/GetCredentials":           true,
+	"/auth.v1.AuthService/StartEmailChange":         true,
+	"/auth.v1.AuthService/ConfirmEmailChange":       true,
+	"/auth.v1.AuthService/CancelEmailChange":        true,
+	"/auth.v1.AuthService/ListSessions":             true,
+	"/auth.v1.AuthService/RevokeSession":            true,
+	"/auth.v1.AuthService/RequestAccountDeletion":   true,
+	"/auth.v1.AuthService/CancelAccountDeletion":    true,
+	"/files.v1.FileService/CreateUpload":            true,
+	"/files.v1.FileService/CompleteUpload":          true,
+	"/files.v1.FileService/GetStatus":               true,
+	"/files.v1.FileService/CreateDownload":          true,
+	"/files.v1.FileService/Delete":                  true,
+	"/user.v1.UserService/GetSettings":              true,
+	"/user.v1.UserService/UpdateSettings":           true,
+	"/auth.v1.AuthService/RegisterCredentials":      true, "/auth.v1.AuthService/Login": true,
 	"/auth.v1.AuthService/RefreshSession": true, "/auth.v1.AuthService/Logout": true, "/auth.v1.AuthService/LogoutAll": true,
 	"/user.v1.UserService/GetMe": true, "/user.v1.UserService/UpdateMe": true,
 	"/user.v1.UserService/ListAddresses":     true,
@@ -60,7 +78,7 @@ func frontdoorHandler(files fs.FS, proxy http.Handler) http.Handler {
 		}
 		// Only known client-side routes fall back to index; private/unknown RPC paths never do.
 		switch r.URL.Path {
-		case "/", "/account", "/account/addresses", "/account/settings", "/login", "/register":
+		case "/account/security", "/account/security/verify", "/account/security/reset", "/account/security/change_email", "/account/security/cancel_email", "/account/security/cancel_deletion", "/", "/account", "/account/addresses", "/account/settings", "/login", "/register":
 			clone := r.Clone(r.Context())
 			u := *r.URL
 			clone.URL = &u

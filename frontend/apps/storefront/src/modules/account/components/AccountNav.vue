@@ -7,17 +7,9 @@ import {
   reviewsEnabled,
   settingsEnabled,
 } from '../../../shared/features';
-
-const sectionsEnabled =
-  ordersEnabled ||
-  favoritesEnabled ||
-  reviewsEnabled ||
-  addressesEnabled ||
-  idEnabled ||
-  settingsEnabled;
 </script>
 <template>
-  <nav v-if="sectionsEnabled" class="account-nav" aria-label="Разделы личного кабинета">
+  <nav class="account-nav" aria-label="Разделы личного кабинета">
     <RouterLink to="/account" exact-active-class="account-link-active">О себе</RouterLink>
     <RouterLink v-if="ordersEnabled" to="/account/orders" exact-active-class="account-link-active"
       >Заказы</RouterLink
@@ -45,6 +37,9 @@ const sectionsEnabled =
       to="/account/settings"
       exact-active-class="account-link-active"
       >Оформление</RouterLink
+    >
+    <RouterLink to="/account/security" exact-active-class="account-link-active"
+      >Безопасность</RouterLink
     >
   </nav>
 </template>

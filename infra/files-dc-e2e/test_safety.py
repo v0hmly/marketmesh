@@ -8,11 +8,27 @@ import time
 import unittest
 from unittest.mock import Mock
 
-from fixture import Fixture, OwnershipError
+from fixture import Fixture, OwnershipError, legacy_auth_env, legacy_auth_schema, LEGACY_AUTH_FILES
 from run import DCTest
 
 
 class SafetyTests(unittest.TestCase):
+    def test_files_auth_fixture_stays_separate_from_email_runtime(self):
+        with tempfile.TemporaryDirectory() as root:
+            env = Path(root) / "auth.env"
+            env.write_text("AUTH_EMAIL_ENABLED='true'\nAUTH_EMAIL_KEY_FILE='/secrets/mail.key'\nAUTH_SMTP_ADDRESS='mailpit:1025'\nAUTH_SESSIONS_ENABLED='true'\nAUTH_SESSION_KEYS_FILE='/secrets/keys.json'\n")
+            actual = legacy_auth_env(env)
+            self.assertEqual(actual["AUTH_EMAIL_ENABLED"], "false")
+            self.assertEqual(actual["AUTH_REGISTRATION_EVENTS_ENABLED"], "false")
+            self.assertEqual(actual["AUTH_SESSIONS_ENABLED"], "true")
+            self.assertNotIn("AUTH_EMAIL_KEY_FILE", actual)
+            self.assertNotIn("AUTH_SMTP_ADDRESS", actual)
+            self.assertNotIn("mail.key", LEGACY_AUTH_FILES)
+        schema = legacy_auth_schema(Path(__file__).resolve().parents[2] / "services/auth/migrations")
+        self.assertIn("CREATE TABLE auth.sessions", schema)
+        self.assertIn("CREATE TABLE auth.registration_outbox", schema)
+        self.assertNotIn("CREATE TABLE auth.account_security", schema)
+
     def test_stale_binding_never_executes_guest_command(self):
         fixture=Fixture.__new__(Fixture)
         fixture.validate=Mock(side_effect=RuntimeError("stale binding"))

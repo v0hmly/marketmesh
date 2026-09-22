@@ -15,7 +15,7 @@ f.existing()
 project = "marketmesh-account-mm43-" + secrets.token_hex(4)
 state = f.STATE / project
 state.mkdir(mode=0o700)
-env = dict(f.ENV, ACCOUNT_LOCAL_PROJECT=project, ACCOUNT_LOCAL_STATE=str(state), ACCOUNT_LOCAL_WORKSPACE=str(f.ROOT / "infra/account-local"), ACCOUNT_LOCAL_IMAGE="marketmesh-mm43-account:local", ACCOUNT_LOCAL_PORT="18443", FIXTURE_ROOT=str(state))
+env = dict(f.ENV, ACCOUNT_LOCAL_PROJECT=project, ACCOUNT_LOCAL_STATE=str(state), ACCOUNT_LOCAL_WORKSPACE=str(f.ROOT / "infra/account-local"), ACCOUNT_LOCAL_IMAGE="marketmesh-mm43-account:local", ACCOUNT_LOCAL_PORT=os.environ.get("FILES_CONTROL_PORT", "19443"), FIXTURE_ROOT=str(state))
 overlay = state / "files.override.json"
 
 def run(*args, cwd=None):
@@ -39,6 +39,14 @@ def settings(name, updates):
 def prepare():
     run("go", "run", "./cmd/account-local", "generate", cwd=f.ROOT / "tools/account-local")
     run("go", "run", str(f.ROOT / "infra/files-local/pki.go"), str(state / "pki"))
+    # This narrow regression fixture uses the original password-only Auth
+    # contract. Full email/MFA coverage belongs to account-local's Mailpit E2E.
+    # Never disable email against a database containing migration 000004.
+    legacy_auth = state / "legacy-auth-migrations"
+    legacy_auth.mkdir(mode=0o700)
+    for name in ("000001_credentials.up.sql", "000002_sessions.up.sql", "000003_registration_outbox.up.sql"):
+        (legacy_auth / name).write_bytes((f.ROOT / "services/auth/migrations" / name).read_bytes())
+    settings("auth", {"AUTH_EMAIL_ENABLED":"false"})
     prefix = "spiffe://marketmesh.test/env/test/cluster/dc-a/ns/marketmesh/sa/"
     settings("auth", {"AUTH_SESSION_AUDIENCES":json.dumps({"user":["user:profile:read","user:profile:write"],"files":["files:read","files:write"]}), "AUTH_FILES_SCOPED_ENABLED":"true", "AUTH_FILES_ADDRESS":":9093", "AUTH_FILES_TLS_CERT_FILE":"/workload/auth.crt", "AUTH_FILES_TLS_KEY_FILE":"/workload/auth.key", "AUTH_FILES_CLIENT_CA_FILE":"/workload/ca.crt", "AUTH_FILES_OWN_URI":prefix+"auth", "AUTH_FILES_EXPECTED_URI":prefix+"files"})
     settings("gateway-in", {"FILES_BROWSER_ENABLED":"true"})
@@ -54,6 +62,7 @@ def prepare():
     external = {"files-private":"files-internal", "files-q":"quarantine-dmz", "files-a":"delivery-a-dmz", "files-b":"delivery-b-dmz"}
     restricted = {"user":f"{os.getuid()}:{os.getgid()}", "read_only":True, "cap_drop":["ALL"], "security_opt":["no-new-privileges:true"], "logging":{"driver":"json-file","options":{"max-size":"1m","max-file":"1"}}}
     services = {
+        "provision":{"volumes":[str(legacy_auth)+":/migrations/auth:ro"]},
         "auth":{"volumes":[workload]},
         "gateway-out":{"volumes":[workload]},
         "files-control":dict(restricted, image="marketmesh-mm43-files:local", environment={"FILES_CONFIG_FILE":"/config.json"}, networks=["internal",*networks], volumes=[str(config)+":/config.json:ro",workload,str(f.STATE / "pki/ca.crt")+":/pki/ca.crt:ro"]),

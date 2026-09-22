@@ -335,7 +335,25 @@ func routeTrafficClass(route contractv1.RouteId) contractv1.TrafficClass {
 		contractv1.RouteId_ROUTE_ID_AUTH_REFRESH_SESSION,
 		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_SESSION,
 		contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION,
-		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL:
+		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN,
+		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN,
+		contractv1.RouteId_ROUTE_ID_AUTH_RESEND_LOGIN_CODE,
+		contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_EMAIL_VERIFICATION,
+		contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL,
+		contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_PASSWORD_RESET,
+		contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_PASSWORD_RESET,
+		contractv1.RouteId_ROUTE_ID_AUTH_GET_CREDENTIALS,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_EMAIL_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_EMAIL_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_LIST_SESSIONS,
+		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_OWNED_SESSION,
+		contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION,
+		contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION:
 		return contractv1.TrafficClass_TRAFFIC_CLASS_CONTROL_AUTH
 	case contractv1.RouteId_ROUTE_ID_USER_GET_ME,
 		contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME,
@@ -376,6 +394,42 @@ func routeLabel(route contractv1.RouteId) string {
 		return "auth_session_assertion"
 	case contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL:
 		return "auth_logout_all"
+	case contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE:
+		return "auth_start_login_code_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE:
+		return "auth_complete_login_code_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD:
+		return "auth_change_password"
+	case contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN:
+		return "auth_start_login"
+	case contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN:
+		return "auth_complete_login"
+	case contractv1.RouteId_ROUTE_ID_AUTH_RESEND_LOGIN_CODE:
+		return "auth_resend_login_code"
+	case contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_EMAIL_VERIFICATION:
+		return "auth_request_email_verification"
+	case contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL:
+		return "auth_confirm_email"
+	case contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_PASSWORD_RESET:
+		return "auth_request_password_reset"
+	case contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_PASSWORD_RESET:
+		return "auth_confirm_password_reset"
+	case contractv1.RouteId_ROUTE_ID_AUTH_GET_CREDENTIALS:
+		return "auth_get_credentials"
+	case contractv1.RouteId_ROUTE_ID_AUTH_START_EMAIL_CHANGE:
+		return "auth_start_email_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL_CHANGE:
+		return "auth_confirm_email_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_EMAIL_CHANGE:
+		return "auth_cancel_email_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_LIST_SESSIONS:
+		return "auth_list_sessions"
+	case contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_OWNED_SESSION:
+		return "auth_revoke_owned_session"
+	case contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION:
+		return "auth_request_account_deletion"
+	case contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION:
+		return "auth_cancel_account_deletion"
 	case contractv1.RouteId_ROUTE_ID_USER_GET_ME:
 		return "user_get_me"
 	case contractv1.RouteId_ROUTE_ID_USER_UPDATE_ME:

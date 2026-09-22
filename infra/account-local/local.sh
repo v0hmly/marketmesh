@@ -4,6 +4,7 @@ umask 077
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 if [[ "${1:-}" == test ]]; then
+ export ACCOUNT_MAILPIT_PORT=0
  export ACCOUNT_LOCAL_PROJECT="marketmesh-account-test-$(date +%s)-$$"
 fi
 export ACCOUNT_LOCAL_PROJECT="${ACCOUNT_LOCAL_PROJECT:-marketmesh-account-local}"
@@ -67,6 +68,7 @@ up(){
  compose build auth
  compose up -d --wait --wait-timeout 150 postgres-primary postgres-replica
  compose up -d redis nats
+ compose up -d --wait --wait-timeout 90 mailpit
  compose run --rm --no-deps provision
  compose up -d --wait --wait-timeout 120 auth
  compose up -d --wait --wait-timeout 120 user

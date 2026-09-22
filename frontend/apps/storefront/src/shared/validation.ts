@@ -19,7 +19,12 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function validateEmail(raw: string): string | null {
   const email = trimDisplayName(raw);
   if (!email) return 'Введите адрес почты, чтобы продолжить.';
-  if (!wellFormed(raw) || !emailPattern.test(email))
+  if (
+    !wellFormed(raw) ||
+    !emailPattern.test(email) ||
+    email.length > 254 ||
+    /[^\x21-\x7e]|[<>"\\(),;:]/u.test(email)
+  )
     return 'Не похоже на настоящий адрес почты. Проверьте написание — например, name@example.com.';
   return null;
 }
@@ -41,7 +46,7 @@ export function passwordChecks(password: string): PasswordCheck[] {
     {
       id: 'special',
       label: 'Специальный символ (например, !%#)',
-      ok: /[^A-Za-z0-9]/.test(password),
+      ok: /[^\p{L}\p{Nd}\p{White_Space}\p{Cc}]/u.test(password),
     },
   ];
 }

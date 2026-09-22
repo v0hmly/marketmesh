@@ -262,14 +262,16 @@ type TwoFactorOnData struct {
 	RecipientEmail string
 	// BackupCodesURL — ссылка «Открыть резервные коды» в аккаунте.
 	BackupCodesURL string
+	// SecurityURL is used when recovery codes are not offered by the application.
+	SecurityURL string
 }
 
 func (d TwoFactorOnData) validate() error {
 	switch {
 	case d.RecipientEmail == "":
 		return errors.New("почта получателя пуста")
-	case d.BackupCodesURL == "":
-		return errors.New("ссылка на резервные коды пуста")
+	case d.BackupCodesURL == "" && d.SecurityURL == "":
+		return errors.New("ссылка на настройки безопасности пуста")
 	}
 	return nil
 }

@@ -286,3 +286,11 @@ go run ./services/auth/cmd/auth-registration-backfill --limit=100 --apply --repl
 Приватные `Browser*Request` содержат исходный типизированный запрос и `BrowserContext`: отдельные строки `Cookie`, `Origin`, `Sec-Fetch-Site`. Для каждого поля разрешено не более 16 строк; суммарные пределы — 8192, 2048 и 256 байт соответственно. CR, LF и NUL запрещены. Cookie передаётся непрозрачно, дубликаты заголовков сохраняются. Адаптер вызывает существующий Connect handler, поэтому cookie parsing, rotation/revocation и Origin policy остаются едиными. При включённых сессиях регистрация также требует разрешённый Origin; дубликаты Origin и Sec-Fetch-Site отклоняются и на standalone surface.
 
 `Browser*Response` передаёт исходный публичный ответ и отдельные строки `set_cookie` только по приватному каналу. Gateway обязан вернуть их как HTTP `Set-Cookie`, никогда как публичный JSON/protobuf body, и применить `Cache-Control: no-store`. Произвольные HTTP headers, URL, assertion или токены в публичном body контрактом не добавляются. Ошибки bridge содержат только безопасный gRPC status без внутренних деталей или metadata. Request/response bridge содержат секреты и не должны логироваться, трассироваться или кэшироваться.
+
+## Почта и настройки безопасности
+
+MM-90 реализует подтверждение почты, опциональный email-код покупателя, сброс и
+смену пароля/email, список и отзыв своих сеансов, уведомления через шифрованный
+mail outbox. Настройка, сроки, атомарность и ограничения отката описаны в
+[Auth email](../../docs/security/auth-email.md). Локальный стенд автоматически
+подключает Mailpit; после миграции 000004 отключение email-runtime запрещено.

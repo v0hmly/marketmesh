@@ -93,11 +93,29 @@ func TestAuthConfigFailClosed(t *testing.T) {
 func TestAuthRoutesUseOnlyPrivateTypedMutations(t *testing.T) {
 	specs := authRoutes(time.Second)
 	want := map[contractv1.RouteId]string{
-		contractv1.RouteId_ROUTE_ID_AUTH_REGISTER_CREDENTIALS: authv1.AuthBrowserService_BrowserRegisterCredentials_FullMethodName,
-		contractv1.RouteId_ROUTE_ID_AUTH_LOGIN:                authv1.AuthBrowserService_BrowserLogin_FullMethodName,
-		contractv1.RouteId_ROUTE_ID_AUTH_REFRESH_SESSION:      authv1.AuthBrowserService_BrowserRefreshSession_FullMethodName,
-		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_SESSION:       authv1.AuthBrowserService_BrowserLogout_FullMethodName,
-		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL:           authv1.AuthBrowserService_BrowserLogoutAll_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REGISTER_CREDENTIALS:       authv1.AuthBrowserService_BrowserRegisterCredentials_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_LOGIN:                      authv1.AuthBrowserService_BrowserLogin_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REFRESH_SESSION:            authv1.AuthBrowserService_BrowserRefreshSession_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_SESSION:             authv1.AuthBrowserService_BrowserLogout_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL:                 authv1.AuthBrowserService_BrowserLogoutAll_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE:    authv1.AuthBrowserService_BrowserStartLoginCodeChange_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE: authv1.AuthBrowserService_BrowserCompleteLoginCodeChange_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD:            authv1.AuthBrowserService_BrowserChangePassword_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN:                authv1.AuthBrowserService_BrowserStartLogin_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN:             authv1.AuthBrowserService_BrowserCompleteLogin_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_RESEND_LOGIN_CODE:          authv1.AuthBrowserService_BrowserResendLoginCode_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_EMAIL_VERIFICATION: authv1.AuthBrowserService_BrowserRequestEmailVerification_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL:              authv1.AuthBrowserService_BrowserConfirmEmail_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_PASSWORD_RESET:     authv1.AuthBrowserService_BrowserRequestPasswordReset_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_PASSWORD_RESET:     authv1.AuthBrowserService_BrowserConfirmPasswordReset_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_GET_CREDENTIALS:            authv1.AuthBrowserService_BrowserGetCredentials_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_EMAIL_CHANGE:         authv1.AuthBrowserService_BrowserStartEmailChange_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_CONFIRM_EMAIL_CHANGE:       authv1.AuthBrowserService_BrowserConfirmEmailChange_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_EMAIL_CHANGE:        authv1.AuthBrowserService_BrowserCancelEmailChange_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_LIST_SESSIONS:              authv1.AuthBrowserService_BrowserListSessions_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REVOKE_OWNED_SESSION:       authv1.AuthBrowserService_BrowserRevokeSession_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION:   authv1.AuthBrowserService_BrowserRequestAccountDeletion_FullMethodName,
+		contractv1.RouteId_ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION:    authv1.AuthBrowserService_BrowserCancelAccountDeletion_FullMethodName,
 	}
 	if len(specs) != len(want) {
 		t.Fatal("unexpected route set")

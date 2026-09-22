@@ -59,6 +59,8 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     subjectId: '01'.repeat(16),
   });
   const session: SessionController = {
+    withSession: vi.fn(async (_guard, action) => action()),
+    endSession: vi.fn(async (action) => action()),
     state,
     bootstrap: vi.fn(),
     register: vi.fn(),

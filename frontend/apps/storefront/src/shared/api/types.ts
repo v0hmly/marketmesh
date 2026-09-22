@@ -47,11 +47,13 @@ export interface LoginChallenge {
   codeExpiresInSeconds: bigint;
 }
 
+export type LoginStart = LoginChallenge | { subjectId: Uint8Array };
+
 /** Only browser-public RPCs; cookies are managed exclusively by the browser. */
 export interface PublicApi {
   register(identifier: string, password: Uint8Array): Promise<void>;
   login(identifier: string, password: Uint8Array): Promise<Uint8Array>;
-  startLogin(identifier: string, password: Uint8Array): Promise<LoginChallenge>;
+  startLogin(identifier: string, password: Uint8Array): Promise<LoginStart>;
   completeLogin(challengeId: Uint8Array, code: string): Promise<Uint8Array>;
   resendLoginCode(challengeId: Uint8Array): Promise<LoginChallenge>;
   requestEmailVerification(email: string): Promise<void>;

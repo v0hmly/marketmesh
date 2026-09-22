@@ -50,6 +50,28 @@ def envfile(path):
     return {k: shlex.split(v)[0] for k, v in (line.split("=", 1) for line in path.read_text().splitlines())}
 
 
+# Files fault-domain tests deliberately use the bounded password/session fixture.
+# Email/2FA is tested through account-local + Mailpit, not this isolated schema.
+LEGACY_AUTH_MIGRATIONS = (
+    "000001_credentials.up.sql",
+    "000002_sessions.up.sql",
+    "000003_registration_outbox.up.sql",
+)
+LEGACY_AUTH_FILES = frozenset(("env", "keys.json", "cert.pem", "key.pem", "ca.pem"))
+
+
+def legacy_auth_env(path):
+    auth = {key: value for key, value in envfile(path).items()
+            if not key.startswith(("AUTH_EMAIL_", "AUTH_SMTP_"))}
+    auth.update(AUTH_EMAIL_ENABLED="false", AUTH_REGISTRATION_EVENTS_ENABLED="false",
+                AUTH_REGISTRATION_PUBLISH_ENABLED="false")
+    return auth
+
+
+def legacy_auth_schema(root):
+    return "\n".join((root / name).read_text() for name in LEGACY_AUTH_MIGRATIONS)
+
+
 class Fixture:
     def __init__(self, instance):
         self.instance = instance
@@ -339,6 +361,8 @@ class Fixture:
             if node.endswith("internal"):
                 for service in ("auth", "gateway-out"):
                     for path in (account / service).glob("*"):
+                        if service == "auth" and path.name not in LEGACY_AUTH_FILES:
+                            continue
                         write(node_dir / service / path.name, path.read_text())
                     for path in (self.state / dc / "workload").glob("*"):
                         # Files/gateway/Auth workload pairs are mounted separately below.
@@ -380,7 +404,7 @@ class Fixture:
     def app_config(self, node, node_dir, account):
         dc = node[:4]
         prefix = "spiffe://marketmesh.test/env/test/cluster/" + dc + "/ns/marketmesh/sa/"
-        auth = envfile(account / "auth/env")
+        auth = legacy_auth_env(account / "auth/env")
         auth.update(HTTP_ADDRESS=":8081", AUTH_REGISTRATION_EVENTS_ENABLED="false", AUTH_REGISTRATION_PUBLISH_ENABLED="false",
                     AUTH_FILES_SCOPED_ENABLED="true", AUTH_FILES_ADDRESS=":9093", AUTH_ACCESS_TTL="60m", AUTH_REDIS_CONNECT_TIMEOUT="5s",
                     AUTH_FILES_TLS_CERT_FILE="/secrets/workload/auth.crt", AUTH_FILES_TLS_KEY_FILE="/secrets/workload/auth.key",
@@ -434,7 +458,7 @@ class Fixture:
         sql += "ALTER ROLE auth_ro SET default_transaction_read_only=on;\nGRANT CONNECT ON DATABASE auth TO auth_rw,auth_ro;\n"
         write(directory / "db-init.sql", sql)
         write(directory / "files-migration.sql", (ROOT / "services/files/migrations/000001_files.up.sql").read_text())
-        auth = "\n".join(path.read_text() for path in sorted((ROOT / "services/auth/migrations").glob("*.up.sql")))
+        auth = legacy_auth_schema(ROOT / "services/auth/migrations")
         auth += "\nGRANT USAGE ON SCHEMA auth TO auth_rw,auth_ro; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA auth TO auth_rw; GRANT SELECT ON ALL TABLES IN SCHEMA auth TO auth_ro; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA auth TO auth_rw;\n"
         write(directory / "auth-migrations.sql", auth)
         init = (LOCAL / "primary-init.sh").read_text().replace("/run/files-init.sql", "/config/db-init.sql").replace("/migrations/000001_files.up.sql", "/config/files-migration.sql")

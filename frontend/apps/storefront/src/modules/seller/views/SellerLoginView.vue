@@ -40,6 +40,7 @@ const portalState = ref<PortalState>('');
 const shop = ref<Shop | null>(null);
 /** Backend без кодового шага StartLogin: портал продавца требует код всегда, fallback на покупательский вход невозможен. */
 const portalUnavailable = ref(false);
+const needsLoginCode = ref(false);
 
 let requestSequence = 0;
 let active = true;
@@ -203,6 +204,11 @@ async function submitLogin() {
   try {
     const pending = await session.startLogin(address, bytes);
     if (!active || sequence !== requestSequence) return;
+    if ('subjectId' in pending) {
+      needsLoginCode.value = true;
+      password.value = '';
+      return;
+    }
     challenge.value = pending;
     step.value = 'code';
     password.value = '';
@@ -249,7 +255,7 @@ async function submitCode() {
       } else {
         codeError.value = 'wrongCode';
       }
-    } else if (authErrorReason(error, Code.InvalidArgument, 'CODE_REISSUED')) {
+    } else if (authErrorReason(error, Code.FailedPrecondition, 'CODE_REISSUED')) {
       codeError.value = 'tooMany';
       code.value = '';
       codeAttempted.value = false;
@@ -289,7 +295,17 @@ function retryShop() {
 
 <template>
   <section class="auth-layout" aria-labelledby="seller-auth-title">
-    <div v-if="portalUnavailable" class="card state-card">
+    <div v-if="needsLoginCode" class="card state-card">
+      <h1 id="seller-auth-title" class="state-title">Включите подтверждение входа.</h1>
+      <p>
+        Для кабинета продавца нужен код из письма после пароля. Включите его в настройках
+        безопасности аккаунта.
+      </p>
+      <RouterLink class="button primary" to="/account/security"
+        >Настроить подтверждение входа</RouterLink
+      >
+    </div>
+    <div v-else-if="portalUnavailable" class="card state-card">
       <h1 id="seller-auth-title" class="state-title">Портал продавца пока недоступен.</h1>
       <p>
         Вход в портал всегда подтверждается кодом из письма, а сервер ещё не принимает такие

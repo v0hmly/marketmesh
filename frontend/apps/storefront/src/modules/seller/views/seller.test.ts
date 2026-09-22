@@ -58,6 +58,8 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     subjectId: initial === 'authenticated' ? '01'.repeat(16) : null,
   });
   const session: SessionController = {
+    withSession: vi.fn(async (_guard, action) => action()),
+    endSession: vi.fn(async (action) => action()),
     state,
     bootstrap: vi.fn().mockResolvedValue(undefined),
     register: vi.fn(),
