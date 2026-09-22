@@ -3,7 +3,7 @@ module github.com/v0hmly/marketmesh/api/tunnel
 go 1.27.0
 
 require (
-	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260901103419-49d09068cab5
+	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260921181519-8fd69c786937
 	google.golang.org/protobuf v1.36.12
 )
 

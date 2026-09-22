@@ -68,6 +68,42 @@ tasks:
     cmds:
       - "{{.WORKSPACE_TOOL}} arch"
 
+  ci:bootstrap:
+    desc: Установить закреплённые инструменты CI в bin
+    cmds:
+      - ./tools/ci.sh bootstrap
+
+  ci:go:
+    desc: Проверить Go workspace, модули с GOWORK=off и целостность зависимостей
+    cmds:
+      - ./tools/ci.sh go
+
+  ci:frontend:
+    desc: Установить frontend по lock-файлу и выполнить проверки
+    cmds:
+      - ./tools/ci.sh frontend
+
+  ci:api:
+    desc: Проверить protobuf относительно CI_BASE_REF (по умолчанию origin/dev)
+    cmds:
+      - ./tools/ci.sh api
+
+  ci:security:
+    desc: Проверить новые коммиты на секреты и зависимости на уязвимости
+    cmds:
+      - ./tools/ci.sh secrets
+      - ./tools/ci.sh vulnerabilities
+
+  ci:verify:
+    desc: Выполнить набор CI локально (после ci:bootstrap)
+    cmds:
+      - ./tools/ci.sh workflow-lint
+      - ./tools/ci-test.sh
+      - task: ci:go
+      - task: ci:frontend
+      - task: ci:api
+      - task: ci:security
+
   taskboard:list:
     desc: Показать задачи Taskboard (по умолчанию todo и in_progress; фильтры через -- --status done)
     cmds:
