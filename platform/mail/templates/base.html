@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>MarketMesh</title>
+<style>
+  a:hover { color: #163c2a !important; }
+  @media (prefers-color-scheme: dark) {
+    .em-page { background-color: #142019 !important; }
+    .em-card { background-color: #1d2b24 !important; border-color: #46594a !important; }
+    .em-ink { color: #e3ede1 !important; }
+    .em-muted { color: #b3c4b7 !important; }
+    .em-tint { background-color: #263629 !important; }
+    .em-link { color: #b6d7a8 !important; }
+    .em-btn { background-color: #b6d7a8 !important; }
+    .em-btn-label { color: #17271c !important; }
+    .em-mark { background-color: #b6d7a8 !important; color: #17271c !important; }
+    .em-error { background-color: #3a2823 !important; border-color: #9e7563 !important; }
+    .em-on-error { color: #f5c8b6 !important; }
+    .em-hr { border-color: #46594a !important; }
+    a:hover { color: #cce6c0 !important; }
+  }
+</style>
+</head>
+<body class="em-page" style="margin: 0; padding: 0; background-color: #f7f5ef;">
+<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">{{ .Preheader }}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="em-page" style="background-color: #f7f5ef;">
+  <tr>
+    <td align="center" style="padding: 48px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="em-card" style="width: 600px; max-width: 100%; background-color: #fffef9; border: 1px solid #dce1d6; border-radius: 18px;">
+        <tr>
+          <td style="padding: 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="36" height="36" align="center" valign="middle" class="em-mark" style="width: 36px; height: 36px; border-radius: 50%; background-color: #244c3b; color: #fffef5; font-family: Georgia, 'Times New Roman', serif; font-size: 20px; line-height: 36px;">m</td>
+                <td style="padding-left: 12px; font-family: Inter, 'Segoe UI', Arial, sans-serif; font-size: 18px; font-weight: 600; color: #203d30;" class="em-ink">MarketMesh<span style="color: #7f963f;">.</span></td>
+              </tr>
+            </table>
+            <div style="height: 24px; line-height: 24px; font-size: 0;">&nbsp;</div>
+            {{ template "content" . }}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

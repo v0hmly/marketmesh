@@ -1,8 +1,10 @@
 import { createApp, h } from 'vue';
 import App from './App.vue';
 import { createPublicApi } from './shared/api/client';
+import { createSellerApi } from './shared/api/seller';
+import { createStaffApi } from './shared/api/staff';
 import { createSessionController } from './shell/session';
-import { sessionKey } from './shell/context';
+import { sellerApiKey, sessionKey, staffApiKey } from './shell/context';
 import { createStorefrontRouter } from './shell/router';
 import './style.css';
 import { installAnalytics } from './shared/analytics';
@@ -11,6 +13,8 @@ try {
   const session = createSessionController(createPublicApi());
   const app = createApp(App);
   app.provide(sessionKey, session);
+  app.provide(sellerApiKey, createSellerApi());
+  app.provide(staffApiKey, createStaffApi());
   const router = createStorefrontRouter();
   installAnalytics(router);
   app.use(router);

@@ -21,6 +21,59 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Gender is the closed set of self-description options; it is never shown publicly.
+type Gender int32
+
+const (
+	// GENDER_UNSPECIFIED means the caller did not specify a gender.
+	Gender_GENDER_UNSPECIFIED Gender = 0
+	// GENDER_FEMALE is a female self-description.
+	Gender_GENDER_FEMALE Gender = 1
+	// GENDER_MALE is a male self-description.
+	Gender_GENDER_MALE Gender = 2
+)
+
+// Enum value maps for Gender.
+var (
+	Gender_name = map[int32]string{
+		0: "GENDER_UNSPECIFIED",
+		1: "GENDER_FEMALE",
+		2: "GENDER_MALE",
+	}
+	Gender_value = map[string]int32{
+		"GENDER_UNSPECIFIED": 0,
+		"GENDER_FEMALE":      1,
+		"GENDER_MALE":        2,
+	}
+)
+
+func (x Gender) Enum() *Gender {
+	p := new(Gender)
+	*p = x
+	return p
+}
+
+func (x Gender) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Gender) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_v1_user_proto_enumTypes[0].Descriptor()
+}
+
+func (Gender) Type() protoreflect.EnumType {
+	return &file_user_v1_user_proto_enumTypes[0]
+}
+
+func (x Gender) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Gender.Descriptor instead.
+func (Gender) EnumDescriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{0}
+}
+
 // Theme is the closed set of supported display preferences.
 type Theme int32
 
@@ -62,11 +115,11 @@ func (x Theme) String() string {
 }
 
 func (Theme) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_v1_user_proto_enumTypes[0].Descriptor()
+	return file_user_v1_user_proto_enumTypes[1].Descriptor()
 }
 
 func (Theme) Type() protoreflect.EnumType {
-	return &file_user_v1_user_proto_enumTypes[0]
+	return &file_user_v1_user_proto_enumTypes[1]
 }
 
 func (x Theme) Number() protoreflect.EnumNumber {
@@ -75,7 +128,7 @@ func (x Theme) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Theme.Descriptor instead.
 func (Theme) EnumDescriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{0}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{1}
 }
 
 // GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -170,8 +223,20 @@ type UpdateMeRequest struct {
 	Bio string `protobuf:"bytes,2,opt,name=bio,proto3" json:"bio,omitempty"`
 	// ExpectedVersion must match the last-read version to prevent lost concurrent updates.
 	ExpectedVersion uint64 `protobuf:"varint,3,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// LastName is an optional family name of at most 80 Unicode characters.
+	LastName string `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	// BirthDate is an optional calendar date in RFC 3339 YYYY-MM-DD form, not in the future.
+	BirthDate string `protobuf:"bytes,5,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"`
+	// Gender is an optional self-description; never shown publicly.
+	Gender Gender `protobuf:"varint,6,opt,name=gender,proto3,enum=user.v1.Gender" json:"gender,omitempty"`
+	// Phone is an optional contact number, ASCII formatting with 7–15 digits.
+	Phone string `protobuf:"bytes,7,opt,name=phone,proto3" json:"phone,omitempty"`
+	// City is an optional freeform city of at most 120 Unicode characters.
+	City string `protobuf:"bytes,8,opt,name=city,proto3" json:"city,omitempty"`
+	// ShowAge controls whether the public signature shows the computed age.
+	ShowAge       bool `protobuf:"varint,9,opt,name=show_age,json=showAge,proto3" json:"show_age,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateMeRequest) Reset() {
@@ -223,6 +288,48 @@ func (x *UpdateMeRequest) GetExpectedVersion() uint64 {
 		return x.ExpectedVersion
 	}
 	return 0
+}
+
+func (x *UpdateMeRequest) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
+func (x *UpdateMeRequest) GetBirthDate() string {
+	if x != nil {
+		return x.BirthDate
+	}
+	return ""
+}
+
+func (x *UpdateMeRequest) GetGender() Gender {
+	if x != nil {
+		return x.Gender
+	}
+	return Gender_GENDER_UNSPECIFIED
+}
+
+func (x *UpdateMeRequest) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *UpdateMeRequest) GetCity() string {
+	if x != nil {
+		return x.City
+	}
+	return ""
+}
+
+func (x *UpdateMeRequest) GetShowAge() bool {
+	if x != nil {
+		return x.ShowAge
+	}
+	return false
 }
 
 // UpdateMeResponse carries the committed state, without a subsequent read from a replica.
@@ -286,6 +393,19 @@ type Profile struct {
 	CreatedAtUnix int64 `protobuf:"varint,5,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
 	// UpdatedAtUnix is the last profile update time in whole Unix seconds.
 	UpdatedAtUnix int64 `protobuf:"varint,6,opt,name=updated_at_unix,json=updatedAtUnix,proto3" json:"updated_at_unix,omitempty"`
+	// LastName is the optional family name; it never appears in public signatures.
+	LastName string `protobuf:"bytes,7,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	// BirthDate is the optional calendar date in RFC 3339 YYYY-MM-DD form; it never
+	// appears publicly, only the computed age may be shown when ShowAge is true.
+	BirthDate string `protobuf:"bytes,8,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"`
+	// Gender is the optional self-description; it never appears publicly.
+	Gender Gender `protobuf:"varint,9,opt,name=gender,proto3,enum=user.v1.Gender" json:"gender,omitempty"`
+	// Phone is the optional contact number; it never appears publicly.
+	Phone string `protobuf:"bytes,10,opt,name=phone,proto3" json:"phone,omitempty"`
+	// City is the optional city; it is the one personal field that may appear publicly.
+	City string `protobuf:"bytes,11,opt,name=city,proto3" json:"city,omitempty"`
+	// ShowAge controls whether the public review signature includes the computed age.
+	ShowAge       bool `protobuf:"varint,12,opt,name=show_age,json=showAge,proto3" json:"show_age,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -360,6 +480,48 @@ func (x *Profile) GetUpdatedAtUnix() int64 {
 		return x.UpdatedAtUnix
 	}
 	return 0
+}
+
+func (x *Profile) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
+func (x *Profile) GetBirthDate() string {
+	if x != nil {
+		return x.BirthDate
+	}
+	return ""
+}
+
+func (x *Profile) GetGender() Gender {
+	if x != nil {
+		return x.Gender
+	}
+	return Gender_GENDER_UNSPECIFIED
+}
+
+func (x *Profile) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *Profile) GetCity() string {
+	if x != nil {
+		return x.City
+	}
+	return ""
+}
+
+func (x *Profile) GetShowAge() bool {
+	if x != nil {
+		return x.ShowAge
+	}
+	return false
 }
 
 // AddressFields contains private delivery details, never login credentials or verified contacts.
@@ -1350,13 +1512,20 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x12user/v1/user.proto\x12\auser.v1\"\x0e\n" +
 	"\fGetMeRequest\";\n" +
 	"\rGetMeResponse\x12*\n" +
-	"\aprofile\x18\x01 \x01(\v2\x10.user.v1.ProfileR\aprofile\"q\n" +
+	"\aprofile\x18\x01 \x01(\v2\x10.user.v1.ProfileR\aprofile\"\x9b\x02\n" +
 	"\x0fUpdateMeRequest\x12!\n" +
 	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\x12\x10\n" +
 	"\x03bio\x18\x02 \x01(\tR\x03bio\x12)\n" +
-	"\x10expected_version\x18\x03 \x01(\x04R\x0fexpectedVersion\">\n" +
+	"\x10expected_version\x18\x03 \x01(\x04R\x0fexpectedVersion\x12\x1b\n" +
+	"\tlast_name\x18\x04 \x01(\tR\blastName\x12\x1d\n" +
+	"\n" +
+	"birth_date\x18\x05 \x01(\tR\tbirthDate\x12'\n" +
+	"\x06gender\x18\x06 \x01(\x0e2\x0f.user.v1.GenderR\x06gender\x12\x14\n" +
+	"\x05phone\x18\a \x01(\tR\x05phone\x12\x12\n" +
+	"\x04city\x18\b \x01(\tR\x04city\x12\x19\n" +
+	"\bshow_age\x18\t \x01(\bR\ashowAge\">\n" +
 	"\x10UpdateMeResponse\x12*\n" +
-	"\aprofile\x18\x01 \x01(\v2\x10.user.v1.ProfileR\aprofile\"\xc7\x01\n" +
+	"\aprofile\x18\x01 \x01(\v2\x10.user.v1.ProfileR\aprofile\"\xf1\x02\n" +
 	"\aProfile\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\fR\tsubjectId\x12!\n" +
@@ -1364,7 +1533,15 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x03bio\x18\x03 \x01(\tR\x03bio\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\x04R\aversion\x12&\n" +
 	"\x0fcreated_at_unix\x18\x05 \x01(\x03R\rcreatedAtUnix\x12&\n" +
-	"\x0fupdated_at_unix\x18\x06 \x01(\x03R\rupdatedAtUnix\"\xed\x01\n" +
+	"\x0fupdated_at_unix\x18\x06 \x01(\x03R\rupdatedAtUnix\x12\x1b\n" +
+	"\tlast_name\x18\a \x01(\tR\blastName\x12\x1d\n" +
+	"\n" +
+	"birth_date\x18\b \x01(\tR\tbirthDate\x12'\n" +
+	"\x06gender\x18\t \x01(\x0e2\x0f.user.v1.GenderR\x06gender\x12\x14\n" +
+	"\x05phone\x18\n" +
+	" \x01(\tR\x05phone\x12\x12\n" +
+	"\x04city\x18\v \x01(\tR\x04city\x12\x19\n" +
+	"\bshow_age\x18\f \x01(\bR\ashowAge\"\xed\x01\n" +
 	"\rAddressFields\x12\x1c\n" +
 	"\trecipient\x18\x01 \x01(\tR\trecipient\x12\x14\n" +
 	"\x05phone\x18\x02 \x01(\tR\x05phone\x12\x18\n" +
@@ -1425,7 +1602,11 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x05theme\x18\x01 \x01(\x0e2\x0e.user.v1.ThemeR\x05theme\x12)\n" +
 	"\x10expected_version\x18\x02 \x01(\x04R\x0fexpectedVersion\"N\n" +
 	"\x16UpdateSettingsResponse\x124\n" +
-	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings*Q\n" +
+	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings*D\n" +
+	"\x06Gender\x12\x16\n" +
+	"\x12GENDER_UNSPECIFIED\x10\x00\x12\x11\n" +
+	"\rGENDER_FEMALE\x10\x01\x12\x0f\n" +
+	"\vGENDER_MALE\x10\x02*Q\n" +
 	"\x05Theme\x12\x15\n" +
 	"\x11THEME_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fTHEME_SYSTEM\x10\x01\x12\x0f\n" +
@@ -1455,73 +1636,76 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_user_v1_user_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_user_v1_user_proto_goTypes = []any{
-	(Theme)(0),                        // 0: user.v1.Theme
-	(*GetMeRequest)(nil),              // 1: user.v1.GetMeRequest
-	(*GetMeResponse)(nil),             // 2: user.v1.GetMeResponse
-	(*UpdateMeRequest)(nil),           // 3: user.v1.UpdateMeRequest
-	(*UpdateMeResponse)(nil),          // 4: user.v1.UpdateMeResponse
-	(*Profile)(nil),                   // 5: user.v1.Profile
-	(*AddressFields)(nil),             // 6: user.v1.AddressFields
-	(*Address)(nil),                   // 7: user.v1.Address
-	(*AddressBook)(nil),               // 8: user.v1.AddressBook
-	(*ListAddressesRequest)(nil),      // 9: user.v1.ListAddressesRequest
-	(*CreateAddressRequest)(nil),      // 10: user.v1.CreateAddressRequest
-	(*UpdateAddressRequest)(nil),      // 11: user.v1.UpdateAddressRequest
-	(*DeleteAddressRequest)(nil),      // 12: user.v1.DeleteAddressRequest
-	(*SetDefaultAddressRequest)(nil),  // 13: user.v1.SetDefaultAddressRequest
-	(*ListAddressesResponse)(nil),     // 14: user.v1.ListAddressesResponse
-	(*CreateAddressResponse)(nil),     // 15: user.v1.CreateAddressResponse
-	(*UpdateAddressResponse)(nil),     // 16: user.v1.UpdateAddressResponse
-	(*DeleteAddressResponse)(nil),     // 17: user.v1.DeleteAddressResponse
-	(*SetDefaultAddressResponse)(nil), // 18: user.v1.SetDefaultAddressResponse
-	(*AccountSettings)(nil),           // 19: user.v1.AccountSettings
-	(*GetSettingsRequest)(nil),        // 20: user.v1.GetSettingsRequest
-	(*GetSettingsResponse)(nil),       // 21: user.v1.GetSettingsResponse
-	(*UpdateSettingsRequest)(nil),     // 22: user.v1.UpdateSettingsRequest
-	(*UpdateSettingsResponse)(nil),    // 23: user.v1.UpdateSettingsResponse
+	(Gender)(0),                       // 0: user.v1.Gender
+	(Theme)(0),                        // 1: user.v1.Theme
+	(*GetMeRequest)(nil),              // 2: user.v1.GetMeRequest
+	(*GetMeResponse)(nil),             // 3: user.v1.GetMeResponse
+	(*UpdateMeRequest)(nil),           // 4: user.v1.UpdateMeRequest
+	(*UpdateMeResponse)(nil),          // 5: user.v1.UpdateMeResponse
+	(*Profile)(nil),                   // 6: user.v1.Profile
+	(*AddressFields)(nil),             // 7: user.v1.AddressFields
+	(*Address)(nil),                   // 8: user.v1.Address
+	(*AddressBook)(nil),               // 9: user.v1.AddressBook
+	(*ListAddressesRequest)(nil),      // 10: user.v1.ListAddressesRequest
+	(*CreateAddressRequest)(nil),      // 11: user.v1.CreateAddressRequest
+	(*UpdateAddressRequest)(nil),      // 12: user.v1.UpdateAddressRequest
+	(*DeleteAddressRequest)(nil),      // 13: user.v1.DeleteAddressRequest
+	(*SetDefaultAddressRequest)(nil),  // 14: user.v1.SetDefaultAddressRequest
+	(*ListAddressesResponse)(nil),     // 15: user.v1.ListAddressesResponse
+	(*CreateAddressResponse)(nil),     // 16: user.v1.CreateAddressResponse
+	(*UpdateAddressResponse)(nil),     // 17: user.v1.UpdateAddressResponse
+	(*DeleteAddressResponse)(nil),     // 18: user.v1.DeleteAddressResponse
+	(*SetDefaultAddressResponse)(nil), // 19: user.v1.SetDefaultAddressResponse
+	(*AccountSettings)(nil),           // 20: user.v1.AccountSettings
+	(*GetSettingsRequest)(nil),        // 21: user.v1.GetSettingsRequest
+	(*GetSettingsResponse)(nil),       // 22: user.v1.GetSettingsResponse
+	(*UpdateSettingsRequest)(nil),     // 23: user.v1.UpdateSettingsRequest
+	(*UpdateSettingsResponse)(nil),    // 24: user.v1.UpdateSettingsResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
-	5,  // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
-	5,  // 1: user.v1.UpdateMeResponse.profile:type_name -> user.v1.Profile
-	6,  // 2: user.v1.Address.fields:type_name -> user.v1.AddressFields
-	7,  // 3: user.v1.AddressBook.addresses:type_name -> user.v1.Address
-	6,  // 4: user.v1.CreateAddressRequest.fields:type_name -> user.v1.AddressFields
-	6,  // 5: user.v1.UpdateAddressRequest.fields:type_name -> user.v1.AddressFields
-	8,  // 6: user.v1.ListAddressesResponse.book:type_name -> user.v1.AddressBook
-	8,  // 7: user.v1.CreateAddressResponse.book:type_name -> user.v1.AddressBook
-	8,  // 8: user.v1.UpdateAddressResponse.book:type_name -> user.v1.AddressBook
-	8,  // 9: user.v1.DeleteAddressResponse.book:type_name -> user.v1.AddressBook
-	8,  // 10: user.v1.SetDefaultAddressResponse.book:type_name -> user.v1.AddressBook
-	0,  // 11: user.v1.AccountSettings.theme:type_name -> user.v1.Theme
-	19, // 12: user.v1.GetSettingsResponse.settings:type_name -> user.v1.AccountSettings
-	0,  // 13: user.v1.UpdateSettingsRequest.theme:type_name -> user.v1.Theme
-	19, // 14: user.v1.UpdateSettingsResponse.settings:type_name -> user.v1.AccountSettings
-	1,  // 15: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
-	3,  // 16: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
-	9,  // 17: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
-	10, // 18: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
-	11, // 19: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
-	12, // 20: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
-	13, // 21: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
-	20, // 22: user.v1.UserService.GetSettings:input_type -> user.v1.GetSettingsRequest
-	22, // 23: user.v1.UserService.UpdateSettings:input_type -> user.v1.UpdateSettingsRequest
-	2,  // 24: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
-	4,  // 25: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
-	14, // 26: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
-	15, // 27: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
-	16, // 28: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
-	17, // 29: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
-	18, // 30: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
-	21, // 31: user.v1.UserService.GetSettings:output_type -> user.v1.GetSettingsResponse
-	23, // 32: user.v1.UserService.UpdateSettings:output_type -> user.v1.UpdateSettingsResponse
-	24, // [24:33] is the sub-list for method output_type
-	15, // [15:24] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	6,  // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
+	0,  // 1: user.v1.UpdateMeRequest.gender:type_name -> user.v1.Gender
+	6,  // 2: user.v1.UpdateMeResponse.profile:type_name -> user.v1.Profile
+	0,  // 3: user.v1.Profile.gender:type_name -> user.v1.Gender
+	7,  // 4: user.v1.Address.fields:type_name -> user.v1.AddressFields
+	8,  // 5: user.v1.AddressBook.addresses:type_name -> user.v1.Address
+	7,  // 6: user.v1.CreateAddressRequest.fields:type_name -> user.v1.AddressFields
+	7,  // 7: user.v1.UpdateAddressRequest.fields:type_name -> user.v1.AddressFields
+	9,  // 8: user.v1.ListAddressesResponse.book:type_name -> user.v1.AddressBook
+	9,  // 9: user.v1.CreateAddressResponse.book:type_name -> user.v1.AddressBook
+	9,  // 10: user.v1.UpdateAddressResponse.book:type_name -> user.v1.AddressBook
+	9,  // 11: user.v1.DeleteAddressResponse.book:type_name -> user.v1.AddressBook
+	9,  // 12: user.v1.SetDefaultAddressResponse.book:type_name -> user.v1.AddressBook
+	1,  // 13: user.v1.AccountSettings.theme:type_name -> user.v1.Theme
+	20, // 14: user.v1.GetSettingsResponse.settings:type_name -> user.v1.AccountSettings
+	1,  // 15: user.v1.UpdateSettingsRequest.theme:type_name -> user.v1.Theme
+	20, // 16: user.v1.UpdateSettingsResponse.settings:type_name -> user.v1.AccountSettings
+	2,  // 17: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
+	4,  // 18: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
+	10, // 19: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
+	11, // 20: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
+	12, // 21: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
+	13, // 22: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
+	14, // 23: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
+	21, // 24: user.v1.UserService.GetSettings:input_type -> user.v1.GetSettingsRequest
+	23, // 25: user.v1.UserService.UpdateSettings:input_type -> user.v1.UpdateSettingsRequest
+	3,  // 26: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
+	5,  // 27: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
+	15, // 28: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
+	16, // 29: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
+	17, // 30: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
+	18, // 31: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
+	19, // 32: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
+	22, // 33: user.v1.UserService.GetSettings:output_type -> user.v1.GetSettingsResponse
+	24, // 34: user.v1.UserService.UpdateSettings:output_type -> user.v1.UpdateSettingsResponse
+	26, // [26:35] is the sub-list for method output_type
+	17, // [17:26] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -1534,7 +1718,7 @@ func file_user_v1_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,

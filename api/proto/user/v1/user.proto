@@ -43,12 +43,34 @@ message UpdateMeRequest {
   string bio = 2;
   // ExpectedVersion must match the last-read version to prevent lost concurrent updates.
   uint64 expected_version = 3;
+  // LastName is an optional family name of at most 80 Unicode characters.
+  string last_name = 4;
+  // BirthDate is an optional calendar date in RFC 3339 YYYY-MM-DD form, not in the future.
+  string birth_date = 5;
+  // Gender is an optional self-description; never shown publicly.
+  Gender gender = 6;
+  // Phone is an optional contact number, ASCII formatting with 7–15 digits.
+  string phone = 7;
+  // City is an optional freeform city of at most 120 Unicode characters.
+  string city = 8;
+  // ShowAge controls whether the public signature shows the computed age.
+  bool show_age = 9;
 }
 
 // UpdateMeResponse carries the committed state, without a subsequent read from a replica.
 message UpdateMeResponse {
   // Profile includes the incremented version of the caller's profile.
   Profile profile = 1;
+}
+
+// Gender is the closed set of self-description options; it is never shown publicly.
+enum Gender {
+  // GENDER_UNSPECIFIED means the caller did not specify a gender.
+  GENDER_UNSPECIFIED = 0;
+  // GENDER_FEMALE is a female self-description.
+  GENDER_FEMALE = 1;
+  // GENDER_MALE is a male self-description.
+  GENDER_MALE = 2;
 }
 
 // Profile contains private user data; its fields must not be logged or cached publicly.
@@ -65,6 +87,19 @@ message Profile {
   int64 created_at_unix = 5;
   // UpdatedAtUnix is the last profile update time in whole Unix seconds.
   int64 updated_at_unix = 6;
+  // LastName is the optional family name; it never appears in public signatures.
+  string last_name = 7;
+  // BirthDate is the optional calendar date in RFC 3339 YYYY-MM-DD form; it never
+  // appears publicly, only the computed age may be shown when ShowAge is true.
+  string birth_date = 8;
+  // Gender is the optional self-description; it never appears publicly.
+  Gender gender = 9;
+  // Phone is the optional contact number; it never appears publicly.
+  string phone = 10;
+  // City is the optional city; it is the one personal field that may appear publicly.
+  string city = 11;
+  // ShowAge controls whether the public review signature includes the computed age.
+  bool show_age = 12;
 }
 
 // AddressFields contains private delivery details, never login credentials or verified contacts.

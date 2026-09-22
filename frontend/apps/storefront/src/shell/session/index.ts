@@ -9,6 +9,7 @@ import type {
   AddressSelection,
   AccountSettings,
   SettingsInput,
+  LoginChallenge,
 } from '../../shared/api/types';
 import { isProfilePending } from '../../shared/api/errors';
 
@@ -61,6 +62,14 @@ export interface SessionController {
   bootstrap(): Promise<void>;
   register(identifier: string, password: Uint8Array): Promise<void>;
   login(identifier: string, password: Uint8Array): Promise<void>;
+  /** Starts the code-confirmation login; no session state changes yet. */
+  startLogin(identifier: string, password: Uint8Array): Promise<LoginChallenge>;
+  /** Completes a pending login with the emailed code; journals like login(). */
+  completeLogin(challenge: LoginChallenge, code: string): Promise<void>;
+  /** Replaces the code of a pending login; no session state changes. */
+  resendLoginCode(challenge: LoginChallenge): Promise<LoginChallenge>;
+  /** Asks Auth to email the confirmation link; neutral about account existence. */
+  requestEmailVerification(email: string): Promise<void>;
   logout(all?: boolean): Promise<void>;
   capture(): SessionGuard;
   readProfile(guard?: SessionGuard): Promise<Profile>;
@@ -421,18 +430,21 @@ export function createSessionController(
       /* durable pending follows after lock */
     }
   }
-  async function login(identifier: string, password: Uint8Array) {
+  /** Journals a login-kind operation, then probes the fresh session identity. */
+  async function establish(verify: () => Promise<Uint8Array>) {
     intent('login');
     await available().lock('exclusive', async () => {
       const operation = begin('login');
       try {
-        const id = await api.login(identifier, password);
+        const id = await verify();
         finish(operation, 'settled');
         rememberIdentity(operation.generation, subject(id));
         set('checking', operation.generation, subject(id));
       } catch (error) {
         finish(operation, definitive(error) ? 'settled' : 'uncertain');
-        set(definitive(error) ? 'unavailable' : 'uncertain', operation.generation, null);
+        // A definitive rejection (wrong credentials or code) means "still
+        // anonymous", not a broken session check.
+        set(definitive(error) ? 'anonymous' : 'uncertain', operation.generation, null);
         throw error;
       }
       try {
@@ -442,6 +454,13 @@ export function createSessionController(
         throw error;
       }
     });
+  }
+  async function login(identifier: string, password: Uint8Array) {
+    await establish(() => api.login(identifier, password));
+  }
+  /** The emailed code completes the pending challenge; journals like login(). */
+  async function completeLogin(challenge: LoginChallenge, code: string) {
+    await establish(() => api.completeLogin(challenge.challengeId, code));
   }
   async function logout(all = false) {
     const kind = all ? 'logoutAll' : 'logout';
@@ -593,6 +612,19 @@ export function createSessionController(
     state: readonly(current),
     bootstrap,
     login,
+    completeLogin,
+    async startLogin(identifier, password) {
+      available();
+      return api.startLogin(identifier, password);
+    },
+    async resendLoginCode(challenge) {
+      available();
+      return api.resendLoginCode(challenge.challengeId);
+    },
+    async requestEmailVerification(email) {
+      available();
+      await api.requestEmailVerification(email);
+    },
     logout,
     capture,
     async register(identifier, password) {

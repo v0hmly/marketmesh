@@ -85,3 +85,4 @@ Grafana описана в
 - [Обзор архитектуры](docs/architecture/overview.md)
 - [Журнал ADR](docs/adr/README.md)
 - [Правила работы с Taskboard и Git Flow](AGENTS.md)
+- [CI, проверки безопасности и GitHub Free](docs/ci.md)
