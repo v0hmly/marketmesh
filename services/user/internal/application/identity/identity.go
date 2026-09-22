@@ -13,6 +13,7 @@ var (
 )
 
 type Principal struct {
+	SessionID                           string
 	SubjectID                           profile.SubjectID
 	CanRead, CanWrite                   bool
 	CanReadAddresses, CanWriteAddresses bool

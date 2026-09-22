@@ -30,6 +30,9 @@ import (
 )
 
 type profileResources struct {
+	avatarConnection *grpcgo.ClientConn
+	avatarWorker     serviceruntime.Component
+	avatarEnabled    bool
 	database         *platformpostgres.Database
 	client           *platformgrpc.Client
 	server           *platformgrpc.Server
@@ -50,7 +53,7 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if err != nil {
 		return nil, err
 	}
-	r := &profileResources{addressesEnabled: p.addressesEnabled, settingsEnabled: p.settingsEnabled}
+	r := &profileResources{avatarEnabled: p.avatar.enabled, addressesEnabled: p.addressesEnabled, settingsEnabled: p.settingsEnabled}
 	owned := true
 	defer func() {
 		if owned {
@@ -94,6 +97,9 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	if p.settingsEnabled {
 		methods = append(methods, settingsMethods()...)
 	}
+	if p.avatar.enabled {
+		methods = append(methods, avatarMethods()...)
+	}
 	policy, err := workloadid.NewPolicy(map[workloadid.Identity][]string{
 		{TrustDomain: p.trustDomain, Environment: c.environment, Role: "gateway-out"}: methods,
 	})
@@ -130,6 +136,9 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 			return nil, e
 		}
 	}
+	if err = r.enableAvatar(c, handler, log); err != nil {
+		return nil, err
+	}
 	maxSend := 32 * 1024
 	if p.addressesEnabled {
 		maxSend = 128 * 1024
@@ -150,6 +159,11 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 	}
 	if p.settingsEnabled {
 		for _, method := range settingsMethods() {
+			publicErrors = append(publicErrors, platformgrpc.PublicErrorInfo{Method: method, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"})
+		}
+	}
+	if p.avatar.enabled {
+		for _, method := range avatarMethods() {
 			publicErrors = append(publicErrors, platformgrpc.PublicErrorInfo{Method: method, Code: codes.NotFound, Domain: "marketmesh.user", Reason: "PROFILE_NOT_READY"})
 		}
 	}
@@ -185,6 +199,9 @@ func newProfileResources(ctx context.Context, c config, log *logger.Logger, pipe
 		Name: "user-auth-client", Run: func(ctx context.Context) error { <-ctx.Done(); return ctx.Err() },
 		Shutdown: func(context.Context) error { return r.client.Close() },
 	}, grpcComponent}
+	if p.avatar.enabled {
+		r.components = append(r.components, r.avatarWorker)
+	}
 	if err := r.addRegistration(c, pipeline); err != nil {
 		return nil, err
 	}
@@ -203,6 +220,16 @@ func (r *profileResources) dependencies() []serviceruntime.CriticalDependency {
 	return append(dependencies, serviceruntime.CriticalDependency{Name: "user-auth-keys", Check: r.verifier.Ready},
 		serviceruntime.CriticalDependency{Name: "user-profile-schema", Check: func(ctx context.Context) error {
 			for _, executor := range []platformpostgres.Executor{r.database.RW(), r.database.RO()} {
+				if r.avatarEnabled {
+					rows, e := executor.Query(ctx, "SELECT p.avatar_version,p.avatar_file_id,q.file_id,q.retired_at FROM users.profiles p LEFT JOIN users.avatar_retirements q ON q.subject_id=p.subject_id LIMIT 0")
+					if e != nil {
+						return errors.New("user avatar: schema unavailable")
+					}
+					rows.Close()
+					if rows.Err() != nil {
+						return errors.New("user avatar: schema check failed")
+					}
+				}
 				if r.settingsEnabled {
 					rows, e := executor.Query(ctx, "SELECT subject_id,theme,settings_version FROM users.profiles LIMIT 0")
 					if e != nil {
@@ -253,6 +280,9 @@ func (r *profileResources) close(ctx context.Context) error {
 	}
 	if r.client != nil {
 		err = errors.Join(err, r.client.Close())
+	}
+	if r.avatarConnection != nil {
+		err = errors.Join(err, r.avatarConnection.Close())
 	}
 	if r.database != nil {
 		err = errors.Join(err, r.database.Close(ctx))

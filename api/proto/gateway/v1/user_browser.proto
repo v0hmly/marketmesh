@@ -28,6 +28,12 @@ service UserBrowserService {
   rpc BrowserGetSettings(BrowserGetSettingsRequest) returns (BrowserGetSettingsResponse);
   // BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
   rpc BrowserUpdateSettings(BrowserUpdateSettingsRequest) returns (BrowserUpdateSettingsResponse);
+  // BrowserGetAvatar resolves the current browser owner before the bounded avatar operation.
+  rpc BrowserGetAvatar(BrowserGetAvatarRequest) returns (BrowserGetAvatarResponse);
+  // BrowserSetAvatar resolves the current browser owner before the bounded avatar operation.
+  rpc BrowserSetAvatar(BrowserSetAvatarRequest) returns (BrowserSetAvatarResponse);
+  // BrowserClearAvatar resolves the current browser owner before the bounded avatar operation.
+  rpc BrowserClearAvatar(BrowserClearAvatarRequest) returns (BrowserClearAvatarResponse);
 }
 
 // BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
@@ -74,6 +80,8 @@ enum UserBrowserFailure {
   USER_BROWSER_FAILURE_ADDRESS_NOT_FOUND = 3;
   // USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED means the owner already has 20 saved addresses.
   USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED = 4;
+  // USER_BROWSER_FAILURE_AVATAR_UNAVAILABLE hides missing, foreign, retired or unready files.
+  USER_BROWSER_FAILURE_AVATAR_UNAVAILABLE = 5;
 }
 
 // BrowserListAddressesRequest contains typed public input and separately reconstructed credentials.
@@ -185,5 +193,53 @@ message BrowserUpdateSettingsResponse {
   // Response is present only on success.
   user.v1.UpdateSettingsResponse response = 1;
   // Failure permits only profile pending and version conflict.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserGetAvatarRequest separates the public DTO from reconstructed browser credentials.
+message BrowserGetAvatarRequest {
+  // Request is the typed public operation.
+  user.v1.GetAvatarRequest request = 1;
+  // Context is reconstructed only by Gateway In.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserGetAvatarResponse contains one successful result or a finite domain failure.
+message BrowserGetAvatarResponse {
+  // Response is present on success only.
+  user.v1.GetAvatarResponse response = 1;
+  // Failure is populated only for an allowed domain failure.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserSetAvatarRequest separates the public DTO from reconstructed browser credentials.
+message BrowserSetAvatarRequest {
+  // Request is the typed public operation.
+  user.v1.SetAvatarRequest request = 1;
+  // Context is reconstructed only by Gateway In.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserSetAvatarResponse contains one successful result or a finite domain failure.
+message BrowserSetAvatarResponse {
+  // Response is present on success only.
+  user.v1.SetAvatarResponse response = 1;
+  // Failure is populated only for an allowed domain failure.
+  UserBrowserFailure failure = 2;
+}
+
+// BrowserClearAvatarRequest separates the public DTO from reconstructed browser credentials.
+message BrowserClearAvatarRequest {
+  // Request is the typed public operation.
+  user.v1.ClearAvatarRequest request = 1;
+  // Context is reconstructed only by Gateway In.
+  auth.v1.BrowserContext context = 2;
+}
+
+// BrowserClearAvatarResponse contains one successful result or a finite domain failure.
+message BrowserClearAvatarResponse {
+  // Response is present on success only.
+  user.v1.ClearAvatarResponse response = 1;
+  // Failure is populated only for an allowed domain failure.
   UserBrowserFailure failure = 2;
 }

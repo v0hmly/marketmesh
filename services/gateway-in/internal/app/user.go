@@ -9,7 +9,7 @@ import (
 )
 
 func registerUserHandler(mux *http.ServeMux, cfg config, registry *tunnel.Registry) error {
-	handler, err := connectbridge.NewAccountHandler(registry, cfg.userAddressesBrowserEnabled, cfg.userSettingsBrowserEnabled)
+	handler, err := connectbridge.NewAccountAvatarHandler(registry, cfg.userAddressesBrowserEnabled, cfg.userSettingsBrowserEnabled, cfg.userAvatarBrowserEnabled)
 	if err != nil {
 		return err
 	}
@@ -41,6 +41,13 @@ func profileRoutesReady(cfg config, registry routeReadiness) bool {
 			}
 		}
 	}
+	if cfg.userAvatarBrowserEnabled {
+		for _, route := range avatarRouteIDs() {
+			if !registry.IsRouteReady(route) {
+				return false
+			}
+		}
+	}
 	if cfg.userSettingsBrowserEnabled {
 		for _, route := range settingsRouteIDs() {
 			if !registry.IsRouteReady(route) {
@@ -57,4 +64,8 @@ func addressRouteIDs() []contractv1.RouteId {
 
 func settingsRouteIDs() []contractv1.RouteId {
 	return []contractv1.RouteId{contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_SETTINGS, contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS}
+}
+
+func avatarRouteIDs() []contractv1.RouteId {
+	return []contractv1.RouteId{contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_AVATAR, contractv1.RouteId_ROUTE_ID_USER_BROWSER_SET_AVATAR, contractv1.RouteId_ROUTE_ID_USER_BROWSER_CLEAR_AVATAR}
 }

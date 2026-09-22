@@ -38,6 +38,7 @@ type config struct {
 	e2eRoutingSnapshot          bool
 	authBrowserEnabled          bool
 	userSettingsBrowserEnabled  bool
+	userAvatarBrowserEnabled    bool
 	userAddressesBrowserEnabled bool
 	userBrowserEnabled          bool
 	publicTLSCertificate        string
@@ -111,6 +112,12 @@ func loadConfig(env serviceruntime.Env) (config, error) {
 	}
 	if result.userBrowserEnabled, err = env.Bool("USER_BROWSER_ENABLED", false); err != nil {
 		return config{}, err
+	}
+	if result.userAvatarBrowserEnabled, err = env.Bool("USER_AVATAR_BROWSER_ENABLED", false); err != nil {
+		return config{}, err
+	}
+	if result.userAvatarBrowserEnabled && !result.userBrowserEnabled {
+		return config{}, errors.New("USER_AVATAR_BROWSER_ENABLED requires USER_BROWSER_ENABLED")
 	}
 	if result.userSettingsBrowserEnabled, err = env.Bool("USER_SETTINGS_BROWSER_ENABLED", false); err != nil {
 		return config{}, err

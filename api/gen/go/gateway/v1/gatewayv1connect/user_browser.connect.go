@@ -60,6 +60,15 @@ const (
 	// UserBrowserServiceBrowserUpdateSettingsProcedure is the fully-qualified name of the
 	// UserBrowserService's BrowserUpdateSettings RPC.
 	UserBrowserServiceBrowserUpdateSettingsProcedure = "/gateway.v1.UserBrowserService/BrowserUpdateSettings"
+	// UserBrowserServiceBrowserGetAvatarProcedure is the fully-qualified name of the
+	// UserBrowserService's BrowserGetAvatar RPC.
+	UserBrowserServiceBrowserGetAvatarProcedure = "/gateway.v1.UserBrowserService/BrowserGetAvatar"
+	// UserBrowserServiceBrowserSetAvatarProcedure is the fully-qualified name of the
+	// UserBrowserService's BrowserSetAvatar RPC.
+	UserBrowserServiceBrowserSetAvatarProcedure = "/gateway.v1.UserBrowserService/BrowserSetAvatar"
+	// UserBrowserServiceBrowserClearAvatarProcedure is the fully-qualified name of the
+	// UserBrowserService's BrowserClearAvatar RPC.
+	UserBrowserServiceBrowserClearAvatarProcedure = "/gateway.v1.UserBrowserService/BrowserClearAvatar"
 )
 
 // UserBrowserServiceClient is a client for the gateway.v1.UserBrowserService service.
@@ -82,6 +91,12 @@ type UserBrowserServiceClient interface {
 	BrowserGetSettings(context.Context, *connect.Request[v1.BrowserGetSettingsRequest]) (*connect.Response[v1.BrowserGetSettingsResponse], error)
 	// BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
 	BrowserUpdateSettings(context.Context, *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error)
+	// BrowserGetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserGetAvatar(context.Context, *connect.Request[v1.BrowserGetAvatarRequest]) (*connect.Response[v1.BrowserGetAvatarResponse], error)
+	// BrowserSetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserSetAvatar(context.Context, *connect.Request[v1.BrowserSetAvatarRequest]) (*connect.Response[v1.BrowserSetAvatarResponse], error)
+	// BrowserClearAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserClearAvatar(context.Context, *connect.Request[v1.BrowserClearAvatarRequest]) (*connect.Response[v1.BrowserClearAvatarResponse], error)
 }
 
 // NewUserBrowserServiceClient constructs a client for the gateway.v1.UserBrowserService service. By
@@ -149,6 +164,24 @@ func NewUserBrowserServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserUpdateSettings")),
 			connect.WithClientOptions(opts...),
 		),
+		browserGetAvatar: connect.NewClient[v1.BrowserGetAvatarRequest, v1.BrowserGetAvatarResponse](
+			httpClient,
+			baseURL+UserBrowserServiceBrowserGetAvatarProcedure,
+			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserGetAvatar")),
+			connect.WithClientOptions(opts...),
+		),
+		browserSetAvatar: connect.NewClient[v1.BrowserSetAvatarRequest, v1.BrowserSetAvatarResponse](
+			httpClient,
+			baseURL+UserBrowserServiceBrowserSetAvatarProcedure,
+			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserSetAvatar")),
+			connect.WithClientOptions(opts...),
+		),
+		browserClearAvatar: connect.NewClient[v1.BrowserClearAvatarRequest, v1.BrowserClearAvatarResponse](
+			httpClient,
+			baseURL+UserBrowserServiceBrowserClearAvatarProcedure,
+			connect.WithSchema(userBrowserServiceMethods.ByName("BrowserClearAvatar")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -163,6 +196,9 @@ type userBrowserServiceClient struct {
 	browserSetDefaultAddress *connect.Client[v1.BrowserSetDefaultAddressRequest, v1.BrowserSetDefaultAddressResponse]
 	browserGetSettings       *connect.Client[v1.BrowserGetSettingsRequest, v1.BrowserGetSettingsResponse]
 	browserUpdateSettings    *connect.Client[v1.BrowserUpdateSettingsRequest, v1.BrowserUpdateSettingsResponse]
+	browserGetAvatar         *connect.Client[v1.BrowserGetAvatarRequest, v1.BrowserGetAvatarResponse]
+	browserSetAvatar         *connect.Client[v1.BrowserSetAvatarRequest, v1.BrowserSetAvatarResponse]
+	browserClearAvatar       *connect.Client[v1.BrowserClearAvatarRequest, v1.BrowserClearAvatarResponse]
 }
 
 // BrowserGetMe calls gateway.v1.UserBrowserService.BrowserGetMe.
@@ -210,6 +246,21 @@ func (c *userBrowserServiceClient) BrowserUpdateSettings(ctx context.Context, re
 	return c.browserUpdateSettings.CallUnary(ctx, req)
 }
 
+// BrowserGetAvatar calls gateway.v1.UserBrowserService.BrowserGetAvatar.
+func (c *userBrowserServiceClient) BrowserGetAvatar(ctx context.Context, req *connect.Request[v1.BrowserGetAvatarRequest]) (*connect.Response[v1.BrowserGetAvatarResponse], error) {
+	return c.browserGetAvatar.CallUnary(ctx, req)
+}
+
+// BrowserSetAvatar calls gateway.v1.UserBrowserService.BrowserSetAvatar.
+func (c *userBrowserServiceClient) BrowserSetAvatar(ctx context.Context, req *connect.Request[v1.BrowserSetAvatarRequest]) (*connect.Response[v1.BrowserSetAvatarResponse], error) {
+	return c.browserSetAvatar.CallUnary(ctx, req)
+}
+
+// BrowserClearAvatar calls gateway.v1.UserBrowserService.BrowserClearAvatar.
+func (c *userBrowserServiceClient) BrowserClearAvatar(ctx context.Context, req *connect.Request[v1.BrowserClearAvatarRequest]) (*connect.Response[v1.BrowserClearAvatarResponse], error) {
+	return c.browserClearAvatar.CallUnary(ctx, req)
+}
+
 // UserBrowserServiceHandler is an implementation of the gateway.v1.UserBrowserService service.
 type UserBrowserServiceHandler interface {
 	// GetMe resolves the browser session and reads its owner's profile.
@@ -230,6 +281,12 @@ type UserBrowserServiceHandler interface {
 	BrowserGetSettings(context.Context, *connect.Request[v1.BrowserGetSettingsRequest]) (*connect.Response[v1.BrowserGetSettingsResponse], error)
 	// BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
 	BrowserUpdateSettings(context.Context, *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error)
+	// BrowserGetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserGetAvatar(context.Context, *connect.Request[v1.BrowserGetAvatarRequest]) (*connect.Response[v1.BrowserGetAvatarResponse], error)
+	// BrowserSetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserSetAvatar(context.Context, *connect.Request[v1.BrowserSetAvatarRequest]) (*connect.Response[v1.BrowserSetAvatarResponse], error)
+	// BrowserClearAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserClearAvatar(context.Context, *connect.Request[v1.BrowserClearAvatarRequest]) (*connect.Response[v1.BrowserClearAvatarResponse], error)
 }
 
 // NewUserBrowserServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -293,6 +350,24 @@ func NewUserBrowserServiceHandler(svc UserBrowserServiceHandler, opts ...connect
 		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserUpdateSettings")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userBrowserServiceBrowserGetAvatarHandler := connect.NewUnaryHandler(
+		UserBrowserServiceBrowserGetAvatarProcedure,
+		svc.BrowserGetAvatar,
+		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserGetAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userBrowserServiceBrowserSetAvatarHandler := connect.NewUnaryHandler(
+		UserBrowserServiceBrowserSetAvatarProcedure,
+		svc.BrowserSetAvatar,
+		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserSetAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userBrowserServiceBrowserClearAvatarHandler := connect.NewUnaryHandler(
+		UserBrowserServiceBrowserClearAvatarProcedure,
+		svc.BrowserClearAvatar,
+		connect.WithSchema(userBrowserServiceMethods.ByName("BrowserClearAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/gateway.v1.UserBrowserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserBrowserServiceBrowserGetMeProcedure:
@@ -313,6 +388,12 @@ func NewUserBrowserServiceHandler(svc UserBrowserServiceHandler, opts ...connect
 			userBrowserServiceBrowserGetSettingsHandler.ServeHTTP(w, r)
 		case UserBrowserServiceBrowserUpdateSettingsProcedure:
 			userBrowserServiceBrowserUpdateSettingsHandler.ServeHTTP(w, r)
+		case UserBrowserServiceBrowserGetAvatarProcedure:
+			userBrowserServiceBrowserGetAvatarHandler.ServeHTTP(w, r)
+		case UserBrowserServiceBrowserSetAvatarProcedure:
+			userBrowserServiceBrowserSetAvatarHandler.ServeHTTP(w, r)
+		case UserBrowserServiceBrowserClearAvatarProcedure:
+			userBrowserServiceBrowserClearAvatarHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -356,4 +437,16 @@ func (UnimplementedUserBrowserServiceHandler) BrowserGetSettings(context.Context
 
 func (UnimplementedUserBrowserServiceHandler) BrowserUpdateSettings(context.Context, *connect.Request[v1.BrowserUpdateSettingsRequest]) (*connect.Response[v1.BrowserUpdateSettingsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserUpdateSettings is not implemented"))
+}
+
+func (UnimplementedUserBrowserServiceHandler) BrowserGetAvatar(context.Context, *connect.Request[v1.BrowserGetAvatarRequest]) (*connect.Response[v1.BrowserGetAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserGetAvatar is not implemented"))
+}
+
+func (UnimplementedUserBrowserServiceHandler) BrowserSetAvatar(context.Context, *connect.Request[v1.BrowserSetAvatarRequest]) (*connect.Response[v1.BrowserSetAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserSetAvatar is not implemented"))
+}
+
+func (UnimplementedUserBrowserServiceHandler) BrowserClearAvatar(context.Context, *connect.Request[v1.BrowserClearAvatarRequest]) (*connect.Response[v1.BrowserClearAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.UserBrowserService.BrowserClearAvatar is not implemented"))
 }

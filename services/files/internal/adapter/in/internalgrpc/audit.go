@@ -36,11 +36,13 @@ func recordAuditPrincipal(ctx context.Context, principal identity.Principal) {
 func AuditInterceptor(output io.Writer) grpc.UnaryServerInterceptor {
 	log := slog.New(slog.NewJSONHandler(output, nil))
 	operations := map[string]string{
-		filesv1.FileService_CreateUpload_FullMethodName:   "create_upload",
-		filesv1.FileService_CompleteUpload_FullMethodName: "complete_upload",
-		filesv1.FileService_GetStatus_FullMethodName:      "get_status",
-		filesv1.FileService_CreateDownload_FullMethodName: "create_download",
-		filesv1.FileService_Delete_FullMethodName:         "delete",
+		filesv1.FileService_CreateUpload_FullMethodName:             "create_upload",
+		filesv1.FileService_CompleteUpload_FullMethodName:           "complete_upload",
+		filesv1.FileService_GetStatus_FullMethodName:                "get_status",
+		filesv1.FileService_CreateDownload_FullMethodName:           "create_download",
+		filesv1.FileService_Delete_FullMethodName:                   "delete",
+		filesv1.FileAvatarService_InspectOwnedAvatar_FullMethodName: "inspect_avatar",
+		filesv1.FileAvatarService_RetireOwnedAvatar_FullMethodName:  "retire_avatar",
 	}
 	return func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
 		slot := &auditPrincipal{}
@@ -55,7 +57,12 @@ func AuditInterceptor(output io.Writer) grpc.UnaryServerInterceptor {
 		principal := slot.principal
 		slot.Unlock()
 		if principal.Owner.Valid() {
-			fields = append(fields, "subject_id", principal.Owner.Subject.String(), "tenant_id", principal.Owner.Tenant.String(), "session_id", principal.SessionID)
+			fields = append(fields, "subject_id", principal.Owner.Subject.String(), "tenant_id", principal.Owner.Tenant.String())
+			if principal.SessionID != "" {
+				fields = append(fields, "session_id", principal.SessionID, "actor_kind", "session")
+			} else {
+				fields = append(fields, "actor_kind", "workload")
+			}
 		}
 		if scope, pod, scopeErr := workloadid.ScopedFromContext(ctx); scopeErr == nil {
 			fields = append(fields, "workload", scope.String(), "pod_uid", pod)
@@ -72,5 +79,16 @@ func AuditInterceptor(output io.Writer) grpc.UnaryServerInterceptor {
 		}
 		log.InfoContext(ctx, "file control", fields...)
 		return response, err
+	}
+}
+
+// recordWorkloadOwner records an owner asserted by the separately authenticated
+// User workload. Background retirements have no user session; their actor is the
+// audited workload, not an invented session principal.
+func recordWorkloadOwner(ctx context.Context, principal identity.Principal) {
+	if slot, ok := ctx.Value(auditPrincipalKey{}).(*auditPrincipal); ok && principal.Owner.Valid() {
+		slot.Lock()
+		defer slot.Unlock()
+		slot.principal = principal
 	}
 }

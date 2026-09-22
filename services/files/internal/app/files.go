@@ -43,6 +43,7 @@ type bucketConfig struct {
 }
 type tlsFiles struct{ Certificate, PrivateKey, RootCA string }
 type controlConfig struct {
+	Avatar                                      avatarConfig
 	Enabled                                     bool
 	Address                                     string
 	TLS                                         tlsFiles
@@ -303,9 +304,26 @@ func serveFiles(ctx context.Context, c controlConfig, repo *filespostgres.Reposi
 		return file.ErrUnavailable
 	}
 	defer listener.Close()
-	go func() { <-ctx.Done(); server.Stop() }()
-	if err = server.Serve(listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-		return file.ErrUnavailable
+	avatar, avatarListener, err := avatarServer(c, service)
+	if err != nil {
+		server.Stop()
+		return err
 	}
-	return nil
+	defer server.Stop()
+	results := make(chan error, 2)
+	if avatar != nil {
+		defer avatar.Stop()
+		defer avatarListener.Close()
+		go func() { results <- avatar.Serve(avatarListener) }()
+	}
+	go func() { results <- server.Serve(listener) }()
+	select {
+	case <-ctx.Done():
+		return nil
+	case err = <-results:
+		if err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			return file.ErrUnavailable
+		}
+		return nil
+	}
 }

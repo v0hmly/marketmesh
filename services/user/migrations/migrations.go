@@ -37,3 +37,10 @@ var (
 	//go:embed 000005_identity.down.sql
 	IdentityDown string
 )
+
+var (
+	//go:embed 000006_avatar.up.sql
+	AvatarUp string
+	//go:embed 000006_avatar.down.sql
+	AvatarDown string
+)

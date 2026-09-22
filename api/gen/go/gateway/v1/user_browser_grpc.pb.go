@@ -28,6 +28,9 @@ const (
 	UserBrowserService_BrowserSetDefaultAddress_FullMethodName = "/gateway.v1.UserBrowserService/BrowserSetDefaultAddress"
 	UserBrowserService_BrowserGetSettings_FullMethodName       = "/gateway.v1.UserBrowserService/BrowserGetSettings"
 	UserBrowserService_BrowserUpdateSettings_FullMethodName    = "/gateway.v1.UserBrowserService/BrowserUpdateSettings"
+	UserBrowserService_BrowserGetAvatar_FullMethodName         = "/gateway.v1.UserBrowserService/BrowserGetAvatar"
+	UserBrowserService_BrowserSetAvatar_FullMethodName         = "/gateway.v1.UserBrowserService/BrowserSetAvatar"
+	UserBrowserService_BrowserClearAvatar_FullMethodName       = "/gateway.v1.UserBrowserService/BrowserClearAvatar"
 )
 
 // UserBrowserServiceClient is the client API for UserBrowserService service.
@@ -55,6 +58,12 @@ type UserBrowserServiceClient interface {
 	BrowserGetSettings(ctx context.Context, in *BrowserGetSettingsRequest, opts ...grpc.CallOption) (*BrowserGetSettingsResponse, error)
 	// BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
 	BrowserUpdateSettings(ctx context.Context, in *BrowserUpdateSettingsRequest, opts ...grpc.CallOption) (*BrowserUpdateSettingsResponse, error)
+	// BrowserGetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserGetAvatar(ctx context.Context, in *BrowserGetAvatarRequest, opts ...grpc.CallOption) (*BrowserGetAvatarResponse, error)
+	// BrowserSetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserSetAvatar(ctx context.Context, in *BrowserSetAvatarRequest, opts ...grpc.CallOption) (*BrowserSetAvatarResponse, error)
+	// BrowserClearAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserClearAvatar(ctx context.Context, in *BrowserClearAvatarRequest, opts ...grpc.CallOption) (*BrowserClearAvatarResponse, error)
 }
 
 type userBrowserServiceClient struct {
@@ -155,6 +164,36 @@ func (c *userBrowserServiceClient) BrowserUpdateSettings(ctx context.Context, in
 	return out, nil
 }
 
+func (c *userBrowserServiceClient) BrowserGetAvatar(ctx context.Context, in *BrowserGetAvatarRequest, opts ...grpc.CallOption) (*BrowserGetAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserGetAvatarResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserGetAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userBrowserServiceClient) BrowserSetAvatar(ctx context.Context, in *BrowserSetAvatarRequest, opts ...grpc.CallOption) (*BrowserSetAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserSetAvatarResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserSetAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userBrowserServiceClient) BrowserClearAvatar(ctx context.Context, in *BrowserClearAvatarRequest, opts ...grpc.CallOption) (*BrowserClearAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserClearAvatarResponse)
+	err := c.cc.Invoke(ctx, UserBrowserService_BrowserClearAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserBrowserServiceServer is the server API for UserBrowserService service.
 // All implementations must embed UnimplementedUserBrowserServiceServer
 // for forward compatibility.
@@ -180,6 +219,12 @@ type UserBrowserServiceServer interface {
 	BrowserGetSettings(context.Context, *BrowserGetSettingsRequest) (*BrowserGetSettingsResponse, error)
 	// BrowserUpdateSettings resolves the current owner before conditionally changing preferences.
 	BrowserUpdateSettings(context.Context, *BrowserUpdateSettingsRequest) (*BrowserUpdateSettingsResponse, error)
+	// BrowserGetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserGetAvatar(context.Context, *BrowserGetAvatarRequest) (*BrowserGetAvatarResponse, error)
+	// BrowserSetAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserSetAvatar(context.Context, *BrowserSetAvatarRequest) (*BrowserSetAvatarResponse, error)
+	// BrowserClearAvatar resolves the current browser owner before the bounded avatar operation.
+	BrowserClearAvatar(context.Context, *BrowserClearAvatarRequest) (*BrowserClearAvatarResponse, error)
 	mustEmbedUnimplementedUserBrowserServiceServer()
 }
 
@@ -216,6 +261,15 @@ func (UnimplementedUserBrowserServiceServer) BrowserGetSettings(context.Context,
 }
 func (UnimplementedUserBrowserServiceServer) BrowserUpdateSettings(context.Context, *BrowserUpdateSettingsRequest) (*BrowserUpdateSettingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BrowserUpdateSettings not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserGetAvatar(context.Context, *BrowserGetAvatarRequest) (*BrowserGetAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserGetAvatar not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserSetAvatar(context.Context, *BrowserSetAvatarRequest) (*BrowserSetAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserSetAvatar not implemented")
+}
+func (UnimplementedUserBrowserServiceServer) BrowserClearAvatar(context.Context, *BrowserClearAvatarRequest) (*BrowserClearAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserClearAvatar not implemented")
 }
 func (UnimplementedUserBrowserServiceServer) mustEmbedUnimplementedUserBrowserServiceServer() {}
 func (UnimplementedUserBrowserServiceServer) testEmbeddedByValue()                            {}
@@ -400,6 +454,60 @@ func _UserBrowserService_BrowserUpdateSettings_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserBrowserService_BrowserGetAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserGetAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserGetAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserGetAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserGetAvatar(ctx, req.(*BrowserGetAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserBrowserService_BrowserSetAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserSetAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserSetAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserSetAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserSetAvatar(ctx, req.(*BrowserSetAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserBrowserService_BrowserClearAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserClearAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserBrowserServiceServer).BrowserClearAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserBrowserService_BrowserClearAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserBrowserServiceServer).BrowserClearAvatar(ctx, req.(*BrowserClearAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserBrowserService_ServiceDesc is the grpc.ServiceDesc for UserBrowserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -442,6 +550,18 @@ var UserBrowserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BrowserUpdateSettings",
 			Handler:    _UserBrowserService_BrowserUpdateSettings_Handler,
+		},
+		{
+			MethodName: "BrowserGetAvatar",
+			Handler:    _UserBrowserService_BrowserGetAvatar_Handler,
+		},
+		{
+			MethodName: "BrowserSetAvatar",
+			Handler:    _UserBrowserService_BrowserSetAvatar_Handler,
+		},
+		{
+			MethodName: "BrowserClearAvatar",
+			Handler:    _UserBrowserService_BrowserClearAvatar_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

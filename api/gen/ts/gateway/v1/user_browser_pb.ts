@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { BrowserContext } from "../../auth/v1/auth_pb";
 import { file_auth_v1_auth } from "../../auth/v1/auth_pb";
-import type { CreateAddressRequest, CreateAddressResponse, DeleteAddressRequest, DeleteAddressResponse, GetMeRequest, GetMeResponse, GetSettingsRequest, GetSettingsResponse, ListAddressesRequest, ListAddressesResponse, SetDefaultAddressRequest, SetDefaultAddressResponse, UpdateAddressRequest, UpdateAddressResponse, UpdateMeRequest, UpdateMeResponse, UpdateSettingsRequest, UpdateSettingsResponse } from "../../user/v1/user_pb";
+import type { ClearAvatarRequest, ClearAvatarResponse, CreateAddressRequest, CreateAddressResponse, DeleteAddressRequest, DeleteAddressResponse, GetAvatarRequest, GetAvatarResponse, GetMeRequest, GetMeResponse, GetSettingsRequest, GetSettingsResponse, ListAddressesRequest, ListAddressesResponse, SetAvatarRequest, SetAvatarResponse, SetDefaultAddressRequest, SetDefaultAddressResponse, UpdateAddressRequest, UpdateAddressResponse, UpdateMeRequest, UpdateMeResponse, UpdateSettingsRequest, UpdateSettingsResponse } from "../../user/v1/user_pb";
 import { file_user_v1_user } from "../../user/v1/user_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file gateway/v1/user_browser.proto.
  */
 export const file_gateway_v1_user_browser: GenFile = /*@__PURE__*/
-  fileDesc("Ch1nYXRld2F5L3YxL3VzZXJfYnJvd3Nlci5wcm90bxIKZ2F0ZXdheS52MSJnChNCcm93c2VyR2V0TWVSZXF1ZXN0EiYKB3JlcXVlc3QYASABKAsyFS51c2VyLnYxLkdldE1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJtChZCcm93c2VyVXBkYXRlTWVSZXF1ZXN0EikKB3JlcXVlc3QYASABKAsyGC51c2VyLnYxLlVwZGF0ZU1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJxChRCcm93c2VyR2V0TWVSZXNwb25zZRIoCghyZXNwb25zZRgBIAEoCzIWLnVzZXIudjEuR2V0TWVSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwoXQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USKwoIcmVzcG9uc2UYASABKAsyGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJMaXN0QWRkcmVzc2VzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5MaXN0QWRkcmVzc2VzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3Nlckxpc3RBZGRyZXNzZXNSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuTGlzdEFkZHJlc3Nlc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ3ChtCcm93c2VyQ3JlYXRlQWRkcmVzc1JlcXVlc3QSLgoHcmVxdWVzdBgBIAEoCzIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQigQEKHEJyb3dzZXJDcmVhdGVBZGRyZXNzUmVzcG9uc2USMAoIcmVzcG9uc2UYASABKAsyHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwobQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0Ei4KB3JlcXVlc3QYASABKAsyHS51c2VyLnYxLlVwZGF0ZUFkZHJlc3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0IoEBChxCcm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEjAKCHJlc3BvbnNlGAEgASgLMh4udXNlci52MS5VcGRhdGVBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJEZWxldGVBZGRyZXNzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5EZWxldGVBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3NlckRlbGV0ZUFkZHJlc3NSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuRGVsZXRlQWRkcmVzc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ/Ch9Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EjIKB3JlcXVlc3QYASABKAsyIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKJAQogQnJvd3NlclNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USNAoIcmVzcG9uc2UYASABKAsyIi51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlInMKGUJyb3dzZXJHZXRTZXR0aW5nc1JlcXVlc3QSLAoHcmVxdWVzdBgBIAEoCzIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0In0KGkJyb3dzZXJHZXRTZXR0aW5nc1Jlc3BvbnNlEi4KCHJlc3BvbnNlGAEgASgLMhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ5ChxCcm93c2VyVXBkYXRlU2V0dGluZ3NSZXF1ZXN0Ei8KB3JlcXVlc3QYASABKAsyHi51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKDAQodQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVzcG9uc2USMQoIcmVzcG9uc2UYASABKAsyHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlKu0BChJVc2VyQnJvd3NlckZhaWx1cmUSJAogVVNFUl9CUk9XU0VSX0ZBSUxVUkVfVU5TUEVDSUZJRUQQABIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9QUk9GSUxFX05PVF9SRUFEWRABEikKJVVTRVJfQlJPV1NFUl9GQUlMVVJFX1ZFUlNJT05fQ09ORkxJQ1QQAhIqCiZVU0VSX0JST1dTRVJfRkFJTFVSRV9BRERSRVNTX05PVF9GT1VORBADEi4KKlVTRVJfQlJPV1NFUl9GQUlMVVJFX0FERFJFU1NfTElNSVRfUkVBQ0hFRBAEMrkHChJVc2VyQnJvd3NlclNlcnZpY2USUQoMQnJvd3NlckdldE1lEh8uZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXF1ZXN0GiAuZ2F0ZXdheS52MS5Ccm93c2VyR2V0TWVSZXNwb25zZRJaCg9Ccm93c2VyVXBkYXRlTWUSIi5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlcXVlc3QaIy5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVNZVJlc3BvbnNlEmkKFEJyb3dzZXJMaXN0QWRkcmVzc2VzEicuZ2F0ZXdheS52MS5Ccm93c2VyTGlzdEFkZHJlc3Nlc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJMaXN0QWRkcmVzc2VzUmVzcG9uc2USaQoUQnJvd3NlckNyZWF0ZUFkZHJlc3MSJy5nYXRld2F5LnYxLkJyb3dzZXJDcmVhdGVBZGRyZXNzUmVxdWVzdBooLmdhdGV3YXkudjEuQnJvd3NlckNyZWF0ZUFkZHJlc3NSZXNwb25zZRJpChRCcm93c2VyVXBkYXRlQWRkcmVzcxInLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0GiguZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEmkKFEJyb3dzZXJEZWxldGVBZGRyZXNzEicuZ2F0ZXdheS52MS5Ccm93c2VyRGVsZXRlQWRkcmVzc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJEZWxldGVBZGRyZXNzUmVzcG9uc2USdQoYQnJvd3NlclNldERlZmF1bHRBZGRyZXNzEisuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0GiwuZ2F0ZXdheS52MS5Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRJjChJCcm93c2VyR2V0U2V0dGluZ3MSJS5nYXRld2F5LnYxLkJyb3dzZXJHZXRTZXR0aW5nc1JlcXVlc3QaJi5nYXRld2F5LnYxLkJyb3dzZXJHZXRTZXR0aW5nc1Jlc3BvbnNlEmwKFUJyb3dzZXJVcGRhdGVTZXR0aW5ncxIoLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVxdWVzdBopLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVzcG9uc2VCPlo8Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL2dhdGV3YXkvdjE7Z2F0ZXdheXYxYgZwcm90bzM", [file_auth_v1_auth, file_user_v1_user]);
+  fileDesc("Ch1nYXRld2F5L3YxL3VzZXJfYnJvd3Nlci5wcm90bxIKZ2F0ZXdheS52MSJnChNCcm93c2VyR2V0TWVSZXF1ZXN0EiYKB3JlcXVlc3QYASABKAsyFS51c2VyLnYxLkdldE1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJtChZCcm93c2VyVXBkYXRlTWVSZXF1ZXN0EikKB3JlcXVlc3QYASABKAsyGC51c2VyLnYxLlVwZGF0ZU1lUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJxChRCcm93c2VyR2V0TWVSZXNwb25zZRIoCghyZXNwb25zZRgBIAEoCzIWLnVzZXIudjEuR2V0TWVSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwoXQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USKwoIcmVzcG9uc2UYASABKAsyGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJMaXN0QWRkcmVzc2VzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5MaXN0QWRkcmVzc2VzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3Nlckxpc3RBZGRyZXNzZXNSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuTGlzdEFkZHJlc3Nlc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ3ChtCcm93c2VyQ3JlYXRlQWRkcmVzc1JlcXVlc3QSLgoHcmVxdWVzdBgBIAEoCzIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQigQEKHEJyb3dzZXJDcmVhdGVBZGRyZXNzUmVzcG9uc2USMAoIcmVzcG9uc2UYASABKAsyHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUidwobQnJvd3NlclVwZGF0ZUFkZHJlc3NSZXF1ZXN0Ei4KB3JlcXVlc3QYASABKAsyHS51c2VyLnYxLlVwZGF0ZUFkZHJlc3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0IoEBChxCcm93c2VyVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEjAKCHJlc3BvbnNlGAEgASgLMh4udXNlci52MS5VcGRhdGVBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIncKG0Jyb3dzZXJEZWxldGVBZGRyZXNzUmVxdWVzdBIuCgdyZXF1ZXN0GAEgASgLMh0udXNlci52MS5EZWxldGVBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKBAQocQnJvd3NlckRlbGV0ZUFkZHJlc3NSZXNwb25zZRIwCghyZXNwb25zZRgBIAEoCzIeLnVzZXIudjEuRGVsZXRlQWRkcmVzc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ/Ch9Ccm93c2VyU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EjIKB3JlcXVlc3QYASABKAsyIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKJAQogQnJvd3NlclNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USNAoIcmVzcG9uc2UYASABKAsyIi51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlInMKGUJyb3dzZXJHZXRTZXR0aW5nc1JlcXVlc3QSLAoHcmVxdWVzdBgBIAEoCzIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0EigKB2NvbnRleHQYAiABKAsyFy5hdXRoLnYxLkJyb3dzZXJDb250ZXh0In0KGkJyb3dzZXJHZXRTZXR0aW5nc1Jlc3BvbnNlEi4KCHJlc3BvbnNlGAEgASgLMhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJ5ChxCcm93c2VyVXBkYXRlU2V0dGluZ3NSZXF1ZXN0Ei8KB3JlcXVlc3QYASABKAsyHi51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCKDAQodQnJvd3NlclVwZGF0ZVNldHRpbmdzUmVzcG9uc2USMQoIcmVzcG9uc2UYASABKAsyHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USLwoHZmFpbHVyZRgCIAEoDjIeLmdhdGV3YXkudjEuVXNlckJyb3dzZXJGYWlsdXJlIm8KF0Jyb3dzZXJHZXRBdmF0YXJSZXF1ZXN0EioKB3JlcXVlc3QYASABKAsyGS51c2VyLnYxLkdldEF2YXRhclJlcXVlc3QSKAoHY29udGV4dBgCIAEoCzIXLmF1dGgudjEuQnJvd3NlckNvbnRleHQieQoYQnJvd3NlckdldEF2YXRhclJlc3BvbnNlEiwKCHJlc3BvbnNlGAEgASgLMhoudXNlci52MS5HZXRBdmF0YXJSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUibwoXQnJvd3NlclNldEF2YXRhclJlcXVlc3QSKgoHcmVxdWVzdBgBIAEoCzIZLnVzZXIudjEuU2V0QXZhdGFyUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJ5ChhCcm93c2VyU2V0QXZhdGFyUmVzcG9uc2USLAoIcmVzcG9uc2UYASABKAsyGi51c2VyLnYxLlNldEF2YXRhclJlc3BvbnNlEi8KB2ZhaWx1cmUYAiABKA4yHi5nYXRld2F5LnYxLlVzZXJCcm93c2VyRmFpbHVyZSJzChlCcm93c2VyQ2xlYXJBdmF0YXJSZXF1ZXN0EiwKB3JlcXVlc3QYASABKAsyGy51c2VyLnYxLkNsZWFyQXZhdGFyUmVxdWVzdBIoCgdjb250ZXh0GAIgASgLMhcuYXV0aC52MS5Ccm93c2VyQ29udGV4dCJ9ChpCcm93c2VyQ2xlYXJBdmF0YXJSZXNwb25zZRIuCghyZXNwb25zZRgBIAEoCzIcLnVzZXIudjEuQ2xlYXJBdmF0YXJSZXNwb25zZRIvCgdmYWlsdXJlGAIgASgOMh4uZ2F0ZXdheS52MS5Vc2VyQnJvd3NlckZhaWx1cmUqmgIKElVzZXJCcm93c2VyRmFpbHVyZRIkCiBVU0VSX0JST1dTRVJfRkFJTFVSRV9VTlNQRUNJRklFRBAAEioKJlVTRVJfQlJPV1NFUl9GQUlMVVJFX1BST0ZJTEVfTk9UX1JFQURZEAESKQolVVNFUl9CUk9XU0VSX0ZBSUxVUkVfVkVSU0lPTl9DT05GTElDVBACEioKJlVTRVJfQlJPV1NFUl9GQUlMVVJFX0FERFJFU1NfTk9UX0ZPVU5EEAMSLgoqVVNFUl9CUk9XU0VSX0ZBSUxVUkVfQUREUkVTU19MSU1JVF9SRUFDSEVEEAQSKwonVVNFUl9CUk9XU0VSX0ZBSUxVUkVfQVZBVEFSX1VOQVZBSUxBQkxFEAUy3AkKElVzZXJCcm93c2VyU2VydmljZRJRCgxCcm93c2VyR2V0TWUSHy5nYXRld2F5LnYxLkJyb3dzZXJHZXRNZVJlcXVlc3QaIC5nYXRld2F5LnYxLkJyb3dzZXJHZXRNZVJlc3BvbnNlEloKD0Jyb3dzZXJVcGRhdGVNZRIiLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZU1lUmVxdWVzdBojLmdhdGV3YXkudjEuQnJvd3NlclVwZGF0ZU1lUmVzcG9uc2USaQoUQnJvd3Nlckxpc3RBZGRyZXNzZXMSJy5nYXRld2F5LnYxLkJyb3dzZXJMaXN0QWRkcmVzc2VzUmVxdWVzdBooLmdhdGV3YXkudjEuQnJvd3Nlckxpc3RBZGRyZXNzZXNSZXNwb25zZRJpChRCcm93c2VyQ3JlYXRlQWRkcmVzcxInLmdhdGV3YXkudjEuQnJvd3NlckNyZWF0ZUFkZHJlc3NSZXF1ZXN0GiguZ2F0ZXdheS52MS5Ccm93c2VyQ3JlYXRlQWRkcmVzc1Jlc3BvbnNlEmkKFEJyb3dzZXJVcGRhdGVBZGRyZXNzEicuZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlQWRkcmVzc1JlcXVlc3QaKC5nYXRld2F5LnYxLkJyb3dzZXJVcGRhdGVBZGRyZXNzUmVzcG9uc2USaQoUQnJvd3NlckRlbGV0ZUFkZHJlc3MSJy5nYXRld2F5LnYxLkJyb3dzZXJEZWxldGVBZGRyZXNzUmVxdWVzdBooLmdhdGV3YXkudjEuQnJvd3NlckRlbGV0ZUFkZHJlc3NSZXNwb25zZRJ1ChhCcm93c2VyU2V0RGVmYXVsdEFkZHJlc3MSKy5nYXRld2F5LnYxLkJyb3dzZXJTZXREZWZhdWx0QWRkcmVzc1JlcXVlc3QaLC5nYXRld2F5LnYxLkJyb3dzZXJTZXREZWZhdWx0QWRkcmVzc1Jlc3BvbnNlEmMKEkJyb3dzZXJHZXRTZXR0aW5ncxIlLmdhdGV3YXkudjEuQnJvd3NlckdldFNldHRpbmdzUmVxdWVzdBomLmdhdGV3YXkudjEuQnJvd3NlckdldFNldHRpbmdzUmVzcG9uc2USbAoVQnJvd3NlclVwZGF0ZVNldHRpbmdzEiguZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlU2V0dGluZ3NSZXF1ZXN0GikuZ2F0ZXdheS52MS5Ccm93c2VyVXBkYXRlU2V0dGluZ3NSZXNwb25zZRJdChBCcm93c2VyR2V0QXZhdGFyEiMuZ2F0ZXdheS52MS5Ccm93c2VyR2V0QXZhdGFyUmVxdWVzdBokLmdhdGV3YXkudjEuQnJvd3NlckdldEF2YXRhclJlc3BvbnNlEl0KEEJyb3dzZXJTZXRBdmF0YXISIy5nYXRld2F5LnYxLkJyb3dzZXJTZXRBdmF0YXJSZXF1ZXN0GiQuZ2F0ZXdheS52MS5Ccm93c2VyU2V0QXZhdGFyUmVzcG9uc2USYwoSQnJvd3NlckNsZWFyQXZhdGFyEiUuZ2F0ZXdheS52MS5Ccm93c2VyQ2xlYXJBdmF0YXJSZXF1ZXN0GiYuZ2F0ZXdheS52MS5Ccm93c2VyQ2xlYXJBdmF0YXJSZXNwb25zZUI+WjxnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vZ2F0ZXdheS92MTtnYXRld2F5djFiBnByb3RvMw", [file_auth_v1_auth, file_user_v1_user]);
 
 /**
  * BrowserGetMeRequest is reconstructed only from typed public input and allowed HTTP headers.
@@ -521,6 +521,174 @@ export const BrowserUpdateSettingsResponseSchema: GenMessage<BrowserUpdateSettin
   messageDesc(file_gateway_v1_user_browser, 17);
 
 /**
+ * BrowserGetAvatarRequest separates the public DTO from reconstructed browser credentials.
+ *
+ * @generated from message gateway.v1.BrowserGetAvatarRequest
+ */
+export type BrowserGetAvatarRequest = Message<"gateway.v1.BrowserGetAvatarRequest"> & {
+  /**
+   * Request is the typed public operation.
+   *
+   * @generated from field: user.v1.GetAvatarRequest request = 1;
+   */
+  request?: GetAvatarRequest | undefined;
+
+  /**
+   * Context is reconstructed only by Gateway In.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserGetAvatarRequest.
+ * Use `create(BrowserGetAvatarRequestSchema)` to create a new message.
+ */
+export const BrowserGetAvatarRequestSchema: GenMessage<BrowserGetAvatarRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 18);
+
+/**
+ * BrowserGetAvatarResponse contains one successful result or a finite domain failure.
+ *
+ * @generated from message gateway.v1.BrowserGetAvatarResponse
+ */
+export type BrowserGetAvatarResponse = Message<"gateway.v1.BrowserGetAvatarResponse"> & {
+  /**
+   * Response is present on success only.
+   *
+   * @generated from field: user.v1.GetAvatarResponse response = 1;
+   */
+  response?: GetAvatarResponse | undefined;
+
+  /**
+   * Failure is populated only for an allowed domain failure.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserGetAvatarResponse.
+ * Use `create(BrowserGetAvatarResponseSchema)` to create a new message.
+ */
+export const BrowserGetAvatarResponseSchema: GenMessage<BrowserGetAvatarResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 19);
+
+/**
+ * BrowserSetAvatarRequest separates the public DTO from reconstructed browser credentials.
+ *
+ * @generated from message gateway.v1.BrowserSetAvatarRequest
+ */
+export type BrowserSetAvatarRequest = Message<"gateway.v1.BrowserSetAvatarRequest"> & {
+  /**
+   * Request is the typed public operation.
+   *
+   * @generated from field: user.v1.SetAvatarRequest request = 1;
+   */
+  request?: SetAvatarRequest | undefined;
+
+  /**
+   * Context is reconstructed only by Gateway In.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserSetAvatarRequest.
+ * Use `create(BrowserSetAvatarRequestSchema)` to create a new message.
+ */
+export const BrowserSetAvatarRequestSchema: GenMessage<BrowserSetAvatarRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 20);
+
+/**
+ * BrowserSetAvatarResponse contains one successful result or a finite domain failure.
+ *
+ * @generated from message gateway.v1.BrowserSetAvatarResponse
+ */
+export type BrowserSetAvatarResponse = Message<"gateway.v1.BrowserSetAvatarResponse"> & {
+  /**
+   * Response is present on success only.
+   *
+   * @generated from field: user.v1.SetAvatarResponse response = 1;
+   */
+  response?: SetAvatarResponse | undefined;
+
+  /**
+   * Failure is populated only for an allowed domain failure.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserSetAvatarResponse.
+ * Use `create(BrowserSetAvatarResponseSchema)` to create a new message.
+ */
+export const BrowserSetAvatarResponseSchema: GenMessage<BrowserSetAvatarResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 21);
+
+/**
+ * BrowserClearAvatarRequest separates the public DTO from reconstructed browser credentials.
+ *
+ * @generated from message gateway.v1.BrowserClearAvatarRequest
+ */
+export type BrowserClearAvatarRequest = Message<"gateway.v1.BrowserClearAvatarRequest"> & {
+  /**
+   * Request is the typed public operation.
+   *
+   * @generated from field: user.v1.ClearAvatarRequest request = 1;
+   */
+  request?: ClearAvatarRequest | undefined;
+
+  /**
+   * Context is reconstructed only by Gateway In.
+   *
+   * @generated from field: auth.v1.BrowserContext context = 2;
+   */
+  context?: BrowserContext | undefined;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserClearAvatarRequest.
+ * Use `create(BrowserClearAvatarRequestSchema)` to create a new message.
+ */
+export const BrowserClearAvatarRequestSchema: GenMessage<BrowserClearAvatarRequest> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 22);
+
+/**
+ * BrowserClearAvatarResponse contains one successful result or a finite domain failure.
+ *
+ * @generated from message gateway.v1.BrowserClearAvatarResponse
+ */
+export type BrowserClearAvatarResponse = Message<"gateway.v1.BrowserClearAvatarResponse"> & {
+  /**
+   * Response is present on success only.
+   *
+   * @generated from field: user.v1.ClearAvatarResponse response = 1;
+   */
+  response?: ClearAvatarResponse | undefined;
+
+  /**
+   * Failure is populated only for an allowed domain failure.
+   *
+   * @generated from field: gateway.v1.UserBrowserFailure failure = 2;
+   */
+  failure: UserBrowserFailure;
+};
+
+/**
+ * Describes the message gateway.v1.BrowserClearAvatarResponse.
+ * Use `create(BrowserClearAvatarResponseSchema)` to create a new message.
+ */
+export const BrowserClearAvatarResponseSchema: GenMessage<BrowserClearAvatarResponse> = /*@__PURE__*/
+  messageDesc(file_gateway_v1_user_browser, 23);
+
+/**
  * UserBrowserFailure is the closed allowlist of domain outcomes preserved across the tunnel.
  *
  * @generated from enum gateway.v1.UserBrowserFailure
@@ -560,6 +728,13 @@ export enum UserBrowserFailure {
    * @generated from enum value: USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED = 4;
    */
   ADDRESS_LIMIT_REACHED = 4,
+
+  /**
+   * USER_BROWSER_FAILURE_AVATAR_UNAVAILABLE hides missing, foreign, retired or unready files.
+   *
+   * @generated from enum value: USER_BROWSER_FAILURE_AVATAR_UNAVAILABLE = 5;
+   */
+  AVATAR_UNAVAILABLE = 5,
 }
 
 /**
@@ -664,6 +839,36 @@ export const UserBrowserService: GenService<{
     methodKind: "unary";
     input: typeof BrowserUpdateSettingsRequestSchema;
     output: typeof BrowserUpdateSettingsResponseSchema;
+  },
+  /**
+   * BrowserGetAvatar resolves the current browser owner before the bounded avatar operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserGetAvatar
+   */
+  browserGetAvatar: {
+    methodKind: "unary";
+    input: typeof BrowserGetAvatarRequestSchema;
+    output: typeof BrowserGetAvatarResponseSchema;
+  },
+  /**
+   * BrowserSetAvatar resolves the current browser owner before the bounded avatar operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserSetAvatar
+   */
+  browserSetAvatar: {
+    methodKind: "unary";
+    input: typeof BrowserSetAvatarRequestSchema;
+    output: typeof BrowserSetAvatarResponseSchema;
+  },
+  /**
+   * BrowserClearAvatar resolves the current browser owner before the bounded avatar operation.
+   *
+   * @generated from rpc gateway.v1.UserBrowserService.BrowserClearAvatar
+   */
+  browserClearAvatar: {
+    methodKind: "unary";
+    input: typeof BrowserClearAvatarRequestSchema;
+    output: typeof BrowserClearAvatarResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_gateway_v1_user_browser, 0);

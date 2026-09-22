@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file user/v1/user.proto.
  */
 export const file_user_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSLFAQoPVXBkYXRlTWVSZXF1ZXN0EhQKDGRpc3BsYXlfbmFtZRgBIAEoCRILCgNiaW8YAiABKAkSGAoQZXhwZWN0ZWRfdmVyc2lvbhgDIAEoBBIRCglsYXN0X25hbWUYBCABKAkSEgoKYmlydGhfZGF0ZRgFIAEoCRIfCgZnZW5kZXIYBiABKA4yDy51c2VyLnYxLkdlbmRlchINCgVwaG9uZRgHIAEoCRIMCgRjaXR5GAggASgJEhAKCHNob3dfYWdlGAkgASgIIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSL6AQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDEhEKCWxhc3RfbmFtZRgHIAEoCRISCgpiaXJ0aF9kYXRlGAggASgJEh8KBmdlbmRlchgJIAEoDjIPLnVzZXIudjEuR2VuZGVyEg0KBXBob25lGAogASgJEgwKBGNpdHkYCyABKAkSEAoIc2hvd19hZ2UYDCABKAginwEKDUFkZHJlc3NGaWVsZHMSEQoJcmVjaXBpZW50GAEgASgJEg0KBXBob25lGAIgASgJEg8KB2NvdW50cnkYAyABKAkSEwoLcG9zdGFsX2NvZGUYBCABKAkSDAoEY2l0eRgFIAEoCRIUCgxzdHJlZXRfaG91c2UYBiABKAkSEQoJYXBhcnRtZW50GAcgASgJEg8KB2NvbW1lbnQYCCABKAkiWQoHQWRkcmVzcxISCgphZGRyZXNzX2lkGAEgASgMEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcxISCgppc19kZWZhdWx0GAMgASgIIlcKC0FkZHJlc3NCb29rEhIKCnN1YmplY3RfaWQYASABKAwSDwoHdmVyc2lvbhgCIAEoBBIjCglhZGRyZXNzZXMYAyADKAsyEC51c2VyLnYxLkFkZHJlc3MiFgoUTGlzdEFkZHJlc3Nlc1JlcXVlc3QiXQoUQ3JlYXRlQWRkcmVzc1JlcXVlc3QSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAEgASgEEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcyJxChRVcGRhdGVBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcxIdChVleHBlY3RlZF9ib29rX3ZlcnNpb24YAyABKAQiSQoURGVsZXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBIdChVleHBlY3RlZF9ib29rX3ZlcnNpb24YAiABKAQiTQoYU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIjsKFUxpc3RBZGRyZXNzZXNSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVDcmVhdGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFURlbGV0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI/ChlTZXREZWZhdWx0QWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIlUKD0FjY291bnRTZXR0aW5ncxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSHQoFdGhlbWUYAyABKA4yDi51c2VyLnYxLlRoZW1lIhQKEkdldFNldHRpbmdzUmVxdWVzdCJBChNHZXRTZXR0aW5nc1Jlc3BvbnNlEioKCHNldHRpbmdzGAEgASgLMhgudXNlci52MS5BY2NvdW50U2V0dGluZ3MiUAoVVXBkYXRlU2V0dGluZ3NSZXF1ZXN0Eh0KBXRoZW1lGAEgASgOMg4udXNlci52MS5UaGVtZRIYChBleHBlY3RlZF92ZXJzaW9uGAIgASgEIkQKFlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USKgoIc2V0dGluZ3MYASABKAsyGC51c2VyLnYxLkFjY291bnRTZXR0aW5ncypECgZHZW5kZXISFgoSR0VOREVSX1VOU1BFQ0lGSUVEEAASEQoNR0VOREVSX0ZFTUFMRRABEg8KC0dFTkRFUl9NQUxFEAIqUQoFVGhlbWUSFQoRVEhFTUVfVU5TUEVDSUZJRUQQABIQCgxUSEVNRV9TWVNURU0QARIPCgtUSEVNRV9MSUdIVBACEg4KClRIRU1FX0RBUksQAzK/BQoLVXNlclNlcnZpY2USNgoFR2V0TWUSFS51c2VyLnYxLkdldE1lUmVxdWVzdBoWLnVzZXIudjEuR2V0TWVSZXNwb25zZRI/CghVcGRhdGVNZRIYLnVzZXIudjEuVXBkYXRlTWVSZXF1ZXN0GhkudXNlci52MS5VcGRhdGVNZVJlc3BvbnNlEk4KDUxpc3RBZGRyZXNzZXMSHS51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXF1ZXN0Gh4udXNlci52MS5MaXN0QWRkcmVzc2VzUmVzcG9uc2USTgoNQ3JlYXRlQWRkcmVzcxIdLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkNyZWF0ZUFkZHJlc3NSZXNwb25zZRJOCg1VcGRhdGVBZGRyZXNzEh0udXNlci52MS5VcGRhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDURlbGV0ZUFkZHJlc3MSHS51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5EZWxldGVBZGRyZXNzUmVzcG9uc2USWgoRU2V0RGVmYXVsdEFkZHJlc3MSIS51c2VyLnYxLlNldERlZmF1bHRBZGRyZXNzUmVxdWVzdBoiLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXNwb25zZRJICgtHZXRTZXR0aW5ncxIbLnVzZXIudjEuR2V0U2V0dGluZ3NSZXF1ZXN0GhwudXNlci52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlElEKDlVwZGF0ZVNldHRpbmdzEh4udXNlci52MS5VcGRhdGVTZXR0aW5nc1JlcXVlc3QaHy51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVzcG9uc2VCOFo2Z2l0aHViLmNvbS92MGhtbHkvbWFya2V0bWVzaC9hcGkvZ2VuL2dvL3VzZXIvdjE7dXNlcnYxYgZwcm90bzM");
+  fileDesc("ChJ1c2VyL3YxL3VzZXIucHJvdG8SB3VzZXIudjEiDgoMR2V0TWVSZXF1ZXN0IjIKDUdldE1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSLFAQoPVXBkYXRlTWVSZXF1ZXN0EhQKDGRpc3BsYXlfbmFtZRgBIAEoCRILCgNiaW8YAiABKAkSGAoQZXhwZWN0ZWRfdmVyc2lvbhgDIAEoBBIRCglsYXN0X25hbWUYBCABKAkSEgoKYmlydGhfZGF0ZRgFIAEoCRIfCgZnZW5kZXIYBiABKA4yDy51c2VyLnYxLkdlbmRlchINCgVwaG9uZRgHIAEoCRIMCgRjaXR5GAggASgJEhAKCHNob3dfYWdlGAkgASgIIjUKEFVwZGF0ZU1lUmVzcG9uc2USIQoHcHJvZmlsZRgBIAEoCzIQLnVzZXIudjEuUHJvZmlsZSL6AQoHUHJvZmlsZRISCgpzdWJqZWN0X2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRILCgNiaW8YAyABKAkSDwoHdmVyc2lvbhgEIAEoBBIXCg9jcmVhdGVkX2F0X3VuaXgYBSABKAMSFwoPdXBkYXRlZF9hdF91bml4GAYgASgDEhEKCWxhc3RfbmFtZRgHIAEoCRISCgpiaXJ0aF9kYXRlGAggASgJEh8KBmdlbmRlchgJIAEoDjIPLnVzZXIudjEuR2VuZGVyEg0KBXBob25lGAogASgJEgwKBGNpdHkYCyABKAkSEAoIc2hvd19hZ2UYDCABKAginwEKDUFkZHJlc3NGaWVsZHMSEQoJcmVjaXBpZW50GAEgASgJEg0KBXBob25lGAIgASgJEg8KB2NvdW50cnkYAyABKAkSEwoLcG9zdGFsX2NvZGUYBCABKAkSDAoEY2l0eRgFIAEoCRIUCgxzdHJlZXRfaG91c2UYBiABKAkSEQoJYXBhcnRtZW50GAcgASgJEg8KB2NvbW1lbnQYCCABKAkiWQoHQWRkcmVzcxISCgphZGRyZXNzX2lkGAEgASgMEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcxISCgppc19kZWZhdWx0GAMgASgIIlcKC0FkZHJlc3NCb29rEhIKCnN1YmplY3RfaWQYASABKAwSDwoHdmVyc2lvbhgCIAEoBBIjCglhZGRyZXNzZXMYAyADKAsyEC51c2VyLnYxLkFkZHJlc3MiFgoUTGlzdEFkZHJlc3Nlc1JlcXVlc3QiXQoUQ3JlYXRlQWRkcmVzc1JlcXVlc3QSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAEgASgEEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcyJxChRVcGRhdGVBZGRyZXNzUmVxdWVzdBISCgphZGRyZXNzX2lkGAEgASgMEiYKBmZpZWxkcxgCIAEoCzIWLnVzZXIudjEuQWRkcmVzc0ZpZWxkcxIdChVleHBlY3RlZF9ib29rX3ZlcnNpb24YAyABKAQiSQoURGVsZXRlQWRkcmVzc1JlcXVlc3QSEgoKYWRkcmVzc19pZBgBIAEoDBIdChVleHBlY3RlZF9ib29rX3ZlcnNpb24YAiABKAQiTQoYU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0EhIKCmFkZHJlc3NfaWQYASABKAwSHQoVZXhwZWN0ZWRfYm9va192ZXJzaW9uGAIgASgEIjsKFUxpc3RBZGRyZXNzZXNSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI7ChVDcmVhdGVBZGRyZXNzUmVzcG9uc2USIgoEYm9vaxgBIAEoCzIULnVzZXIudjEuQWRkcmVzc0Jvb2siOwoVVXBkYXRlQWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIjsKFURlbGV0ZUFkZHJlc3NSZXNwb25zZRIiCgRib29rGAEgASgLMhQudXNlci52MS5BZGRyZXNzQm9vayI/ChlTZXREZWZhdWx0QWRkcmVzc1Jlc3BvbnNlEiIKBGJvb2sYASABKAsyFC51c2VyLnYxLkFkZHJlc3NCb29rIlUKD0FjY291bnRTZXR0aW5ncxISCgpzdWJqZWN0X2lkGAEgASgMEg8KB3ZlcnNpb24YAiABKAQSHQoFdGhlbWUYAyABKA4yDi51c2VyLnYxLlRoZW1lIhQKEkdldFNldHRpbmdzUmVxdWVzdCJBChNHZXRTZXR0aW5nc1Jlc3BvbnNlEioKCHNldHRpbmdzGAEgASgLMhgudXNlci52MS5BY2NvdW50U2V0dGluZ3MiUAoVVXBkYXRlU2V0dGluZ3NSZXF1ZXN0Eh0KBXRoZW1lGAEgASgOMg4udXNlci52MS5UaGVtZRIYChBleHBlY3RlZF92ZXJzaW9uGAIgASgEIkQKFlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USKgoIc2V0dGluZ3MYASABKAsyGC51c2VyLnYxLkFjY291bnRTZXR0aW5ncyI+CgZBdmF0YXISEgoKc3ViamVjdF9pZBgBIAEoDBIPCgd2ZXJzaW9uGAIgASgEEg8KB2ZpbGVfaWQYAyABKAwiEgoQR2V0QXZhdGFyUmVxdWVzdCI0ChFHZXRBdmF0YXJSZXNwb25zZRIfCgZhdmF0YXIYASABKAsyDy51c2VyLnYxLkF2YXRhciI9ChBTZXRBdmF0YXJSZXF1ZXN0Eg8KB2ZpbGVfaWQYASABKAwSGAoQZXhwZWN0ZWRfdmVyc2lvbhgCIAEoBCI0ChFTZXRBdmF0YXJSZXNwb25zZRIfCgZhdmF0YXIYASABKAsyDy51c2VyLnYxLkF2YXRhciIuChJDbGVhckF2YXRhclJlcXVlc3QSGAoQZXhwZWN0ZWRfdmVyc2lvbhgBIAEoBCI2ChNDbGVhckF2YXRhclJlc3BvbnNlEh8KBmF2YXRhchgBIAEoCzIPLnVzZXIudjEuQXZhdGFyKkQKBkdlbmRlchIWChJHRU5ERVJfVU5TUEVDSUZJRUQQABIRCg1HRU5ERVJfRkVNQUxFEAESDwoLR0VOREVSX01BTEUQAipRCgVUaGVtZRIVChFUSEVNRV9VTlNQRUNJRklFRBAAEhAKDFRIRU1FX1NZU1RFTRABEg8KC1RIRU1FX0xJR0hUEAISDgoKVEhFTUVfREFSSxADMpEHCgtVc2VyU2VydmljZRJCCglHZXRBdmF0YXISGS51c2VyLnYxLkdldEF2YXRhclJlcXVlc3QaGi51c2VyLnYxLkdldEF2YXRhclJlc3BvbnNlEkIKCVNldEF2YXRhchIZLnVzZXIudjEuU2V0QXZhdGFyUmVxdWVzdBoaLnVzZXIudjEuU2V0QXZhdGFyUmVzcG9uc2USSAoLQ2xlYXJBdmF0YXISGy51c2VyLnYxLkNsZWFyQXZhdGFyUmVxdWVzdBocLnVzZXIudjEuQ2xlYXJBdmF0YXJSZXNwb25zZRI2CgVHZXRNZRIVLnVzZXIudjEuR2V0TWVSZXF1ZXN0GhYudXNlci52MS5HZXRNZVJlc3BvbnNlEj8KCFVwZGF0ZU1lEhgudXNlci52MS5VcGRhdGVNZVJlcXVlc3QaGS51c2VyLnYxLlVwZGF0ZU1lUmVzcG9uc2USTgoNTGlzdEFkZHJlc3NlcxIdLnVzZXIudjEuTGlzdEFkZHJlc3Nlc1JlcXVlc3QaHi51c2VyLnYxLkxpc3RBZGRyZXNzZXNSZXNwb25zZRJOCg1DcmVhdGVBZGRyZXNzEh0udXNlci52MS5DcmVhdGVBZGRyZXNzUmVxdWVzdBoeLnVzZXIudjEuQ3JlYXRlQWRkcmVzc1Jlc3BvbnNlEk4KDVVwZGF0ZUFkZHJlc3MSHS51c2VyLnYxLlVwZGF0ZUFkZHJlc3NSZXF1ZXN0Gh4udXNlci52MS5VcGRhdGVBZGRyZXNzUmVzcG9uc2USTgoNRGVsZXRlQWRkcmVzcxIdLnVzZXIudjEuRGVsZXRlQWRkcmVzc1JlcXVlc3QaHi51c2VyLnYxLkRlbGV0ZUFkZHJlc3NSZXNwb25zZRJaChFTZXREZWZhdWx0QWRkcmVzcxIhLnVzZXIudjEuU2V0RGVmYXVsdEFkZHJlc3NSZXF1ZXN0GiIudXNlci52MS5TZXREZWZhdWx0QWRkcmVzc1Jlc3BvbnNlEkgKC0dldFNldHRpbmdzEhsudXNlci52MS5HZXRTZXR0aW5nc1JlcXVlc3QaHC51c2VyLnYxLkdldFNldHRpbmdzUmVzcG9uc2USUQoOVXBkYXRlU2V0dGluZ3MSHi51c2VyLnYxLlVwZGF0ZVNldHRpbmdzUmVxdWVzdBofLnVzZXIudjEuVXBkYXRlU2V0dGluZ3NSZXNwb25zZUI4WjZnaXRodWIuY29tL3YwaG1seS9tYXJrZXRtZXNoL2FwaS9nZW4vZ28vdXNlci92MTt1c2VydjFiBnByb3RvMw");
 
 /**
  * GetMeRequest has no caller-selected identity; identity comes from a verified internal assertion.
@@ -745,6 +745,168 @@ export const UpdateSettingsResponseSchema: GenMessage<UpdateSettingsResponse> = 
   messageDesc(file_user_v1_user, 22);
 
 /**
+ * Avatar contains private metadata only; signed download capabilities are never persisted.
+ *
+ * @generated from message user.v1.Avatar
+ */
+export type Avatar = Message<"user.v1.Avatar"> & {
+  /**
+   * SubjectId is the authenticated owner's immutable 16-byte identifier.
+   *
+   * @generated from field: bytes subject_id = 1;
+   */
+  subjectId: Uint8Array;
+
+  /**
+   * Version is positive and independent of profile, addresses and settings.
+   *
+   * @generated from field: uint64 version = 2;
+   */
+  version: bigint;
+
+  /**
+   * FileId is empty when unset, otherwise a nonzero 16-byte Files identifier.
+   *
+   * @generated from field: bytes file_id = 3;
+   */
+  fileId: Uint8Array;
+};
+
+/**
+ * Describes the message user.v1.Avatar.
+ * Use `create(AvatarSchema)` to create a new message.
+ */
+export const AvatarSchema: GenMessage<Avatar> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 23);
+
+/**
+ * GetAvatarRequest selects the caller solely from the verified session.
+ *
+ * @generated from message user.v1.GetAvatarRequest
+ */
+export type GetAvatarRequest = Message<"user.v1.GetAvatarRequest"> & {
+};
+
+/**
+ * Describes the message user.v1.GetAvatarRequest.
+ * Use `create(GetAvatarRequestSchema)` to create a new message.
+ */
+export const GetAvatarRequestSchema: GenMessage<GetAvatarRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 24);
+
+/**
+ * GetAvatarResponse returns the current primary snapshot.
+ *
+ * @generated from message user.v1.GetAvatarResponse
+ */
+export type GetAvatarResponse = Message<"user.v1.GetAvatarResponse"> & {
+  /**
+   * Avatar is the owner's association, including an empty selection.
+   *
+   * @generated from field: user.v1.Avatar avatar = 1;
+   */
+  avatar?: Avatar | undefined;
+};
+
+/**
+ * Describes the message user.v1.GetAvatarResponse.
+ * Use `create(GetAvatarResponseSchema)` to create a new message.
+ */
+export const GetAvatarResponseSchema: GenMessage<GetAvatarResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 25);
+
+/**
+ * SetAvatarRequest never accepts an owner, URL, key or unverified image metadata.
+ *
+ * @generated from message user.v1.SetAvatarRequest
+ */
+export type SetAvatarRequest = Message<"user.v1.SetAvatarRequest"> & {
+  /**
+   * FileId must belong to the caller and contain a READY clean PNG or JPEG.
+   *
+   * @generated from field: bytes file_id = 1;
+   */
+  fileId: Uint8Array;
+
+  /**
+   * ExpectedVersion must match the last-read avatar version.
+   *
+   * @generated from field: uint64 expected_version = 2;
+   */
+  expectedVersion: bigint;
+};
+
+/**
+ * Describes the message user.v1.SetAvatarRequest.
+ * Use `create(SetAvatarRequestSchema)` to create a new message.
+ */
+export const SetAvatarRequestSchema: GenMessage<SetAvatarRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 26);
+
+/**
+ * SetAvatarResponse contains the committed association.
+ *
+ * @generated from message user.v1.SetAvatarResponse
+ */
+export type SetAvatarResponse = Message<"user.v1.SetAvatarResponse"> & {
+  /**
+   * Avatar includes the incremented independent version.
+   *
+   * @generated from field: user.v1.Avatar avatar = 1;
+   */
+  avatar?: Avatar | undefined;
+};
+
+/**
+ * Describes the message user.v1.SetAvatarResponse.
+ * Use `create(SetAvatarResponseSchema)` to create a new message.
+ */
+export const SetAvatarResponseSchema: GenMessage<SetAvatarResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 27);
+
+/**
+ * ClearAvatarRequest conditionally removes the current association.
+ *
+ * @generated from message user.v1.ClearAvatarRequest
+ */
+export type ClearAvatarRequest = Message<"user.v1.ClearAvatarRequest"> & {
+  /**
+   * ExpectedVersion must match the last-read avatar version.
+   *
+   * @generated from field: uint64 expected_version = 1;
+   */
+  expectedVersion: bigint;
+};
+
+/**
+ * Describes the message user.v1.ClearAvatarRequest.
+ * Use `create(ClearAvatarRequestSchema)` to create a new message.
+ */
+export const ClearAvatarRequestSchema: GenMessage<ClearAvatarRequest> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 28);
+
+/**
+ * ClearAvatarResponse acknowledges unlinking and durable asynchronous cleanup.
+ *
+ * @generated from message user.v1.ClearAvatarResponse
+ */
+export type ClearAvatarResponse = Message<"user.v1.ClearAvatarResponse"> & {
+  /**
+   * Avatar has an empty file identifier and the committed version.
+   *
+   * @generated from field: user.v1.Avatar avatar = 1;
+   */
+  avatar?: Avatar | undefined;
+};
+
+/**
+ * Describes the message user.v1.ClearAvatarResponse.
+ * Use `create(ClearAvatarResponseSchema)` to create a new message.
+ */
+export const ClearAvatarResponseSchema: GenMessage<ClearAvatarResponse> = /*@__PURE__*/
+  messageDesc(file_user_v1_user, 29);
+
+/**
  * Gender is the closed set of self-description options; it is never shown publicly.
  *
  * @generated from enum user.v1.Gender
@@ -825,6 +987,36 @@ export const ThemeSchema: GenEnum<Theme> = /*@__PURE__*/
  * @generated from service user.v1.UserService
  */
 export const UserService: GenService<{
+  /**
+   * GetAvatar reads the caller's independently versioned avatar association.
+   *
+   * @generated from rpc user.v1.UserService.GetAvatar
+   */
+  getAvatar: {
+    methodKind: "unary";
+    input: typeof GetAvatarRequestSchema;
+    output: typeof GetAvatarResponseSchema;
+  },
+  /**
+   * SetAvatar attaches only the owner's READY clean raster after Files validation.
+   *
+   * @generated from rpc user.v1.UserService.SetAvatar
+   */
+  setAvatar: {
+    methodKind: "unary";
+    input: typeof SetAvatarRequestSchema;
+    output: typeof SetAvatarResponseSchema;
+  },
+  /**
+   * ClearAvatar unlinks the avatar and durably schedules its retirement.
+   *
+   * @generated from rpc user.v1.UserService.ClearAvatar
+   */
+  clearAvatar: {
+    methodKind: "unary";
+    input: typeof ClearAvatarRequestSchema;
+    output: typeof ClearAvatarResponseSchema;
+  },
   /**
    * GetMe reads the caller's profile with read-after-write consistency.
    *

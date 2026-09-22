@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package files.v1;
+
+option go_package = "github.com/v0hmly/marketmesh/api/gen/go/files/v1;filesv1";
+
+// FileAvatarService is private to the exact User workload on a separate mTLS listener.
+// It has no browser route and never transports file bytes or capabilities.
+service FileAvatarService {
+  // InspectOwnedAvatar checks ownership, READY state, clean raster format and size.
+  rpc InspectOwnedAvatar(InspectOwnedAvatarRequest) returns (InspectOwnedAvatarResponse);
+  // RetireOwnedAvatar durably tombstones one retired avatar for idempotent cleanup.
+  rpc RetireOwnedAvatar(RetireOwnedAvatarRequest) returns (RetireOwnedAvatarResponse);
+}
+
+// InspectOwnedAvatarRequest carries identity verified by the trusted User service.
+message InspectOwnedAvatarRequest {
+  // SubjectId is the verified personal namespace owner, never a public request field.
+  bytes subject_id = 1;
+  // FileId is the candidate avatar identifier.
+  bytes file_id = 2;
+  // SessionId is the verified audit identifier, never a bearer credential.
+  string session_id = 3;
+}
+
+// InspectOwnedAvatarResponse deliberately excludes object paths and credentials.
+message InspectOwnedAvatarResponse {
+  // CleanMediaType is exactly image/png or image/jpeg.
+  string clean_media_type = 1;
+  // CleanSizeBytes bounds the safe derivative at twenty MiB.
+  uint64 clean_size_bytes = 2;
+  // CleanSha256 is the immutable derivative digest.
+  bytes clean_sha256 = 3;
+}
+
+// RetireOwnedAvatarRequest is emitted from User's durable retirement queue.
+message RetireOwnedAvatarRequest {
+  // SubjectId is the owner of the retired association.
+  bytes subject_id = 1;
+  // FileId identifies only one owned file, never a storage path.
+  bytes file_id = 2;
+}
+
+// RetireOwnedAvatarResponse confirms a durable tombstone or an already absent file.
+message RetireOwnedAvatarResponse {}

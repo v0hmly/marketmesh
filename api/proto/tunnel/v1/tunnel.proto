@@ -292,6 +292,12 @@ enum RouteId {
   ROUTE_ID_USER_BROWSER_GET_SETTINGS = 109;
   // ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS changes owner-scoped settings through Auth.
   ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS = 110;
+  // ROUTE_ID_USER_BROWSER_GET_AVATAR reads an independent avatar association.
+  ROUTE_ID_USER_BROWSER_GET_AVATAR = 111;
+  // ROUTE_ID_USER_BROWSER_SET_AVATAR conditionally attaches a verified raster.
+  ROUTE_ID_USER_BROWSER_SET_AVATAR = 112;
+  // ROUTE_ID_USER_BROWSER_CLEAR_AVATAR unlinks and retires the current avatar.
+  ROUTE_ID_USER_BROWSER_CLEAR_AVATAR = 113;
   // ROUTE_ID_REALTIME_CHAT carries a bounded bidirectional chat stream.
   ROUTE_ID_REALTIME_CHAT = 200;
   // ROUTE_ID_REALTIME_NOTIFICATIONS carries a bounded notification stream.

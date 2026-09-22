@@ -35,6 +35,7 @@ type Verifier interface {
 }
 type Handler struct {
 	userv1.UnimplementedUserServiceServer
+	avatars   AvatarUseCase
 	settings  SettingsUseCase
 	addresses AddressUseCase
 	get       GetUseCase

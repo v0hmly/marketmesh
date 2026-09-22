@@ -1505,6 +1505,346 @@ func (x *UpdateSettingsResponse) GetSettings() *AccountSettings {
 	return nil
 }
 
+// Avatar contains private metadata only; signed download capabilities are never persisted.
+type Avatar struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// SubjectId is the authenticated owner's immutable 16-byte identifier.
+	SubjectId []byte `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	// Version is positive and independent of profile, addresses and settings.
+	Version uint64 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// FileId is empty when unset, otherwise a nonzero 16-byte Files identifier.
+	FileId        []byte `protobuf:"bytes,3,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Avatar) Reset() {
+	*x = Avatar{}
+	mi := &file_user_v1_user_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Avatar) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Avatar) ProtoMessage() {}
+
+func (x *Avatar) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Avatar.ProtoReflect.Descriptor instead.
+func (*Avatar) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *Avatar) GetSubjectId() []byte {
+	if x != nil {
+		return x.SubjectId
+	}
+	return nil
+}
+
+func (x *Avatar) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *Avatar) GetFileId() []byte {
+	if x != nil {
+		return x.FileId
+	}
+	return nil
+}
+
+// GetAvatarRequest selects the caller solely from the verified session.
+type GetAvatarRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAvatarRequest) Reset() {
+	*x = GetAvatarRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAvatarRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAvatarRequest) ProtoMessage() {}
+
+func (x *GetAvatarRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAvatarRequest.ProtoReflect.Descriptor instead.
+func (*GetAvatarRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{24}
+}
+
+// GetAvatarResponse returns the current primary snapshot.
+type GetAvatarResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Avatar is the owner's association, including an empty selection.
+	Avatar        *Avatar `protobuf:"bytes,1,opt,name=avatar,proto3" json:"avatar,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAvatarResponse) Reset() {
+	*x = GetAvatarResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAvatarResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAvatarResponse) ProtoMessage() {}
+
+func (x *GetAvatarResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAvatarResponse.ProtoReflect.Descriptor instead.
+func (*GetAvatarResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetAvatarResponse) GetAvatar() *Avatar {
+	if x != nil {
+		return x.Avatar
+	}
+	return nil
+}
+
+// SetAvatarRequest never accepts an owner, URL, key or unverified image metadata.
+type SetAvatarRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// FileId must belong to the caller and contain a READY clean PNG or JPEG.
+	FileId []byte `protobuf:"bytes,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	// ExpectedVersion must match the last-read avatar version.
+	ExpectedVersion uint64 `protobuf:"varint,2,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SetAvatarRequest) Reset() {
+	*x = SetAvatarRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetAvatarRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetAvatarRequest) ProtoMessage() {}
+
+func (x *SetAvatarRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetAvatarRequest.ProtoReflect.Descriptor instead.
+func (*SetAvatarRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *SetAvatarRequest) GetFileId() []byte {
+	if x != nil {
+		return x.FileId
+	}
+	return nil
+}
+
+func (x *SetAvatarRequest) GetExpectedVersion() uint64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+// SetAvatarResponse contains the committed association.
+type SetAvatarResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Avatar includes the incremented independent version.
+	Avatar        *Avatar `protobuf:"bytes,1,opt,name=avatar,proto3" json:"avatar,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetAvatarResponse) Reset() {
+	*x = SetAvatarResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetAvatarResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetAvatarResponse) ProtoMessage() {}
+
+func (x *SetAvatarResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetAvatarResponse.ProtoReflect.Descriptor instead.
+func (*SetAvatarResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *SetAvatarResponse) GetAvatar() *Avatar {
+	if x != nil {
+		return x.Avatar
+	}
+	return nil
+}
+
+// ClearAvatarRequest conditionally removes the current association.
+type ClearAvatarRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ExpectedVersion must match the last-read avatar version.
+	ExpectedVersion uint64 `protobuf:"varint,1,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ClearAvatarRequest) Reset() {
+	*x = ClearAvatarRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClearAvatarRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClearAvatarRequest) ProtoMessage() {}
+
+func (x *ClearAvatarRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClearAvatarRequest.ProtoReflect.Descriptor instead.
+func (*ClearAvatarRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ClearAvatarRequest) GetExpectedVersion() uint64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+// ClearAvatarResponse acknowledges unlinking and durable asynchronous cleanup.
+type ClearAvatarResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Avatar has an empty file identifier and the committed version.
+	Avatar        *Avatar `protobuf:"bytes,1,opt,name=avatar,proto3" json:"avatar,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClearAvatarResponse) Reset() {
+	*x = ClearAvatarResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClearAvatarResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClearAvatarResponse) ProtoMessage() {}
+
+func (x *ClearAvatarResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClearAvatarResponse.ProtoReflect.Descriptor instead.
+func (*ClearAvatarResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ClearAvatarResponse) GetAvatar() *Avatar {
+	if x != nil {
+		return x.Avatar
+	}
+	return nil
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
@@ -1602,7 +1942,24 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x05theme\x18\x01 \x01(\x0e2\x0e.user.v1.ThemeR\x05theme\x12)\n" +
 	"\x10expected_version\x18\x02 \x01(\x04R\x0fexpectedVersion\"N\n" +
 	"\x16UpdateSettingsResponse\x124\n" +
-	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings*D\n" +
+	"\bsettings\x18\x01 \x01(\v2\x18.user.v1.AccountSettingsR\bsettings\"Z\n" +
+	"\x06Avatar\x12\x1d\n" +
+	"\n" +
+	"subject_id\x18\x01 \x01(\fR\tsubjectId\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\x12\x17\n" +
+	"\afile_id\x18\x03 \x01(\fR\x06fileId\"\x12\n" +
+	"\x10GetAvatarRequest\"<\n" +
+	"\x11GetAvatarResponse\x12'\n" +
+	"\x06avatar\x18\x01 \x01(\v2\x0f.user.v1.AvatarR\x06avatar\"V\n" +
+	"\x10SetAvatarRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\fR\x06fileId\x12)\n" +
+	"\x10expected_version\x18\x02 \x01(\x04R\x0fexpectedVersion\"<\n" +
+	"\x11SetAvatarResponse\x12'\n" +
+	"\x06avatar\x18\x01 \x01(\v2\x0f.user.v1.AvatarR\x06avatar\"?\n" +
+	"\x12ClearAvatarRequest\x12)\n" +
+	"\x10expected_version\x18\x01 \x01(\x04R\x0fexpectedVersion\">\n" +
+	"\x13ClearAvatarResponse\x12'\n" +
+	"\x06avatar\x18\x01 \x01(\v2\x0f.user.v1.AvatarR\x06avatar*D\n" +
 	"\x06Gender\x12\x16\n" +
 	"\x12GENDER_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rGENDER_FEMALE\x10\x01\x12\x0f\n" +
@@ -1612,8 +1969,11 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\fTHEME_SYSTEM\x10\x01\x12\x0f\n" +
 	"\vTHEME_LIGHT\x10\x02\x12\x0e\n" +
 	"\n" +
-	"THEME_DARK\x10\x032\xbf\x05\n" +
-	"\vUserService\x126\n" +
+	"THEME_DARK\x10\x032\x91\a\n" +
+	"\vUserService\x12B\n" +
+	"\tGetAvatar\x12\x19.user.v1.GetAvatarRequest\x1a\x1a.user.v1.GetAvatarResponse\x12B\n" +
+	"\tSetAvatar\x12\x19.user.v1.SetAvatarRequest\x1a\x1a.user.v1.SetAvatarResponse\x12H\n" +
+	"\vClearAvatar\x12\x1b.user.v1.ClearAvatarRequest\x1a\x1c.user.v1.ClearAvatarResponse\x126\n" +
 	"\x05GetMe\x12\x15.user.v1.GetMeRequest\x1a\x16.user.v1.GetMeResponse\x12?\n" +
 	"\bUpdateMe\x12\x18.user.v1.UpdateMeRequest\x1a\x19.user.v1.UpdateMeResponse\x12N\n" +
 	"\rListAddresses\x12\x1d.user.v1.ListAddressesRequest\x1a\x1e.user.v1.ListAddressesResponse\x12N\n" +
@@ -1637,7 +1997,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 }
 
 var file_user_v1_user_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_user_v1_user_proto_goTypes = []any{
 	(Gender)(0),                       // 0: user.v1.Gender
 	(Theme)(0),                        // 1: user.v1.Theme
@@ -1664,6 +2024,13 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*GetSettingsResponse)(nil),       // 22: user.v1.GetSettingsResponse
 	(*UpdateSettingsRequest)(nil),     // 23: user.v1.UpdateSettingsRequest
 	(*UpdateSettingsResponse)(nil),    // 24: user.v1.UpdateSettingsResponse
+	(*Avatar)(nil),                    // 25: user.v1.Avatar
+	(*GetAvatarRequest)(nil),          // 26: user.v1.GetAvatarRequest
+	(*GetAvatarResponse)(nil),         // 27: user.v1.GetAvatarResponse
+	(*SetAvatarRequest)(nil),          // 28: user.v1.SetAvatarRequest
+	(*SetAvatarResponse)(nil),         // 29: user.v1.SetAvatarResponse
+	(*ClearAvatarRequest)(nil),        // 30: user.v1.ClearAvatarRequest
+	(*ClearAvatarResponse)(nil),       // 31: user.v1.ClearAvatarResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	6,  // 0: user.v1.GetMeResponse.profile:type_name -> user.v1.Profile
@@ -1683,29 +2050,38 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	20, // 14: user.v1.GetSettingsResponse.settings:type_name -> user.v1.AccountSettings
 	1,  // 15: user.v1.UpdateSettingsRequest.theme:type_name -> user.v1.Theme
 	20, // 16: user.v1.UpdateSettingsResponse.settings:type_name -> user.v1.AccountSettings
-	2,  // 17: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
-	4,  // 18: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
-	10, // 19: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
-	11, // 20: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
-	12, // 21: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
-	13, // 22: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
-	14, // 23: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
-	21, // 24: user.v1.UserService.GetSettings:input_type -> user.v1.GetSettingsRequest
-	23, // 25: user.v1.UserService.UpdateSettings:input_type -> user.v1.UpdateSettingsRequest
-	3,  // 26: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
-	5,  // 27: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
-	15, // 28: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
-	16, // 29: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
-	17, // 30: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
-	18, // 31: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
-	19, // 32: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
-	22, // 33: user.v1.UserService.GetSettings:output_type -> user.v1.GetSettingsResponse
-	24, // 34: user.v1.UserService.UpdateSettings:output_type -> user.v1.UpdateSettingsResponse
-	26, // [26:35] is the sub-list for method output_type
-	17, // [17:26] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	25, // 17: user.v1.GetAvatarResponse.avatar:type_name -> user.v1.Avatar
+	25, // 18: user.v1.SetAvatarResponse.avatar:type_name -> user.v1.Avatar
+	25, // 19: user.v1.ClearAvatarResponse.avatar:type_name -> user.v1.Avatar
+	26, // 20: user.v1.UserService.GetAvatar:input_type -> user.v1.GetAvatarRequest
+	28, // 21: user.v1.UserService.SetAvatar:input_type -> user.v1.SetAvatarRequest
+	30, // 22: user.v1.UserService.ClearAvatar:input_type -> user.v1.ClearAvatarRequest
+	2,  // 23: user.v1.UserService.GetMe:input_type -> user.v1.GetMeRequest
+	4,  // 24: user.v1.UserService.UpdateMe:input_type -> user.v1.UpdateMeRequest
+	10, // 25: user.v1.UserService.ListAddresses:input_type -> user.v1.ListAddressesRequest
+	11, // 26: user.v1.UserService.CreateAddress:input_type -> user.v1.CreateAddressRequest
+	12, // 27: user.v1.UserService.UpdateAddress:input_type -> user.v1.UpdateAddressRequest
+	13, // 28: user.v1.UserService.DeleteAddress:input_type -> user.v1.DeleteAddressRequest
+	14, // 29: user.v1.UserService.SetDefaultAddress:input_type -> user.v1.SetDefaultAddressRequest
+	21, // 30: user.v1.UserService.GetSettings:input_type -> user.v1.GetSettingsRequest
+	23, // 31: user.v1.UserService.UpdateSettings:input_type -> user.v1.UpdateSettingsRequest
+	27, // 32: user.v1.UserService.GetAvatar:output_type -> user.v1.GetAvatarResponse
+	29, // 33: user.v1.UserService.SetAvatar:output_type -> user.v1.SetAvatarResponse
+	31, // 34: user.v1.UserService.ClearAvatar:output_type -> user.v1.ClearAvatarResponse
+	3,  // 35: user.v1.UserService.GetMe:output_type -> user.v1.GetMeResponse
+	5,  // 36: user.v1.UserService.UpdateMe:output_type -> user.v1.UpdateMeResponse
+	15, // 37: user.v1.UserService.ListAddresses:output_type -> user.v1.ListAddressesResponse
+	16, // 38: user.v1.UserService.CreateAddress:output_type -> user.v1.CreateAddressResponse
+	17, // 39: user.v1.UserService.UpdateAddress:output_type -> user.v1.UpdateAddressResponse
+	18, // 40: user.v1.UserService.DeleteAddress:output_type -> user.v1.DeleteAddressResponse
+	19, // 41: user.v1.UserService.SetDefaultAddress:output_type -> user.v1.SetDefaultAddressResponse
+	22, // 42: user.v1.UserService.GetSettings:output_type -> user.v1.GetSettingsResponse
+	24, // 43: user.v1.UserService.UpdateSettings:output_type -> user.v1.UpdateSettingsResponse
+	32, // [32:44] is the sub-list for method output_type
+	20, // [20:32] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -1719,7 +2095,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   23,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

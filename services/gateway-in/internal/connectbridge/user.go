@@ -24,6 +24,11 @@ func NewUserHandler(invoker Invoker, options ...connect.HandlerOption) (http.Han
 
 // NewAccountHandler enables only the explicitly configured account capabilities.
 func NewAccountHandler(invoker Invoker, addresses, settings bool, options ...connect.HandlerOption) (http.Handler, error) {
+	return NewAccountAvatarHandler(invoker, addresses, settings, false, options...)
+}
+
+// NewAccountAvatarHandler adds only the explicitly enabled avatar methods.
+func NewAccountAvatarHandler(invoker Invoker, addresses, settings, avatar bool, options ...connect.HandlerOption) (http.Handler, error) {
 	if isNilInvoker(invoker) {
 		return nil, errors.New("connect user bridge: invoker is required")
 	}
@@ -52,6 +57,11 @@ func NewAccountHandler(invoker Invoker, addresses, settings bool, options ...con
 	}
 	if addresses {
 		if err := mountAddresses(mux, invoker, options); err != nil {
+			return nil, err
+		}
+	}
+	if avatar {
+		if err := mountAvatar(mux, invoker, options); err != nil {
 			return nil, err
 		}
 	}
@@ -138,6 +148,8 @@ func userFailure(failure gatewayv1.UserBrowserFailure) error {
 		return addressFailure(connect.CodeNotFound, "ADDRESS_NOT_FOUND")
 	case gatewayv1.UserBrowserFailure_USER_BROWSER_FAILURE_ADDRESS_LIMIT_REACHED:
 		return addressFailure(connect.CodeResourceExhausted, "ADDRESS_LIMIT_REACHED")
+	case gatewayv1.UserBrowserFailure_USER_BROWSER_FAILURE_AVATAR_UNAVAILABLE:
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("avatar unavailable"))
 	case gatewayv1.UserBrowserFailure_USER_BROWSER_FAILURE_VERSION_CONFLICT:
 		return connect.NewError(connect.CodeAborted, errors.New("version conflict"))
 	default:

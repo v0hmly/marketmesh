@@ -366,6 +366,9 @@ func routeTrafficClass(route contractv1.RouteId) contractv1.TrafficClass {
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_SET_DEFAULT_ADDRESS,
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_SETTINGS,
 		contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS,
+		contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_AVATAR,
+		contractv1.RouteId_ROUTE_ID_USER_BROWSER_SET_AVATAR,
+		contractv1.RouteId_ROUTE_ID_USER_BROWSER_CLEAR_AVATAR,
 		contractv1.RouteId_ROUTE_ID_FILE_CREATE_UPLOAD,
 		contractv1.RouteId_ROUTE_ID_FILE_COMPLETE_UPLOAD,
 		contractv1.RouteId_ROUTE_ID_FILE_GET_STATUS,
@@ -452,6 +455,12 @@ func routeLabel(route contractv1.RouteId) string {
 		return "user_browser_get_settings"
 	case contractv1.RouteId_ROUTE_ID_USER_BROWSER_UPDATE_SETTINGS:
 		return "user_browser_update_settings"
+	case contractv1.RouteId_ROUTE_ID_USER_BROWSER_GET_AVATAR:
+		return "user_browser_get_avatar"
+	case contractv1.RouteId_ROUTE_ID_USER_BROWSER_SET_AVATAR:
+		return "user_browser_set_avatar"
+	case contractv1.RouteId_ROUTE_ID_USER_BROWSER_CLEAR_AVATAR:
+		return "user_browser_clear_avatar"
 	case contractv1.RouteId_ROUTE_ID_FILE_CREATE_UPLOAD:
 		return "file_create_upload"
 	case contractv1.RouteId_ROUTE_ID_FILE_COMPLETE_UPLOAD:

@@ -228,6 +228,11 @@ func tunnelConfig(
 			routes[route] = tunnel.RoutePolicy{TrafficClass: contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR, MaxRequestBytes: 16 * 1024, MaxResponseBytes: 16 * 1024, MaxDeadline: cfg.requestTimeout, MaxInFlight: 32}
 		}
 	}
+	if cfg.userAvatarBrowserEnabled {
+		for _, route := range avatarRouteIDs() {
+			routes[route] = tunnel.RoutePolicy{TrafficClass: contractv1.TrafficClass_TRAFFIC_CLASS_REGULAR, MaxRequestBytes: 16 * 1024, MaxResponseBytes: 16 * 1024, MaxDeadline: cfg.requestTimeout, MaxInFlight: 32}
+		}
+	}
 	addAuthPolicies(cfg, routes)
 
 	return tunnel.Config{
