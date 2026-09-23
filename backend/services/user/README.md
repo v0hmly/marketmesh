@@ -108,9 +108,8 @@ Readiness проверяет оба PostgreSQL endpoint, доступность 
 Из корня workspace:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
 task verify
-go test -race ./backend/services/user/... ./backend/services/gateway-in/internal/connectbridge/...
+go -C backend test -race ./services/user/... ./services/gateway-in/internal/connectbridge/...
 task user:integration
 ```
 

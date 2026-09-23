@@ -104,8 +104,7 @@ DC и запрещённые `internal → DMZ:30444`, `DMZ → internal:30443`,
 укажите отдельный валидный instance, например:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go run ./backend/tools/e2e-topology --instance mm44-ci1 up
+go -C backend run ./tools/e2e-topology --instance mm44-ci1 up
 ```
 
 ## Команды
@@ -138,8 +137,7 @@ VM и fail-closed отклоняет машину с неверным имене
 четыре кластера, не выходя за границы ownership VM:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go run ./backend/tools/e2e-topology load-images \
+go -C backend run ./tools/e2e-topology load-images \
   --image marketmesh/gateway-in:mm29-<sha12> \
   --image marketmesh/gateway-out:mm29-<sha12> \
   --image marketmesh/fake-internal:mm29-<sha12>
@@ -194,8 +192,7 @@ run ID должен начинаться с нормализованного к�
 Разрешить оба target одного DC:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go run ./backend/tools/e2e-topology \
+go -C backend run ./tools/e2e-topology \
   --instance mm44-check \
   targets resolve \
   --consumer-task MM-35 \
@@ -228,8 +225,7 @@ sanitized environment, deadline и ограниченный output.
 чтением:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go run ./backend/tools/e2e-topology \
+go -C backend run ./tools/e2e-topology \
   --instance mm44-check \
   targets validate \
   --snapshot - \
@@ -265,8 +261,7 @@ stale. Принимать новое поколение обычным resolve �
 единственный explicit state-transition API:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go run ./backend/tools/e2e-topology \
+go -C backend run ./tools/e2e-topology \
   --instance mm44-check \
   targets rebind \
   --transition - \

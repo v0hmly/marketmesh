@@ -27,6 +27,5 @@ SLO вычисляет merged MM-27 `spec.Evaluate`, а resource ledger пров
 Локальная недеструктивная проверка:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go test -race -count=20 ./backend/e2e/tunnel/networksoak
+go -C backend test -race -count=20 ./e2e/tunnel/networksoak
 ```

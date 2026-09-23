@@ -172,9 +172,8 @@ production и не вместе с TLS-настройками.
 Команды для проверки изменения:
 
 ```bash
-export GOWORK="$PWD/backend/go.work"
-go test ./backend/services/auth/...
-go test -race ./backend/services/auth/...
+go -C backend test ./services/auth/...
+go -C backend test -race ./services/auth/...
 go vet ./backend/services/auth/...
 bash backend/services/auth/internal/adapter/out/postgres/testdata/integration.sh
 task auth:sessions:integration
@@ -257,11 +256,11 @@ task auth:registration:integration
 
 Перед первым проходом включите `AUTH_REGISTRATION_EVENTS_ENABLED=true`: иначе параллельная регистрация со случайным ID раньше текущего cursor может быть пропущена. Подготовьте consumer User и издателя Auth. Передайте DSN отдельной роли через `MARKETMESH_AUTH_POSTGRES_DSN` средствами управления секретами. Ей нужны SELECT(subject_id) на `auth.credentials`, SELECT на `auth.registration_outbox`; для apply дополнительно INSERT на outbox и UPDATE(published_at,next_attempt_at). Права на credential identifier/digest, DDL, DELETE, владение таблицей или User DB не нужны. Используйте PostgreSQL с проверяемым TLS в развёрнутых окружениях.
 
-Из корня Go workspace:
+Из корня репозитория (Go запускается в `backend/`):
 
 ```bash
-go run ./backend/services/auth/cmd/auth-registration-backfill --limit=100
-go run ./backend/services/auth/cmd/auth-registration-backfill --limit=100 --apply
+go -C backend run ./services/auth/cmd/auth-registration-backfill --limit=100
+go -C backend run ./services/auth/cmd/auth-registration-backfill --limit=100 --apply
 ```
 
 По умолчанию выполняется dry-run без мутаций. Один вызов обрабатывает одну страницу (1..1000 аккаунтов), выводит JSON с `Scanned`, `Missing`, `Published`, `Inserted`, `Requeued`, `NextCursor`, `Done`. Передайте `--after=<NextCursor>` следующему вызову; при `Done=false` повторяйте до завершения. При ошибке cursor относится к последней полностью обработанной строке; неопределённый результат записи безопасно перепроверяется при повторе. JSON не содержит credentials или payload, но cursor — opaque идентификатор, поэтому храните операционный вывод с ограниченным доступом.
@@ -271,7 +270,7 @@ Apply создаёт отсутствующее outbox-событие услов
 Для восстановления после потери сообщений из stream retention предусмотрен отдельный явный режим:
 
 ```bash
-go run ./backend/services/auth/cmd/auth-registration-backfill --limit=100 --apply --replay-published
+go -C backend run ./services/auth/cmd/auth-registration-backfill --limit=100 --apply --replay-published
 ```
 
 Он переочередит опубликованные события, сохранив **исходные event ID и canonical payload**. Pending записи и активные lease не сбрасываются; сравнение исходного `published_at` защищает от устаревшего результата параллельной сверки. Издатель выполняет обычную доставку, а inbox User предотвращает изменение существующего профиля.
