@@ -9,7 +9,7 @@ import (
 )
 
 func TestLifecycleRejectsForeignVolumesWithoutContainers(t *testing.T) {
-	for _, action := range []string{"up", "reset"} {
+	for _, action := range []string{"status", "probe", "down", "reset"} {
 		t.Run(action, func(t *testing.T) {
 			dir, cmd := lifecycle(t, action, "foreign")
 			output, err := cmd.CombinedOutput()
@@ -22,6 +22,20 @@ func TestLifecycleRejectsForeignVolumesWithoutContainers(t *testing.T) {
 		})
 	}
 }
+func TestLifecycleLegacyUpRejectsBeforeDocker(t *testing.T) {
+	dir, cmd := lifecycle(t, "up", "foreign")
+	output, err := cmd.CombinedOutput()
+	if err == nil || !strings.Contains(string(output), "task dev:up") {
+		t.Fatalf("legacy up must redirect to shared dev: %v %s", err, output)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "docker.trace")); !os.IsNotExist(err) {
+		t.Fatal("legacy up invoked Docker before rejecting the command")
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".state/marketmesh-account-testcase/.owner")); err != nil {
+		t.Fatal("legacy up rejection changed state")
+	}
+}
+
 func TestLifecycleResetPartialFixtureWithoutComposeParsing(t *testing.T) {
 	dir, cmd := lifecycle(t, "reset", "empty")
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -58,6 +72,7 @@ func lifecycle(t *testing.T, action, mode string) (string, *exec.Cmd) {
 		t.Fatal(err)
 	}
 	fake := `#!/bin/sh
+printf '%s\n' "$1" >> "$DOCKER_TRACE"
 case "$1 $2" in
  "ps -aq"|"network ls") exit 0;;
  "compose --project-directory") printf '%s\n' "$@"; exit 0;;
@@ -70,7 +85,7 @@ esac
 		t.Fatal(err)
 	}
 	cmd := exec.Command("bash", script, action)
-	cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "ACCOUNT_LOCAL_PROJECT=marketmesh-account-testcase", "FAKE_MODE="+mode)
+	cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "ACCOUNT_LOCAL_PROJECT=marketmesh-account-testcase", "FAKE_MODE="+mode, "DOCKER_TRACE="+filepath.Join(dir, "docker.trace"))
 	return dir, cmd
 }
 

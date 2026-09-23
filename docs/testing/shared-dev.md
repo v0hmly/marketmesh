@@ -25,6 +25,9 @@ volumes. Старые dev-данные не переносились. Taskboard 
   состоянии, ownership/symlink guards, проверка всех ресурсов до reset,
   сохранение секретов и замена только CA. Legacy-команды, которые скрыто вызывали
   `compose up`, отклоняются до Docker и до создания конфигурации.
+- Go fixture-пакет прошёл `go test -race` и `go vet`. Legacy `up` проверяется
+  отдельным тестом отказа до Docker; защита чужих volumes сохраняется для
+  status/probe/down/reset.
 - Compose config, Python AST, Node/shell syntax, layout/ссылки, diff whitespace
   прошли. Изменённые браузерные тесты прошли Prettier, ESLint и TypeScript.
 - Образы аккаунта, Files, адаптированного Rybbit и browser собраны из исходников.
