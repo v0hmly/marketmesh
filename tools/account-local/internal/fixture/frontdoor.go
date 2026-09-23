@@ -14,6 +14,8 @@ import (
 )
 
 var publicRPC = map[string]bool{
+	"/auth.v1.AuthService/StartRecoveryCodes":       true,
+	"/auth.v1.AuthService/CompleteRecoveryCodes":    true,
 	"/user.v1.UserService/GetAvatar":                true,
 	"/user.v1.UserService/SetAvatar":                true,
 	"/user.v1.UserService/ClearAvatar":              true,

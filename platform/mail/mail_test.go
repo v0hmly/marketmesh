@@ -28,6 +28,12 @@ func fixtures() map[Template]any {
 			CodeTTL:          "10 минут",
 			PasswordResetURL: "https://marketmesh.test/reset?t=abc",
 		},
+		TemplateRecoveryCode: CodeData{
+			RecipientEmail:   "anna@example.ru",
+			Code:             "482913",
+			CodeTTL:          "10 минут",
+			PasswordResetURL: "https://marketmesh.test/reset?t=abc",
+		},
 		TemplateNewLogin: NewLoginData{
 			RecipientEmail:   "anna@example.ru",
 			Timestamp:        "21 сентября 2026, 14:03, UTC+3",

@@ -158,13 +158,14 @@ const codeDescribedBy = computed(() => {
 
 function onCodeInput(event: Event) {
   code.value = recovery.value
-    ? (event.target as HTMLInputElement).value.slice(0, 35)
+    ? (event.target as HTMLInputElement).value.slice(0, 128)
     : normalizeCodeInput((event.target as HTMLInputElement).value);
   codeError.value = '';
   codeResent.value = false;
 }
 
 function toggleRecovery() {
+  codeFailedAttempts.value = 0;
   recovery.value = !recovery.value;
   code.value = '';
   codeAttempted.value = false;
@@ -215,6 +216,7 @@ onBeforeUnmount(() => {
   requestSequence++;
   password.value = '';
   confirmPassword.value = '';
+  resetCodeStep();
 });
 
 async function submitLogin() {
@@ -280,9 +282,11 @@ async function submitCode() {
   if (codeClientError.value) return;
   codeSubmitting.value = true;
   const sequence = ++requestSequence;
+  const value = code.value.trim();
+  if (recovery.value) code.value = '';
   try {
-    if (recovery.value) await session.completeLogin(challenge.value, code.value.trim(), true);
-    else await session.completeLogin(challenge.value, code.value);
+    if (recovery.value) await session.completeLogin(challenge.value, value, true);
+    else await session.completeLogin(challenge.value, value);
     if (!active || sequence !== requestSequence) return;
     codeSucceeded.value = true;
     email.value = '';
@@ -577,7 +581,7 @@ function submit() {
               name="code"
               :inputmode="recovery ? 'text' : 'numeric'"
               :autocomplete="recovery ? 'off' : 'one-time-code'"
-              :maxlength="recovery ? 35 : 6"
+              :maxlength="recovery ? 128 : 6"
               autocapitalize="none"
               :spellcheck="false"
               :disabled="codeFieldsDisabled"
@@ -585,10 +589,11 @@ function submit() {
               :aria-describedby="codeDescribedBy"
               @input="onCodeInput"
             />
-            <span id="login-code-help" class="field-help"
-              >Шесть цифр. Код действует
-              {{ challenge ? formatCodeTtl(challenge.codeExpiresInSeconds) : 'недолго' }}.</span
-            >
+            <span id="login-code-help" class="field-help">{{
+              recovery
+                ? 'Один сохранённый резервный код. Каждый срабатывает один раз, пароль по-прежнему обязателен.'
+                : `Шесть цифр. Код действует ${challenge ? formatCodeTtl(challenge.codeExpiresInSeconds) : 'недолго'}.`
+            }}</span>
             <span v-if="codeClientError" id="login-code-error" class="field-error">{{
               codeClientError
             }}</span>

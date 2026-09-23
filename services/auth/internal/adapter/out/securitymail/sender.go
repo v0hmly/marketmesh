@@ -51,8 +51,11 @@ func (s *Sender) Render(m application.Mail) (mail.Message, error) {
 	case "verify":
 		kind = mail.TemplateVerify
 		data = mail.VerifyData{RecipientEmail: m.Email, ConfirmURL: m.URL, LinkTTL: ttl}
-	case "code":
+	case "code", "recovery_code":
 		kind = mail.TemplateCode
+		if m.Kind == "recovery_code" {
+			kind = mail.TemplateRecoveryCode
+		}
 		data = mail.CodeData{RecipientEmail: m.Email, Code: m.Code, CodeTTL: ttl, PasswordResetURL: m.URL}
 	case "reset":
 		kind = mail.TemplatePasswordReset

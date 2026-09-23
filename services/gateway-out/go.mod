@@ -3,7 +3,7 @@ module github.com/v0hmly/marketmesh/services/gateway-out
 go 1.27.0
 
 require (
-	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922211745-52c7837d70da
+	github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260923073328-33760899da34
 	github.com/v0hmly/marketmesh/api/tunnel v0.0.0-20260922212341-efe0cd2b3b7b
 	github.com/v0hmly/marketmesh/platform v0.0.0-20260922082005-210a89db5688
 	go.opentelemetry.io/otel v1.46.0

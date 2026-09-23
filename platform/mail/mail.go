@@ -9,13 +9,14 @@ import (
 	txt "text/template"
 )
 
-// Template именует один из пятнадцати шаблонов писем авторизации.
+// Template именует один из шаблонов писем авторизации.
 // Строковое значение совпадает с именем файла в templates без расширения.
 type Template string
 
 const (
 	TemplateVerify             Template = "verify"
 	TemplateCode               Template = "code"
+	TemplateRecoveryCode       Template = "recovery_code"
 	TemplateNewLogin           Template = "new_login"
 	TemplatePasswordReset      Template = "password_reset"
 	TemplatePasswordChanged    Template = "password_changed"
@@ -36,6 +37,7 @@ func Templates() []Template {
 	return []Template{
 		TemplateVerify,
 		TemplateCode,
+		TemplateRecoveryCode,
 		TemplateNewLogin,
 		TemplatePasswordReset,
 		TemplatePasswordChanged,

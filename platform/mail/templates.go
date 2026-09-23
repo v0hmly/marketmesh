@@ -31,6 +31,11 @@ var specs = map[Template]spec{
 		subject:   "Код для входа в MarketMesh",
 		preheader: "Код действует {{ .CodeTTL }} и подходит для одного входа.",
 	},
+	TemplateRecoveryCode: {
+		dataType:  reflect.TypeOf(CodeData{}),
+		subject:   "Подтвердите замену резервных кодов",
+		preheader: "Код действует {{ .CodeTTL }} и подтверждает создание нового резервного набора.",
+	},
 	TemplateNewLogin: {
 		dataType:  reflect.TypeOf(NewLoginData{}),
 		subject:   "Вход в аккаунт MarketMesh",

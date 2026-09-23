@@ -37,7 +37,7 @@ async function setup(page: Page, email: string) {
 async function start(page: Page, email: string, seen: Set<string>) {
   await page.getByLabel('Пароль для резервных кодов').fill(password);
   await page.getByRole('button', { name: 'Запросить резервные коды', exact: true }).click();
-  const message = await letter(email, 'Код для входа в MarketMesh', seen);
+  const message = await letter(email, 'Подтвердите замену резервных кодов', seen);
   seen.add(message.ID);
   await page.getByLabel('Код для резервного набора').fill(letterCode(message));
 }
@@ -99,11 +99,6 @@ test('single-display recovery set replaces old codes and authenticates once thro
   await page.goto('/account/security');
   // Respect the real generation cooldown; no clock/DB shortcut in browser E2E.
   await page.waitForTimeout(Math.max(0, 62_000 - (Date.now() - started)));
-  // Exclude both email OTPs sent by the recovery logins before requesting generation.
-  for (let i = 0; i < 2; i++) {
-    const delivered = await letter(email, 'Код для входа в MarketMesh', seen);
-    seen.add(delivered.ID);
-  }
   await start(page, email, seen);
   await page.getByRole('button', { name: 'Создать новый набор', exact: true }).click();
   await expect(list.getByRole('listitem')).toHaveCount(8);

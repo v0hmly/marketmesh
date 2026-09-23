@@ -300,7 +300,8 @@ describe('account forms', () => {
     await flushPromises();
     await button(wrapper, 'Использовать резервный код').trigger('click');
     const code = 'abcdef01-23456789-abcdef01-23456789';
-    await wrapper.find('#login-code').setValue(code);
+    await wrapper.find('#login-code').setValue('  ' + code + '  ');
+    expect(wrapper.get('#login-code-help').text()).toContain('резервный код');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(session.completeLogin).toHaveBeenCalledExactlyOnceWith(challenge, code, true);

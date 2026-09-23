@@ -330,7 +330,11 @@ func (s *Service) replaceCode(ctx context.Context, tx Unit, c *domain.Challenge)
 	if err != nil {
 		return err
 	}
-	return tx.Queue(ctx, Mail{ID: id, Subject: c.Subject, Kind: "code", Email: tx.Account().Email, Code: code, URL: s.origin + "/account/security/reset", At: s.now(), ExpiresAt: c.ExpiresAt})
+	kind := "code"
+	if c.Purpose == domain.GenerateRecoveryCodes {
+		kind = "recovery_code"
+	}
+	return tx.Queue(ctx, Mail{ID: id, Subject: c.Subject, Kind: kind, Email: tx.Account().Email, Code: code, URL: s.origin + "/account/security/reset", At: s.now(), ExpiresAt: c.ExpiresAt})
 }
 func (s *Service) checkCode(ctx context.Context, tx Unit, c *domain.Challenge, purpose domain.Purpose, code string) error {
 	if err := c.Check(*tx.Account(), purpose, s.now()); err != nil {

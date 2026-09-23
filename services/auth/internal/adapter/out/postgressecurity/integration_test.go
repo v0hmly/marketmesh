@@ -577,7 +577,7 @@ func TestSecurityLifecycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		otp := take(t, "code", email).Code
+		otp := take(t, "recovery_code", email).Code
 		register(t, "recovery-foreign@example.test")
 		foreign := login(t, "recovery-foreign@example.test")
 		if _, err := svc.CompleteRecoveryCodes(t.Context(), foreign.Record, start.ChallengeID, otp); err == nil {
@@ -684,7 +684,7 @@ func TestSecurityLifecycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		otp = take(t, "code", email).Code
+		otp = take(t, "recovery_code", email).Code
 		if _, err := pool.Exec(t.Context(), `ALTER TABLE auth.mail_outbox ADD CONSTRAINT reject_recovery CHECK(false) NOT VALID`); err != nil {
 			t.Fatal(err)
 		}
