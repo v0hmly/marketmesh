@@ -76,6 +76,7 @@ func browserHeader(value *authv1.BrowserContext) (http.Header, error) {
 		limit  int
 	}{
 		{"Cookie", value.GetCookie(), 8192}, {"Origin", value.GetOrigin(), 2048}, {"Sec-Fetch-Site", value.GetSecFetchSite(), 256},
+		{"X-MarketMesh-Time-Zone", value.GetTimeZone(), 128},
 	} {
 		total := 0
 		if len(field.values) > 16 {

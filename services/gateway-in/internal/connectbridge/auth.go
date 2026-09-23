@@ -348,8 +348,9 @@ func browserContext(header http.Header) (*authv1.BrowserContext, error) {
 		Cookie:       slices.Clone(header.Values("Cookie")),
 		Origin:       slices.Clone(header.Values("Origin")),
 		SecFetchSite: slices.Clone(header.Values("Sec-Fetch-Site")),
+		TimeZone:     slices.Clone(header.Values("X-MarketMesh-Time-Zone")),
 	}
-	if !validBrowserValues(browser.Cookie, 8192) || !validBrowserValues(browser.Origin, 2048) || !validBrowserValues(browser.SecFetchSite, 256) {
+	if !validBrowserValues(browser.Cookie, 8192) || !validBrowserValues(browser.Origin, 2048) || !validBrowserValues(browser.SecFetchSite, 256) || !validBrowserValues(browser.TimeZone, 128) {
 		return nil, errors.New("connect auth bridge: invalid browser context")
 	}
 	return browser, nil

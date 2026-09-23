@@ -78,7 +78,7 @@ func (s *Service) Register(ctx context.Context, email string, raw []byte) error 
 		return domain.Unavailable
 	}
 	account := domain.Account{Subject: subject, Email: email, PasswordDigest: digest, Revision: 1}
-	challenge, mail, err := s.tokenChallenge(account, domain.VerifyEmail, email, 24*time.Hour)
+	challenge, mail, err := s.tokenChallenge(ctx, account, domain.VerifyEmail, email, 24*time.Hour)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (s *Service) replaceCode(ctx context.Context, tx Unit, c *domain.Challenge)
 	if err != nil {
 		return err
 	}
-	return tx.Queue(ctx, Mail{ID: id, Subject: c.Subject, Kind: "code", Email: tx.Account().Email, Code: code, URL: s.origin + "/account/security/reset", At: s.now(), ExpiresAt: c.ExpiresAt})
+	return tx.Queue(ctx, Mail{TimeZone: mailTimeZone(ctx), ID: id, Subject: c.Subject, Kind: "code", Email: tx.Account().Email, Code: code, URL: s.origin + "/account/security/reset", At: s.now(), ExpiresAt: c.ExpiresAt})
 }
 func (s *Service) checkCode(ctx context.Context, tx Unit, c *domain.Challenge, purpose domain.Purpose, code string) error {
 	if err := c.Check(*tx.Account(), purpose, s.now()); err != nil {
@@ -377,7 +377,7 @@ func (s *Service) checkCode(ctx context.Context, tx Unit, c *domain.Challenge, p
 	return domain.CodeMismatch
 }
 
-func (s *Service) tokenChallenge(account domain.Account, purpose domain.Purpose, email string, ttl time.Duration) (domain.Challenge, Mail, error) {
+func (s *Service) tokenChallenge(ctx context.Context, account domain.Account, purpose domain.Purpose, email string, ttl time.Duration) (domain.Challenge, Mail, error) {
 	id, err := newID()
 	if err != nil {
 		return domain.Challenge{}, Mail{}, err
@@ -392,7 +392,7 @@ func (s *Service) tokenChallenge(account domain.Account, purpose domain.Purpose,
 	}
 	now := s.now()
 	c := domain.Challenge{ID: id, Subject: account.Subject, Purpose: purpose, Digest: s.digest(string(purpose), id, secret), Revision: account.Revision, Email: email, SentAt: now, ExpiresAt: now.Add(ttl), Sends: 1}
-	m := Mail{ID: mailID, Subject: account.Subject, Kind: string(purpose), Email: email, URL: s.link(string(purpose), token(id, secret)), At: now, ExpiresAt: c.ExpiresAt}
+	m := Mail{TimeZone: mailTimeZone(ctx), ID: mailID, Subject: account.Subject, Kind: string(purpose), Email: email, URL: s.link(string(purpose), token(id, secret)), At: now, ExpiresAt: c.ExpiresAt}
 	return c, m, nil
 }
 func (s *Service) notice(ctx context.Context, tx Unit, kind string) error {
@@ -400,7 +400,7 @@ func (s *Service) notice(ctx context.Context, tx Unit, kind string) error {
 	if err != nil {
 		return err
 	}
-	return tx.Queue(ctx, Mail{ID: id, Subject: tx.Account().Subject, Kind: kind, Email: tx.Account().Email, URL: s.origin + "/account/security/reset", At: s.now(), ExpiresAt: s.now().Add(24 * time.Hour)})
+	return tx.Queue(ctx, Mail{TimeZone: mailTimeZone(ctx), ID: id, Subject: tx.Account().Subject, Kind: kind, Email: tx.Account().Email, URL: s.origin + "/account/security/reset", At: s.now(), ExpiresAt: s.now().Add(24 * time.Hour)})
 }
 func safe(err error) error {
 	if err == nil || domain.IsExpected(err) {

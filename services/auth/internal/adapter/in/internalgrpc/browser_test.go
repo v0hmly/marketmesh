@@ -12,13 +12,13 @@ import (
 )
 
 func TestBrowserContextBoundaries(t *testing.T) {
-	for _, value := range []*authv1.BrowserContext{nil, {Cookie: []string{strings.Repeat("a", 8193)}}, {Origin: []string{strings.Repeat("a", 2049)}}, {SecFetchSite: []string{strings.Repeat("a", 257)}}, {Cookie: make([]string, 17)}, {Cookie: []string{"x\r\ny"}}, {Origin: []string{"x\x00y"}}} {
+	for _, value := range []*authv1.BrowserContext{nil, {Cookie: []string{strings.Repeat("a", 8193)}}, {Origin: []string{strings.Repeat("a", 2049)}}, {SecFetchSite: []string{strings.Repeat("a", 257)}}, {Cookie: make([]string, 17)}, {Cookie: []string{"x\r\ny"}}, {Origin: []string{"x\x00y"}}, {TimeZone: []string{strings.Repeat("a", 129)}}, {TimeZone: []string{"UTC\r\nx:y"}}} {
 		if _, err := browserHeader(value); status.Code(err) != codes.InvalidArgument {
 			t.Fatalf("invalid context accepted: %v", err)
 		}
 	}
-	h, err := browserHeader(&authv1.BrowserContext{Cookie: []string{"opaque=a", "opaque=b"}, Origin: []string{"https://app.example", "https://app.example"}})
-	if err != nil || len(h.Values("Origin")) != 2 || len(h.Values("Cookie")) != 2 {
+	h, err := browserHeader(&authv1.BrowserContext{Cookie: []string{"opaque=a", "opaque=b"}, Origin: []string{"https://app.example", "https://app.example"}, TimeZone: []string{"Europe/Moscow"}})
+	if err != nil || len(h.Values("Origin")) != 2 || len(h.Values("Cookie")) != 2 || h.Get("X-MarketMesh-Time-Zone") != "Europe/Moscow" {
 		t.Fatal("header lines were changed")
 	}
 }

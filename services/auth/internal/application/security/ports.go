@@ -25,6 +25,8 @@ type Mail struct {
 	Subject                                          credential.SubjectID
 	Kind, Email, OtherEmail, URL, SecondaryURL, Code string
 	At, ExpiresAt                                    time.Time
+	// TimeZone is a validated display preference frozen when the mail is queued.
+	TimeZone string
 }
 
 func (Mail) String() string     { return "security.Mail{[REDACTED]}" }
