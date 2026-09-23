@@ -536,7 +536,7 @@ func (*LogoutAllResponse) Descriptor() ([]byte, []int) {
 // BrowserContext is private transport data, never a public request body or log payload.
 // Values retain individual HTTP header lines, including duplicates; gateways do not parse cookies.
 // Each field accepts at most 16 lines; cookie totals at most 8192 bytes, origin 2048,
-// and sec_fetch_site 256. CR, LF and NUL are forbidden in all values.
+// sec_fetch_site 256, and time_zone 128. CR, LF and NUL are forbidden in all values.
 type BrowserContext struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Cookie contains opaque Cookie header lines.
@@ -544,7 +544,11 @@ type BrowserContext struct {
 	// Origin preserves duplicates so Auth can reject ambiguous origins.
 	Origin []string `protobuf:"bytes,2,rep,name=origin,proto3" json:"origin,omitempty"`
 	// SecFetchSite preserves fetch metadata for Auth's browser security policy.
-	SecFetchSite  []string `protobuf:"bytes,3,rep,name=sec_fetch_site,json=secFetchSite,proto3" json:"sec_fetch_site,omitempty"`
+	SecFetchSite []string `protobuf:"bytes,3,rep,name=sec_fetch_site,json=secFetchSite,proto3" json:"sec_fetch_site,omitempty"`
+	// TimeZone is an optional, untrusted IANA display preference from
+	// X-MarketMesh-Time-Zone. At most 128 bytes total, with the same line bounds.
+	// It never changes token expiration or authorizes an operation.
+	TimeZone      []string `protobuf:"bytes,4,rep,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -596,6 +600,13 @@ func (x *BrowserContext) GetOrigin() []string {
 func (x *BrowserContext) GetSecFetchSite() []string {
 	if x != nil {
 		return x.SecFetchSite
+	}
+	return nil
+}
+
+func (x *BrowserContext) GetTimeZone() []string {
+	if x != nil {
+		return x.TimeZone
 	}
 	return nil
 }
@@ -5149,11 +5160,12 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\rLogoutRequest\"\x10\n" +
 	"\x0eLogoutResponse\"\x12\n" +
 	"\x10LogoutAllRequest\"\x13\n" +
-	"\x11LogoutAllResponse\"f\n" +
+	"\x11LogoutAllResponse\"\x83\x01\n" +
 	"\x0eBrowserContext\x12\x16\n" +
 	"\x06cookie\x18\x01 \x03(\tR\x06cookie\x12\x16\n" +
 	"\x06origin\x18\x02 \x03(\tR\x06origin\x12$\n" +
-	"\x0esec_fetch_site\x18\x03 \x03(\tR\fsecFetchSite\"\x95\x01\n" +
+	"\x0esec_fetch_site\x18\x03 \x03(\tR\fsecFetchSite\x12\x1b\n" +
+	"\ttime_zone\x18\x04 \x03(\tR\btimeZone\"\x95\x01\n" +
 	"!BrowserRegisterCredentialsRequest\x12=\n" +
 	"\arequest\x18\x01 \x01(\v2#.auth.v1.RegisterCredentialsRequestR\arequest\x121\n" +
 	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xbc\x01\n" +

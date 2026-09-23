@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { Code } from '@connectrpc/connect';
+import { authErrorReason } from '../../../shared/api/errors';
 import { useSession } from '../../../shell/context';
 import {
   validateEmail,
@@ -23,6 +25,7 @@ const attempted = ref(false);
 const failure = ref('');
 const feedback = ref('');
 const succeeded = ref(false);
+const expired = ref(false);
 let active = true;
 let revision = 0;
 let scrubbingPath: string | null = null;
@@ -51,7 +54,7 @@ function captureLink() {
   busy.value = false;
   token.value = '';
   password.value = repeat.value = '';
-  attempted.value = succeeded.value = false;
+  attempted.value = succeeded.value = expired.value = false;
   failure.value = feedback.value = '';
   const params = new URLSearchParams(route.hash.slice(1));
   const value = params.get('token') ?? '';
@@ -81,6 +84,13 @@ onBeforeUnmount(() => {
   revision++;
   token.value = password.value = repeat.value = '';
 });
+function requestNewLink() {
+  if (busy.value || !expired.value || !['verify', 'reset'].includes(action.value)) return;
+  revision++;
+  token.value = password.value = repeat.value = '';
+  failure.value = feedback.value = '';
+  expired.value = attempted.value = succeeded.value = false;
+}
 async function submit() {
   if (busy.value || succeeded.value) return;
   attempted.value = true;
@@ -124,7 +134,12 @@ async function submit() {
             ? 'Почта изменена. Войдите с новым адресом.'
             : 'Почта подтверждена. Теперь можно войти.';
   } catch (error) {
-    if (active && attempt === revision) failure.value = securityError(error);
+    if (active && attempt === revision) {
+      expired.value = authErrorReason(error, Code.FailedPrecondition, 'TOKEN_EXPIRED');
+      failure.value = expired.value
+        ? 'Ссылка недействительна или срок её действия истёк. Запросите новую ссылку.'
+        : securityError(error);
+    }
   } finally {
     bytes.fill(0);
     if (active && attempt === revision) {
@@ -147,7 +162,7 @@ async function submit() {
     <form class="card auth-card" novalidate :aria-busy="busy" @submit.prevent="submit">
       <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
       <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
-      <fieldset v-if="!succeeded" :disabled="busy">
+      <fieldset v-if="!succeeded && !expired" :disabled="busy">
         <legend class="visually-hidden">{{ title }}</legend>
         <div v-if="requesting" class="field">
           <label for="link-email">Почта</label
@@ -207,6 +222,18 @@ async function submit() {
           }}
         </button>
       </fieldset>
+      <button
+        v-if="expired && ['verify', 'reset'].includes(action)"
+        type="button"
+        class="button primary wide"
+        :disabled="busy"
+        @click="requestNewLink"
+      >
+        Получить новую ссылку
+      </button>
+      <RouterLink v-else-if="expired" class="button primary wide" to="/account/security">
+        Перейти к настройкам безопасности
+      </RouterLink>
       <RouterLink class="button text-button" to="/login">Перейти ко входу</RouterLink>
     </form>
   </section>

@@ -42,7 +42,7 @@ func (s *Service) RequestToken(ctx context.Context, email string, purpose domain
 		if purpose == domain.ResetPassword {
 			ttl = 30 * time.Minute
 		}
-		c, m, err := s.tokenChallenge(*account, purpose, email, ttl)
+		c, m, err := s.tokenChallenge(ctx, *account, purpose, email, ttl)
 		if err != nil {
 			return err
 		}
@@ -172,11 +172,11 @@ func (s *Service) StartEmailChange(ctx context.Context, actor session.Record, ne
 		if err := increment(account); err != nil {
 			return err
 		}
-		confirm, letter, err := s.tokenChallenge(*account, domain.ChangeEmail, newEmail, 30*time.Minute)
+		confirm, letter, err := s.tokenChallenge(ctx, *account, domain.ChangeEmail, newEmail, 30*time.Minute)
 		if err != nil {
 			return err
 		}
-		cancel, alert, err := s.tokenChallenge(*account, domain.CancelEmailChange, account.Email, 30*time.Minute)
+		cancel, alert, err := s.tokenChallenge(ctx, *account, domain.CancelEmailChange, account.Email, 30*time.Minute)
 		if err != nil {
 			return err
 		}

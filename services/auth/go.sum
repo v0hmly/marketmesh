@@ -60,12 +60,16 @@ github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922082005-210a89db5688 h1:PL
 github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922082005-210a89db5688/go.mod h1:y8sJfeXFcd4hvTSFbQlXVZFdu5+06qi58+RNn3QLBdI=
 github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922152850-1dd56d3d3a3a h1:1XBfzRHJNr0ACUZaJaQpL3ZYoc6MA51nJW0p0hxuB1s=
 github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260922152850-1dd56d3d3a3a/go.mod h1:y8sJfeXFcd4hvTSFbQlXVZFdu5+06qi58+RNn3QLBdI=
+github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260923092601-1fce81c90347 h1:SYwaIyRE3j9C+LGrSQ5A6uSlD/p5JkwnUYTNzbXwHYA=
+github.com/v0hmly/marketmesh/api/gen/go v0.0.0-20260923092601-1fce81c90347/go.mod h1:y8sJfeXFcd4hvTSFbQlXVZFdu5+06qi58+RNn3QLBdI=
 github.com/v0hmly/marketmesh/platform v0.0.0-20260922082005-210a89db5688 h1:3wkuHqXvYFkfT71Kh+NkLj84TCMj9QK468P/osf8L/o=
 github.com/v0hmly/marketmesh/platform v0.0.0-20260922082005-210a89db5688/go.mod h1:ouhHrDYkGUNGO312lktq75ED7KyVWP0FNpmYO8odpFw=
 github.com/v0hmly/marketmesh/platform v0.0.0-20260922152850-1dd56d3d3a3a h1:itFrWW+0cUFKLU3VczNYEuXmkerwsq3x9+BlCasVoBA=
 github.com/v0hmly/marketmesh/platform v0.0.0-20260922152850-1dd56d3d3a3a/go.mod h1:ouhHrDYkGUNGO312lktq75ED7KyVWP0FNpmYO8odpFw=
 github.com/v0hmly/marketmesh/platform v0.0.0-20260922154333-09ef7526fb2c h1:CNwpuSOfZpkbeVPNhMi9yr/ZM6YebeFjZTN0XDpvQAU=
 github.com/v0hmly/marketmesh/platform v0.0.0-20260922154333-09ef7526fb2c/go.mod h1:ouhHrDYkGUNGO312lktq75ED7KyVWP0FNpmYO8odpFw=
+github.com/v0hmly/marketmesh/platform v0.0.0-20260923092601-1fce81c90347 h1:vFFCpGrsy0IZpSCMZeQFl57PiFhS5s1ClWguWa5WyTY=
+github.com/v0hmly/marketmesh/platform v0.0.0-20260923092601-1fce81c90347/go.mod h1:ouhHrDYkGUNGO312lktq75ED7KyVWP0FNpmYO8odpFw=
 github.com/zeebo/xxh3 v1.1.0 h1:s7DLGDK45Dyfg7++yxI0khrfwq9661w9EN78eP/UZVs=
 github.com/zeebo/xxh3 v1.1.0/go.mod h1:IisAie1LELR4xhVinxWS5+zf1lA4p0MW4T+w+W07F5s=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=

@@ -123,6 +123,7 @@ func (handler *Handler) RegisterCredentials(
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
 	}
 	if handler.security != nil {
+		ctx = mailContext(ctx, request.Header())
 		if err := handler.security.Register(ctx, request.Msg.GetIdentifier(), password); err != nil {
 			return nil, securityFailure(err)
 		}
@@ -155,6 +156,7 @@ func (handler *Handler) Login(
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
 	}
 	if handler.security != nil {
+		ctx = mailContext(ctx, request.Header())
 		result, err := handler.security.Login(ctx, request.Msg.GetIdentifier(), password, false)
 		if err != nil {
 			return nil, securityFailure(err)
@@ -239,6 +241,7 @@ func (handler *Handler) LogoutAll(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New(invalidCredentialsMessage))
 	}
 	if handler.security != nil {
+		ctx = mailContext(ctx, request.Header())
 		actor, err := handler.sessions.Authenticate(ctx, access)
 		if err != nil {
 			return nil, sessionFailure(ctx, handler.log, err)

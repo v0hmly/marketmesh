@@ -63,7 +63,7 @@ func securityFailure(err error) error {
 	result.Meta().Set("Cache-Control", "no-store")
 	return result
 }
-func securityCall[Request, Response any](h *Handler, ctx context.Context, request *connect.Request[Request], run func(*Request) (*Response, error)) (*connect.Response[Response], error) {
+func securityCall[Request, Response any](h *Handler, ctx context.Context, request *connect.Request[Request], run func(context.Context, *Request) (*Response, error)) (*connect.Response[Response], error) {
 	if h.security == nil {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account security unavailable"))
 	}
@@ -73,7 +73,7 @@ func securityCall[Request, Response any](h *Handler, ctx context.Context, reques
 	if !h.validOrigin(request.Header()) {
 		return nil, securityFailure(domain.InvalidCredentials)
 	}
-	value, err := run(request.Msg)
+	value, err := run(mailContext(ctx, request.Header()), request.Msg)
 	if err != nil {
 		return nil, securityFailure(err)
 	}
@@ -95,7 +95,7 @@ func (h *Handler) securityActor(ctx context.Context, header http.Header) (sessio
 
 func (h *Handler) StartLogin(ctx context.Context, r *connect.Request[authv1.StartLoginRequest]) (*connect.Response[authv1.StartLoginResponse], error) {
 	var login security.LoginResult
-	response, err := securityCall(h, ctx, r, func(m *authv1.StartLoginRequest) (*authv1.StartLoginResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.StartLoginRequest) (*authv1.StartLoginResponse, error) {
 		defer clear(m.Password)
 		var err error
 		login, err = h.security.Login(ctx, m.Identifier, m.Password, true)
@@ -114,7 +114,7 @@ func (h *Handler) StartLogin(ctx context.Context, r *connect.Request[authv1.Star
 }
 func (h *Handler) CompleteLogin(ctx context.Context, r *connect.Request[authv1.CompleteLoginRequest]) (*connect.Response[authv1.CompleteLoginResponse], error) {
 	var header http.Header
-	response, err := securityCall(h, ctx, r, func(m *authv1.CompleteLoginRequest) (*authv1.CompleteLoginResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.CompleteLoginRequest) (*authv1.CompleteLoginResponse, error) {
 		if len(m.LoginChallengeId) != 16 {
 			return nil, domain.CodeExpired
 		}
@@ -136,7 +136,7 @@ func (h *Handler) CompleteLogin(ctx context.Context, r *connect.Request[authv1.C
 	return response, err
 }
 func (h *Handler) ResendLoginCode(ctx context.Context, r *connect.Request[authv1.ResendLoginCodeRequest]) (*connect.Response[authv1.ResendLoginCodeResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.ResendLoginCodeRequest) (*authv1.ResendLoginCodeResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ResendLoginCodeRequest) (*authv1.ResendLoginCodeResponse, error) {
 		if len(m.LoginChallengeId) != 16 {
 			return nil, domain.CodeExpired
 		}
@@ -147,22 +147,22 @@ func (h *Handler) ResendLoginCode(ctx context.Context, r *connect.Request[authv1
 	})
 }
 func (h *Handler) RequestEmailVerification(ctx context.Context, r *connect.Request[authv1.RequestEmailVerificationRequest]) (*connect.Response[authv1.RequestEmailVerificationResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.RequestEmailVerificationRequest) (*authv1.RequestEmailVerificationResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.RequestEmailVerificationRequest) (*authv1.RequestEmailVerificationResponse, error) {
 		return &authv1.RequestEmailVerificationResponse{}, h.security.RequestToken(ctx, m.Email, domain.VerifyEmail)
 	})
 }
 func (h *Handler) ConfirmEmail(ctx context.Context, r *connect.Request[authv1.ConfirmEmailRequest]) (*connect.Response[authv1.ConfirmEmailResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.ConfirmEmailRequest) (*authv1.ConfirmEmailResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ConfirmEmailRequest) (*authv1.ConfirmEmailResponse, error) {
 		return &authv1.ConfirmEmailResponse{}, h.security.ConfirmEmail(ctx, m.Token)
 	})
 }
 func (h *Handler) RequestPasswordReset(ctx context.Context, r *connect.Request[authv1.RequestPasswordResetRequest]) (*connect.Response[authv1.RequestPasswordResetResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.RequestPasswordResetRequest) (*authv1.RequestPasswordResetResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.RequestPasswordResetRequest) (*authv1.RequestPasswordResetResponse, error) {
 		return &authv1.RequestPasswordResetResponse{}, h.security.RequestToken(ctx, m.Email, domain.ResetPassword)
 	})
 }
 func (h *Handler) ConfirmPasswordReset(ctx context.Context, r *connect.Request[authv1.ConfirmPasswordResetRequest]) (*connect.Response[authv1.ConfirmPasswordResetResponse], error) {
-	response, err := securityCall(h, ctx, r, func(m *authv1.ConfirmPasswordResetRequest) (*authv1.ConfirmPasswordResetResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ConfirmPasswordResetRequest) (*authv1.ConfirmPasswordResetResponse, error) {
 		defer clear(m.NewPassword)
 		return &authv1.ConfirmPasswordResetResponse{}, h.security.ResetPassword(ctx, m.Token, m.NewPassword)
 	})
@@ -172,7 +172,7 @@ func (h *Handler) ConfirmPasswordReset(ctx context.Context, r *connect.Request[a
 	return response, err
 }
 func (h *Handler) GetCredentials(ctx context.Context, r *connect.Request[authv1.GetCredentialsRequest]) (*connect.Response[authv1.GetCredentialsResponse], error) {
-	return securityCall(h, ctx, r, func(*authv1.GetCredentialsRequest) (*authv1.GetCredentialsResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, _ *authv1.GetCredentialsRequest) (*authv1.GetCredentialsResponse, error) {
 		actor, err := h.securityActor(ctx, r.Header())
 		if err != nil {
 			return nil, err
@@ -189,7 +189,7 @@ func (h *Handler) GetCredentials(ctx context.Context, r *connect.Request[authv1.
 	})
 }
 func (h *Handler) StartEmailChange(ctx context.Context, r *connect.Request[authv1.StartEmailChangeRequest]) (*connect.Response[authv1.StartEmailChangeResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.StartEmailChangeRequest) (*authv1.StartEmailChangeResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.StartEmailChangeRequest) (*authv1.StartEmailChangeResponse, error) {
 		actor, err := h.securityActor(ctx, r.Header())
 		if err != nil {
 			return nil, err
@@ -199,7 +199,7 @@ func (h *Handler) StartEmailChange(ctx context.Context, r *connect.Request[authv
 	})
 }
 func (h *Handler) ConfirmEmailChange(ctx context.Context, r *connect.Request[authv1.ConfirmEmailChangeRequest]) (*connect.Response[authv1.ConfirmEmailChangeResponse], error) {
-	response, err := securityCall(h, ctx, r, func(m *authv1.ConfirmEmailChangeRequest) (*authv1.ConfirmEmailChangeResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ConfirmEmailChangeRequest) (*authv1.ConfirmEmailChangeResponse, error) {
 		return &authv1.ConfirmEmailChangeResponse{}, h.security.ConfirmEmailChange(ctx, m.Token)
 	})
 	if err == nil {
@@ -208,12 +208,12 @@ func (h *Handler) ConfirmEmailChange(ctx context.Context, r *connect.Request[aut
 	return response, err
 }
 func (h *Handler) CancelEmailChange(ctx context.Context, r *connect.Request[authv1.CancelEmailChangeRequest]) (*connect.Response[authv1.CancelEmailChangeResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.CancelEmailChangeRequest) (*authv1.CancelEmailChangeResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.CancelEmailChangeRequest) (*authv1.CancelEmailChangeResponse, error) {
 		return &authv1.CancelEmailChangeResponse{}, h.security.CancelEmailChange(ctx, m.Token)
 	})
 }
 func (h *Handler) ListSessions(ctx context.Context, r *connect.Request[authv1.ListSessionsRequest]) (*connect.Response[authv1.ListSessionsResponse], error) {
-	return securityCall(h, ctx, r, func(*authv1.ListSessionsRequest) (*authv1.ListSessionsResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, _ *authv1.ListSessionsRequest) (*authv1.ListSessionsResponse, error) {
 		actor, err := h.securityActor(ctx, r.Header())
 		if err != nil {
 			return nil, err
@@ -236,7 +236,7 @@ func (h *Handler) ListSessions(ctx context.Context, r *connect.Request[authv1.Li
 }
 func (h *Handler) RevokeSession(ctx context.Context, r *connect.Request[authv1.RevokeSessionRequest]) (*connect.Response[authv1.RevokeSessionResponse], error) {
 	current := false
-	response, err := securityCall(h, ctx, r, func(m *authv1.RevokeSessionRequest) (*authv1.RevokeSessionResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.RevokeSessionRequest) (*authv1.RevokeSessionResponse, error) {
 		actor, err := h.securityActor(ctx, r.Header())
 		if err != nil {
 			return nil, err
@@ -255,7 +255,7 @@ func (h *Handler) RevokeSession(ctx context.Context, r *connect.Request[authv1.R
 	return response, err
 }
 func (h *Handler) ChangePassword(ctx context.Context, r *connect.Request[authv1.ChangePasswordRequest]) (*connect.Response[authv1.ChangePasswordResponse], error) {
-	response, err := securityCall(h, ctx, r, func(m *authv1.ChangePasswordRequest) (*authv1.ChangePasswordResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ChangePasswordRequest) (*authv1.ChangePasswordResponse, error) {
 		defer clear(m.CurrentPassword)
 		defer clear(m.NewPassword)
 		actor, err := h.securityActor(ctx, r.Header())
@@ -270,7 +270,7 @@ func (h *Handler) ChangePassword(ctx context.Context, r *connect.Request[authv1.
 	return response, err
 }
 func (h *Handler) StartLoginCodeChange(ctx context.Context, r *connect.Request[authv1.StartLoginCodeChangeRequest]) (*connect.Response[authv1.StartLoginCodeChangeResponse], error) {
-	return securityCall(h, ctx, r, func(m *authv1.StartLoginCodeChangeRequest) (*authv1.StartLoginCodeChangeResponse, error) {
+	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.StartLoginCodeChangeRequest) (*authv1.StartLoginCodeChangeResponse, error) {
 		defer clear(m.Password)
 		actor, err := h.securityActor(ctx, r.Header())
 		if err != nil {
@@ -281,7 +281,7 @@ func (h *Handler) StartLoginCodeChange(ctx context.Context, r *connect.Request[a
 	})
 }
 func (h *Handler) CompleteLoginCodeChange(ctx context.Context, r *connect.Request[authv1.CompleteLoginCodeChangeRequest]) (*connect.Response[authv1.CompleteLoginCodeChangeResponse], error) {
-	response, err := securityCall(h, ctx, r, func(m *authv1.CompleteLoginCodeChangeRequest) (*authv1.CompleteLoginCodeChangeResponse, error) {
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.CompleteLoginCodeChangeRequest) (*authv1.CompleteLoginCodeChangeResponse, error) {
 		actor, err := h.securityActor(ctx, r.Header())
 		if err != nil {
 			return nil, err

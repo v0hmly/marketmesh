@@ -2,6 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { letter, letterCode, letterLink, verifyEmail } from './mail';
 
+test.use({ timezoneId: 'Europe/Moscow' });
+
 const run = process.env.ACCOUNT_E2E_RUN_ID!;
 const email = `security-${run}@example.test`;
 const password = 'CorrectHorse9!';
@@ -26,6 +28,9 @@ test('email verification, optional code, reissued code, reset and security notif
   await page.getByLabel('Повторите пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Зарегистрироваться', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Аккаунт создан.' })).toBeVisible();
+  const verification = await letter(email, 'Подтвердите почту в MarketMesh');
+  expect(verification.Text.includes('24 часа с момента запроса')).toBe(true);
+  expect(/Подтвердите почту до .* \(UTC\+3\)\./.test(verification.Text)).toBe(true);
   await signIn(page, email, password);
   await expect(page.getByRole('alert')).toContainText('Подтвердите почту');
   await verifyEmail(page, email);
@@ -41,6 +46,10 @@ test('email verification, optional code, reissued code, reset and security notif
   await page.getByLabel('Пароль для настройки входа').fill(password);
   await page.getByRole('button', { name: 'Включить подтверждение входа', exact: true }).click();
   const enableMail = await letter(email, 'Код для входа в MarketMesh');
+  expect(/(?:10 минут|9 минут(?: \d+ секунд[уы]?)?) с момента запроса/.test(enableMail.Text)).toBe(
+    true,
+  );
+  expect(/Используйте код до .* \(UTC\+3\)\./.test(enableMail.Text)).toBe(true);
   const enableCode = letterCode(enableMail);
   await page
     .getByLabel('Код из письма', { exact: true })
@@ -70,6 +79,9 @@ test('email verification, optional code, reissued code, reset and security notif
     'Код для входа в MarketMesh',
     new Set([enableMail.ID, loginMail.ID]),
   );
+  const deadline = (text: string) => text.match(/Используйте код до ([^\n]+)\./)?.[1];
+  expect(deadline(reissued.Text) === deadline(loginMail.Text)).toBe(true);
+  expect(reissued.Text.includes('с момента запроса')).toBe(true);
   await page.getByLabel('Код из письма', { exact: true }).fill(letterCode(reissued));
   await page.getByRole('button', { name: 'Подтвердить вход', exact: true }).click();
   await expect(page).toHaveURL(/\/account$/);
@@ -79,6 +91,8 @@ test('email verification, optional code, reissued code, reset and security notif
   await page.getByLabel('Почта', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Отправить письмо', exact: true }).click();
   const reset = await letter(email, 'Сброс пароля в MarketMesh');
+  expect(reset.Text.includes('30 минут с момента запроса')).toBe(true);
+  expect(/Смените пароль до .* \(UTC\+3\)\./.test(reset.Text)).toBe(true);
   await page.goto(letterLink(reset, 'reset'));
   await expect.poll(() => new URL(page.url()).hash).toBe('');
   const next = 'NewCorrectHorse8!';
@@ -105,6 +119,11 @@ test('email verification, optional code, reissued code, reset and security notif
   await page.getByLabel('Повторите новый пароль', { exact: true }).fill('AnotherPassword3!');
   await page.getByRole('button', { name: 'Сохранить новый пароль', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Получить новую ссылку' })).toBeVisible();
+  await accessible(page);
+  await page.getByRole('button', { name: 'Получить новую ссылку' }).click();
+  await expect(page.getByLabel('Почта', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Новый пароль', { exact: true })).toHaveCount(0);
 });
 
 test('email change requires password and confirmation at the new address', async ({
