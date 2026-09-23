@@ -165,7 +165,7 @@ class Component extends DCLogic {
         maker: i.maker,
         price: i.price,
         stock: i.left === 0 ? 'Партия закончилась' : (i.left <= 2 ? 'Осталось ' + i.left : 'В наличии'),
-        stockColor: i.left === 0 ? 'var(--status-danger)' : 'var(--text-secondary)',
+        stockColor: 'var(--text-secondary)',
         inStock: i.left > 0,
         outOfStock: i.left === 0,
         notifyLabel: notified ? 'Сообщим о пополнении' : 'Сообщить о пополнении',

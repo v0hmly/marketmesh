@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Ссылка — подтверждение почты</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button { box-sizing: border-box; text-decoration: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column; align-items: center; padding: 96px 24px;">
+  <div style="width: 100%; max-width: 410px; display: flex; flex-direction: column; gap: 28px;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 3.1rem; line-height: 1.2; letter-spacing: -0.03em;">{{title}}</h1>
+      <p style="margin: 0; font-size: 1rem; line-height: 1.8; color: var(--text-secondary);">{{lede}}</p>
+    </div>
+
+    <sc-if value="{{isActionButton}}" hint-placeholder-val="{{true}}">
+      <form novalidate onSubmit="{{onAction}}" aria-busy="{{ariaBusy}}" style="display: flex; flex-direction: column; gap: 14px;">
+        <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+          <div class="notice error" role="alert">{{noticeText}}</div>
+        </sc-if>
+        <button type="submit" class="button primary wide" disabled="{{busy}}">
+          <span>{{actionLabel}}</span>
+          <sc-if value="{{notBusy}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+        </button>
+        <sc-if value="{{hasActionNote}}" hint-placeholder-val="{{false}}">
+          <p style="margin: 0; font-size: 0.875rem; line-height: 1.6; color: var(--text-secondary);">{{actionNote}}</p>
+        </sc-if>
+      </form>
+    </sc-if>
+
+    <sc-if value="{{isPasswordForm}}" hint-placeholder-val="{{false}}">
+      <form class="card auth-card" novalidate onSubmit="{{onAction}}" aria-busy="{{ariaBusy}}" aria-labelledby="sec-title">
+        <h2 id="sec-title" class="sr-only">Новый пароль</h2>
+        <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+          <div class="notice error" role="alert">{{noticeText}}</div>
+        </sc-if>
+
+        <div class="field">
+          <label for="sec-password">Новый пароль</label>
+          <input class="ctl" type="password" id="sec-password" autocomplete="new-password" value="{{password}}" onChange="{{onPasswordChange}}" aria-invalid="{{passwordInvalid}}" aria-describedby="{{passwordDescribedBy}}" disabled="{{busy}}">
+          <sc-if value="{{showRequirements}}" hint-placeholder-val="{{false}}">
+            <ul id="sec-password-requirements" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+              <sc-for list="{{requirements}}" as="req" hint-placeholder-count="5">
+                <li style="display: flex; align-items: center; gap: 8px; font-size: 0.73rem; line-height: 1.6; color: {{req.color}};">
+                  <span aria-hidden="true">{{req.mark}}</span>
+                  <span>{{req.label}}<span class="sr-only"> — {{req.statusText}}</span></span>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+          <sc-if value="{{showPasswordError}}" hint-placeholder-val="{{false}}">
+            <div class="field-error" id="sec-password-error">{{passwordError}}</div>
+          </sc-if>
+        </div>
+
+        <div class="field">
+          <label for="sec-repeat">Повторите пароль</label>
+          <input class="ctl" type="password" id="sec-repeat" autocomplete="new-password" value="{{repeat}}" onChange="{{onRepeatChange}}" aria-invalid="{{repeatInvalid}}" aria-describedby="{{repeatDescribedBy}}" disabled="{{busy}}">
+          <sc-if value="{{showRepeatError}}" hint-placeholder-val="{{false}}">
+            <div class="field-error" id="sec-repeat-error">{{repeatError}}</div>
+          </sc-if>
+        </div>
+
+        <button type="submit" class="button primary wide" disabled="{{busy}}">
+          <span>{{actionLabel}}</span>
+          <sc-if value="{{notBusy}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+        </button>
+      </form>
+    </sc-if>
+
+    <sc-if value="{{isRequestForm}}" hint-placeholder-val="{{false}}">
+      <form class="card auth-card" novalidate onSubmit="{{onRequest}}" aria-busy="{{ariaBusy}}">
+        <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+          <div class="notice error" role="alert">{{noticeText}}</div>
+        </sc-if>
+        <div class="field">
+          <label for="sec-email">Почта</label>
+          <input class="ctl" type="email" id="sec-email" autocomplete="email" value="{{email}}" onChange="{{onEmailChange}}" aria-invalid="{{emailInvalid}}" aria-describedby="{{emailDescribedBy}}" disabled="{{busy}}">
+          <sc-if value="{{showEmailError}}" hint-placeholder-val="{{false}}">
+            <div class="field-error" id="sec-email-error">{{emailError}}</div>
+          </sc-if>
+        </div>
+        <button type="submit" class="button primary wide" disabled="{{busy}}">
+          <span>{{requestLabel}}</span>
+          <sc-if value="{{notBusy}}" hint-placeholder-val="{{true}}"><span aria-hidden="true">↗</span></sc-if>
+        </button>
+      </form>
+    </sc-if>
+
+    <sc-if value="{{isRequested}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <sc-if value="{{showNotice}}" hint-placeholder-val="{{false}}">
+          <div class="notice error" role="alert">{{noticeText}}</div>
+        </sc-if>
+        <sc-if value="{{showResent}}" hint-placeholder-val="{{false}}">
+          <div class="notice success" role="status">Отправили ещё одно письмо. Откройте ссылку из самого нового.</div>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
+          <button type="button" class="button secondary" onClick="{{onResend}}" disabled="{{resendDisabled}}">{{resendLabel}}</button>
+          <button type="button" class="button text-button" onClick="{{onChangeEmail}}" disabled="{{busy}}">Изменить почту</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showPrimaryLink}}" hint-placeholder-val="{{false}}">
+      <a class="button primary wide" href="{{primaryHref}}"><span>{{primaryLabel}}</span><span aria-hidden="true">↗</span></a>
+    </sc-if>
+
+    <sc-if value="{{showSupport}}" hint-placeholder-val="{{false}}">
+      <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Если почту сменили не вы, напишите в поддержку: <a href="#support">[АДРЕС ПОДДЕРЖКИ]</a>. Проверим аккаунт вручную.</p>
+    </sc-if>
+
+    <sc-if value="{{showFoot}}" hint-placeholder-val="{{false}}">
+      <p style="margin: 0; text-align: center; font-size: 0.875rem; color: var(--text-secondary);">{{footPrefix}} <a href="{{footHref}}">{{footLabel}}</a></p>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"linkState":{"editor":"enum","default":"valid","options":["valid","damaged","missing"],"section":"Демо: ссылка из письма"},"demoOutcome":{"editor":"enum","default":"success","options":["success","linkInvalid","rateLimited","serviceDown","noResponse"],"section":"Демо: ответ сервера"},"$preview":{"width":1280,"height":900}}'>
+const CFG = {
+  "canRequest": true,
+  "requestLabel": "Отправить письмо",
+  "requestAgainLabel": "Отправить новое письмо",
+  "action": {
+    "title": "Подтвердите почту.",
+    "lede": "Это последний шаг регистрации. После подтверждения можно войти в MarketMesh.",
+    "button": "Подтвердить почту",
+    "busy": "Подтверждаем…"
+  },
+  "done": {
+    "title": "Почта подтверждена.",
+    "lede": "Аккаунт готов. Войдите с почтой и паролем, которые указали при регистрации.",
+    "primary": {
+      "label": "Войти",
+      "href": "Login.dc.html"
+    }
+  },
+  "invalid": {
+    "expired": {
+      "title": "Ссылка больше не действует.",
+      "lede": "Она устарела или уже использована. Если почта подтверждена, просто войдите. Если нет — отправим новое письмо.",
+      "foot": {
+        "prefix": "Почта уже подтверждена?",
+        "label": "Войти",
+        "href": "Login.dc.html"
+      }
+    },
+    "damaged": {
+      "title": "Ссылка повреждена.",
+      "lede": "Похоже, она скопировалась не целиком. Откройте её прямо из письма или запросите новое.",
+      "foot": {
+        "prefix": "Почта уже подтверждена?",
+        "label": "Войти",
+        "href": "Login.dc.html"
+      }
+    }
+  },
+  "request": {
+    "title": "Подтвердите почту.",
+    "lede": "Отправим письмо со ссылкой для подтверждения. Ссылка действует 24 часа.",
+    "foot": {
+      "prefix": "Почта уже подтверждена?",
+      "label": "Войти",
+      "href": "Login.dc.html"
+    }
+  },
+  "requested": {
+    "title": "Проверьте почту.",
+    "lede": "Если адрес {email} зарегистрирован и ещё не подтверждён, письмо уже отправлено. Ссылка в нём действует 24 часа."
+  },
+  "errors": {
+    "rateLimited": "Слишком много попыток подряд. Подождите 10 минут и попробуйте снова.",
+    "serviceDown": "Не удалось подтвердить почту: сервис временно недоступен. Ссылка ещё действует — попробуйте через несколько минут.",
+    "noResponse": "Сервер не ответил, и мы не знаем, подтвердилась ли почта. Попробуйте войти — если не получится, нажмите кнопку ещё раз."
+  },
+  "requestErrors": {
+    "rateLimited": "Писем было слишком много. Следующее можно запросить через 10 минут.",
+    "serviceDown": "Не удалось отправить письмо: сервис временно недоступен. Попробуйте через несколько минут.",
+    "noResponse": "Сервер не ответил, письмо могло уйти. Проверьте почту через пару минут, прежде чем запрашивать снова."
+  }
+};
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      step: null,
+      stepFor: '',
+      busy: false,
+      notice: '',
+      resent: false,
+      email: '',
+      emailTried: false,
+      password: '',
+      repeat: '',
+      passwordTried: false,
+      requestedTo: '',
+      cooldown: 0
+    };
+    this.timer = null;
+    this.onAction = this.onAction.bind(this);
+    this.onRequest = this.onRequest.bind(this);
+    this.onResend = this.onResend.bind(this);
+    this.onChangeEmail = this.onChangeEmail.bind(this);
+    this.onEmailChange = (e) => this.setState({ email: e.target.value });
+    this.onPasswordChange = (e) => this.setState({ password: e.target.value });
+    this.onRepeatChange = (e) => this.setState({ repeat: e.target.value });
+  }
+
+  link() {
+    return this.props.linkState || 'valid';
+  }
+
+  outcome() {
+    return this.props.demoOutcome || 'success';
+  }
+
+  // Состояние задаёт ссылка из письма, пока пользователь ничего не отправил.
+  current() {
+    const s = this.state;
+    const link = this.link();
+    if (s.step && s.stepFor === link) return s.step;
+    if (link === 'damaged') return { view: 'invalid', issue: 'damaged' };
+    if (link === 'missing') return CFG.canRequest ? { view: 'request', issue: '' } : { view: 'invalid', issue: 'missing' };
+    return { view: 'action', issue: '' };
+  }
+
+  go(view, issue, extra) {
+    this.setState(Object.assign({ step: { view: view, issue: issue || '' }, stepFor: this.link(), busy: false, notice: '' }, extra || {}));
+  }
+
+  emailError() {
+    const v = this.state.email.trim();
+    if (!v) return 'Введите почту, на которую регистрировались.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Не похоже на адрес почты. Проверьте написание — например, name@example.com.';
+    return '';
+  }
+
+  checks(p) {
+    return {
+      lengthOk: p.length >= 8 && p.length <= 64,
+      hasLower: /[a-z]/.test(p),
+      hasUpper: /[A-Z]/.test(p),
+      hasDigit: /[0-9]/.test(p),
+      hasSpecial: /[^A-Za-z0-9]/.test(p)
+    };
+  }
+
+  passwordError() {
+    const p = this.state.password;
+    if (!p) return 'Введите новый пароль.';
+    if (p.length < 8) return 'Пароль слишком короткий. Нужно не менее 8 символов.';
+    if (p.length > 64) return 'Пароль слишком длинный. Не более 64 символов.';
+    const c = this.checks(p);
+    if (!c.hasLower || !c.hasUpper || !c.hasDigit || !c.hasSpecial) return 'Пароль не соответствует требованиям надёжности — отметьте выполненные условия выше.';
+    return '';
+  }
+
+  repeatError() {
+    if (!this.state.repeat) return 'Повторите новый пароль.';
+    if (this.state.repeat !== this.state.password) return 'Пароли не совпадают. Введите новый пароль ещё раз в оба поля.';
+    return '';
+  }
+
+  onAction(e) {
+    e.preventDefault();
+    if (this.state.busy) return;
+    if (CFG.passwordForm) {
+      this.setState({ passwordTried: true });
+      if (this.passwordError() || this.repeatError()) return;
+    }
+    const outcome = this.outcome();
+    const clear = { password: '', repeat: '', passwordTried: false };
+    this.setState({ busy: true, notice: '' });
+    setTimeout(() => {
+      if (outcome === 'success') this.go('done', '', clear);
+      else if (outcome === 'linkInvalid') this.go('invalid', 'expired', clear);
+      else this.setState(Object.assign({ busy: false, notice: CFG.errors[outcome] }, clear));
+    }, 900);
+  }
+
+  onRequest(e) {
+    e.preventDefault();
+    if (this.state.busy) return;
+    this.setState({ emailTried: true });
+    if (this.emailError()) return;
+    this.sendRequest(false);
+  }
+
+  sendRequest(isResend) {
+    // Ответ на запрос письма всегда нейтральный: он не раскрывает, есть ли такой адрес.
+    const outcome = this.outcome() === 'linkInvalid' ? 'success' : this.outcome();
+    this.setState({ busy: true, notice: '', resent: false });
+    setTimeout(() => {
+      if (outcome === 'success') {
+        this.go('requested', '', { requestedTo: this.state.email.trim(), resent: isResend });
+        this.startCooldown();
+      } else {
+        this.setState({ busy: false, notice: CFG.requestErrors[outcome] });
+      }
+    }, 900);
+  }
+
+  startCooldown() {
+    if (this.timer) clearInterval(this.timer);
+    this.setState({ cooldown: 60 });
+    this.timer = setInterval(() => {
+      const left = Math.max(0, this.state.cooldown - 1);
+      if (left === 0) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+      this.setState({ cooldown: left });
+    }, 1000);
+  }
+
+  onResend() {
+    if (this.state.busy || this.state.cooldown > 0) return;
+    this.sendRequest(true);
+  }
+
+  onChangeEmail() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    this.go('request', '', { emailTried: false, resent: false, cooldown: 0 });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const cur = this.current();
+    const v = cur.view;
+    const screen = v === 'invalid' ? CFG.invalid[cur.issue] : CFG[v];
+
+    const isAction = v === 'action';
+    const isRequestForm = CFG.canRequest && (v === 'request' || v === 'invalid');
+    const primary = screen.primary || null;
+    const foot = screen.foot || null;
+
+    const c = this.checks(s.password);
+    const requirements = [
+      { label: 'От 8 до 64 символов', ok: c.lengthOk },
+      { label: 'Строчная буква (a-z)', ok: c.hasLower },
+      { label: 'Заглавная буква (A-Z)', ok: c.hasUpper },
+      { label: 'Цифра (0-9)', ok: c.hasDigit },
+      { label: 'Специальный символ (например, !%#)', ok: c.hasSpecial }
+    ].map((r) => ({
+      label: r.label,
+      color: r.ok ? 'var(--on-surface-success)' : 'var(--text-secondary)',
+      mark: r.ok ? '✓' : '·',
+      statusText: r.ok ? 'выполнено' : 'ещё не выполнено'
+    }));
+
+    const passwordError = s.passwordTried ? this.passwordError() : '';
+    const repeatError = s.passwordTried && !passwordError ? this.repeatError() : '';
+    const passwordIds = [];
+    if (s.password) passwordIds.push('sec-password-requirements');
+    if (passwordError) passwordIds.push('sec-password-error');
+    const emailError = s.emailTried ? this.emailError() : '';
+
+    let requestLabel = v === 'invalid' ? CFG.requestAgainLabel : CFG.requestLabel;
+    if (s.busy) requestLabel = 'Отправляем…';
+
+    let resendLabel = 'Отправить ещё раз';
+    if (s.busy) resendLabel = 'Отправляем…';
+    else if (s.cooldown > 0) resendLabel = 'Отправить ещё раз через ' + s.cooldown + ' с';
+
+    return {
+      title: screen.title,
+      lede: (screen.lede || '').replace('{email}', s.requestedTo),
+
+      isActionButton: isAction && !CFG.passwordForm,
+      isPasswordForm: isAction && !!CFG.passwordForm,
+      isRequestForm: isRequestForm,
+      isRequested: v === 'requested',
+
+      busy: s.busy,
+      notBusy: !s.busy,
+      ariaBusy: s.busy ? 'true' : 'false',
+      showNotice: !!s.notice,
+      noticeText: s.notice,
+
+      actionLabel: s.busy ? CFG.action.busy : CFG.action.button,
+      hasActionNote: !!CFG.action.note,
+      actionNote: CFG.action.note || '',
+
+      password: s.password,
+      onPasswordChange: this.onPasswordChange,
+      passwordInvalid: passwordError ? 'true' : 'false',
+      passwordDescribedBy: passwordIds.length ? passwordIds.join(' ') : undefined,
+      showRequirements: !!s.password,
+      requirements: requirements,
+      showPasswordError: !!passwordError,
+      passwordError: passwordError,
+      repeat: s.repeat,
+      onRepeatChange: this.onRepeatChange,
+      repeatInvalid: repeatError ? 'true' : 'false',
+      repeatDescribedBy: repeatError ? 'sec-repeat-error' : undefined,
+      showRepeatError: !!repeatError,
+      repeatError: repeatError,
+
+      email: s.email,
+      onEmailChange: this.onEmailChange,
+      emailInvalid: emailError ? 'true' : 'false',
+      emailDescribedBy: emailError ? 'sec-email-error' : undefined,
+      showEmailError: !!emailError,
+      emailError: emailError,
+      requestLabel: requestLabel,
+
+      showResent: s.resent && !s.notice,
+      resendLabel: resendLabel,
+      resendDisabled: s.busy || s.cooldown > 0,
+
+      showPrimaryLink: !!primary,
+      primaryHref: primary ? primary.href : '',
+      primaryLabel: primary ? primary.label : '',
+      showSupport: !!screen.support,
+      showFoot: !!foot,
+      footPrefix: foot ? foot.prefix : '',
+      footHref: foot ? foot.href : '',
+      footLabel: foot ? foot.label : '',
+
+      onAction: this.onAction,
+      onRequest: this.onRequest,
+      onResend: this.onResend,
+      onChangeEmail: this.onChangeEmail
+    };
+  }
+}
+</script>
+</body>
+</html>
