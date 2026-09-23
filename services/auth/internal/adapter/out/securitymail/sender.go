@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
-	"time"
 
 	"github.com/v0hmly/marketmesh/platform/mail"
 	application "github.com/v0hmly/marketmesh/services/auth/internal/application/security"
@@ -43,26 +41,27 @@ func (s *Sender) Send(ctx context.Context, m application.Mail) error {
 func (s *Sender) Render(m application.Mail) (mail.Message, error) {
 	var kind mail.Template
 	var data any
-	stamp := m.At.UTC().Format("02.01.2006 15:04 UTC")
-	ttl := fmt.Sprintf("до %s", m.ExpiresAt.UTC().Format("02.01.2006 15:04 UTC"))
+	stamp := localTimestamp(m.At, m.TimeZone)
+	deadline := localTimestamp(m.ExpiresAt, m.TimeZone)
+	ttl := requestLifetime(m.At, m.ExpiresAt)
 	// The browser bridge intentionally carries no spoofable IP/location claims.
 	const unknown = "Не определяется"
 	switch m.Kind {
 	case "verify":
 		kind = mail.TemplateVerify
-		data = mail.VerifyData{RecipientEmail: m.Email, ConfirmURL: m.URL, LinkTTL: ttl}
+		data = mail.VerifyData{RecipientEmail: m.Email, ConfirmURL: m.URL, LinkTTL: ttl, Deadline: deadline}
 	case "code":
 		kind = mail.TemplateCode
-		data = mail.CodeData{RecipientEmail: m.Email, Code: m.Code, CodeTTL: ttl, PasswordResetURL: m.URL}
+		data = mail.CodeData{RecipientEmail: m.Email, Code: m.Code, CodeTTL: ttl, Deadline: deadline, PasswordResetURL: m.URL}
 	case "reset":
 		kind = mail.TemplatePasswordReset
-		data = mail.PasswordResetData{RecipientEmail: m.Email, ResetURL: m.URL, LinkTTL: ttl}
+		data = mail.PasswordResetData{RecipientEmail: m.Email, ResetURL: m.URL, LinkTTL: ttl, Deadline: deadline}
 	case "change_email":
 		kind = mail.TemplateEmailChangeConfirm
-		data = mail.EmailChangeConfirmData{OldEmail: m.OtherEmail, NewEmail: m.Email, ConfirmURL: m.URL, LinkTTL: ttl}
+		data = mail.EmailChangeConfirmData{OldEmail: m.OtherEmail, NewEmail: m.Email, ConfirmURL: m.URL, LinkTTL: ttl, Deadline: deadline}
 	case "cancel_email":
 		kind = mail.TemplateEmailChangeAlert
-		data = mail.EmailChangeAlertData{OldEmail: m.Email, NewEmail: m.OtherEmail, Timestamp: stamp, IP: unknown, CancelURL: m.URL, CancelTTL: ttl}
+		data = mail.EmailChangeAlertData{OldEmail: m.Email, NewEmail: m.OtherEmail, Timestamp: stamp, IP: unknown, CancelURL: m.URL, CancelTTL: ttl, Deadline: deadline}
 	case "new_login":
 		kind = mail.TemplateNewLogin
 		data = mail.NewLoginData{RecipientEmail: m.Email, Timestamp: stamp, Device: unknown, Browser: unknown, IP: unknown, Location: unknown, PasswordResetURL: m.URL}
@@ -83,7 +82,7 @@ func (s *Sender) Render(m application.Mail) (mail.Message, error) {
 		data = mail.TwoFactorOffData{RecipientEmail: m.Email, Timestamp: stamp, DeviceBrowser: unknown, IP: unknown, EnableURL: s.origin + "/account/security"}
 	case "cancel_deletion":
 		kind = mail.TemplateAccountDeleted
-		data = mail.AccountDeletedData{RecipientEmail: m.Email, DeletionDate: m.ExpiresAt.UTC().Format(time.DateOnly), CancelURL: m.URL}
+		data = mail.AccountDeletedData{RecipientEmail: m.Email, DeletionDate: deadline, CancelURL: m.URL}
 	default:
 		return mail.Message{}, errInvalidMail
 	}

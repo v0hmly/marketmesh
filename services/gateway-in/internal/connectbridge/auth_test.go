@@ -88,7 +88,7 @@ func TestAuthFixedRoutesAndPrivateContext(t *testing.T) {
 				t.Fatal(err)
 			}
 			invoker := &authInvoker{fakeInvoker: fakeInvoker{response: tunnel.Response{Payload: payload}}}
-			headers := http.Header{"Cookie": {"opaque==; odd=value", "second=2"}, "Origin": {"https://a.test", "https://b.test"}, "Sec-Fetch-Site": {"same-origin"}, "Authorization": {"Bearer never-forward"}, "Forwarded": {"host=private"}, "X-Forwarded-Proto": {"https"}}
+			headers := http.Header{"Cookie": {"opaque==; odd=value", "second=2"}, "Origin": {"https://a.test", "https://b.test"}, "Sec-Fetch-Site": {"same-origin"}, "X-Marketmesh-Time-Zone": {"Europe/Moscow"}, "Authorization": {"Bearer never-forward"}, "Forwarded": {"host=private"}, "X-Forwarded-Proto": {"https"}}
 			result := authHTTP(t, invoker, http.MethodPost, test.method, test.body, true, headers)
 			if result.Code != 200 {
 				t.Fatal(result.Code, result.Body.String())
@@ -107,7 +107,7 @@ func TestAuthFixedRoutesAndPrivateContext(t *testing.T) {
 				t.Fatal(err)
 			}
 			contextMessage := test.request.ProtoReflect().Get(test.request.ProtoReflect().Descriptor().Fields().ByName("context")).Message().Interface().(*authv1.BrowserContext)
-			if !proto.Equal(contextMessage, &authv1.BrowserContext{Cookie: headers.Values("Cookie"), Origin: headers.Values("Origin"), SecFetchSite: headers.Values("Sec-Fetch-Site")}) {
+			if !proto.Equal(contextMessage, &authv1.BrowserContext{Cookie: headers.Values("Cookie"), Origin: headers.Values("Origin"), SecFetchSite: headers.Values("Sec-Fetch-Site"), TimeZone: headers.Values("X-MarketMesh-Time-Zone")}) {
 				t.Fatal("browser context changed")
 			}
 			if test.method == "Login" {
@@ -182,7 +182,7 @@ func TestBrowserContextBounds(t *testing.T) {
 	for _, field := range []struct {
 		name  string
 		limit int
-	}{{"Cookie", 8192}, {"Origin", 2048}, {"Sec-Fetch-Site", 256}} {
+	}{{"Cookie", 8192}, {"Origin", 2048}, {"Sec-Fetch-Site", 256}, {"X-Marketmesh-Time-Zone", 128}} {
 		for _, values := range [][]string{{strings.Repeat("x", field.limit+1)}, make([]string, 17), {"bad\x00value"}} {
 			if _, err := browserContext(http.Header{field.name: values}); err == nil {
 				t.Fatal("accepted invalid field", field.name)

@@ -150,7 +150,7 @@ service AuthBrowserService {
 // BrowserContext is private transport data, never a public request body or log payload.
 // Values retain individual HTTP header lines, including duplicates; gateways do not parse cookies.
 // Each field accepts at most 16 lines; cookie totals at most 8192 bytes, origin 2048,
-// and sec_fetch_site 256. CR, LF and NUL are forbidden in all values.
+// sec_fetch_site 256, and time_zone 128. CR, LF and NUL are forbidden in all values.
 message BrowserContext {
   // Cookie contains opaque Cookie header lines.
   repeated string cookie = 1;
@@ -158,6 +158,10 @@ message BrowserContext {
   repeated string origin = 2;
   // SecFetchSite preserves fetch metadata for Auth's browser security policy.
   repeated string sec_fetch_site = 3;
+  // TimeZone is an optional, untrusted IANA display preference from
+  // X-MarketMesh-Time-Zone. At most 128 bytes total, with the same line bounds.
+  // It never changes token expiration or authorizes an operation.
+  repeated string time_zone = 4;
 }
 
 // BrowserRegisterCredentialsRequest carries only typed Auth input and browser context.

@@ -551,4 +551,48 @@ func TestSecurityLifecycle(t *testing.T) {
 			t.Fatal("credential committed without mail")
 		}
 	})
+	t.Run("mail timezone and deadline survive encrypted outbox retry", func(t *testing.T) {
+		// Drain prior subtests' pending and abandoned leases before simulating a restart.
+		now = now.Add(time.Minute)
+		for {
+			pending, found, err := store.ClaimMail(t.Context(), now)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !found {
+				break
+			}
+			if err := store.FinishMail(t.Context(), pending, now, "delivered", time.Time{}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		const email = "timezone@example.test"
+		ctx := security.WithMailTimeZone(t.Context(), "Europe/Moscow")
+		if err := svc.Register(ctx, email, []byte(password)); err != nil {
+			t.Fatal(err)
+		}
+		lease, found, err := store.ClaimMail(t.Context(), now)
+		if err != nil || !found || lease.Mail.Email != email {
+			t.Fatal("claim display preference", err)
+		}
+		if lease.Mail.TimeZone != "Europe/Moscow" || !lease.Mail.At.Equal(now) || !lease.Mail.ExpiresAt.Equal(now.Add(24*time.Hour)) {
+			t.Fatal("display preference or deadline lost")
+		}
+		retryAt := now.Add(time.Minute)
+		if err := store.FinishMail(t.Context(), lease, now, "retry", retryAt); err != nil {
+			t.Fatal(err)
+		}
+		restarted, err := postgressecurity.New(db, [32]byte{1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		again, found, err := restarted.ClaimMail(t.Context(), retryAt)
+		if err != nil || !found || again.Mail.TimeZone != lease.Mail.TimeZone || !again.Mail.At.Equal(lease.Mail.At) || !again.Mail.ExpiresAt.Equal(lease.Mail.ExpiresAt) {
+			t.Fatal("retry changed display preference or lifetime", err)
+		}
+		if err := restarted.FinishMail(t.Context(), again, retryAt, "delivered", time.Time{}); err != nil {
+			t.Fatal(err)
+		}
+	})
+
 }

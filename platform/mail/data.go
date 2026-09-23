@@ -15,6 +15,8 @@ type VerifyData struct {
 	ConfirmURL string
 	// LinkTTL — срок действия ссылки.
 	LinkTTL string
+	// Deadline — необязательные местная дата, время и явное UTC-смещение.
+	Deadline string
 }
 
 func (d VerifyData) validate() error {
@@ -37,6 +39,8 @@ type CodeData struct {
 	Code string
 	// CodeTTL — срок действия кода.
 	CodeTTL string
+	// Deadline — необязательные местная дата, время и явное UTC-смещение.
+	Deadline string
 	// PasswordResetURL — ссылка на смену пароля из блока «это не вы».
 	PasswordResetURL string
 }
@@ -104,6 +108,8 @@ type PasswordResetData struct {
 	ResetURL string
 	// LinkTTL — срок действия ссылки.
 	LinkTTL string
+	// Deadline — необязательные местная дата, время и явное UTC-смещение.
+	Deadline string
 }
 
 func (d PasswordResetData) validate() error {
@@ -158,6 +164,8 @@ type EmailChangeAlertData struct {
 	CancelURL string
 	// CancelTTL — срок действия ссылки отмены.
 	CancelTTL string
+	// Deadline — необязательные местная дата, время и явное UTC-смещение.
+	Deadline string
 }
 
 func (d EmailChangeAlertData) validate() error {
@@ -186,6 +194,8 @@ type EmailChangeConfirmData struct {
 	ConfirmURL string
 	// LinkTTL — срок действия ссылки.
 	LinkTTL string
+	// Deadline — необязательные местная дата, время и явное UTC-смещение.
+	Deadline string
 }
 
 func (d EmailChangeConfirmData) validate() error {
