@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 readonly DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in
+ up) echo "Отдельный постоянный стенд отключён. Используйте task dev:up с профилем или именами сервисов (infra/dev/README.md)." >&2; exit 2 ;;
+esac
 export RYBBIT_WORKSPACE="$DIR"
 export RYBBIT_PROJECT="${RYBBIT_PROJECT:-marketmesh-rybbit-local}"
 export RYBBIT_PORT="${RYBBIT_PORT:-8310}"

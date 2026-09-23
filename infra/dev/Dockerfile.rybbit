@@ -1,0 +1,3 @@
+FROM ghcr.io/rybbit-io/rybbit-backend:v2.9.0@sha256:5a824932c8b7b16364c8ee132e29d1d9d9574445e0d1f091e6364695e117bd66
+COPY frontend/tools/configure-rybbit.mjs /tmp/configure-rybbit.mjs
+RUN node /tmp/configure-rybbit.mjs && rm /tmp/configure-rybbit.mjs

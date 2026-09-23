@@ -23,9 +23,10 @@ STATE = ROOT / ".cache/dev-stack"
 ACCOUNT = STATE / "account"
 FILES = STATE / "files"
 RYBBIT = STATE / "rybbit"
+TOPOLOGY = 2
 PROJECT = "marketmesh-dev"
 ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", MM_DEV_ROOT=str(ROOT),
-           COMPOSE_PROJECT_NAME=PROJECT, ACCOUNT_LOCAL_STATE=str(ACCOUNT),
+           COMPOSE_PROJECT_NAME=PROJECT, ACCOUNT_LOCAL_STATE=str(ACCOUNT), MM_SHARED_STATE=str(STATE / "shared"),
            ACCOUNT_LOCAL_WORKSPACE=str(ROOT), ACCOUNT_LOCAL_IMAGE="marketmesh-dev-account:local",
            ACCOUNT_LOCAL_PORT="18443", ACCOUNT_MAILPIT_PORT="18025", FIXTURE_ROOT=str(ACCOUNT),
            MM_FILES_STATE=str(FILES), MM_FILES_UID=str(os.getuid()), MM_FILES_GID=str(os.getgid()),
@@ -54,7 +55,7 @@ def regular(path):
             raise RuntimeError("Символическая ссылка в локальном состоянии запрещена")
 
 
-def check_owned_state():
+def check_owned_state(allow_incomplete=False):
     regular(STATE)
     if STATE.exists():
         for path in STATE.rglob("*"):
@@ -64,7 +65,7 @@ def check_owned_state():
         ids = run(*command, "--filter", "label=com.docker.compose.project=" + PROJECT, capture=True).split()
         if ids and not (STATE / "owner.json").is_file():
             raise RuntimeError("Есть ресурсы marketmesh-dev без конфигурации. Восстановите .cache/dev-stack; данные сохранены.")
-        if ids and any(not path.is_file() for path in (ACCOUNT / "ready.json", FILES / "owner.json", RYBBIT / "owner.json")):
+        if ids and not allow_incomplete and any(not path.is_file() for path in (ACCOUNT / "ready.json", FILES / "owner.json", RYBBIT / "owner.json")):
             raise RuntimeError("Конфигурация существующего стенда неполная. Восстановите .cache/dev-stack; ключи не изменены.")
         for identifier in ids:
             field = '.Config.Labels' if kind == "container" else '.Labels'
@@ -74,8 +75,10 @@ def check_owned_state():
             if labels.get(label) != str(ROOT):
                 raise RuntimeError("Ресурсы marketmesh-dev принадлежат другому стенду")
     marker = STATE / "owner.json"
-    if marker.exists() and json.loads(marker.read_text()) != {"workspace": str(ROOT), "project": PROJECT}:
-        raise RuntimeError("Каталог состояния принадлежит другому стенду")
+    if marker.exists():
+        owner = json.loads(marker.read_text())
+        if owner.get("workspace") != str(ROOT) or owner.get("project") != PROJECT or set(owner) - {"workspace", "project", "topology"}:
+            raise RuntimeError("Каталог состояния принадлежит другому стенду")
 
 
 def check_ports(model, selected):
@@ -109,7 +112,7 @@ def module(name, path):
 def save_env():
     # Only explicitly selected local variables; never persist the caller's environment.
     keys = ("MM_DEV_ROOT", "COMPOSE_PROJECT_NAME", "ACCOUNT_LOCAL_STATE", "ACCOUNT_LOCAL_WORKSPACE",
-            "ACCOUNT_LOCAL_IMAGE", "ACCOUNT_LOCAL_PORT", "ACCOUNT_MAILPIT_PORT", "MM_FILES_STATE",
+            "ACCOUNT_LOCAL_IMAGE", "ACCOUNT_LOCAL_PORT", "MM_SHARED_STATE", "ACCOUNT_MAILPIT_PORT", "MM_FILES_STATE",
             "MM_FILES_UID", "MM_FILES_GID", "RYBBIT_WORKSPACE", "RYBBIT_PORT", "ACCOUNT_RYBBIT_ENABLED", "RYBBIT_SITE_ID")
     values = {key: ENV[key] for key in keys if key in ENV}
     values.update(line.split("=", 1) for line in (RYBBIT / ".env").read_text().splitlines())
@@ -126,7 +129,9 @@ def prepare(force_renew=False):
     if not marker.exists():
         if any(path.name != "lock" for path in STATE.iterdir()):
             raise RuntimeError("Неполное состояние: восстановите конфигурацию; автоматическая перезапись запрещена")
-        marker.write_text(json.dumps({"workspace": str(ROOT), "project": PROJECT}))
+        marker.write_text(json.dumps({"workspace": str(ROOT), "project": PROJECT, "topology": TOPOLOGY}))
+    if json.loads(marker.read_text()).get("topology") != TOPOLOGY:
+        raise RuntimeError("Старый раздельный dev-стенд: выполните явный task dev:reset, затем task dev:up; переноса данных нет")
     # Stop consumers before changing trust, retain every volume and credential.
     renew_account = (ACCOUNT / "ready.json").exists() and (force_renew or expires(ACCOUNT / "browser/ca.pem") or (STATE / "account-renewing").exists())
     renew_files = (FILES / "owner.json").exists() and (force_renew or expires(FILES / "pki/quarantine.crt") or (STATE / "files-renewing").exists())
@@ -155,6 +160,7 @@ def prepare(force_renew=False):
     module("files_config", "infra/account-local/files_config.py").configure(ACCOUNT, FILES)
     RYBBIT.mkdir(mode=0o700, exist_ok=True)
     run(sys.executable, str(ROOT / "infra/rybbit/state.py"))
+    module("shared_infra", "infra/dev/shared.py").configure(STATE, ACCOUNT, FILES, RYBBIT)
     if (RYBBIT / "site-id").exists():
         ENV["RYBBIT_SITE_ID"] = (RYBBIT / "site-id").read_text().strip()
     save_env()
@@ -194,7 +200,9 @@ def selection(model, targets, profiles):
             raise RuntimeError("Неизвестные сервисы: " + ", ".join(sorted(unknown)))
         selected = set(targets)
     else:
-        selected = {name for name, config in model.items() if not config.get("profiles") or set(config["profiles"]) & set(profiles)}
+        selected = {name for name, config in model.items() if (not config.get("profiles") and profiles != ["infrastructure"]) or set(config.get("profiles", [])) & set(profiles)}
+        if "infrastructure" in profiles:
+            selected.update({"postgres-primary", "postgres-replica", "redis", "nats", "clickhouse"} & model.keys())
     pending = list(selected)
     while pending:
         name = pending.pop()
@@ -262,10 +270,29 @@ def up(args):
         print("Учётная запись Rybbit: " + str(RYBBIT / "admin.json"))
 
 
+def reset():
+    check_owned_state(allow_incomplete=True)
+    # Verify EVERY resource before the first mutation, including partial setup.
+    # No wildcard deletion or Docker prune: only IDs with this project's labels.
+    for kind in ("container", "network", "volume"):
+        command = ("docker", "ps", "-aq") if kind == "container" else ("docker", kind, "ls", "-q")
+        ids = run(*command, "--filter", "label=com.docker.compose.project=" + PROJECT, capture=True).split()
+        if ids:
+            removal = ("docker", "rm", "-f") if kind == "container" else ("docker", kind, "rm")
+            run(*removal, *ids, capture=True)
+    for path in STATE.iterdir():
+        if path.name != "lock":
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+    print("Сброшен только локальный marketmesh-dev. Следующий task dev:up создаст пустой общий стенд.")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("up", "down", "status", "renew", "config", "logs"))
-    parser.add_argument("--profile", choices=("full", "core", "analytics", "observability"), action="append")
+    parser.add_argument("command", choices=("up", "down", "status", "renew", "config", "logs", "reset", "stop"))
+    parser.add_argument("--profile", choices=("full", "core", "analytics", "observability", "infrastructure"), action="append")
     parser.add_argument("services", nargs="*")
     args = parser.parse_intermixed_args()
     os.umask(0o077)
@@ -273,14 +300,18 @@ def main():
         if not shutil.which(tool):
             raise RuntimeError("Не найден обязательный инструмент: " + tool)
     run("docker", "info", "--format", "{{.ServerVersion}}", capture=True)
-    check_owned_state()
+    regular(STATE)
+    regular(STATE / "lock")
     STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (STATE / "lock").open("w") as handle:
         try:
             fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise RuntimeError("Другая команда dev уже выполняется") from None
-        if args.command in ("up", "renew"):
+        check_owned_state(allow_incomplete=args.command == "reset")
+        if args.command == "reset":
+            reset()
+        elif args.command in ("up", "renew"):
             up(args)
         elif args.command == "config":
             ENV["ACCOUNT_RYBBIT_ENABLED"] = "true"
@@ -291,6 +322,13 @@ def main():
         elif args.command == "down":
             compose("down", "--remove-orphans")
             print("Стенд остановлен. Данные, письма и ключи сохранены.")
+        elif args.command == "stop":
+            if not args.services:
+                raise RuntimeError("Укажите сервисы; полный стенд останавливается task dev:down")
+            shared = {"postgres-primary", "postgres-replica", "redis", "nats", "clickhouse"}
+            if shared & set(args.services):
+                raise RuntimeError("Общие сервисы останавливаются вместе со стендом через task dev:down")
+            compose("stop", *args.services)
         elif args.command == "logs":
             compose("logs", "--tail", "100", *args.services)
         else:

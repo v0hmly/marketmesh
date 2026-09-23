@@ -247,6 +247,16 @@ tasks:
     cmds:
       - python3 infra/dev/local.py down
 
+  dev:reset:
+    desc: Явно удалить данные только локального dev-стенда для новой установки
+    cmds:
+      - python3 infra/dev/local.py reset
+
+  dev:stop:
+    desc: Остановить выбранные приложения, сохранив общие базы и очереди
+    cmds:
+      - python3 infra/dev/local.py stop {{.CLI_ARGS}}
+
   dev:status:
     desc: Показать состояние полного локального стенда
     cmds:
@@ -280,7 +290,7 @@ tasks:
   infra:up:
     desc: Запустить локальную инфраструктуру и дождаться готовности
     cmds:
-      - "{{.INFRA_TOOL}} up"
+      - python3 infra/dev/local.py up --profile infrastructure
 
   infra:ready:
     desc: Проверить готовность локальной инфраструктуры
@@ -478,7 +488,7 @@ tasks:
   observability:up:
     desc: Запустить локальный observability-стек
     cmds:
-      - "{{.INFRA_TOOL}} observability-up"
+      - python3 infra/dev/local.py up observability-gateway
 
   observability:ready:
     desc: Проверить health checks локального observability-стека
@@ -533,7 +543,7 @@ tasks:
   analytics:up:
     desc: Поднять локальный Rybbit и подготовить сайт storefront
     cmds:
-      - ./infra/rybbit/local.sh up
+      - python3 infra/dev/local.py up analytics-gateway
 
   analytics:status:
     desc: Показать состояние Rybbit
@@ -564,7 +574,7 @@ tasks:
   account:up:
     desc: Запустить локальный HTTPS storefront с настоящими Auth/User и событиями регистрации
     cmds:
-      - "{{.ACCOUNT_LOCAL_TOOL}} up"
+      - python3 infra/dev/local.py up frontdoor
 
   account:status:
     desc: Показать состояние локального контура аккаунта

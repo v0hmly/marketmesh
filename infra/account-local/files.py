@@ -16,6 +16,8 @@ os.environ["GOWORK"] = str(ROOT / "backend/go.work")
 spec = importlib.util.spec_from_file_location("files_local", ROOT / "infra/files-local/local.py")
 f = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(f)
+if len(sys.argv) == 2 and sys.argv[1] in ("up", "renew"):
+    raise SystemExit("Используйте task dev:up или task dev:renew; отдельный постоянный стенд отключён (infra/dev/README.md)")
 f.existing()
 mode = sys.argv[1] if len(sys.argv) == 2 else ""
 if mode not in ("up", "test", "down", "renew"):

@@ -1,4 +1,4 @@
-# Единый dev-проект. Определения контейнеров переиспользуют изолированные тестовые стенды.
+# Единый dev-проект: приложения используют общие PostgreSQL, Redis, ClickHouse и NATS.
 name: marketmesh-dev
 
 x-app-build: &app-build
@@ -14,13 +14,66 @@ services:
   mailpit:
     extends: {file: infra/account-local/compose.yml, service: mailpit}
   postgres-primary:
-    extends: {file: infra/account-local/compose.yml, service: postgres-primary}
+    image: postgres:18.6-bookworm
+    entrypoint: [bash, /scripts/primary.sh]
+    env_file: ${MM_SHARED_STATE}/postgres.env
+    networks:
+      internal: {aliases: [pg-primary]}
+      files-internal: {aliases: [pg-primary]}
+      storage: {aliases: [pg-primary]}
+    volumes:
+      - postgres-primary:/var/lib/postgresql
+      - ./infra/dev/postgres/primary.sh:/scripts/primary.sh:ro
+      - ./infra/dev/postgres/init.sh:/docker-entrypoint-initdb.d/10-shared.sh:ro
+      - ./backend/services/files/migrations:/migrations/files:ro
+      - ${MM_SHARED_STATE}/postgres-init.sql:/run/shared-init.sql:ro
+      - ${MM_FILES_STATE}/pki/pg-primary.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/pg-primary.key:/pki/server.key:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -q -h 127.0.0.1 -U fixture_admin -d postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
   postgres-replica:
-    extends: {file: infra/account-local/compose.yml, service: postgres-replica}
+    image: postgres:18.6-bookworm
+    entrypoint: [bash, /scripts/replica.sh]
+    environment: {PGDATA: /var/lib/postgresql/18/replica}
+    networks:
+      internal: {aliases: [pg-replica]}
+      files-internal: {aliases: [pg-replica]}
+      storage: {aliases: [pg-replica]}
+    volumes:
+      - postgres-replica:/var/lib/postgresql
+      - ./infra/dev/postgres/replica.sh:/scripts/replica.sh:ro
+      - ${MM_SHARED_STATE}/replication.pgpass:/run/replication.pgpass:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+      - ${MM_FILES_STATE}/pki/pg-replica.crt:/pki/server.crt:ro
+      - ${MM_FILES_STATE}/pki/pg-replica.key:/pki/server.key:ro
+    depends_on: {postgres-primary: {condition: service_healthy}}
+    healthcheck:
+      test: [CMD-SHELL, "gosu postgres psql -U fixture_admin -d postgres -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
   redis:
-    extends: {file: infra/account-local/compose.yml, service: redis}
+    image: redis:8.10.1-alpine3.23
+    user: "0:0"
+    command: [redis-server, /secrets/redis.conf]
+    env_file: ${MM_SHARED_STATE}/redis-health.env
+    volumes:
+      - ${MM_SHARED_STATE}/redis.conf:/secrets/redis.conf:ro
+      - redis-data:/data
+    mem_limit: 512m
+    networks: [internal, storage]
+    healthcheck:
+      test: [CMD, redis-cli, --user, health, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
   nats:
     extends: {file: infra/account-local/compose.yml, service: nats}
+    volumes:
+      - ./infra/dev/nats.conf:/secrets/nats.conf:ro
   provision:
     extends: {file: infra/account-local/compose.yml, service: provision}
     profiles: !reset []
@@ -35,7 +88,7 @@ services:
     volumes: ["${ACCOUNT_LOCAL_STATE}/files-pki:/workload:ro"]
     depends_on:
       provision: {condition: service_completed_successfully}
-      redis: {condition: service_started}
+      redis: {condition: service_healthy}
       mailpit: {condition: service_healthy}
   user:
     extends: {file: infra/account-local/compose.yml, service: user}
@@ -79,10 +132,8 @@ services:
     extends: {file: infra/files-local/compose.yml, service: delivery-a}
   delivery-b:
     extends: {file: infra/files-local/compose.yml, service: delivery-b}
-  pg-primary:
-    extends: {file: infra/files-local/compose.yml, service: pg-primary}
-  pg-replica:
-    extends: {file: infra/files-local/compose.yml, service: pg-replica}
+
+
   sandbox:
     extends: {file: infra/files-local/compose.yml, service: sandbox}
   antivirus:
@@ -95,7 +146,9 @@ services:
     build: {context: ., dockerfile: infra/files-local/Dockerfile, target: antivirus}
   worker:
     extends: {file: infra/files-local/compose.yml, service: worker}
-    depends_on:
+    depends_on: !override
+      postgres-primary: {condition: service_healthy}
+      postgres-replica: {condition: service_healthy}
       quarantine: {condition: service_started}
       internal-clean: {condition: service_started}
       delivery-a: {condition: service_started}
@@ -119,34 +172,45 @@ services:
       auth: {condition: service_healthy}
       worker: {condition: service_started}
     logging: {driver: json-file, options: {max-size: 1m, max-file: "1"}}
-  analytics-postgres:
-    extends: {file: infra/rybbit/compose.yml, service: postgres}
-    profiles: [analytics, full]
-    networks: !override
-      storage: {aliases: [postgres]}
-    volumes: [analytics-postgres:/var/lib/postgresql]
-  analytics-redis:
-    extends: {file: infra/rybbit/compose.yml, service: redis}
-    profiles: [analytics, full]
-    networks: !override
-      storage: {aliases: [redis]}
-    volumes: [analytics-redis:/data]
-  analytics-clickhouse:
-    extends: {file: infra/rybbit/compose.yml, service: clickhouse}
-    profiles: [analytics, full]
-    networks: !override
-      storage: {aliases: [clickhouse]}
-    volumes: [analytics-clickhouse:/var/lib/clickhouse]
+
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.17.4
+    profiles: [infrastructure, analytics, full]
+    env_file: ${MM_SHARED_STATE}/clickhouse.env
+    mem_limit: 2g
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./infra/dev/clickhouse/logging.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - ./infra/dev/clickhouse/resources.xml:/etc/clickhouse-server/config.d/resources.xml:ro
+      - ${MM_SHARED_STATE}/clickhouse-users.xml:/etc/clickhouse-server/users.d/shared.xml:ro
+      - ./infra/dev/clickhouse/init.sql:/docker-entrypoint-initdb.d/10-shared.sql:ro
+    networks: [storage]
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8123/ping]
+      interval: 3s
+      timeout: 5s
+      retries: 60
   analytics-backend:
     extends: {file: infra/rybbit/compose.yml, service: backend}
+    image: marketmesh-dev-rybbit:local
+    build: {context: ., dockerfile: infra/dev/Dockerfile.rybbit}
+    env_file: ${MM_SHARED_STATE}/rybbit.env
+    environment:
+      POSTGRES_HOST: pg-primary
+      REDIS_HOST: redis
+      CLICKHOUSE_HOST: http://clickhouse:8123
+    volumes:
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
     profiles: [analytics, full]
     networks: !override
       storage: {aliases: [backend]}
       analytics: {aliases: [backend]}
     depends_on: !override
-      analytics-postgres: {condition: service_healthy}
-      analytics-redis: {condition: service_healthy}
-      analytics-clickhouse: {condition: service_healthy}
+      postgres-primary: {condition: service_healthy}
+      postgres-replica: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
   analytics-client:
     extends: {file: infra/rybbit/compose.yml, service: client}
     profiles: [analytics, full]
@@ -262,19 +326,13 @@ volumes:
     labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
   signatures:
     labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
-  pg-primary:
-    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
-  pg-replica:
-    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
-  analytics-postgres:
-    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
-  analytics-redis:
-    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
-  analytics-clickhouse:
-    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
   tempo-data:
     labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
   loki-data:
     labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
   grafana-data:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  redis-data:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  clickhouse-data:
     labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}

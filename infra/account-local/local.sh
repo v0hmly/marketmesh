@@ -3,6 +3,9 @@ set -euo pipefail
 umask 077
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+case "${1:-}" in
+ up) echo "Отдельный постоянный стенд отключён. Используйте task dev:up с профилем или именами сервисов (infra/dev/README.md)." >&2; exit 2 ;;
+esac
 export GOWORK="$ROOT/backend/go.work"
 if [[ "${1:-}" == test ]]; then
  export ACCOUNT_MAILPIT_PORT=0
