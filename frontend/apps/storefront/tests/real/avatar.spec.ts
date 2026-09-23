@@ -92,7 +92,16 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   let storageCredentials = false;
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (['quarantine', 'delivery-a', 'delivery-b'].includes(url.hostname)) {
+    if (
+      [
+        'https://quarantine:8333',
+        'https://delivery-a:8333',
+        'https://delivery-b:8333',
+        'https://localhost:18343',
+        'https://localhost:18344',
+        'https://localhost:18345',
+      ].includes(url.origin)
+    ) {
       if (request.method() === 'PUT') directPut++;
       if (request.method() === 'GET') directGet++;
       const h = request.headers();
