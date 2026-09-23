@@ -4,6 +4,14 @@ package migrations
 import _ "embed"
 
 var (
+	// RecoveryUp stores only one-way recovery-code digests.
+	//go:embed 000005_recovery_codes.up.sql
+	RecoveryUp string
+
+	// RecoveryDown revokes all recovery codes before removing their storage.
+	//go:embed 000005_recovery_codes.down.sql
+	RecoveryDown string
+
 	// SecurityUp adds email challenges and the encrypted transactional mail queue.
 	//go:embed 000004_security.up.sql
 	SecurityUp string

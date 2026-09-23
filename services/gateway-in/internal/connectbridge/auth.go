@@ -88,12 +88,34 @@ func NewAuthHandler(invoker Invoker, options ...connect.HandlerOption) (http.Han
 		}, options); err != nil {
 		return nil, err
 	}
+	if err := mountAuth(mux, invoker, authv1connect.AuthServiceStartRecoveryCodesProcedure, contractv1.RouteId_ROUTE_ID_AUTH_START_RECOVERY_CODES,
+		func(request *authv1.StartRecoveryCodesRequest, browser *authv1.BrowserContext) proto.Message {
+			return &authv1.BrowserStartRecoveryCodesRequest{Request: request, Context: browser}
+		},
+		func(payload []byte) (*authv1.StartRecoveryCodesResponse, []string, authv1.AuthBrowserFailure, error) {
+			response := new(authv1.BrowserStartRecoveryCodesResponse)
+			err := proto.Unmarshal(payload, response)
+			return response.GetResponse(), response.GetSetCookie(), response.GetFailure(), err
+		}, options); err != nil {
+		return nil, err
+	}
 	if err := mountAuth(mux, invoker, authv1connect.AuthServiceCompleteLoginCodeChangeProcedure, contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE,
 		func(request *authv1.CompleteLoginCodeChangeRequest, browser *authv1.BrowserContext) proto.Message {
 			return &authv1.BrowserCompleteLoginCodeChangeRequest{Request: request, Context: browser}
 		},
 		func(payload []byte) (*authv1.CompleteLoginCodeChangeResponse, []string, authv1.AuthBrowserFailure, error) {
 			response := new(authv1.BrowserCompleteLoginCodeChangeResponse)
+			err := proto.Unmarshal(payload, response)
+			return response.GetResponse(), response.GetSetCookie(), response.GetFailure(), err
+		}, options); err != nil {
+		return nil, err
+	}
+	if err := mountAuth(mux, invoker, authv1connect.AuthServiceCompleteRecoveryCodesProcedure, contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_RECOVERY_CODES,
+		func(request *authv1.CompleteRecoveryCodesRequest, browser *authv1.BrowserContext) proto.Message {
+			return &authv1.BrowserCompleteRecoveryCodesRequest{Request: request, Context: browser}
+		},
+		func(payload []byte) (*authv1.CompleteRecoveryCodesResponse, []string, authv1.AuthBrowserFailure, error) {
+			response := new(authv1.BrowserCompleteRecoveryCodesResponse)
 			err := proto.Unmarshal(payload, response)
 			return response.GetResponse(), response.GetSetCookie(), response.GetFailure(), err
 		}, options); err != nil {

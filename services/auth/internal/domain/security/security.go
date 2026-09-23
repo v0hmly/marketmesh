@@ -16,14 +16,15 @@ type Digest [32]byte
 type Purpose string
 
 const (
-	LoginCode         Purpose = "login"
-	VerifyEmail       Purpose = "verify"
-	ResetPassword     Purpose = "reset"
-	ChangeEmail       Purpose = "change_email"
-	CancelEmailChange Purpose = "cancel_email"
-	CancelDeletion    Purpose = "cancel_deletion"
-	EnableCode        Purpose = "enable_code"
-	DisableCode       Purpose = "disable_code"
+	LoginCode             Purpose = "login"
+	VerifyEmail           Purpose = "verify"
+	ResetPassword         Purpose = "reset"
+	ChangeEmail           Purpose = "change_email"
+	CancelEmailChange     Purpose = "cancel_email"
+	CancelDeletion        Purpose = "cancel_deletion"
+	EnableCode            Purpose = "enable_code"
+	DisableCode           Purpose = "disable_code"
+	GenerateRecoveryCodes Purpose = "recovery_codes"
 )
 
 // Failure is a bounded reason; it never contains user input or secrets.

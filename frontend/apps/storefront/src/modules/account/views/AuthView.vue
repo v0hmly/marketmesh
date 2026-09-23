@@ -36,11 +36,12 @@ const serverError = ref<
 const step = ref<'credentials' | 'code'>('credentials');
 const challenge = ref<LoginChallenge | null>(null);
 const code = ref('');
+const recovery = ref(false);
 const codeAttempted = ref(false);
 const codeSubmitting = ref(false);
 const codeSucceeded = ref(false);
 const codeFailedAttempts = ref(0);
-const codeError = ref<'' | 'wrongCode' | 'tooMany' | 'expired' | 'serverError'>('');
+const codeError = ref<'' | 'wrongCode' | 'tooMany' | 'expired' | 'serverError' | 'limited'>('');
 const resending = ref(false);
 const codeResent = ref(false);
 
@@ -100,20 +101,32 @@ const submitLabel = computed(() => {
 });
 
 const codeClientError = computed(() =>
-  codeAttempted.value ? validateLoginCode(code.value) : null,
+  codeAttempted.value
+    ? recovery.value
+      ? /^(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{8}){3})$/.test(code.value.trim())
+        ? null
+        : 'Введите сохранённый резервный код: 32 символа, с дефисами или без.'
+      : validateLoginCode(code.value)
+    : null,
 );
 const codeFieldsDisabled = computed(
   () => codeSubmitting.value || codeSucceeded.value || resending.value || sessionBusy.value,
 );
 const codeNoticeText = computed(() => {
   switch (codeError.value) {
+    case 'limited':
+      return 'Лимит проверок исчерпан. Код не принят. Повторите вход через 15 минут.';
     case 'wrongCode':
+      if (recovery.value)
+        return 'Резервный код не принят. Он неверный, уже использован или заменён. Введите другой сохранённый код.';
       return 'Код неверный. Проверьте письмо и введите код ещё раз.';
     case 'tooMany':
       return 'Слишком много попыток с этим кодом. Запросите новый код.';
     case 'expired':
       return 'Срок действия кода истёк. Запросите новый код.';
     case 'serverError':
+      if (recovery.value)
+        return 'Результат входа не подтверждён. Код мог быть использован. Проверьте сессию или начните новый вход с другим кодом.';
       return 'Не удалось проверить код. Проверьте соединение и попробуйте ещё раз.';
     default:
       return '';
@@ -144,12 +157,23 @@ const codeDescribedBy = computed(() => {
 });
 
 function onCodeInput(event: Event) {
-  code.value = normalizeCodeInput((event.target as HTMLInputElement).value);
+  code.value = recovery.value
+    ? (event.target as HTMLInputElement).value.slice(0, 35)
+    : normalizeCodeInput((event.target as HTMLInputElement).value);
+  codeError.value = '';
+  codeResent.value = false;
+}
+
+function toggleRecovery() {
+  recovery.value = !recovery.value;
+  code.value = '';
+  codeAttempted.value = false;
   codeError.value = '';
   codeResent.value = false;
 }
 
 function resetCodeStep() {
+  recovery.value = false;
   step.value = 'credentials';
   challenge.value = null;
   code.value = '';
@@ -257,7 +281,8 @@ async function submitCode() {
   codeSubmitting.value = true;
   const sequence = ++requestSequence;
   try {
-    await session.completeLogin(challenge.value, code.value);
+    if (recovery.value) await session.completeLogin(challenge.value, code.value.trim(), true);
+    else await session.completeLogin(challenge.value, code.value);
     if (!active || sequence !== requestSequence) return;
     codeSucceeded.value = true;
     email.value = '';
@@ -267,13 +292,15 @@ async function submitCode() {
     if (!active || sequence !== requestSequence) return;
     if (authErrorReason(error, Code.InvalidArgument, 'CODE_MISMATCH')) {
       codeFailedAttempts.value += 1;
-      if (codeFailedAttempts.value >= 3) {
+      if (!recovery.value && codeFailedAttempts.value >= 3) {
         codeError.value = 'tooMany';
         code.value = '';
         codeAttempted.value = false;
       } else {
         codeError.value = 'wrongCode';
       }
+    } else if (authErrorReason(error, Code.ResourceExhausted, 'RATE_LIMITED')) {
+      codeError.value = 'limited';
     } else if (authErrorReason(error, Code.FailedPrecondition, 'CODE_REISSUED')) {
       codeError.value = 'tooMany';
       code.value = '';
@@ -284,6 +311,7 @@ async function submitCode() {
       codeError.value = 'serverError';
     }
   } finally {
+    if (recovery.value) code.value = '';
     codeSubmitting.value = false;
   }
 }
@@ -541,15 +569,17 @@ function submit() {
         </p>
         <template v-if="!codeSucceeded">
           <div class="field">
-            <label for="login-code">Код из письма</label>
+            <label for="login-code">{{ recovery ? 'Резервный код' : 'Код из письма' }}</label>
             <input
               id="login-code"
               :value="code"
               type="text"
               name="code"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              maxlength="6"
+              :inputmode="recovery ? 'text' : 'numeric'"
+              :autocomplete="recovery ? 'off' : 'one-time-code'"
+              :maxlength="recovery ? 35 : 6"
+              autocapitalize="none"
+              :spellcheck="false"
               :disabled="codeFieldsDisabled"
               :aria-invalid="Boolean(codeClientError)"
               :aria-describedby="codeDescribedBy"
@@ -572,6 +602,15 @@ function submit() {
               type="button"
               class="button secondary"
               :disabled="codeFieldsDisabled"
+              @click="toggleRecovery"
+            >
+              {{ recovery ? 'Использовать код из письма' : 'Использовать резервный код' }}
+            </button>
+            <button
+              type="button"
+              class="button secondary"
+              :disabled="codeFieldsDisabled"
+              v-if="!recovery"
               @click="resendCode"
             >
               {{ resendLabel }}

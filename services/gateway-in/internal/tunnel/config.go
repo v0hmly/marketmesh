@@ -337,7 +337,9 @@ func routeTrafficClass(route contractv1.RouteId) contractv1.TrafficClass {
 		contractv1.RouteId_ROUTE_ID_AUTH_SESSION_ASSERTION,
 		contractv1.RouteId_ROUTE_ID_AUTH_LOGOUT_ALL,
 		contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_START_RECOVERY_CODES,
 		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE,
+		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_RECOVERY_CODES,
 		contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD,
 		contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN,
 		contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN,
@@ -399,8 +401,12 @@ func routeLabel(route contractv1.RouteId) string {
 		return "auth_logout_all"
 	case contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN_CODE_CHANGE:
 		return "auth_start_login_code_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_START_RECOVERY_CODES:
+		return "auth_start_recovery_codes"
 	case contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE:
 		return "auth_complete_login_code_change"
+	case contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_RECOVERY_CODES:
+		return "auth_complete_recovery_codes"
 	case contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD:
 		return "auth_change_password"
 	case contractv1.RouteId_ROUTE_ID_AUTH_START_LOGIN:

@@ -38,7 +38,9 @@ func browserMethods() []string {
 		browserMethod("Logout"),
 		browserMethod("LogoutAll"),
 		browserMethod("StartLoginCodeChange"),
+		browserMethod("StartRecoveryCodes"),
 		browserMethod("CompleteLoginCodeChange"),
+		browserMethod("CompleteRecoveryCodes"),
 		browserMethod("ChangePassword"),
 		browserMethod("StartLogin"),
 		browserMethod("CompleteLogin"),
@@ -710,3 +712,55 @@ func (h *BrowserHandler) BrowserCancelAccountDeletion(ctx context.Context, reque
 }
 
 var _ authv1.AuthBrowserServiceServer = (*BrowserHandler)(nil)
+
+// BrowserStartRecoveryCodes preserves Auth's browser security checks and response cookie lines.
+func (h *BrowserHandler) BrowserStartRecoveryCodes(ctx context.Context, request *authv1.BrowserStartRecoveryCodesRequest) (*authv1.BrowserStartRecoveryCodesResponse, error) {
+	if err := h.authorize(ctx, "StartRecoveryCodes"); err != nil {
+		return nil, err
+	}
+	if request == nil || request.GetRequest() == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+	header, err := browserHeader(request.GetContext())
+	if err != nil {
+		return nil, err
+	}
+	inner := connect.NewRequest(request.GetRequest())
+	for name, values := range header {
+		inner.Header()[name] = values
+	}
+	response, err := h.public.StartRecoveryCodes(ctx, inner)
+	if err != nil {
+		if failure := browserAuthFailure(err); failure != 0 {
+			return &authv1.BrowserStartRecoveryCodesResponse{Failure: failure}, nil
+		}
+		return nil, browserFailure(err)
+	}
+	return &authv1.BrowserStartRecoveryCodesResponse{Response: response.Msg, SetCookie: append([]string(nil), response.Header().Values("Set-Cookie")...)}, nil
+}
+
+// BrowserCompleteRecoveryCodes preserves Auth's browser security checks and response cookie lines.
+func (h *BrowserHandler) BrowserCompleteRecoveryCodes(ctx context.Context, request *authv1.BrowserCompleteRecoveryCodesRequest) (*authv1.BrowserCompleteRecoveryCodesResponse, error) {
+	if err := h.authorize(ctx, "CompleteRecoveryCodes"); err != nil {
+		return nil, err
+	}
+	if request == nil || request.GetRequest() == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+	header, err := browserHeader(request.GetContext())
+	if err != nil {
+		return nil, err
+	}
+	inner := connect.NewRequest(request.GetRequest())
+	for name, values := range header {
+		inner.Header()[name] = values
+	}
+	response, err := h.public.CompleteRecoveryCodes(ctx, inner)
+	if err != nil {
+		if failure := browserAuthFailure(err); failure != 0 {
+			return &authv1.BrowserCompleteRecoveryCodesResponse{Failure: failure}, nil
+		}
+		return nil, browserFailure(err)
+	}
+	return &authv1.BrowserCompleteRecoveryCodesResponse{Response: response.Msg, SetCookie: append([]string(nil), response.Header().Values("Set-Cookie")...)}, nil
+}

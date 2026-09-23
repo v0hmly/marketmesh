@@ -75,10 +75,22 @@ func authRoutes(timeout time.Duration) []tunnel.RouteSpec {
 			NewResponse: func() proto.Message { return new(authv1.BrowserStartLoginCodeChangeResponse) },
 		},
 		{
+			ID:          contractv1.RouteId_ROUTE_ID_AUTH_START_RECOVERY_CODES,
+			Method:      authv1.AuthBrowserService_BrowserStartRecoveryCodes_FullMethodName,
+			NewRequest:  func() proto.Message { return new(authv1.BrowserStartRecoveryCodesRequest) },
+			NewResponse: func() proto.Message { return new(authv1.BrowserStartRecoveryCodesResponse) },
+		},
+		{
 			ID:          contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_LOGIN_CODE_CHANGE,
 			Method:      authv1.AuthBrowserService_BrowserCompleteLoginCodeChange_FullMethodName,
 			NewRequest:  func() proto.Message { return new(authv1.BrowserCompleteLoginCodeChangeRequest) },
 			NewResponse: func() proto.Message { return new(authv1.BrowserCompleteLoginCodeChangeResponse) },
+		},
+		{
+			ID:          contractv1.RouteId_ROUTE_ID_AUTH_COMPLETE_RECOVERY_CODES,
+			Method:      authv1.AuthBrowserService_BrowserCompleteRecoveryCodes_FullMethodName,
+			NewRequest:  func() proto.Message { return new(authv1.BrowserCompleteRecoveryCodesRequest) },
+			NewResponse: func() proto.Message { return new(authv1.BrowserCompleteRecoveryCodesResponse) },
 		},
 		{
 			ID:          contractv1.RouteId_ROUTE_ID_AUTH_CHANGE_PASSWORD,

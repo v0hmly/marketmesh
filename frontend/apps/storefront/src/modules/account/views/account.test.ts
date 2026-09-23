@@ -287,6 +287,27 @@ describe('account forms', () => {
     expect(router.currentRoute.value.path).toBe('/account');
   });
 
+  it('accepts a recovery code only after the password-approved challenge and never retries it', async () => {
+    const { session } = fixture('anonymous');
+    const challenge = { challengeId: new Uint8Array(16).fill(9), codeExpiresInSeconds: 600n };
+    vi.mocked(session.startLogin).mockResolvedValue(challenge);
+    vi.mocked(session.completeLogin).mockRejectedValue(new ConnectError('lost', Code.Unavailable));
+    const { wrapper } = await open(session, '/login');
+    expect(wrapper.text()).not.toContain('Использовать резервный код');
+    await wrapper.find('#login-email').setValue('anna@example.ru');
+    await wrapper.find('#login-password').setValue('long passphrase');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    await button(wrapper, 'Использовать резервный код').trigger('click');
+    const code = 'abcdef01-23456789-abcdef01-23456789';
+    await wrapper.find('#login-code').setValue(code);
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(session.completeLogin).toHaveBeenCalledExactlyOnceWith(challenge, code, true);
+    expect(wrapper.get('#login-code').element).toHaveProperty('value', '');
+    expect(wrapper.get('[role="alert"]').text()).toContain('Код мог быть использован');
+  });
+
   it('keeps a dirty draft and original CAS until explicit conflict reconciliation', async () => {
     const { session } = fixture();
     vi.mocked(session.updateProfile).mockRejectedValueOnce(

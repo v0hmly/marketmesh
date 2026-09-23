@@ -66,7 +66,7 @@ export interface SessionController {
   /** Starts login under the cookie mutation lock; may establish a session directly. */
   startLogin(identifier: string, password: Uint8Array): Promise<LoginStart>;
   /** Completes a pending login with the emailed code; journals like login(). */
-  completeLogin(challenge: LoginChallenge, code: string): Promise<void>;
+  completeLogin(challenge: LoginChallenge, code: string, recovery?: boolean): Promise<void>;
   /** Replaces the code of a pending login; no session state changes. */
   resendLoginCode(challenge: LoginChallenge): Promise<LoginChallenge>;
   /** Asks Auth to email the confirmation link; neutral about account existence. */
@@ -475,8 +475,12 @@ export function createSessionController(
     await establish(() => api.login(identifier, password));
   }
   /** The emailed code completes the pending challenge; journals like login(). */
-  async function completeLogin(challenge: LoginChallenge, code: string) {
-    await establish(() => api.completeLogin(challenge.challengeId, code));
+  async function completeLogin(challenge: LoginChallenge, code: string, recovery?: boolean) {
+    await establish(() =>
+      recovery
+        ? api.completeLogin(challenge.challengeId, code, true)
+        : api.completeLogin(challenge.challengeId, code),
+    );
   }
   async function logout(all = false) {
     const kind = all ? 'logoutAll' : 'logout';

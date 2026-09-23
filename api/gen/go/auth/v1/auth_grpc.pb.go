@@ -19,6 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	AuthService_CompleteRecoveryCodes_FullMethodName    = "/auth.v1.AuthService/CompleteRecoveryCodes"
+	AuthService_StartRecoveryCodes_FullMethodName       = "/auth.v1.AuthService/StartRecoveryCodes"
 	AuthService_RegisterCredentials_FullMethodName      = "/auth.v1.AuthService/RegisterCredentials"
 	AuthService_Login_FullMethodName                    = "/auth.v1.AuthService/Login"
 	AuthService_RefreshSession_FullMethodName           = "/auth.v1.AuthService/RefreshSession"
@@ -50,6 +52,10 @@ const (
 //
 // AuthService registers and verifies user-controlled credentials.
 type AuthServiceClient interface {
+	// CompleteRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	CompleteRecoveryCodes(ctx context.Context, in *CompleteRecoveryCodesRequest, opts ...grpc.CallOption) (*CompleteRecoveryCodesResponse, error)
+	// StartRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	StartRecoveryCodes(ctx context.Context, in *StartRecoveryCodesRequest, opts ...grpc.CallOption) (*StartRecoveryCodesResponse, error)
 	// RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
 	RegisterCredentials(ctx context.Context, in *RegisterCredentialsRequest, opts ...grpc.CallOption) (*RegisterCredentialsResponse, error)
 	// Login verifies a credential and returns an opaque subject identifier on success.
@@ -104,6 +110,26 @@ type authServiceClient struct {
 
 func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
+}
+
+func (c *authServiceClient) CompleteRecoveryCodes(ctx context.Context, in *CompleteRecoveryCodesRequest, opts ...grpc.CallOption) (*CompleteRecoveryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteRecoveryCodesResponse)
+	err := c.cc.Invoke(ctx, AuthService_CompleteRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) StartRecoveryCodes(ctx context.Context, in *StartRecoveryCodesRequest, opts ...grpc.CallOption) (*StartRecoveryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartRecoveryCodesResponse)
+	err := c.cc.Invoke(ctx, AuthService_StartRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *authServiceClient) RegisterCredentials(ctx context.Context, in *RegisterCredentialsRequest, opts ...grpc.CallOption) (*RegisterCredentialsResponse, error) {
@@ -342,6 +368,10 @@ func (c *authServiceClient) CancelAccountDeletion(ctx context.Context, in *Cance
 //
 // AuthService registers and verifies user-controlled credentials.
 type AuthServiceServer interface {
+	// CompleteRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	CompleteRecoveryCodes(context.Context, *CompleteRecoveryCodesRequest) (*CompleteRecoveryCodesResponse, error)
+	// StartRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	StartRecoveryCodes(context.Context, *StartRecoveryCodesRequest) (*StartRecoveryCodesResponse, error)
 	// RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
 	RegisterCredentials(context.Context, *RegisterCredentialsRequest) (*RegisterCredentialsResponse, error)
 	// Login verifies a credential and returns an opaque subject identifier on success.
@@ -398,6 +428,12 @@ type AuthServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthServiceServer struct{}
 
+func (UnimplementedAuthServiceServer) CompleteRecoveryCodes(context.Context, *CompleteRecoveryCodesRequest) (*CompleteRecoveryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteRecoveryCodes not implemented")
+}
+func (UnimplementedAuthServiceServer) StartRecoveryCodes(context.Context, *StartRecoveryCodesRequest) (*StartRecoveryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartRecoveryCodes not implemented")
+}
 func (UnimplementedAuthServiceServer) RegisterCredentials(context.Context, *RegisterCredentialsRequest) (*RegisterCredentialsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterCredentials not implemented")
 }
@@ -486,6 +522,42 @@ func RegisterAuthServiceServer(s grpc.ServiceRegistrar, srv AuthServiceServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&AuthService_ServiceDesc, srv)
+}
+
+func _AuthService_CompleteRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CompleteRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_CompleteRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CompleteRecoveryCodes(ctx, req.(*CompleteRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_StartRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).StartRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_StartRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).StartRecoveryCodes(ctx, req.(*StartRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AuthService_RegisterCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -910,6 +982,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "CompleteRecoveryCodes",
+			Handler:    _AuthService_CompleteRecoveryCodes_Handler,
+		},
+		{
+			MethodName: "StartRecoveryCodes",
+			Handler:    _AuthService_StartRecoveryCodes_Handler,
+		},
+		{
 			MethodName: "RegisterCredentials",
 			Handler:    _AuthService_RegisterCredentials_Handler,
 		},
@@ -1007,6 +1087,8 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	AuthBrowserService_BrowserCompleteRecoveryCodes_FullMethodName    = "/auth.v1.AuthBrowserService/BrowserCompleteRecoveryCodes"
+	AuthBrowserService_BrowserStartRecoveryCodes_FullMethodName       = "/auth.v1.AuthBrowserService/BrowserStartRecoveryCodes"
 	AuthBrowserService_BrowserRegisterCredentials_FullMethodName      = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
 	AuthBrowserService_BrowserLogin_FullMethodName                    = "/auth.v1.AuthBrowserService/BrowserLogin"
 	AuthBrowserService_BrowserRefreshSession_FullMethodName           = "/auth.v1.AuthBrowserService/BrowserRefreshSession"
@@ -1038,6 +1120,10 @@ const (
 //
 // AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
 type AuthBrowserServiceClient interface {
+	// BrowserCompleteRecoveryCodes preserves public browser security on the private listener.
+	BrowserCompleteRecoveryCodes(ctx context.Context, in *BrowserCompleteRecoveryCodesRequest, opts ...grpc.CallOption) (*BrowserCompleteRecoveryCodesResponse, error)
+	// BrowserStartRecoveryCodes preserves public browser security on the private listener.
+	BrowserStartRecoveryCodes(ctx context.Context, in *BrowserStartRecoveryCodesRequest, opts ...grpc.CallOption) (*BrowserStartRecoveryCodesResponse, error)
 	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
 	BrowserRegisterCredentials(ctx context.Context, in *BrowserRegisterCredentialsRequest, opts ...grpc.CallOption) (*BrowserRegisterCredentialsResponse, error)
 	// Login delegates to the same public Auth handler and browser security policy.
@@ -1092,6 +1178,26 @@ type authBrowserServiceClient struct {
 
 func NewAuthBrowserServiceClient(cc grpc.ClientConnInterface) AuthBrowserServiceClient {
 	return &authBrowserServiceClient{cc}
+}
+
+func (c *authBrowserServiceClient) BrowserCompleteRecoveryCodes(ctx context.Context, in *BrowserCompleteRecoveryCodesRequest, opts ...grpc.CallOption) (*BrowserCompleteRecoveryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserCompleteRecoveryCodesResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserCompleteRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authBrowserServiceClient) BrowserStartRecoveryCodes(ctx context.Context, in *BrowserStartRecoveryCodesRequest, opts ...grpc.CallOption) (*BrowserStartRecoveryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrowserStartRecoveryCodesResponse)
+	err := c.cc.Invoke(ctx, AuthBrowserService_BrowserStartRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *authBrowserServiceClient) BrowserRegisterCredentials(ctx context.Context, in *BrowserRegisterCredentialsRequest, opts ...grpc.CallOption) (*BrowserRegisterCredentialsResponse, error) {
@@ -1330,6 +1436,10 @@ func (c *authBrowserServiceClient) BrowserCancelAccountDeletion(ctx context.Cont
 //
 // AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
 type AuthBrowserServiceServer interface {
+	// BrowserCompleteRecoveryCodes preserves public browser security on the private listener.
+	BrowserCompleteRecoveryCodes(context.Context, *BrowserCompleteRecoveryCodesRequest) (*BrowserCompleteRecoveryCodesResponse, error)
+	// BrowserStartRecoveryCodes preserves public browser security on the private listener.
+	BrowserStartRecoveryCodes(context.Context, *BrowserStartRecoveryCodesRequest) (*BrowserStartRecoveryCodesResponse, error)
 	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
 	BrowserRegisterCredentials(context.Context, *BrowserRegisterCredentialsRequest) (*BrowserRegisterCredentialsResponse, error)
 	// Login delegates to the same public Auth handler and browser security policy.
@@ -1386,6 +1496,12 @@ type AuthBrowserServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthBrowserServiceServer struct{}
 
+func (UnimplementedAuthBrowserServiceServer) BrowserCompleteRecoveryCodes(context.Context, *BrowserCompleteRecoveryCodesRequest) (*BrowserCompleteRecoveryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserCompleteRecoveryCodes not implemented")
+}
+func (UnimplementedAuthBrowserServiceServer) BrowserStartRecoveryCodes(context.Context, *BrowserStartRecoveryCodesRequest) (*BrowserStartRecoveryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BrowserStartRecoveryCodes not implemented")
+}
 func (UnimplementedAuthBrowserServiceServer) BrowserRegisterCredentials(context.Context, *BrowserRegisterCredentialsRequest) (*BrowserRegisterCredentialsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BrowserRegisterCredentials not implemented")
 }
@@ -1474,6 +1590,42 @@ func RegisterAuthBrowserServiceServer(s grpc.ServiceRegistrar, srv AuthBrowserSe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&AuthBrowserService_ServiceDesc, srv)
+}
+
+func _AuthBrowserService_BrowserCompleteRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserCompleteRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserCompleteRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserCompleteRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserCompleteRecoveryCodes(ctx, req.(*BrowserCompleteRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthBrowserService_BrowserStartRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrowserStartRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthBrowserServiceServer).BrowserStartRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthBrowserService_BrowserStartRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthBrowserServiceServer).BrowserStartRecoveryCodes(ctx, req.(*BrowserStartRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AuthBrowserService_BrowserRegisterCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1897,6 +2049,14 @@ var AuthBrowserService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "auth.v1.AuthBrowserService",
 	HandlerType: (*AuthBrowserServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "BrowserCompleteRecoveryCodes",
+			Handler:    _AuthBrowserService_BrowserCompleteRecoveryCodes_Handler,
+		},
+		{
+			MethodName: "BrowserStartRecoveryCodes",
+			Handler:    _AuthBrowserService_BrowserStartRecoveryCodes_Handler,
+		},
 		{
 			MethodName: "BrowserRegisterCredentials",
 			Handler:    _AuthBrowserService_BrowserRegisterCredentials_Handler,

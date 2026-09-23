@@ -270,6 +270,10 @@ enum RouteId {
   ROUTE_ID_AUTH_REQUEST_ACCOUNT_DELETION = 23;
   // ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION routes the typed CancelAccountDeletion browser operation.
   ROUTE_ID_AUTH_CANCEL_ACCOUNT_DELETION = 24;
+  // ROUTE_ID_AUTH_START_RECOVERY_CODES starts authenticated recovery-code generation.
+  ROUTE_ID_AUTH_START_RECOVERY_CODES = 25;
+  // ROUTE_ID_AUTH_COMPLETE_RECOVERY_CODES returns a new single-display recovery set.
+  ROUTE_ID_AUTH_COMPLETE_RECOVERY_CODES = 26;
   // ROUTE_ID_USER_GET_ME retains the legacy FakeInternal read codec for isolated E2E.
   ROUTE_ID_USER_GET_ME = 100;
   // ROUTE_ID_USER_UPDATE_ME retains the legacy FakeInternal mutation codec for isolated E2E.

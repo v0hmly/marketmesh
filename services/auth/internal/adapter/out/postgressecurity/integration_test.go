@@ -81,7 +81,7 @@ func TestSecurityLifecycle(t *testing.T) {
 	if _, err := pool.Exec(t.Context(), `DROP SCHEMA IF EXISTS auth CASCADE`); err != nil {
 		t.Fatal("reset test schema")
 	}
-	for _, sql := range []string{migrations.CredentialsUp, migrations.SessionsUp, migrations.RegistrationOutboxUp, migrations.SecurityUp} {
+	for _, sql := range []string{migrations.CredentialsUp, migrations.SessionsUp, migrations.RegistrationOutboxUp, migrations.SecurityUp, migrations.RecoveryUp} {
 		if _, err := pool.Exec(t.Context(), sql); err != nil {
 			t.Fatal(err)
 		}
@@ -551,4 +551,201 @@ func TestSecurityLifecycle(t *testing.T) {
 			t.Fatal("credential committed without mail")
 		}
 	})
+	t.Run("recovery codes are single display owner scoped atomic and revision bound", func(t *testing.T) {
+		const email = "recovery@example.test"
+		register(t, email)
+		actor := login(t, email)
+		change, err := svc.StartCodeChange(t.Context(), actor.Record, []byte(password), true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := svc.CompleteCodeChange(t.Context(), actor.Record, change.ChallengeID, take(t, "code", email).Code, true); err != nil {
+			t.Fatal(err)
+		}
+		pending, err := svc.Login(t.Context(), email, []byte(password), true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actor, err = svc.CompleteLogin(t.Context(), pending.ChallengeID, take(t, "code", email).Code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := svc.StartRecoveryCodes(t.Context(), actor.Record, []byte("wrong")); err != domain.InvalidCredentials {
+			t.Fatal("generation without password proof")
+		}
+		start, err := svc.StartRecoveryCodes(t.Context(), actor.Record, []byte(password))
+		if err != nil {
+			t.Fatal(err)
+		}
+		otp := take(t, "code", email).Code
+		register(t, "recovery-foreign@example.test")
+		foreign := login(t, "recovery-foreign@example.test")
+		if _, err := svc.CompleteRecoveryCodes(t.Context(), foreign.Record, start.ChallengeID, otp); err == nil {
+			t.Fatal("foreign generation accepted")
+		}
+		if _, err := svc.CompleteRecoveryCodes(t.Context(), actor.Record, pending.ChallengeID, otp); err == nil {
+			t.Fatal("wrong purpose accepted")
+		}
+		codes, err := svc.CompleteRecoveryCodes(t.Context(), actor.Record, start.ChallengeID, otp)
+		if err != nil || len(codes) != 8 {
+			t.Fatal("generation failed", err)
+		}
+		if _, err := svc.CompleteRecoveryCodes(t.Context(), actor.Record, start.ChallengeID, otp); err == nil {
+			t.Fatal("set revealed twice")
+		}
+		letter := take(t, "backup_codes", email)
+		if letter.Code != "" || strings.Contains(letter.URL, codes[0]) {
+			t.Fatal("recovery secret queued as mail")
+		}
+		var digests string
+		if err := pool.QueryRow(t.Context(), `SELECT string_agg(encode(secret_digest,'hex'),',') FROM auth.recovery_codes WHERE subject_id=$1`, actor.Record.SubjectID.Bytes()).Scan(&digests); err != nil {
+			t.Fatal(err)
+		}
+		for _, code := range codes {
+			if strings.Contains(digests, strings.ReplaceAll(code, "-", "")) {
+				t.Fatal("raw code persisted")
+			}
+		}
+		status, err := svc.Credentials(t.Context(), actor.Record)
+		if err != nil || status.RecoveryCodesRemaining != 8 {
+			t.Fatal("wrong initial count", err)
+		}
+		// Distinct password-approved challenges compete for the same code.
+		// Store fixtures preserve the live owner/revision and use separate IDs.
+		var challenges [16]domain.ID
+		for i := range challenges {
+			challenges[i][0] = byte(i + 1)
+			challenges[i][15] = 91
+			if _, err := pool.Exec(t.Context(), `INSERT INTO auth.security_challenges(challenge_id,subject_id,purpose,secret_digest,revision,expires_at,sent_at) SELECT $1,subject_id,'login',$2,revision,$3,$4 FROM auth.account_security WHERE subject_id=$5`, challenges[i][:], make([]byte, 32), now.Add(time.Minute), now, actor.Record.SubjectID.Bytes()); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var won atomic.Int32
+		var wg sync.WaitGroup
+		for _, id := range challenges {
+			wg.Go(func() {
+				result, err := svc.CompleteRecoveryLogin(t.Context(), id, codes[0])
+				if err == nil {
+					won.Add(1)
+					if _, err := sessions.Authenticate(t.Context(), result.Access.Reveal()); err != nil {
+						t.Error("unusable recovery session")
+					}
+				} else if err != domain.CodeMismatch && err != domain.RateLimited {
+					t.Error("unexpected recovery race rejection", err)
+				}
+			})
+		}
+		wg.Wait()
+		if won.Load() != 1 {
+			t.Fatal("same recovery code created multiple sessions")
+		}
+		status, err = svc.Credentials(t.Context(), actor.Record)
+		if err != nil || status.RecoveryCodesRemaining != 7 {
+			t.Fatal("wrong count after race", err)
+		}
+		pending, err = svc.Login(t.Context(), email, []byte(password), true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := svc.CompleteRecoveryLogin(t.Context(), pending.ChallengeID, codes[1]); err != domain.RateLimited {
+			t.Fatal("new challenge reset subject budget")
+		}
+		now = now.Add(16 * time.Minute)
+		actor, err = sessions.Refresh(t.Context(), actor.Refresh.Reveal())
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Session and email failures must roll consumption and challenge use back.
+		pending, err = svc.Login(t.Context(), email, []byte(password), true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, table := range []string{"sessions", "mail_outbox"} {
+			if _, err := pool.Exec(t.Context(), `ALTER TABLE auth.`+table+` ADD CONSTRAINT reject_recovery CHECK(false) NOT VALID`); err != nil {
+				t.Fatal(err)
+			}
+			_, consumeErr := svc.CompleteRecoveryLogin(t.Context(), pending.ChallengeID, codes[1])
+			if _, err := pool.Exec(t.Context(), `ALTER TABLE auth.`+table+` DROP CONSTRAINT reject_recovery`); err != nil {
+				t.Fatal(err)
+			}
+			if consumeErr != domain.Unavailable {
+				t.Fatal("injected failure not returned")
+			}
+			status, err = svc.Credentials(t.Context(), actor.Record)
+			if err != nil || status.RecoveryCodesRemaining != 7 {
+				t.Fatal("code committed without session/mail", err)
+			}
+		}
+		if _, err := svc.CompleteRecoveryLogin(t.Context(), pending.ChallengeID, strings.ToUpper(codes[1])); err != nil {
+			t.Fatal("rolled-back code no longer usable", err)
+		}
+		// A failure while replacing the set leaves the previous set intact.
+		start, err = svc.StartRecoveryCodes(t.Context(), actor.Record, []byte(password))
+		if err != nil {
+			t.Fatal(err)
+		}
+		otp = take(t, "code", email).Code
+		if _, err := pool.Exec(t.Context(), `ALTER TABLE auth.mail_outbox ADD CONSTRAINT reject_recovery CHECK(false) NOT VALID`); err != nil {
+			t.Fatal(err)
+		}
+		_, generateErr := svc.CompleteRecoveryCodes(t.Context(), actor.Record, start.ChallengeID, otp)
+		if _, err := pool.Exec(t.Context(), `ALTER TABLE auth.mail_outbox DROP CONSTRAINT reject_recovery`); err != nil {
+			t.Fatal(err)
+		}
+		if generateErr != domain.Unavailable {
+			t.Fatal("replacement did not fail")
+		}
+		status, err = svc.Credentials(t.Context(), actor.Record)
+		if err != nil || status.RecoveryCodesRemaining != 6 {
+			t.Fatal("replacement destroyed previous set", err)
+		}
+		fresh, err := svc.CompleteRecoveryCodes(t.Context(), actor.Record, start.ChallengeID, otp)
+		if err != nil || len(fresh) != 8 {
+			t.Fatal("replacement failed", err)
+		}
+		pending, err = svc.Login(t.Context(), email, []byte(password), true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := svc.CompleteRecoveryLogin(t.Context(), pending.ChallengeID, codes[2]); err != domain.CodeMismatch {
+			t.Fatal("old set survived replacement")
+		}
+		if _, err := svc.CompleteRecoveryLogin(t.Context(), pending.ChallengeID, fresh[0]); err != nil {
+			t.Fatal("replacement code failed", err)
+		}
+		if err := svc.ChangePassword(t.Context(), actor.Record, []byte(password), []byte("ChangedHorse8!")); err != nil {
+			t.Fatal(err)
+		}
+		pending, err = svc.Login(t.Context(), email, []byte("ChangedHorse8!"), true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := svc.CompleteRecoveryLogin(t.Context(), pending.ChallengeID, fresh[1]); err != domain.CodeMismatch {
+			t.Fatal("password change did not revoke recovery set")
+		}
+		if _, err := svc.Login(t.Context(), email, []byte("ChangedHorse8!"), false); err != domain.CodeRequired {
+			t.Fatal("legacy password-only bypass")
+		}
+	})
+
+	t.Run("recovery migration down and up preserve account security", func(t *testing.T) {
+		if _, err := pool.Exec(t.Context(), migrations.RecoveryDown); err != nil {
+			t.Fatal(err)
+		}
+		var absent bool
+		if err := pool.QueryRow(t.Context(), `SELECT to_regclass('auth.recovery_codes') IS NULL`).Scan(&absent); err != nil || !absent {
+			t.Fatal("recovery storage remains after downgrade")
+		}
+		if _, err := pool.Exec(t.Context(), migrations.RecoveryUp); err != nil {
+			t.Fatal(err)
+		}
+		var count int
+		if err := pool.QueryRow(t.Context(), `SELECT count(*) FROM auth.recovery_codes`).Scan(&count); err != nil || count != 0 {
+			t.Fatal("old recovery codes survived downgrade")
+		}
+		if err := pool.QueryRow(t.Context(), `SELECT count(*) FROM auth.account_security WHERE email_verified`).Scan(&count); err != nil || count == 0 {
+			t.Fatal("downgrade removed account security")
+		}
+	})
+
 }

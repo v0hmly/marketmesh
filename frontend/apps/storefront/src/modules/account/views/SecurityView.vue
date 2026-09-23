@@ -14,6 +14,7 @@ import {
 import { createSecurityApi, securityError } from '../security/api';
 import AccountNav from '../components/AccountNav.vue';
 import PasswordRules from '../components/PasswordRules.vue';
+import RecoveryCodes from '../components/RecoveryCodes.vue';
 
 const session = useSession();
 const api = createSecurityApi();
@@ -419,6 +420,12 @@ void read();
             </fieldset>
           </form>
         </section>
+        <RecoveryCodes
+          v-if="credentials.loginCodeEnabled"
+          :remaining="credentials.recoveryCodesRemaining"
+          :disabled="busy"
+          @generated="credentials = { ...credentials!, recoveryCodesRemaining: $event }"
+        />
         <section class="card profile-card">
           <h2>Ваши сеансы.</h2>
           <p v-if="cooldown" class="field-help">

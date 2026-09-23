@@ -120,7 +120,14 @@ func (h *Handler) CompleteLogin(ctx context.Context, r *connect.Request[authv1.C
 		}
 		var id domain.ID
 		copy(id[:], m.LoginChallengeId)
-		tokens, err := h.security.CompleteLogin(ctx, id, m.Code)
+		if (m.Code == "") == (m.RecoveryCode == "") {
+			return nil, domain.InvalidInput
+		}
+		complete, code := h.security.CompleteLogin, m.Code
+		if m.RecoveryCode != "" {
+			complete, code = h.security.CompleteRecoveryLogin, m.RecoveryCode
+		}
+		tokens, err := complete(ctx, id, code)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +192,7 @@ func (h *Handler) GetCredentials(ctx context.Context, r *connect.Request[authv1.
 		if until := actor.CreatedAt.Add(24 * time.Hour); h.clock().Before(until) {
 			cooldown = until.Unix()
 		}
-		return &authv1.GetCredentialsResponse{Email: account.Email, EmailVerified: account.Verified, LoginCodeEnabled: account.CodeEnabled, NewDeviceCooldownUntilUnix: cooldown}, nil
+		return &authv1.GetCredentialsResponse{Email: account.Email, EmailVerified: account.Verified, LoginCodeEnabled: account.CodeEnabled, NewDeviceCooldownUntilUnix: cooldown, RecoveryCodesRemaining: int32(account.RecoveryCodesRemaining)}, nil
 	})
 }
 func (h *Handler) StartEmailChange(ctx context.Context, r *connect.Request[authv1.StartEmailChangeRequest]) (*connect.Response[authv1.StartEmailChangeResponse], error) {
@@ -297,4 +304,31 @@ func (h *Handler) CompleteLoginCodeChange(ctx context.Context, r *connect.Reques
 		clearCookies(response.Header())
 	}
 	return response, err
+}
+
+func (h *Handler) StartRecoveryCodes(ctx context.Context, r *connect.Request[authv1.StartRecoveryCodesRequest]) (*connect.Response[authv1.StartRecoveryCodesResponse], error) {
+	return securityCall(h, ctx, r, func(m *authv1.StartRecoveryCodesRequest) (*authv1.StartRecoveryCodesResponse, error) {
+		defer clear(m.Password)
+		actor, err := h.securityActor(ctx, r.Header())
+		if err != nil {
+			return nil, err
+		}
+		pending, err := h.security.StartRecoveryCodes(ctx, actor, m.Password)
+		return &authv1.StartRecoveryCodesResponse{ChallengeId: pending.ChallengeID[:], CodeExpiresInSeconds: int64(pending.ExpiresIn / time.Second)}, err
+	})
+}
+func (h *Handler) CompleteRecoveryCodes(ctx context.Context, r *connect.Request[authv1.CompleteRecoveryCodesRequest]) (*connect.Response[authv1.CompleteRecoveryCodesResponse], error) {
+	return securityCall(h, ctx, r, func(m *authv1.CompleteRecoveryCodesRequest) (*authv1.CompleteRecoveryCodesResponse, error) {
+		actor, err := h.securityActor(ctx, r.Header())
+		if err != nil {
+			return nil, err
+		}
+		if len(m.ChallengeId) != 16 {
+			return nil, domain.CodeExpired
+		}
+		var id domain.ID
+		copy(id[:], m.ChallengeId)
+		codes, err := h.security.CompleteRecoveryCodes(ctx, actor, id, m.Code)
+		return &authv1.CompleteRecoveryCodesResponse{Codes: []string(codes)}, err
+	})
 }

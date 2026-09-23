@@ -6,6 +6,10 @@ option go_package = "github.com/v0hmly/marketmesh/api/gen/go/auth/v1;authv1";
 
 // AuthService registers and verifies user-controlled credentials.
 service AuthService {
+  // CompleteRecoveryCodes manages the authenticated caller's single-use recovery codes.
+  rpc CompleteRecoveryCodes(CompleteRecoveryCodesRequest) returns (CompleteRecoveryCodesResponse);
+  // StartRecoveryCodes manages the authenticated caller's single-use recovery codes.
+  rpc StartRecoveryCodes(StartRecoveryCodesRequest) returns (StartRecoveryCodesResponse);
   // RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
   rpc RegisterCredentials(RegisterCredentialsRequest) returns (RegisterCredentialsResponse);
   // Login verifies a credential and returns an opaque subject identifier on success.
@@ -99,6 +103,10 @@ message LogoutAllResponse {}
 
 // AuthBrowserService bridges browser operations only on the gateway-out authenticated mTLS listener.
 service AuthBrowserService {
+  // BrowserCompleteRecoveryCodes preserves public browser security on the private listener.
+  rpc BrowserCompleteRecoveryCodes(BrowserCompleteRecoveryCodesRequest) returns (BrowserCompleteRecoveryCodesResponse);
+  // BrowserStartRecoveryCodes preserves public browser security on the private listener.
+  rpc BrowserStartRecoveryCodes(BrowserStartRecoveryCodesRequest) returns (BrowserStartRecoveryCodesResponse);
   // RegisterCredentials delegates to the same public Auth handler and browser security policy.
   rpc BrowserRegisterCredentials(BrowserRegisterCredentialsRequest) returns (BrowserRegisterCredentialsResponse);
   // Login delegates to the same public Auth handler and browser security policy.
@@ -272,12 +280,14 @@ message StartLoginResponse {
   bytes subject_id = 3;
 }
 
-// CompleteLoginRequest carries the emailed six-digit code for a pending challenge.
+// CompleteLoginRequest confirms a password-approved pending login. Exactly one code is required.
 message CompleteLoginRequest {
   // LoginChallengeId selects the pending login started by StartLogin.
   bytes login_challenge_id = 1;
   // Code is exactly six ASCII digits, whitespace-trimmed by the caller.
   string code = 2;
+  // RecoveryCode replaces Code with a single-use recovery secret; never log it.
+  string recovery_code = 3;
 }
 
 // CompleteLoginResponse establishes identity; the session cookies travel via the
@@ -345,6 +355,8 @@ message GetCredentialsResponse {
   // LogoutAll, RevokeSession of other sessions and RequestAccountDeletion fail with
   // FailedPrecondition, reason "NEW_DEVICE_COOLDOWN".
   int64 new_device_cooldown_until_unix = 4;
+  // RecoveryCodesRemaining counts unused codes of the current credential revision.
+  int32 recovery_codes_remaining = 5;
 }
 
 // StartEmailChangeRequest starts the change for the authenticated caller.
@@ -820,4 +832,66 @@ enum AuthBrowserFailure {
   AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN = 12;
   // AUTH_BROWSER_FAILURE_NOT_FOUND identifies the bounded not_found rejection.
   AUTH_BROWSER_FAILURE_NOT_FOUND = 13;
+}
+
+// BrowserStartRecoveryCodesRequest carries typed input and trusted browser headers.
+message BrowserStartRecoveryCodesRequest {
+  // Request is the original public input.
+  StartRecoveryCodesRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserStartRecoveryCodesResponse is private and must never be returned directly to a browser.
+message BrowserStartRecoveryCodesResponse {
+  // Response is the public result; absent for a bounded failure.
+  StartRecoveryCodesResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+
+// BrowserCompleteRecoveryCodesRequest carries typed input and trusted browser headers.
+message BrowserCompleteRecoveryCodesRequest {
+  // Request is the original public input.
+  CompleteRecoveryCodesRequest request = 1;
+  // Context preserves allowed headers without parsing external cookies.
+  BrowserContext context = 2;
+}
+// BrowserCompleteRecoveryCodesResponse is private and must never be returned directly to a browser.
+message BrowserCompleteRecoveryCodesResponse {
+  // Response is the public result; absent for a bounded failure.
+  CompleteRecoveryCodesResponse response = 1;
+  // SetCookie is copied to individual response headers only on success.
+  repeated string set_cookie = 2;
+  // Failure is a finite application rejection without any secret or arbitrary detail.
+  AuthBrowserFailure failure = 3;
+}
+
+
+// StartRecoveryCodesRequest requires password reauthentication and enabled email 2FA.
+message StartRecoveryCodesRequest {
+  // Password proves knowledge of the current secret; never log it.
+  bytes password = 1;
+}
+// StartRecoveryCodesResponse identifies the emailed confirmation challenge.
+message StartRecoveryCodesResponse {
+  // ChallengeId is an opaque 16-byte identifier owned by the caller.
+  bytes challenge_id = 1;
+  // CodeExpiresInSeconds bounds the confirmation lifetime.
+  int64 code_expires_in_seconds = 2;
+}
+// CompleteRecoveryCodesRequest confirms replacement using the emailed code.
+message CompleteRecoveryCodesRequest {
+  // ChallengeId selects the caller's pending generation.
+  bytes challenge_id = 1;
+  // Code is six ASCII digits.
+  string code = 2;
+}
+// CompleteRecoveryCodesResponse contains secrets shown exactly once after commit.
+// Never persist, trace, log or cache this response. A retry cannot reveal the set.
+message CompleteRecoveryCodesResponse {
+  // Codes is a new set of eight independent single-use 128-bit recovery secrets.
+  repeated string codes = 1;
 }

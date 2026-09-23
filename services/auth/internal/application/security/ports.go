@@ -42,6 +42,9 @@ type Unit interface {
 	ReserveAttempt(context.Context, domain.Digest, time.Time) (int, error)
 	ReserveBudget(context.Context, domain.Digest, time.Time, int, time.Duration) (int, error)
 	ResetAttempts(context.Context, domain.Digest) error
+	ReplaceRecoveryCodes(context.Context, []domain.Digest) error
+	ConsumeRecoveryCode(context.Context, domain.Digest) (bool, error)
+	RecoveryCodesRemaining(context.Context) (int, error)
 	CreateSession(context.Context, session.Record, session.Digest) error
 	RevokeSessions(context.Context, time.Time) error
 	Sessions(context.Context, time.Time) ([]session.Record, error)

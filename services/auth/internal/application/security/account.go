@@ -113,9 +113,19 @@ func (s *Service) confirmToken(ctx context.Context, value string, purpose domain
 	})
 }
 
-func (s *Service) Credentials(ctx context.Context, actor session.Record) (domain.Account, error) {
-	var result domain.Account
-	err := s.withOwner(ctx, actor, func(tx Unit) error { result = *tx.Account(); return nil })
+type Credentials struct {
+	domain.Account
+	RecoveryCodesRemaining int
+}
+
+func (s *Service) Credentials(ctx context.Context, actor session.Record) (Credentials, error) {
+	var result Credentials
+	err := s.withOwner(ctx, actor, func(tx Unit) error {
+		result.Account = *tx.Account()
+		var err error
+		result.RecoveryCodesRemaining, err = tx.RecoveryCodesRemaining(ctx)
+		return err
+	})
 	return result, err
 }
 

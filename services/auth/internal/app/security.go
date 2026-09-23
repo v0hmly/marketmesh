@@ -126,7 +126,7 @@ func newSecurityResources(ctx context.Context, c config, db *pg.Database, hasher
 	return &securityResources{service: service, component: runtime.Component{Name: "auth-mail-worker", Run: worker.Run, Shutdown: func(context.Context) error { return nil }}, dependency: runtime.CriticalDependency{Name: "auth-security-schema", Check: func(ctx context.Context) error {
 		var ready bool
 		err := db.RW().QueryRow(ctx, `SELECT bool_and(has_table_privilege(current_user, 'auth.' || t.name, p.permission))
-FROM (VALUES ('account_security'), ('security_challenges'), ('mail_outbox'), ('login_limits')) AS t(name)
+FROM (VALUES ('account_security'), ('security_challenges'), ('mail_outbox'), ('login_limits'), ('recovery_codes')) AS t(name)
 CROSS JOIN (VALUES ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) AS p(permission)`).Scan(&ready)
 		if err != nil || !ready {
 			return errors.New("auth email: security schema unavailable")

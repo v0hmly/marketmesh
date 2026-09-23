@@ -54,7 +54,7 @@ export interface PublicApi {
   register(identifier: string, password: Uint8Array): Promise<void>;
   login(identifier: string, password: Uint8Array): Promise<Uint8Array>;
   startLogin(identifier: string, password: Uint8Array): Promise<LoginStart>;
-  completeLogin(challengeId: Uint8Array, code: string): Promise<Uint8Array>;
+  completeLogin(challengeId: Uint8Array, code: string, recovery?: boolean): Promise<Uint8Array>;
   resendLoginCode(challengeId: Uint8Array): Promise<LoginChallenge>;
   requestEmailVerification(email: string): Promise<void>;
   refresh(): Promise<void>;

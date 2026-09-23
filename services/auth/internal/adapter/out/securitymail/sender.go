@@ -81,6 +81,9 @@ func (s *Sender) Render(m application.Mail) (mail.Message, error) {
 	case "two_factor_off":
 		kind = mail.TemplateTwoFactorOff
 		data = mail.TwoFactorOffData{RecipientEmail: m.Email, Timestamp: stamp, DeviceBrowser: unknown, IP: unknown, EnableURL: s.origin + "/account/security"}
+	case "backup_codes":
+		kind = mail.TemplateBackupCodes
+		data = mail.BackupCodesData{RecipientEmail: m.Email, CodesCount: application.RecoveryCodeCount, BackupCodesURL: s.origin + "/account/security"}
 	case "cancel_deletion":
 		kind = mail.TemplateAccountDeleted
 		data = mail.AccountDeletedData{RecipientEmail: m.Email, DeletionDate: m.ExpiresAt.UTC().Format(time.DateOnly), CancelURL: m.URL}

@@ -1318,13 +1318,15 @@ func (x *StartLoginResponse) GetSubjectId() []byte {
 	return nil
 }
 
-// CompleteLoginRequest carries the emailed six-digit code for a pending challenge.
+// CompleteLoginRequest confirms a password-approved pending login. Exactly one code is required.
 type CompleteLoginRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// LoginChallengeId selects the pending login started by StartLogin.
 	LoginChallengeId []byte `protobuf:"bytes,1,opt,name=login_challenge_id,json=loginChallengeId,proto3" json:"login_challenge_id,omitempty"`
 	// Code is exactly six ASCII digits, whitespace-trimmed by the caller.
-	Code          string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	Code string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	// RecoveryCode replaces Code with a single-use recovery secret; never log it.
+	RecoveryCode  string `protobuf:"bytes,3,opt,name=recovery_code,json=recoveryCode,proto3" json:"recovery_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1369,6 +1371,13 @@ func (x *CompleteLoginRequest) GetLoginChallengeId() []byte {
 func (x *CompleteLoginRequest) GetCode() string {
 	if x != nil {
 		return x.Code
+	}
+	return ""
+}
+
+func (x *CompleteLoginRequest) GetRecoveryCode() string {
+	if x != nil {
+		return x.RecoveryCode
 	}
 	return ""
 }
@@ -1816,8 +1825,10 @@ type GetCredentialsResponse struct {
 	// LogoutAll, RevokeSession of other sessions and RequestAccountDeletion fail with
 	// FailedPrecondition, reason "NEW_DEVICE_COOLDOWN".
 	NewDeviceCooldownUntilUnix int64 `protobuf:"varint,4,opt,name=new_device_cooldown_until_unix,json=newDeviceCooldownUntilUnix,proto3" json:"new_device_cooldown_until_unix,omitempty"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	// RecoveryCodesRemaining counts unused codes of the current credential revision.
+	RecoveryCodesRemaining int32 `protobuf:"varint,5,opt,name=recovery_codes_remaining,json=recoveryCodesRemaining,proto3" json:"recovery_codes_remaining,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *GetCredentialsResponse) Reset() {
@@ -1874,6 +1885,13 @@ func (x *GetCredentialsResponse) GetLoginCodeEnabled() bool {
 func (x *GetCredentialsResponse) GetNewDeviceCooldownUntilUnix() int64 {
 	if x != nil {
 		return x.NewDeviceCooldownUntilUnix
+	}
+	return 0
+}
+
+func (x *GetCredentialsResponse) GetRecoveryCodesRemaining() int32 {
+	if x != nil {
+		return x.RecoveryCodesRemaining
 	}
 	return 0
 }
@@ -5125,6 +5143,447 @@ func (x *BrowserCancelAccountDeletionResponse) GetFailure() AuthBrowserFailure {
 	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
 }
 
+// BrowserStartRecoveryCodesRequest carries typed input and trusted browser headers.
+type BrowserStartRecoveryCodesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *StartRecoveryCodesRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartRecoveryCodesRequest) Reset() {
+	*x = BrowserStartRecoveryCodesRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[94]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartRecoveryCodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartRecoveryCodesRequest) ProtoMessage() {}
+
+func (x *BrowserStartRecoveryCodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[94]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartRecoveryCodesRequest.ProtoReflect.Descriptor instead.
+func (*BrowserStartRecoveryCodesRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{94}
+}
+
+func (x *BrowserStartRecoveryCodesRequest) GetRequest() *StartRecoveryCodesRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserStartRecoveryCodesRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserStartRecoveryCodesResponse is private and must never be returned directly to a browser.
+type BrowserStartRecoveryCodesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *StartRecoveryCodesResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserStartRecoveryCodesResponse) Reset() {
+	*x = BrowserStartRecoveryCodesResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[95]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserStartRecoveryCodesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserStartRecoveryCodesResponse) ProtoMessage() {}
+
+func (x *BrowserStartRecoveryCodesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[95]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserStartRecoveryCodesResponse.ProtoReflect.Descriptor instead.
+func (*BrowserStartRecoveryCodesResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{95}
+}
+
+func (x *BrowserStartRecoveryCodesResponse) GetResponse() *StartRecoveryCodesResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserStartRecoveryCodesResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserStartRecoveryCodesResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// BrowserCompleteRecoveryCodesRequest carries typed input and trusted browser headers.
+type BrowserCompleteRecoveryCodesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Request is the original public input.
+	Request *CompleteRecoveryCodesRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	// Context preserves allowed headers without parsing external cookies.
+	Context       *BrowserContext `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCompleteRecoveryCodesRequest) Reset() {
+	*x = BrowserCompleteRecoveryCodesRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[96]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCompleteRecoveryCodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCompleteRecoveryCodesRequest) ProtoMessage() {}
+
+func (x *BrowserCompleteRecoveryCodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[96]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCompleteRecoveryCodesRequest.ProtoReflect.Descriptor instead.
+func (*BrowserCompleteRecoveryCodesRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{96}
+}
+
+func (x *BrowserCompleteRecoveryCodesRequest) GetRequest() *CompleteRecoveryCodesRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+func (x *BrowserCompleteRecoveryCodesRequest) GetContext() *BrowserContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+// BrowserCompleteRecoveryCodesResponse is private and must never be returned directly to a browser.
+type BrowserCompleteRecoveryCodesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Response is the public result; absent for a bounded failure.
+	Response *CompleteRecoveryCodesResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	// SetCookie is copied to individual response headers only on success.
+	SetCookie []string `protobuf:"bytes,2,rep,name=set_cookie,json=setCookie,proto3" json:"set_cookie,omitempty"`
+	// Failure is a finite application rejection without any secret or arbitrary detail.
+	Failure       AuthBrowserFailure `protobuf:"varint,3,opt,name=failure,proto3,enum=auth.v1.AuthBrowserFailure" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrowserCompleteRecoveryCodesResponse) Reset() {
+	*x = BrowserCompleteRecoveryCodesResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[97]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrowserCompleteRecoveryCodesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrowserCompleteRecoveryCodesResponse) ProtoMessage() {}
+
+func (x *BrowserCompleteRecoveryCodesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[97]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrowserCompleteRecoveryCodesResponse.ProtoReflect.Descriptor instead.
+func (*BrowserCompleteRecoveryCodesResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{97}
+}
+
+func (x *BrowserCompleteRecoveryCodesResponse) GetResponse() *CompleteRecoveryCodesResponse {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *BrowserCompleteRecoveryCodesResponse) GetSetCookie() []string {
+	if x != nil {
+		return x.SetCookie
+	}
+	return nil
+}
+
+func (x *BrowserCompleteRecoveryCodesResponse) GetFailure() AuthBrowserFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return AuthBrowserFailure_AUTH_BROWSER_FAILURE_UNSPECIFIED
+}
+
+// StartRecoveryCodesRequest requires password reauthentication and enabled email 2FA.
+type StartRecoveryCodesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Password proves knowledge of the current secret; never log it.
+	Password      []byte `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartRecoveryCodesRequest) Reset() {
+	*x = StartRecoveryCodesRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[98]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartRecoveryCodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartRecoveryCodesRequest) ProtoMessage() {}
+
+func (x *StartRecoveryCodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[98]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartRecoveryCodesRequest.ProtoReflect.Descriptor instead.
+func (*StartRecoveryCodesRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{98}
+}
+
+func (x *StartRecoveryCodesRequest) GetPassword() []byte {
+	if x != nil {
+		return x.Password
+	}
+	return nil
+}
+
+// StartRecoveryCodesResponse identifies the emailed confirmation challenge.
+type StartRecoveryCodesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ChallengeId is an opaque 16-byte identifier owned by the caller.
+	ChallengeId []byte `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	// CodeExpiresInSeconds bounds the confirmation lifetime.
+	CodeExpiresInSeconds int64 `protobuf:"varint,2,opt,name=code_expires_in_seconds,json=codeExpiresInSeconds,proto3" json:"code_expires_in_seconds,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *StartRecoveryCodesResponse) Reset() {
+	*x = StartRecoveryCodesResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[99]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartRecoveryCodesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartRecoveryCodesResponse) ProtoMessage() {}
+
+func (x *StartRecoveryCodesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[99]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartRecoveryCodesResponse.ProtoReflect.Descriptor instead.
+func (*StartRecoveryCodesResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{99}
+}
+
+func (x *StartRecoveryCodesResponse) GetChallengeId() []byte {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return nil
+}
+
+func (x *StartRecoveryCodesResponse) GetCodeExpiresInSeconds() int64 {
+	if x != nil {
+		return x.CodeExpiresInSeconds
+	}
+	return 0
+}
+
+// CompleteRecoveryCodesRequest confirms replacement using the emailed code.
+type CompleteRecoveryCodesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ChallengeId selects the caller's pending generation.
+	ChallengeId []byte `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	// Code is six ASCII digits.
+	Code          string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteRecoveryCodesRequest) Reset() {
+	*x = CompleteRecoveryCodesRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[100]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteRecoveryCodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteRecoveryCodesRequest) ProtoMessage() {}
+
+func (x *CompleteRecoveryCodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[100]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteRecoveryCodesRequest.ProtoReflect.Descriptor instead.
+func (*CompleteRecoveryCodesRequest) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{100}
+}
+
+func (x *CompleteRecoveryCodesRequest) GetChallengeId() []byte {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return nil
+}
+
+func (x *CompleteRecoveryCodesRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+// CompleteRecoveryCodesResponse contains secrets shown exactly once after commit.
+// Never persist, trace, log or cache this response. A retry cannot reveal the set.
+type CompleteRecoveryCodesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Codes is a new set of eight independent single-use 128-bit recovery secrets.
+	Codes         []string `protobuf:"bytes,1,rep,name=codes,proto3" json:"codes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteRecoveryCodesResponse) Reset() {
+	*x = CompleteRecoveryCodesResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[101]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteRecoveryCodesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteRecoveryCodesResponse) ProtoMessage() {}
+
+func (x *CompleteRecoveryCodesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[101]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteRecoveryCodesResponse.ProtoReflect.Descriptor instead.
+func (*CompleteRecoveryCodesResponse) Descriptor() ([]byte, []int) {
+	return file_auth_v1_auth_proto_rawDescGZIP(), []int{101}
+}
+
+func (x *CompleteRecoveryCodesResponse) GetCodes() []string {
+	if x != nil {
+		return x.Codes
+	}
+	return nil
+}
+
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
 
 const file_auth_v1_auth_proto_rawDesc = "" +
@@ -5203,10 +5662,11 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x12login_challenge_id\x18\x01 \x01(\fR\x10loginChallengeId\x125\n" +
 	"\x17code_expires_in_seconds\x18\x02 \x01(\x03R\x14codeExpiresInSeconds\x12\x1d\n" +
 	"\n" +
-	"subject_id\x18\x03 \x01(\fR\tsubjectId\"X\n" +
+	"subject_id\x18\x03 \x01(\fR\tsubjectId\"}\n" +
 	"\x14CompleteLoginRequest\x12,\n" +
 	"\x12login_challenge_id\x18\x01 \x01(\fR\x10loginChallengeId\x12\x12\n" +
-	"\x04code\x18\x02 \x01(\tR\x04code\"6\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\x12#\n" +
+	"\rrecovery_code\x18\x03 \x01(\tR\frecoveryCode\"6\n" +
 	"\x15CompleteLoginResponse\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\fR\tsubjectId\"7\n" +
@@ -5223,12 +5683,13 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12!\n" +
 	"\fnew_password\x18\x02 \x01(\fR\vnewPassword\"\x1e\n" +
 	"\x1cConfirmPasswordResetResponse\"\x17\n" +
-	"\x15GetCredentialsRequest\"\xc7\x01\n" +
+	"\x15GetCredentialsRequest\"\x81\x02\n" +
 	"\x16GetCredentialsResponse\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12%\n" +
 	"\x0eemail_verified\x18\x02 \x01(\bR\remailVerified\x12,\n" +
 	"\x12login_code_enabled\x18\x03 \x01(\bR\x10loginCodeEnabled\x12B\n" +
-	"\x1enew_device_cooldown_until_unix\x18\x04 \x01(\x03R\x1anewDeviceCooldownUntilUnix\"R\n" +
+	"\x1enew_device_cooldown_until_unix\x18\x04 \x01(\x03R\x1anewDeviceCooldownUntilUnix\x128\n" +
+	"\x18recovery_codes_remaining\x18\x05 \x01(\x05R\x16recoveryCodesRemaining\"R\n" +
 	"\x17StartEmailChangeRequest\x12\x1b\n" +
 	"\tnew_email\x18\x01 \x01(\tR\bnewEmail\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\fR\bpassword\"\x1a\n" +
@@ -5425,7 +5886,33 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\bresponse\x18\x01 \x01(\v2&.auth.v1.CancelAccountDeletionResponseR\bresponse\x12\x1d\n" +
 	"\n" +
 	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
-	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure*\xc7\x04\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x93\x01\n" +
+	" BrowserStartRecoveryCodesRequest\x12<\n" +
+	"\arequest\x18\x01 \x01(\v2\".auth.v1.StartRecoveryCodesRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xba\x01\n" +
+	"!BrowserStartRecoveryCodesResponse\x12?\n" +
+	"\bresponse\x18\x01 \x01(\v2#.auth.v1.StartRecoveryCodesResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"\x99\x01\n" +
+	"#BrowserCompleteRecoveryCodesRequest\x12?\n" +
+	"\arequest\x18\x01 \x01(\v2%.auth.v1.CompleteRecoveryCodesRequestR\arequest\x121\n" +
+	"\acontext\x18\x02 \x01(\v2\x17.auth.v1.BrowserContextR\acontext\"\xc0\x01\n" +
+	"$BrowserCompleteRecoveryCodesResponse\x12B\n" +
+	"\bresponse\x18\x01 \x01(\v2&.auth.v1.CompleteRecoveryCodesResponseR\bresponse\x12\x1d\n" +
+	"\n" +
+	"set_cookie\x18\x02 \x03(\tR\tsetCookie\x125\n" +
+	"\afailure\x18\x03 \x01(\x0e2\x1b.auth.v1.AuthBrowserFailureR\afailure\"7\n" +
+	"\x19StartRecoveryCodesRequest\x12\x1a\n" +
+	"\bpassword\x18\x01 \x01(\fR\bpassword\"v\n" +
+	"\x1aStartRecoveryCodesResponse\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\fR\vchallengeId\x125\n" +
+	"\x17code_expires_in_seconds\x18\x02 \x01(\x03R\x14codeExpiresInSeconds\"U\n" +
+	"\x1cCompleteRecoveryCodesRequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\fR\vchallengeId\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\"5\n" +
+	"\x1dCompleteRecoveryCodesResponse\x12\x14\n" +
+	"\x05codes\x18\x01 \x03(\tR\x05codes*\xc7\x04\n" +
 	"\x12AuthBrowserFailure\x12$\n" +
 	" AUTH_BROWSER_FAILURE_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"AUTH_BROWSER_FAILURE_INVALID_INPUT\x10\x01\x12,\n" +
@@ -5441,8 +5928,10 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x12%\n" +
 	"!AUTH_BROWSER_FAILURE_RATE_LIMITED\x10\v\x12,\n" +
 	"(AUTH_BROWSER_FAILURE_NEW_DEVICE_COOLDOWN\x10\f\x12\"\n" +
-	"\x1eAUTH_BROWSER_FAILURE_NOT_FOUND\x10\r2\xeb\x0f\n" +
-	"\vAuthService\x12`\n" +
+	"\x1eAUTH_BROWSER_FAILURE_NOT_FOUND\x10\r2\xb2\x11\n" +
+	"\vAuthService\x12f\n" +
+	"\x15CompleteRecoveryCodes\x12%.auth.v1.CompleteRecoveryCodesRequest\x1a&.auth.v1.CompleteRecoveryCodesResponse\x12]\n" +
+	"\x12StartRecoveryCodes\x12\".auth.v1.StartRecoveryCodesRequest\x1a#.auth.v1.StartRecoveryCodesResponse\x12`\n" +
 	"\x13RegisterCredentials\x12#.auth.v1.RegisterCredentialsRequest\x1a$.auth.v1.RegisterCredentialsResponse\x126\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\x12Q\n" +
 	"\x0eRefreshSession\x12\x1e.auth.v1.RefreshSessionRequest\x1a\x1f.auth.v1.RefreshSessionResponse\x129\n" +
@@ -5466,8 +5955,10 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\fListSessions\x12\x1c.auth.v1.ListSessionsRequest\x1a\x1d.auth.v1.ListSessionsResponse\x12N\n" +
 	"\rRevokeSession\x12\x1d.auth.v1.RevokeSessionRequest\x1a\x1e.auth.v1.RevokeSessionResponse\x12i\n" +
 	"\x16RequestAccountDeletion\x12&.auth.v1.RequestAccountDeletionRequest\x1a'.auth.v1.RequestAccountDeletionResponse\x12f\n" +
-	"\x15CancelAccountDeletion\x12%.auth.v1.CancelAccountDeletionRequest\x1a&.auth.v1.CancelAccountDeletionResponse2\xd7\x13\n" +
-	"\x12AuthBrowserService\x12u\n" +
+	"\x15CancelAccountDeletion\x12%.auth.v1.CancelAccountDeletionRequest\x1a&.auth.v1.CancelAccountDeletionResponse2\xc8\x15\n" +
+	"\x12AuthBrowserService\x12{\n" +
+	"\x1cBrowserCompleteRecoveryCodes\x12,.auth.v1.BrowserCompleteRecoveryCodesRequest\x1a-.auth.v1.BrowserCompleteRecoveryCodesResponse\x12r\n" +
+	"\x19BrowserStartRecoveryCodes\x12).auth.v1.BrowserStartRecoveryCodesRequest\x1a*.auth.v1.BrowserStartRecoveryCodesResponse\x12u\n" +
 	"\x1aBrowserRegisterCredentials\x12*.auth.v1.BrowserRegisterCredentialsRequest\x1a+.auth.v1.BrowserRegisterCredentialsResponse\x12K\n" +
 	"\fBrowserLogin\x12\x1c.auth.v1.BrowserLoginRequest\x1a\x1d.auth.v1.BrowserLoginResponse\x12f\n" +
 	"\x15BrowserRefreshSession\x12%.auth.v1.BrowserRefreshSessionRequest\x1a&.auth.v1.BrowserRefreshSessionResponse\x12N\n" +
@@ -5505,7 +5996,7 @@ func file_auth_v1_auth_proto_rawDescGZIP() []byte {
 }
 
 var file_auth_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 94)
+var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 102)
 var file_auth_v1_auth_proto_goTypes = []any{
 	(AuthBrowserFailure)(0),                         // 0: auth.v1.AuthBrowserFailure
 	(*RegisterCredentialsRequest)(nil),              // 1: auth.v1.RegisterCredentialsRequest
@@ -5602,6 +6093,14 @@ var file_auth_v1_auth_proto_goTypes = []any{
 	(*BrowserRequestAccountDeletionResponse)(nil),   // 92: auth.v1.BrowserRequestAccountDeletionResponse
 	(*BrowserCancelAccountDeletionRequest)(nil),     // 93: auth.v1.BrowserCancelAccountDeletionRequest
 	(*BrowserCancelAccountDeletionResponse)(nil),    // 94: auth.v1.BrowserCancelAccountDeletionResponse
+	(*BrowserStartRecoveryCodesRequest)(nil),        // 95: auth.v1.BrowserStartRecoveryCodesRequest
+	(*BrowserStartRecoveryCodesResponse)(nil),       // 96: auth.v1.BrowserStartRecoveryCodesResponse
+	(*BrowserCompleteRecoveryCodesRequest)(nil),     // 97: auth.v1.BrowserCompleteRecoveryCodesRequest
+	(*BrowserCompleteRecoveryCodesResponse)(nil),    // 98: auth.v1.BrowserCompleteRecoveryCodesResponse
+	(*StartRecoveryCodesRequest)(nil),               // 99: auth.v1.StartRecoveryCodesRequest
+	(*StartRecoveryCodesResponse)(nil),              // 100: auth.v1.StartRecoveryCodesResponse
+	(*CompleteRecoveryCodesRequest)(nil),            // 101: auth.v1.CompleteRecoveryCodesRequest
+	(*CompleteRecoveryCodesResponse)(nil),           // 102: auth.v1.CompleteRecoveryCodesResponse
 }
 var file_auth_v1_auth_proto_depIdxs = []int32{
 	1,   // 0: auth.v1.BrowserRegisterCredentialsRequest.request:type_name -> auth.v1.RegisterCredentialsRequest
@@ -5697,103 +6196,119 @@ var file_auth_v1_auth_proto_depIdxs = []int32{
 	11,  // 90: auth.v1.BrowserCancelAccountDeletionRequest.context:type_name -> auth.v1.BrowserContext
 	50,  // 91: auth.v1.BrowserCancelAccountDeletionResponse.response:type_name -> auth.v1.CancelAccountDeletionResponse
 	0,   // 92: auth.v1.BrowserCancelAccountDeletionResponse.failure:type_name -> auth.v1.AuthBrowserFailure
-	1,   // 93: auth.v1.AuthService.RegisterCredentials:input_type -> auth.v1.RegisterCredentialsRequest
-	3,   // 94: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
-	5,   // 95: auth.v1.AuthService.RefreshSession:input_type -> auth.v1.RefreshSessionRequest
-	7,   // 96: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
-	9,   // 97: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
-	53,  // 98: auth.v1.AuthService.StartLoginCodeChange:input_type -> auth.v1.StartLoginCodeChangeRequest
-	55,  // 99: auth.v1.AuthService.CompleteLoginCodeChange:input_type -> auth.v1.CompleteLoginCodeChangeRequest
-	57,  // 100: auth.v1.AuthService.ChangePassword:input_type -> auth.v1.ChangePasswordRequest
-	22,  // 101: auth.v1.AuthService.StartLogin:input_type -> auth.v1.StartLoginRequest
-	24,  // 102: auth.v1.AuthService.CompleteLogin:input_type -> auth.v1.CompleteLoginRequest
-	51,  // 103: auth.v1.AuthService.ResendLoginCode:input_type -> auth.v1.ResendLoginCodeRequest
-	26,  // 104: auth.v1.AuthService.RequestEmailVerification:input_type -> auth.v1.RequestEmailVerificationRequest
-	28,  // 105: auth.v1.AuthService.ConfirmEmail:input_type -> auth.v1.ConfirmEmailRequest
-	30,  // 106: auth.v1.AuthService.RequestPasswordReset:input_type -> auth.v1.RequestPasswordResetRequest
-	32,  // 107: auth.v1.AuthService.ConfirmPasswordReset:input_type -> auth.v1.ConfirmPasswordResetRequest
-	34,  // 108: auth.v1.AuthService.GetCredentials:input_type -> auth.v1.GetCredentialsRequest
-	36,  // 109: auth.v1.AuthService.StartEmailChange:input_type -> auth.v1.StartEmailChangeRequest
-	38,  // 110: auth.v1.AuthService.ConfirmEmailChange:input_type -> auth.v1.ConfirmEmailChangeRequest
-	40,  // 111: auth.v1.AuthService.CancelEmailChange:input_type -> auth.v1.CancelEmailChangeRequest
-	43,  // 112: auth.v1.AuthService.ListSessions:input_type -> auth.v1.ListSessionsRequest
-	45,  // 113: auth.v1.AuthService.RevokeSession:input_type -> auth.v1.RevokeSessionRequest
-	47,  // 114: auth.v1.AuthService.RequestAccountDeletion:input_type -> auth.v1.RequestAccountDeletionRequest
-	49,  // 115: auth.v1.AuthService.CancelAccountDeletion:input_type -> auth.v1.CancelAccountDeletionRequest
-	12,  // 116: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
-	14,  // 117: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
-	16,  // 118: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
-	18,  // 119: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
-	20,  // 120: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
-	59,  // 121: auth.v1.AuthBrowserService.BrowserStartLoginCodeChange:input_type -> auth.v1.BrowserStartLoginCodeChangeRequest
-	61,  // 122: auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange:input_type -> auth.v1.BrowserCompleteLoginCodeChangeRequest
-	63,  // 123: auth.v1.AuthBrowserService.BrowserChangePassword:input_type -> auth.v1.BrowserChangePasswordRequest
-	65,  // 124: auth.v1.AuthBrowserService.BrowserStartLogin:input_type -> auth.v1.BrowserStartLoginRequest
-	67,  // 125: auth.v1.AuthBrowserService.BrowserCompleteLogin:input_type -> auth.v1.BrowserCompleteLoginRequest
-	69,  // 126: auth.v1.AuthBrowserService.BrowserResendLoginCode:input_type -> auth.v1.BrowserResendLoginCodeRequest
-	71,  // 127: auth.v1.AuthBrowserService.BrowserRequestEmailVerification:input_type -> auth.v1.BrowserRequestEmailVerificationRequest
-	73,  // 128: auth.v1.AuthBrowserService.BrowserConfirmEmail:input_type -> auth.v1.BrowserConfirmEmailRequest
-	75,  // 129: auth.v1.AuthBrowserService.BrowserRequestPasswordReset:input_type -> auth.v1.BrowserRequestPasswordResetRequest
-	77,  // 130: auth.v1.AuthBrowserService.BrowserConfirmPasswordReset:input_type -> auth.v1.BrowserConfirmPasswordResetRequest
-	79,  // 131: auth.v1.AuthBrowserService.BrowserGetCredentials:input_type -> auth.v1.BrowserGetCredentialsRequest
-	81,  // 132: auth.v1.AuthBrowserService.BrowserStartEmailChange:input_type -> auth.v1.BrowserStartEmailChangeRequest
-	83,  // 133: auth.v1.AuthBrowserService.BrowserConfirmEmailChange:input_type -> auth.v1.BrowserConfirmEmailChangeRequest
-	85,  // 134: auth.v1.AuthBrowserService.BrowserCancelEmailChange:input_type -> auth.v1.BrowserCancelEmailChangeRequest
-	87,  // 135: auth.v1.AuthBrowserService.BrowserListSessions:input_type -> auth.v1.BrowserListSessionsRequest
-	89,  // 136: auth.v1.AuthBrowserService.BrowserRevokeSession:input_type -> auth.v1.BrowserRevokeSessionRequest
-	91,  // 137: auth.v1.AuthBrowserService.BrowserRequestAccountDeletion:input_type -> auth.v1.BrowserRequestAccountDeletionRequest
-	93,  // 138: auth.v1.AuthBrowserService.BrowserCancelAccountDeletion:input_type -> auth.v1.BrowserCancelAccountDeletionRequest
-	2,   // 139: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
-	4,   // 140: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
-	6,   // 141: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
-	8,   // 142: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
-	10,  // 143: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
-	54,  // 144: auth.v1.AuthService.StartLoginCodeChange:output_type -> auth.v1.StartLoginCodeChangeResponse
-	56,  // 145: auth.v1.AuthService.CompleteLoginCodeChange:output_type -> auth.v1.CompleteLoginCodeChangeResponse
-	58,  // 146: auth.v1.AuthService.ChangePassword:output_type -> auth.v1.ChangePasswordResponse
-	23,  // 147: auth.v1.AuthService.StartLogin:output_type -> auth.v1.StartLoginResponse
-	25,  // 148: auth.v1.AuthService.CompleteLogin:output_type -> auth.v1.CompleteLoginResponse
-	52,  // 149: auth.v1.AuthService.ResendLoginCode:output_type -> auth.v1.ResendLoginCodeResponse
-	27,  // 150: auth.v1.AuthService.RequestEmailVerification:output_type -> auth.v1.RequestEmailVerificationResponse
-	29,  // 151: auth.v1.AuthService.ConfirmEmail:output_type -> auth.v1.ConfirmEmailResponse
-	31,  // 152: auth.v1.AuthService.RequestPasswordReset:output_type -> auth.v1.RequestPasswordResetResponse
-	33,  // 153: auth.v1.AuthService.ConfirmPasswordReset:output_type -> auth.v1.ConfirmPasswordResetResponse
-	35,  // 154: auth.v1.AuthService.GetCredentials:output_type -> auth.v1.GetCredentialsResponse
-	37,  // 155: auth.v1.AuthService.StartEmailChange:output_type -> auth.v1.StartEmailChangeResponse
-	39,  // 156: auth.v1.AuthService.ConfirmEmailChange:output_type -> auth.v1.ConfirmEmailChangeResponse
-	41,  // 157: auth.v1.AuthService.CancelEmailChange:output_type -> auth.v1.CancelEmailChangeResponse
-	44,  // 158: auth.v1.AuthService.ListSessions:output_type -> auth.v1.ListSessionsResponse
-	46,  // 159: auth.v1.AuthService.RevokeSession:output_type -> auth.v1.RevokeSessionResponse
-	48,  // 160: auth.v1.AuthService.RequestAccountDeletion:output_type -> auth.v1.RequestAccountDeletionResponse
-	50,  // 161: auth.v1.AuthService.CancelAccountDeletion:output_type -> auth.v1.CancelAccountDeletionResponse
-	13,  // 162: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
-	15,  // 163: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
-	17,  // 164: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
-	19,  // 165: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
-	21,  // 166: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
-	60,  // 167: auth.v1.AuthBrowserService.BrowserStartLoginCodeChange:output_type -> auth.v1.BrowserStartLoginCodeChangeResponse
-	62,  // 168: auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange:output_type -> auth.v1.BrowserCompleteLoginCodeChangeResponse
-	64,  // 169: auth.v1.AuthBrowserService.BrowserChangePassword:output_type -> auth.v1.BrowserChangePasswordResponse
-	66,  // 170: auth.v1.AuthBrowserService.BrowserStartLogin:output_type -> auth.v1.BrowserStartLoginResponse
-	68,  // 171: auth.v1.AuthBrowserService.BrowserCompleteLogin:output_type -> auth.v1.BrowserCompleteLoginResponse
-	70,  // 172: auth.v1.AuthBrowserService.BrowserResendLoginCode:output_type -> auth.v1.BrowserResendLoginCodeResponse
-	72,  // 173: auth.v1.AuthBrowserService.BrowserRequestEmailVerification:output_type -> auth.v1.BrowserRequestEmailVerificationResponse
-	74,  // 174: auth.v1.AuthBrowserService.BrowserConfirmEmail:output_type -> auth.v1.BrowserConfirmEmailResponse
-	76,  // 175: auth.v1.AuthBrowserService.BrowserRequestPasswordReset:output_type -> auth.v1.BrowserRequestPasswordResetResponse
-	78,  // 176: auth.v1.AuthBrowserService.BrowserConfirmPasswordReset:output_type -> auth.v1.BrowserConfirmPasswordResetResponse
-	80,  // 177: auth.v1.AuthBrowserService.BrowserGetCredentials:output_type -> auth.v1.BrowserGetCredentialsResponse
-	82,  // 178: auth.v1.AuthBrowserService.BrowserStartEmailChange:output_type -> auth.v1.BrowserStartEmailChangeResponse
-	84,  // 179: auth.v1.AuthBrowserService.BrowserConfirmEmailChange:output_type -> auth.v1.BrowserConfirmEmailChangeResponse
-	86,  // 180: auth.v1.AuthBrowserService.BrowserCancelEmailChange:output_type -> auth.v1.BrowserCancelEmailChangeResponse
-	88,  // 181: auth.v1.AuthBrowserService.BrowserListSessions:output_type -> auth.v1.BrowserListSessionsResponse
-	90,  // 182: auth.v1.AuthBrowserService.BrowserRevokeSession:output_type -> auth.v1.BrowserRevokeSessionResponse
-	92,  // 183: auth.v1.AuthBrowserService.BrowserRequestAccountDeletion:output_type -> auth.v1.BrowserRequestAccountDeletionResponse
-	94,  // 184: auth.v1.AuthBrowserService.BrowserCancelAccountDeletion:output_type -> auth.v1.BrowserCancelAccountDeletionResponse
-	139, // [139:185] is the sub-list for method output_type
-	93,  // [93:139] is the sub-list for method input_type
-	93,  // [93:93] is the sub-list for extension type_name
-	93,  // [93:93] is the sub-list for extension extendee
-	0,   // [0:93] is the sub-list for field type_name
+	99,  // 93: auth.v1.BrowserStartRecoveryCodesRequest.request:type_name -> auth.v1.StartRecoveryCodesRequest
+	11,  // 94: auth.v1.BrowserStartRecoveryCodesRequest.context:type_name -> auth.v1.BrowserContext
+	100, // 95: auth.v1.BrowserStartRecoveryCodesResponse.response:type_name -> auth.v1.StartRecoveryCodesResponse
+	0,   // 96: auth.v1.BrowserStartRecoveryCodesResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	101, // 97: auth.v1.BrowserCompleteRecoveryCodesRequest.request:type_name -> auth.v1.CompleteRecoveryCodesRequest
+	11,  // 98: auth.v1.BrowserCompleteRecoveryCodesRequest.context:type_name -> auth.v1.BrowserContext
+	102, // 99: auth.v1.BrowserCompleteRecoveryCodesResponse.response:type_name -> auth.v1.CompleteRecoveryCodesResponse
+	0,   // 100: auth.v1.BrowserCompleteRecoveryCodesResponse.failure:type_name -> auth.v1.AuthBrowserFailure
+	101, // 101: auth.v1.AuthService.CompleteRecoveryCodes:input_type -> auth.v1.CompleteRecoveryCodesRequest
+	99,  // 102: auth.v1.AuthService.StartRecoveryCodes:input_type -> auth.v1.StartRecoveryCodesRequest
+	1,   // 103: auth.v1.AuthService.RegisterCredentials:input_type -> auth.v1.RegisterCredentialsRequest
+	3,   // 104: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
+	5,   // 105: auth.v1.AuthService.RefreshSession:input_type -> auth.v1.RefreshSessionRequest
+	7,   // 106: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
+	9,   // 107: auth.v1.AuthService.LogoutAll:input_type -> auth.v1.LogoutAllRequest
+	53,  // 108: auth.v1.AuthService.StartLoginCodeChange:input_type -> auth.v1.StartLoginCodeChangeRequest
+	55,  // 109: auth.v1.AuthService.CompleteLoginCodeChange:input_type -> auth.v1.CompleteLoginCodeChangeRequest
+	57,  // 110: auth.v1.AuthService.ChangePassword:input_type -> auth.v1.ChangePasswordRequest
+	22,  // 111: auth.v1.AuthService.StartLogin:input_type -> auth.v1.StartLoginRequest
+	24,  // 112: auth.v1.AuthService.CompleteLogin:input_type -> auth.v1.CompleteLoginRequest
+	51,  // 113: auth.v1.AuthService.ResendLoginCode:input_type -> auth.v1.ResendLoginCodeRequest
+	26,  // 114: auth.v1.AuthService.RequestEmailVerification:input_type -> auth.v1.RequestEmailVerificationRequest
+	28,  // 115: auth.v1.AuthService.ConfirmEmail:input_type -> auth.v1.ConfirmEmailRequest
+	30,  // 116: auth.v1.AuthService.RequestPasswordReset:input_type -> auth.v1.RequestPasswordResetRequest
+	32,  // 117: auth.v1.AuthService.ConfirmPasswordReset:input_type -> auth.v1.ConfirmPasswordResetRequest
+	34,  // 118: auth.v1.AuthService.GetCredentials:input_type -> auth.v1.GetCredentialsRequest
+	36,  // 119: auth.v1.AuthService.StartEmailChange:input_type -> auth.v1.StartEmailChangeRequest
+	38,  // 120: auth.v1.AuthService.ConfirmEmailChange:input_type -> auth.v1.ConfirmEmailChangeRequest
+	40,  // 121: auth.v1.AuthService.CancelEmailChange:input_type -> auth.v1.CancelEmailChangeRequest
+	43,  // 122: auth.v1.AuthService.ListSessions:input_type -> auth.v1.ListSessionsRequest
+	45,  // 123: auth.v1.AuthService.RevokeSession:input_type -> auth.v1.RevokeSessionRequest
+	47,  // 124: auth.v1.AuthService.RequestAccountDeletion:input_type -> auth.v1.RequestAccountDeletionRequest
+	49,  // 125: auth.v1.AuthService.CancelAccountDeletion:input_type -> auth.v1.CancelAccountDeletionRequest
+	97,  // 126: auth.v1.AuthBrowserService.BrowserCompleteRecoveryCodes:input_type -> auth.v1.BrowserCompleteRecoveryCodesRequest
+	95,  // 127: auth.v1.AuthBrowserService.BrowserStartRecoveryCodes:input_type -> auth.v1.BrowserStartRecoveryCodesRequest
+	12,  // 128: auth.v1.AuthBrowserService.BrowserRegisterCredentials:input_type -> auth.v1.BrowserRegisterCredentialsRequest
+	14,  // 129: auth.v1.AuthBrowserService.BrowserLogin:input_type -> auth.v1.BrowserLoginRequest
+	16,  // 130: auth.v1.AuthBrowserService.BrowserRefreshSession:input_type -> auth.v1.BrowserRefreshSessionRequest
+	18,  // 131: auth.v1.AuthBrowserService.BrowserLogout:input_type -> auth.v1.BrowserLogoutRequest
+	20,  // 132: auth.v1.AuthBrowserService.BrowserLogoutAll:input_type -> auth.v1.BrowserLogoutAllRequest
+	59,  // 133: auth.v1.AuthBrowserService.BrowserStartLoginCodeChange:input_type -> auth.v1.BrowserStartLoginCodeChangeRequest
+	61,  // 134: auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange:input_type -> auth.v1.BrowserCompleteLoginCodeChangeRequest
+	63,  // 135: auth.v1.AuthBrowserService.BrowserChangePassword:input_type -> auth.v1.BrowserChangePasswordRequest
+	65,  // 136: auth.v1.AuthBrowserService.BrowserStartLogin:input_type -> auth.v1.BrowserStartLoginRequest
+	67,  // 137: auth.v1.AuthBrowserService.BrowserCompleteLogin:input_type -> auth.v1.BrowserCompleteLoginRequest
+	69,  // 138: auth.v1.AuthBrowserService.BrowserResendLoginCode:input_type -> auth.v1.BrowserResendLoginCodeRequest
+	71,  // 139: auth.v1.AuthBrowserService.BrowserRequestEmailVerification:input_type -> auth.v1.BrowserRequestEmailVerificationRequest
+	73,  // 140: auth.v1.AuthBrowserService.BrowserConfirmEmail:input_type -> auth.v1.BrowserConfirmEmailRequest
+	75,  // 141: auth.v1.AuthBrowserService.BrowserRequestPasswordReset:input_type -> auth.v1.BrowserRequestPasswordResetRequest
+	77,  // 142: auth.v1.AuthBrowserService.BrowserConfirmPasswordReset:input_type -> auth.v1.BrowserConfirmPasswordResetRequest
+	79,  // 143: auth.v1.AuthBrowserService.BrowserGetCredentials:input_type -> auth.v1.BrowserGetCredentialsRequest
+	81,  // 144: auth.v1.AuthBrowserService.BrowserStartEmailChange:input_type -> auth.v1.BrowserStartEmailChangeRequest
+	83,  // 145: auth.v1.AuthBrowserService.BrowserConfirmEmailChange:input_type -> auth.v1.BrowserConfirmEmailChangeRequest
+	85,  // 146: auth.v1.AuthBrowserService.BrowserCancelEmailChange:input_type -> auth.v1.BrowserCancelEmailChangeRequest
+	87,  // 147: auth.v1.AuthBrowserService.BrowserListSessions:input_type -> auth.v1.BrowserListSessionsRequest
+	89,  // 148: auth.v1.AuthBrowserService.BrowserRevokeSession:input_type -> auth.v1.BrowserRevokeSessionRequest
+	91,  // 149: auth.v1.AuthBrowserService.BrowserRequestAccountDeletion:input_type -> auth.v1.BrowserRequestAccountDeletionRequest
+	93,  // 150: auth.v1.AuthBrowserService.BrowserCancelAccountDeletion:input_type -> auth.v1.BrowserCancelAccountDeletionRequest
+	102, // 151: auth.v1.AuthService.CompleteRecoveryCodes:output_type -> auth.v1.CompleteRecoveryCodesResponse
+	100, // 152: auth.v1.AuthService.StartRecoveryCodes:output_type -> auth.v1.StartRecoveryCodesResponse
+	2,   // 153: auth.v1.AuthService.RegisterCredentials:output_type -> auth.v1.RegisterCredentialsResponse
+	4,   // 154: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	6,   // 155: auth.v1.AuthService.RefreshSession:output_type -> auth.v1.RefreshSessionResponse
+	8,   // 156: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	10,  // 157: auth.v1.AuthService.LogoutAll:output_type -> auth.v1.LogoutAllResponse
+	54,  // 158: auth.v1.AuthService.StartLoginCodeChange:output_type -> auth.v1.StartLoginCodeChangeResponse
+	56,  // 159: auth.v1.AuthService.CompleteLoginCodeChange:output_type -> auth.v1.CompleteLoginCodeChangeResponse
+	58,  // 160: auth.v1.AuthService.ChangePassword:output_type -> auth.v1.ChangePasswordResponse
+	23,  // 161: auth.v1.AuthService.StartLogin:output_type -> auth.v1.StartLoginResponse
+	25,  // 162: auth.v1.AuthService.CompleteLogin:output_type -> auth.v1.CompleteLoginResponse
+	52,  // 163: auth.v1.AuthService.ResendLoginCode:output_type -> auth.v1.ResendLoginCodeResponse
+	27,  // 164: auth.v1.AuthService.RequestEmailVerification:output_type -> auth.v1.RequestEmailVerificationResponse
+	29,  // 165: auth.v1.AuthService.ConfirmEmail:output_type -> auth.v1.ConfirmEmailResponse
+	31,  // 166: auth.v1.AuthService.RequestPasswordReset:output_type -> auth.v1.RequestPasswordResetResponse
+	33,  // 167: auth.v1.AuthService.ConfirmPasswordReset:output_type -> auth.v1.ConfirmPasswordResetResponse
+	35,  // 168: auth.v1.AuthService.GetCredentials:output_type -> auth.v1.GetCredentialsResponse
+	37,  // 169: auth.v1.AuthService.StartEmailChange:output_type -> auth.v1.StartEmailChangeResponse
+	39,  // 170: auth.v1.AuthService.ConfirmEmailChange:output_type -> auth.v1.ConfirmEmailChangeResponse
+	41,  // 171: auth.v1.AuthService.CancelEmailChange:output_type -> auth.v1.CancelEmailChangeResponse
+	44,  // 172: auth.v1.AuthService.ListSessions:output_type -> auth.v1.ListSessionsResponse
+	46,  // 173: auth.v1.AuthService.RevokeSession:output_type -> auth.v1.RevokeSessionResponse
+	48,  // 174: auth.v1.AuthService.RequestAccountDeletion:output_type -> auth.v1.RequestAccountDeletionResponse
+	50,  // 175: auth.v1.AuthService.CancelAccountDeletion:output_type -> auth.v1.CancelAccountDeletionResponse
+	98,  // 176: auth.v1.AuthBrowserService.BrowserCompleteRecoveryCodes:output_type -> auth.v1.BrowserCompleteRecoveryCodesResponse
+	96,  // 177: auth.v1.AuthBrowserService.BrowserStartRecoveryCodes:output_type -> auth.v1.BrowserStartRecoveryCodesResponse
+	13,  // 178: auth.v1.AuthBrowserService.BrowserRegisterCredentials:output_type -> auth.v1.BrowserRegisterCredentialsResponse
+	15,  // 179: auth.v1.AuthBrowserService.BrowserLogin:output_type -> auth.v1.BrowserLoginResponse
+	17,  // 180: auth.v1.AuthBrowserService.BrowserRefreshSession:output_type -> auth.v1.BrowserRefreshSessionResponse
+	19,  // 181: auth.v1.AuthBrowserService.BrowserLogout:output_type -> auth.v1.BrowserLogoutResponse
+	21,  // 182: auth.v1.AuthBrowserService.BrowserLogoutAll:output_type -> auth.v1.BrowserLogoutAllResponse
+	60,  // 183: auth.v1.AuthBrowserService.BrowserStartLoginCodeChange:output_type -> auth.v1.BrowserStartLoginCodeChangeResponse
+	62,  // 184: auth.v1.AuthBrowserService.BrowserCompleteLoginCodeChange:output_type -> auth.v1.BrowserCompleteLoginCodeChangeResponse
+	64,  // 185: auth.v1.AuthBrowserService.BrowserChangePassword:output_type -> auth.v1.BrowserChangePasswordResponse
+	66,  // 186: auth.v1.AuthBrowserService.BrowserStartLogin:output_type -> auth.v1.BrowserStartLoginResponse
+	68,  // 187: auth.v1.AuthBrowserService.BrowserCompleteLogin:output_type -> auth.v1.BrowserCompleteLoginResponse
+	70,  // 188: auth.v1.AuthBrowserService.BrowserResendLoginCode:output_type -> auth.v1.BrowserResendLoginCodeResponse
+	72,  // 189: auth.v1.AuthBrowserService.BrowserRequestEmailVerification:output_type -> auth.v1.BrowserRequestEmailVerificationResponse
+	74,  // 190: auth.v1.AuthBrowserService.BrowserConfirmEmail:output_type -> auth.v1.BrowserConfirmEmailResponse
+	76,  // 191: auth.v1.AuthBrowserService.BrowserRequestPasswordReset:output_type -> auth.v1.BrowserRequestPasswordResetResponse
+	78,  // 192: auth.v1.AuthBrowserService.BrowserConfirmPasswordReset:output_type -> auth.v1.BrowserConfirmPasswordResetResponse
+	80,  // 193: auth.v1.AuthBrowserService.BrowserGetCredentials:output_type -> auth.v1.BrowserGetCredentialsResponse
+	82,  // 194: auth.v1.AuthBrowserService.BrowserStartEmailChange:output_type -> auth.v1.BrowserStartEmailChangeResponse
+	84,  // 195: auth.v1.AuthBrowserService.BrowserConfirmEmailChange:output_type -> auth.v1.BrowserConfirmEmailChangeResponse
+	86,  // 196: auth.v1.AuthBrowserService.BrowserCancelEmailChange:output_type -> auth.v1.BrowserCancelEmailChangeResponse
+	88,  // 197: auth.v1.AuthBrowserService.BrowserListSessions:output_type -> auth.v1.BrowserListSessionsResponse
+	90,  // 198: auth.v1.AuthBrowserService.BrowserRevokeSession:output_type -> auth.v1.BrowserRevokeSessionResponse
+	92,  // 199: auth.v1.AuthBrowserService.BrowserRequestAccountDeletion:output_type -> auth.v1.BrowserRequestAccountDeletionResponse
+	94,  // 200: auth.v1.AuthBrowserService.BrowserCancelAccountDeletion:output_type -> auth.v1.BrowserCancelAccountDeletionResponse
+	151, // [151:201] is the sub-list for method output_type
+	101, // [101:151] is the sub-list for method input_type
+	101, // [101:101] is the sub-list for extension type_name
+	101, // [101:101] is the sub-list for extension extendee
+	0,   // [0:101] is the sub-list for field type_name
 }
 
 func init() { file_auth_v1_auth_proto_init() }
@@ -5807,7 +6322,7 @@ func file_auth_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_v1_auth_proto_rawDesc), len(file_auth_v1_auth_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   94,
+			NumMessages:   102,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

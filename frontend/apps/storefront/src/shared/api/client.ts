@@ -104,8 +104,12 @@ export function createPublicApi(
         codeExpiresInSeconds: result.codeExpiresInSeconds,
       };
     },
-    async completeLogin(challengeId, code) {
-      const result = await auth.completeLogin({ loginChallengeId: challengeId, code });
+    async completeLogin(challengeId, code, recovery = false) {
+      const result = await auth.completeLogin({
+        loginChallengeId: challengeId,
+        code: recovery ? '' : code,
+        recoveryCode: recovery ? code : '',
+      });
       if (result.subjectId.length !== 16 || result.subjectId.every((v) => v === 0)) {
         throw new ConnectError('Invalid complete login response', Code.DataLoss);
       }

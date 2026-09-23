@@ -35,6 +35,12 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// AuthServiceCompleteRecoveryCodesProcedure is the fully-qualified name of the AuthService's
+	// CompleteRecoveryCodes RPC.
+	AuthServiceCompleteRecoveryCodesProcedure = "/auth.v1.AuthService/CompleteRecoveryCodes"
+	// AuthServiceStartRecoveryCodesProcedure is the fully-qualified name of the AuthService's
+	// StartRecoveryCodes RPC.
+	AuthServiceStartRecoveryCodesProcedure = "/auth.v1.AuthService/StartRecoveryCodes"
 	// AuthServiceRegisterCredentialsProcedure is the fully-qualified name of the AuthService's
 	// RegisterCredentials RPC.
 	AuthServiceRegisterCredentialsProcedure = "/auth.v1.AuthService/RegisterCredentials"
@@ -100,6 +106,12 @@ const (
 	// AuthServiceCancelAccountDeletionProcedure is the fully-qualified name of the AuthService's
 	// CancelAccountDeletion RPC.
 	AuthServiceCancelAccountDeletionProcedure = "/auth.v1.AuthService/CancelAccountDeletion"
+	// AuthBrowserServiceBrowserCompleteRecoveryCodesProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserCompleteRecoveryCodes RPC.
+	AuthBrowserServiceBrowserCompleteRecoveryCodesProcedure = "/auth.v1.AuthBrowserService/BrowserCompleteRecoveryCodes"
+	// AuthBrowserServiceBrowserStartRecoveryCodesProcedure is the fully-qualified name of the
+	// AuthBrowserService's BrowserStartRecoveryCodes RPC.
+	AuthBrowserServiceBrowserStartRecoveryCodesProcedure = "/auth.v1.AuthBrowserService/BrowserStartRecoveryCodes"
 	// AuthBrowserServiceBrowserRegisterCredentialsProcedure is the fully-qualified name of the
 	// AuthBrowserService's BrowserRegisterCredentials RPC.
 	AuthBrowserServiceBrowserRegisterCredentialsProcedure = "/auth.v1.AuthBrowserService/BrowserRegisterCredentials"
@@ -173,6 +185,10 @@ const (
 
 // AuthServiceClient is a client for the auth.v1.AuthService service.
 type AuthServiceClient interface {
+	// CompleteRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	CompleteRecoveryCodes(context.Context, *connect.Request[v1.CompleteRecoveryCodesRequest]) (*connect.Response[v1.CompleteRecoveryCodesResponse], error)
+	// StartRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	StartRecoveryCodes(context.Context, *connect.Request[v1.StartRecoveryCodesRequest]) (*connect.Response[v1.StartRecoveryCodesResponse], error)
 	// RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
 	RegisterCredentials(context.Context, *connect.Request[v1.RegisterCredentialsRequest]) (*connect.Response[v1.RegisterCredentialsResponse], error)
 	// Login verifies a credential and returns an opaque subject identifier on success.
@@ -232,6 +248,18 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_auth_v1_auth_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
+		completeRecoveryCodes: connect.NewClient[v1.CompleteRecoveryCodesRequest, v1.CompleteRecoveryCodesResponse](
+			httpClient,
+			baseURL+AuthServiceCompleteRecoveryCodesProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CompleteRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
+		startRecoveryCodes: connect.NewClient[v1.StartRecoveryCodesRequest, v1.StartRecoveryCodesResponse](
+			httpClient,
+			baseURL+AuthServiceStartRecoveryCodesProcedure,
+			connect.WithSchema(authServiceMethods.ByName("StartRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
 		registerCredentials: connect.NewClient[v1.RegisterCredentialsRequest, v1.RegisterCredentialsResponse](
 			httpClient,
 			baseURL+AuthServiceRegisterCredentialsProcedure,
@@ -375,6 +403,8 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
+	completeRecoveryCodes    *connect.Client[v1.CompleteRecoveryCodesRequest, v1.CompleteRecoveryCodesResponse]
+	startRecoveryCodes       *connect.Client[v1.StartRecoveryCodesRequest, v1.StartRecoveryCodesResponse]
 	registerCredentials      *connect.Client[v1.RegisterCredentialsRequest, v1.RegisterCredentialsResponse]
 	login                    *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	refreshSession           *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
@@ -398,6 +428,16 @@ type authServiceClient struct {
 	revokeSession            *connect.Client[v1.RevokeSessionRequest, v1.RevokeSessionResponse]
 	requestAccountDeletion   *connect.Client[v1.RequestAccountDeletionRequest, v1.RequestAccountDeletionResponse]
 	cancelAccountDeletion    *connect.Client[v1.CancelAccountDeletionRequest, v1.CancelAccountDeletionResponse]
+}
+
+// CompleteRecoveryCodes calls auth.v1.AuthService.CompleteRecoveryCodes.
+func (c *authServiceClient) CompleteRecoveryCodes(ctx context.Context, req *connect.Request[v1.CompleteRecoveryCodesRequest]) (*connect.Response[v1.CompleteRecoveryCodesResponse], error) {
+	return c.completeRecoveryCodes.CallUnary(ctx, req)
+}
+
+// StartRecoveryCodes calls auth.v1.AuthService.StartRecoveryCodes.
+func (c *authServiceClient) StartRecoveryCodes(ctx context.Context, req *connect.Request[v1.StartRecoveryCodesRequest]) (*connect.Response[v1.StartRecoveryCodesResponse], error) {
+	return c.startRecoveryCodes.CallUnary(ctx, req)
 }
 
 // RegisterCredentials calls auth.v1.AuthService.RegisterCredentials.
@@ -517,6 +557,10 @@ func (c *authServiceClient) CancelAccountDeletion(ctx context.Context, req *conn
 
 // AuthServiceHandler is an implementation of the auth.v1.AuthService service.
 type AuthServiceHandler interface {
+	// CompleteRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	CompleteRecoveryCodes(context.Context, *connect.Request[v1.CompleteRecoveryCodesRequest]) (*connect.Response[v1.CompleteRecoveryCodesResponse], error)
+	// StartRecoveryCodes manages the authenticated caller's single-use recovery codes.
+	StartRecoveryCodes(context.Context, *connect.Request[v1.StartRecoveryCodesRequest]) (*connect.Response[v1.StartRecoveryCodesResponse], error)
 	// RegisterCredentials accepts a credential without disclosing whether its identifier already exists.
 	RegisterCredentials(context.Context, *connect.Request[v1.RegisterCredentialsRequest]) (*connect.Response[v1.RegisterCredentialsResponse], error)
 	// Login verifies a credential and returns an opaque subject identifier on success.
@@ -572,6 +616,18 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_auth_v1_auth_proto.Services().ByName("AuthService").Methods()
+	authServiceCompleteRecoveryCodesHandler := connect.NewUnaryHandler(
+		AuthServiceCompleteRecoveryCodesProcedure,
+		svc.CompleteRecoveryCodes,
+		connect.WithSchema(authServiceMethods.ByName("CompleteRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceStartRecoveryCodesHandler := connect.NewUnaryHandler(
+		AuthServiceStartRecoveryCodesProcedure,
+		svc.StartRecoveryCodes,
+		connect.WithSchema(authServiceMethods.ByName("StartRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
 	authServiceRegisterCredentialsHandler := connect.NewUnaryHandler(
 		AuthServiceRegisterCredentialsProcedure,
 		svc.RegisterCredentials,
@@ -712,6 +768,10 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/auth.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case AuthServiceCompleteRecoveryCodesProcedure:
+			authServiceCompleteRecoveryCodesHandler.ServeHTTP(w, r)
+		case AuthServiceStartRecoveryCodesProcedure:
+			authServiceStartRecoveryCodesHandler.ServeHTTP(w, r)
 		case AuthServiceRegisterCredentialsProcedure:
 			authServiceRegisterCredentialsHandler.ServeHTTP(w, r)
 		case AuthServiceLoginProcedure:
@@ -766,6 +826,14 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
+
+func (UnimplementedAuthServiceHandler) CompleteRecoveryCodes(context.Context, *connect.Request[v1.CompleteRecoveryCodesRequest]) (*connect.Response[v1.CompleteRecoveryCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.CompleteRecoveryCodes is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) StartRecoveryCodes(context.Context, *connect.Request[v1.StartRecoveryCodesRequest]) (*connect.Response[v1.StartRecoveryCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.StartRecoveryCodes is not implemented"))
+}
 
 func (UnimplementedAuthServiceHandler) RegisterCredentials(context.Context, *connect.Request[v1.RegisterCredentialsRequest]) (*connect.Response[v1.RegisterCredentialsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthService.RegisterCredentials is not implemented"))
@@ -861,6 +929,10 @@ func (UnimplementedAuthServiceHandler) CancelAccountDeletion(context.Context, *c
 
 // AuthBrowserServiceClient is a client for the auth.v1.AuthBrowserService service.
 type AuthBrowserServiceClient interface {
+	// BrowserCompleteRecoveryCodes preserves public browser security on the private listener.
+	BrowserCompleteRecoveryCodes(context.Context, *connect.Request[v1.BrowserCompleteRecoveryCodesRequest]) (*connect.Response[v1.BrowserCompleteRecoveryCodesResponse], error)
+	// BrowserStartRecoveryCodes preserves public browser security on the private listener.
+	BrowserStartRecoveryCodes(context.Context, *connect.Request[v1.BrowserStartRecoveryCodesRequest]) (*connect.Response[v1.BrowserStartRecoveryCodesResponse], error)
 	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
 	BrowserRegisterCredentials(context.Context, *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error)
 	// Login delegates to the same public Auth handler and browser security policy.
@@ -920,6 +992,18 @@ func NewAuthBrowserServiceClient(httpClient connect.HTTPClient, baseURL string, 
 	baseURL = strings.TrimRight(baseURL, "/")
 	authBrowserServiceMethods := v1.File_auth_v1_auth_proto.Services().ByName("AuthBrowserService").Methods()
 	return &authBrowserServiceClient{
+		browserCompleteRecoveryCodes: connect.NewClient[v1.BrowserCompleteRecoveryCodesRequest, v1.BrowserCompleteRecoveryCodesResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserCompleteRecoveryCodesProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCompleteRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
+		browserStartRecoveryCodes: connect.NewClient[v1.BrowserStartRecoveryCodesRequest, v1.BrowserStartRecoveryCodesResponse](
+			httpClient,
+			baseURL+AuthBrowserServiceBrowserStartRecoveryCodesProcedure,
+			connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
 		browserRegisterCredentials: connect.NewClient[v1.BrowserRegisterCredentialsRequest, v1.BrowserRegisterCredentialsResponse](
 			httpClient,
 			baseURL+AuthBrowserServiceBrowserRegisterCredentialsProcedure,
@@ -1063,6 +1147,8 @@ func NewAuthBrowserServiceClient(httpClient connect.HTTPClient, baseURL string, 
 
 // authBrowserServiceClient implements AuthBrowserServiceClient.
 type authBrowserServiceClient struct {
+	browserCompleteRecoveryCodes    *connect.Client[v1.BrowserCompleteRecoveryCodesRequest, v1.BrowserCompleteRecoveryCodesResponse]
+	browserStartRecoveryCodes       *connect.Client[v1.BrowserStartRecoveryCodesRequest, v1.BrowserStartRecoveryCodesResponse]
 	browserRegisterCredentials      *connect.Client[v1.BrowserRegisterCredentialsRequest, v1.BrowserRegisterCredentialsResponse]
 	browserLogin                    *connect.Client[v1.BrowserLoginRequest, v1.BrowserLoginResponse]
 	browserRefreshSession           *connect.Client[v1.BrowserRefreshSessionRequest, v1.BrowserRefreshSessionResponse]
@@ -1086,6 +1172,16 @@ type authBrowserServiceClient struct {
 	browserRevokeSession            *connect.Client[v1.BrowserRevokeSessionRequest, v1.BrowserRevokeSessionResponse]
 	browserRequestAccountDeletion   *connect.Client[v1.BrowserRequestAccountDeletionRequest, v1.BrowserRequestAccountDeletionResponse]
 	browserCancelAccountDeletion    *connect.Client[v1.BrowserCancelAccountDeletionRequest, v1.BrowserCancelAccountDeletionResponse]
+}
+
+// BrowserCompleteRecoveryCodes calls auth.v1.AuthBrowserService.BrowserCompleteRecoveryCodes.
+func (c *authBrowserServiceClient) BrowserCompleteRecoveryCodes(ctx context.Context, req *connect.Request[v1.BrowserCompleteRecoveryCodesRequest]) (*connect.Response[v1.BrowserCompleteRecoveryCodesResponse], error) {
+	return c.browserCompleteRecoveryCodes.CallUnary(ctx, req)
+}
+
+// BrowserStartRecoveryCodes calls auth.v1.AuthBrowserService.BrowserStartRecoveryCodes.
+func (c *authBrowserServiceClient) BrowserStartRecoveryCodes(ctx context.Context, req *connect.Request[v1.BrowserStartRecoveryCodesRequest]) (*connect.Response[v1.BrowserStartRecoveryCodesResponse], error) {
+	return c.browserStartRecoveryCodes.CallUnary(ctx, req)
 }
 
 // BrowserRegisterCredentials calls auth.v1.AuthBrowserService.BrowserRegisterCredentials.
@@ -1205,6 +1301,10 @@ func (c *authBrowserServiceClient) BrowserCancelAccountDeletion(ctx context.Cont
 
 // AuthBrowserServiceHandler is an implementation of the auth.v1.AuthBrowserService service.
 type AuthBrowserServiceHandler interface {
+	// BrowserCompleteRecoveryCodes preserves public browser security on the private listener.
+	BrowserCompleteRecoveryCodes(context.Context, *connect.Request[v1.BrowserCompleteRecoveryCodesRequest]) (*connect.Response[v1.BrowserCompleteRecoveryCodesResponse], error)
+	// BrowserStartRecoveryCodes preserves public browser security on the private listener.
+	BrowserStartRecoveryCodes(context.Context, *connect.Request[v1.BrowserStartRecoveryCodesRequest]) (*connect.Response[v1.BrowserStartRecoveryCodesResponse], error)
 	// RegisterCredentials delegates to the same public Auth handler and browser security policy.
 	BrowserRegisterCredentials(context.Context, *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error)
 	// Login delegates to the same public Auth handler and browser security policy.
@@ -1260,6 +1360,18 @@ type AuthBrowserServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthBrowserServiceHandler(svc AuthBrowserServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authBrowserServiceMethods := v1.File_auth_v1_auth_proto.Services().ByName("AuthBrowserService").Methods()
+	authBrowserServiceBrowserCompleteRecoveryCodesHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserCompleteRecoveryCodesProcedure,
+		svc.BrowserCompleteRecoveryCodes,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserCompleteRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authBrowserServiceBrowserStartRecoveryCodesHandler := connect.NewUnaryHandler(
+		AuthBrowserServiceBrowserStartRecoveryCodesProcedure,
+		svc.BrowserStartRecoveryCodes,
+		connect.WithSchema(authBrowserServiceMethods.ByName("BrowserStartRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
 	authBrowserServiceBrowserRegisterCredentialsHandler := connect.NewUnaryHandler(
 		AuthBrowserServiceBrowserRegisterCredentialsProcedure,
 		svc.BrowserRegisterCredentials,
@@ -1400,6 +1512,10 @@ func NewAuthBrowserServiceHandler(svc AuthBrowserServiceHandler, opts ...connect
 	)
 	return "/auth.v1.AuthBrowserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case AuthBrowserServiceBrowserCompleteRecoveryCodesProcedure:
+			authBrowserServiceBrowserCompleteRecoveryCodesHandler.ServeHTTP(w, r)
+		case AuthBrowserServiceBrowserStartRecoveryCodesProcedure:
+			authBrowserServiceBrowserStartRecoveryCodesHandler.ServeHTTP(w, r)
 		case AuthBrowserServiceBrowserRegisterCredentialsProcedure:
 			authBrowserServiceBrowserRegisterCredentialsHandler.ServeHTTP(w, r)
 		case AuthBrowserServiceBrowserLoginProcedure:
@@ -1454,6 +1570,14 @@ func NewAuthBrowserServiceHandler(svc AuthBrowserServiceHandler, opts ...connect
 
 // UnimplementedAuthBrowserServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthBrowserServiceHandler struct{}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserCompleteRecoveryCodes(context.Context, *connect.Request[v1.BrowserCompleteRecoveryCodesRequest]) (*connect.Response[v1.BrowserCompleteRecoveryCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserCompleteRecoveryCodes is not implemented"))
+}
+
+func (UnimplementedAuthBrowserServiceHandler) BrowserStartRecoveryCodes(context.Context, *connect.Request[v1.BrowserStartRecoveryCodesRequest]) (*connect.Response[v1.BrowserStartRecoveryCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserStartRecoveryCodes is not implemented"))
+}
 
 func (UnimplementedAuthBrowserServiceHandler) BrowserRegisterCredentials(context.Context, *connect.Request[v1.BrowserRegisterCredentialsRequest]) (*connect.Response[v1.BrowserRegisterCredentialsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("auth.v1.AuthBrowserService.BrowserRegisterCredentials is not implemented"))
