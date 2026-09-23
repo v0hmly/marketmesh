@@ -5,9 +5,6 @@ import re
 import secrets
 from pathlib import Path
 
-TOPOLOGY = 2
-
-
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     path.write_text(value)
@@ -131,6 +128,6 @@ def configure(state, account, files, rybbit):
         write_env(account / service / "env", values)
     # A named user is supported by the pinned image's small build-time adapter.
     write_env(shared / "rybbit.env", {"POSTGRES_HOST": "pg-primary", "POSTGRES_PASSWORD": analytics["POSTGRES_PASSWORD"],
-        "PGSSL": "verify-full", "NODE_EXTRA_CA_CERTS": "/pki/ca.crt", "REDIS_HOST": "redis", "REDIS_USERNAME": "rybbit", "REDIS_PASSWORD": analytics["REDIS_PASSWORD"],
+        "PGSSL": "verify-full", "PGSSLMODE": "verify-full", "PGSSLROOTCERT": "/pki/ca.crt", "NODE_EXTRA_CA_CERTS": "/pki/ca.crt", "REDIS_HOST": "redis", "REDIS_USERNAME": "rybbit", "REDIS_PASSWORD": analytics["REDIS_PASSWORD"],
         "CLICKHOUSE_HOST": "http://clickhouse:8123", "CLICKHOUSE_USER": "rybbit", "CLICKHOUSE_PASSWORD": analytics["CLICKHOUSE_PASSWORD"],
         "CLICKHOUSE_QUERY_USER": "rybbit_query", "CLICKHOUSE_QUERY_PASSWORD": analytics["CLICKHOUSE_QUERY_PASSWORD"], "CLICKHOUSE_QUERY_MANAGED_EXTERNALLY": "true"})

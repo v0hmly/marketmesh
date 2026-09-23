@@ -20,3 +20,7 @@ replaceOnce('/app/dist/db/clickhouse/client.js',
 replaceOnce('/app/dist/db/clickhouse/queryUser.js',
   'for (const query of buildQueryUserStatements(database, user, password)) {',
   'for (const query of (process.env.CLICKHOUSE_QUERY_MANAGED_EXTERNALLY === "true" ? [] : buildQueryUserStatements(database, user, password))) {');
+// The upstream migration config explicitly disables SSL, overriding PGSSLMODE.
+replaceOnce('/app/drizzle.config.ts',
+  'ssl: false,',
+  'ssl: { rejectUnauthorized: true },');

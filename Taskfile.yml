@@ -242,6 +242,16 @@ tasks:
     cmds:
       - python3 infra/dev/local.py up {{.CLI_ARGS}}
 
+  dev:browser:
+    desc: Проверить кабинет, почту и аватары на существующем полном dev (OrbStack)
+    cmds:
+      - python3 infra/dev/local.py browser {{.CLI_ARGS}}
+
+  dev:verify:
+    desc: Проверить доступ и изоляцию существующего полного dev-стенда
+    cmds:
+      - python3 infra/dev/verify.py {{.CLI_ARGS}}
+
   dev:down:
     desc: Остановить полный локальный стенд с сохранением данных
     cmds:
@@ -315,12 +325,12 @@ tasks:
   infra:status:
     desc: Показать состояние контейнеров инфраструктуры
     cmds:
-      - "{{.INFRA_TOOL}} status"
+      - python3 infra/dev/local.py status
 
   infra:logs:
     desc: Следить за логами локальной инфраструктуры
     cmds:
-      - "{{.INFRA_TOOL}} logs"
+      - python3 infra/dev/local.py logs postgres-primary postgres-replica redis nats clickhouse
 
   infra:psql-rw:
     desc: Открыть psql через RW endpoint primary
@@ -428,7 +438,7 @@ tasks:
   infra:down:
     desc: Остановить окружение с сохранением данных
     cmds:
-      - "{{.INFRA_TOOL}} down"
+      - python3 infra/dev/local.py down
 
   infra:clean:
     desc: Остановить окружение и полностью удалить его volumes
@@ -518,17 +528,17 @@ tasks:
   observability:status:
     desc: Показать состояние контейнеров observability
     cmds:
-      - "{{.INFRA_TOOL}} observability-status"
+      - python3 infra/dev/local.py status
 
   observability:logs:
     desc: Следить за логами observability-стека
     cmds:
-      - "{{.INFRA_TOOL}} observability-logs"
+      - python3 infra/dev/local.py logs alloy-dmz alloy-internal tempo loki grafana observability-gateway
 
   observability:down:
     desc: Остановить observability-стек с сохранением данных
     cmds:
-      - "{{.INFRA_TOOL}} observability-down"
+      - python3 infra/dev/local.py stop alloy-dmz alloy-internal tempo loki grafana observability-gateway
 
   observability:clean:
     desc: Удалить только контейнеры и volumes observability
@@ -548,17 +558,17 @@ tasks:
   analytics:status:
     desc: Показать состояние Rybbit
     cmds:
-      - ./infra/rybbit/local.sh status
+      - python3 infra/dev/local.py status
 
   analytics:logs:
     desc: Показать логи Rybbit
     cmds:
-      - ./infra/rybbit/local.sh logs
+      - python3 infra/dev/local.py logs analytics-gateway analytics-client analytics-backend
 
   analytics:down:
     desc: Остановить Rybbit с сохранением данных
     cmds:
-      - ./infra/rybbit/local.sh down
+      - python3 infra/dev/local.py stop analytics-gateway analytics-client analytics-backend
 
   analytics:clean:
     desc: Удалить локальный Rybbit и его данные
@@ -579,7 +589,7 @@ tasks:
   account:status:
     desc: Показать состояние локального контура аккаунта
     cmds:
-      - "{{.ACCOUNT_LOCAL_TOOL}} status"
+      - python3 infra/dev/local.py status
 
   account:probe:
     desc: Проверить агрегированные счётчики outbox, inbox и доставки профилей без персональных данных
@@ -589,7 +599,7 @@ tasks:
   account:down:
     desc: Остановить локальный контур аккаунта с сохранением данных
     cmds:
-      - "{{.ACCOUNT_LOCAL_TOOL}} down"
+      - python3 infra/dev/local.py stop frontdoor gateway-out gateway-in user auth
 
   account:reset:
     desc: Удалить данные и сертификаты только выбранного локального контура аккаунта

@@ -87,8 +87,10 @@ Docker-проекты не затрагиваются. Проверяются ow
 Старые отдельные проекты не удаляются автоматически. Для их ручной остановки
 и очистки сохранены прежние `down`/`clean`/`reset`. `task account:up`,
 `task analytics:up`, `task infra:up`, `task observability:up` запускают нужный
-состав **этого же** `marketmesh-dev`. Прямой запуск старых persistent helpers
-отклоняется с инструкцией. Изолированные `account:test` и `analytics:verify`
+состав **этого же** `marketmesh-dev`. Их status/logs/down также используют общий dev (infra:down останавливает весь
+стенд; account/analytics/observability:down — только соответствующие приложения).
+Прямой запуск старых persistent helpers и диагностики, скрыто поднимающей
+зависимости (например, infra:ready/smoke/persistence), отклоняется с инструкцией. Изолированные `account:test` и `analytics:verify`
 создают временный проект с уникальным именем и удаляют его после теста.
 
 `up` автоматически обновляет истекающие сертификаты, сначала останавливая их
@@ -132,8 +134,9 @@ Redis сохраняет AOF (`everysec`) и не вытесняет сесси�
 его запуск и сохранность данных не зависят от включения Rybbit.
 
 У закреплённого Rybbit 2.9 нет env-настроек username Redis/ClickHouse. Образ
-`infra/dev/Dockerfile.rybbit` применяет проверяемый адаптер трёх мест кода:
-username Redis, username ClickHouse writer, внешнее создание query-user.
+`infra/dev/Dockerfile.rybbit` применяет проверяемый адаптер четырёх мест кода:
+username Redis, username ClickHouse writer, внешнее создание query-user и TLS
+мигратора PostgreSQL (upstream явно задаёт `ssl: false`).
 Подключение query-user проверяется самим Rybbit; его права задаёт инфраструктура.
 При изменении upstream-кода адаптер завершает сборку ошибкой. Vendor-код остаётся
 в образе. Нельзя передавать username в URL ClickHouse: он переопределяет также
@@ -151,3 +154,34 @@ trust-domain используйте другой account без неявных i
 Docker-сетях; это не конфигурация production. Файловые quarantine/clean/delivery,
 ключи KMS и DMZ остаются раздельными. Физическую независимость двух DC OrbStack
 не моделирует.
+
+## Проверка общего стенда
+
+После `task dev:up`:
+
+```sh
+task dev:verify                 # экземпляры, TLS/RW/RO, запреты ACL, NATS, Rybbit
+task dev:browser                # Chromium: аккаунт, Mailpit, сессии, профиль, аватары
+task dev:verify -- seed         # записать маркеры Redis/ClickHouse
+task dev:browser -- --persistence seed # создать тестовый аккаунт и постоянный аватар
+task dev:down
+task dev:up
+task dev:verify -- check
+task dev:browser -- --persistence check
+task dev:renew                  # новая PKI, прежние данные и пароли
+task dev:verify -- check
+task dev:browser -- --persistence check
+```
+
+Проверки выполняются над существующим полным стендом. Они добавляют тестовые
+аккаунты/письма и служебные маркеры; данные пользователя не очищаются. Browser
+использует host network OrbStack, loopback 18443/18025/18343–18345 и доверяет
+только CA этого стенда внутри своего контейнера. Поддержка host networking
+нужна именно для теста прямых upload/download по тем же адресам, что у пользователя.
+Никакого импорта ключей или CA в системное хранилище macOS нет.
+
+В GitHub Actions остаются быстрые unit-проверки bootstrap/ownership; полный
+стенд и persistence проверяются локально. Отдельный тяжёлый обязательный CI
+на каждый PR не добавляется (GitHub Free).
+
+Результаты MM-99, состав до/после, CVE и откат — в [отчёте проверки](../../docs/testing/shared-dev.md).

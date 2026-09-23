@@ -255,6 +255,8 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   context,
 }) => {
   test.skip(process.env.ACCOUNT_E2E_PHASE !== 'core');
+  // The permanent shared dev already consumes events; it has no pending phase.
+  if (process.env.ACCOUNT_E2E_SHARED === 'true') await register(page, a);
   await login(page, a);
   await ready(page);
   await save(page, 'Мастер А', '<script>window.unwanted = true</script>');

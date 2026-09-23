@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import secrets
 import socket
 import ssl
 import subprocess
@@ -90,6 +91,7 @@ def check_ports(model, selected):
         owned.update(int(binding["HostPort"]) for bindings in ports.values() if bindings for binding in bindings)
     for port in required - owned:
         with socket.socket() as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 listener.bind(("127.0.0.1", port))
             except OSError:
@@ -272,6 +274,8 @@ def up(args):
 
 def reset():
     check_owned_state(allow_incomplete=True)
+    if not (STATE / "owner.json").is_file() and any(path.name != "lock" for path in STATE.iterdir()):
+        raise RuntimeError("Каталог состояния без owner.json: автоматическое удаление запрещено")
     # Verify EVERY resource before the first mutation, including partial setup.
     # No wildcard deletion or Docker prune: only IDs with this project's labels.
     for kind in ("container", "network", "volume"):
@@ -291,10 +295,13 @@ def reset():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("up", "down", "status", "renew", "config", "logs", "reset", "stop"))
+    parser.add_argument("command", choices=("up", "down", "status", "renew", "config", "logs", "reset", "stop", "browser"))
     parser.add_argument("--profile", choices=("full", "core", "analytics", "observability", "infrastructure"), action="append")
+    parser.add_argument("--persistence", choices=("seed", "check"), help="browser only: сохранность аккаунта и аватара")
     parser.add_argument("services", nargs="*")
     args = parser.parse_intermixed_args()
+    if args.persistence and args.command != "browser":
+        parser.error("--persistence применяется только к browser")
     os.umask(0o077)
     for tool in ("docker", "go", "openssl"):
         if not shutil.which(tool):
@@ -329,6 +336,19 @@ def main():
             if shared & set(args.services):
                 raise RuntimeError("Общие сервисы останавливаются вместе со стендом через task dev:down")
             compose("stop", *args.services)
+        elif args.command == "browser":
+            run_id = "dev-" + secrets.token_hex(8)
+            if args.persistence:
+                marker = STATE / "shared/browser-verification.json"
+                if args.persistence == "seed":
+                    marker.write_text(json.dumps({"run_id": run_id}))
+                else:
+                    run_id = json.loads(marker.read_text())["run_id"]
+                args.services = ["--grep", "shared dev avatar survives"]
+            compose("build", "browser")
+            compose("run", "--rm", "--no-deps", "-e", "ACCOUNT_E2E_RUN_ID=" + run_id,
+                    "-e", "ACCOUNT_E2E_PHASE=core", "-e", "MM_DEV_PERSISTENCE=" + (args.persistence or ""),
+                    "browser", *args.services)
         elif args.command == "logs":
             compose("logs", "--tail", "100", *args.services)
         else:

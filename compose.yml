@@ -174,6 +174,20 @@ services:
     logging: {driver: json-file, options: {max-size: 1m, max-file: "1"}}
 
 
+  browser:
+    extends: {file: infra/account-local/compose.yml, service: browser}
+    profiles: [test]
+    networks: !reset []
+    network_mode: host
+    environment:
+      BASE_URL: https://localhost:18443
+      MAILPIT_URL: http://localhost:18025
+      ACCOUNT_AVATAR_E2E: "true"
+      ACCOUNT_E2E_SHARED: "true"
+      ACCOUNT_E2E_ANALYTICS: ${ACCOUNT_RYBBIT_ENABLED:-false}
+      PUBLIC_FILES_CA: /certs/files-ca.pem
+      PUBLIC_COMBINED_CA: /certs/combined-ca.pem
+
   clickhouse:
     image: clickhouse/clickhouse-server:26.3.17.4
     profiles: [infrastructure, analytics, full]

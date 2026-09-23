@@ -13,7 +13,8 @@ export async function letter(
   exclude = new Set<string>(),
 ): Promise<TestLetter> {
   const base = process.env.MAILPIT_URL;
-  if (base !== 'http://mailpit:8025') throw new Error('Local Mailpit fixture required');
+  if (!['http://mailpit:8025', 'http://localhost:18025'].includes(base ?? ''))
+    throw new Error('Local Mailpit fixture required');
   let found: TestLetter | undefined;
   await expect
     .poll(

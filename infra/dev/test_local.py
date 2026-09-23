@@ -90,6 +90,12 @@ class StateTests(unittest.TestCase):
             dev.compose('config', '--quiet')
         self.assertEqual(run.call_args.kwargs['env']['POSTGRES_PASSWORD'], 'saved-local-password')
 
+    def test_reset_refuses_unowned_files_even_without_containers(self):
+        with patch.object(dev, 'run', return_value=''):
+            with self.assertRaisesRegex(RuntimeError, 'без owner.json'):
+                dev.reset()
+        self.assertTrue(self.account.exists())
+
     def test_reset_checks_all_ownership_before_any_mutation(self):
         (self.state / 'owner.json').write_text(json.dumps({'workspace': str(self.root), 'project': dev.PROJECT}))
         def docker(*args, **kwargs):

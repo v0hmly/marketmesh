@@ -218,3 +218,26 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await page.getByRole('button', { name: 'Отменить загрузку', exact: true }).click();
   await expect(page.getByText('Загрузка отменена.', { exact: true })).toBeVisible();
 });
+
+test('shared dev avatar survives restart and certificate renewal', async ({ page }) => {
+  const mode = process.env.MM_DEV_PERSISTENCE;
+  test.skip(!['seed', 'check'].includes(mode ?? ''));
+  test.setTimeout(120_000);
+  const email = `persistent-${process.env.ACCOUNT_E2E_RUN_ID}@example.test`;
+  if (mode === 'seed') {
+    await register(page, email);
+    await upload(page, await raster(page, 'green'));
+  } else {
+    await login(page, email);
+  }
+  const avatar = (await rpc(page, 'user', 'GetAvatar')).body.avatar!;
+  expect(avatar.fileId).toBeTruthy();
+  expect((await rpc(page, 'files', 'GetStatus', { fileId: avatar.fileId })).body.state).toBe(
+    'FILE_STATE_READY',
+  );
+  const preview = page.getByAltText('Ваш сохранённый аватар', { exact: true });
+  await expect(preview).toBeVisible();
+  await expect
+    .poll(() => preview.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBe(96);
+});
