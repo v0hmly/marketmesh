@@ -109,3 +109,15 @@ Grafana описана в
 - [Журнал ADR](docs/adr/README.md)
 - [Правила работы с Taskboard и Git Flow](AGENTS.md)
 - [CI, проверки безопасности и GitHub Free](docs/ci.md)
+
+## Генерируемые файлы
+
+После клонирования выполните `task generate`, чтобы подготовить API для IDE и
+CSS дизайн-токенов. Обычные `task build`, `task test`, `task frontend:*` и
+`task dev:up` готовят API автоматически. Для генерации на хосте требуются Go, Node
+и pnpm закреплённых версий; первая генерация скачивает инструменты. Docker генерирует API
+внутри build stage и собирается без предварительной генерации на хосте.
+
+В Git хранятся `.proto`, `tokens.json`, генераторы, manifests и lock-файлы.
+Результаты Go/TS/CSS игнорируются; обновляйте их исходники, затем запускайте
+`task generate`. Подробнее — [API](api/README.md).

@@ -55,3 +55,9 @@ graphify-out/
 # Python infrastructure-tool caches
 __pycache__/
 *.pyc
+
+# Reproducible generated sources (manifests and generators remain tracked)
+/backend/api/gen/go/**/*.pb.go
+/backend/api/gen/go/**/*.connect.go
+/frontend/gen/**/*_pb.ts
+/docs/design/design-system/tokens.css

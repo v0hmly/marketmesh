@@ -15,6 +15,17 @@ vars:
   TASKBOARD_PROJECT: "01M1BNBBHNN26MRG0XAXVR5K5M"
 
 tasks:
+  generate:
+    desc: Сгенерировать игнорируемые API-контракты и CSS дизайн-токенов
+    cmds:
+      - task: api:generate
+      - task: design:generate
+
+  design:generate:
+    desc: Собрать CSS из исходных дизайн-токенов
+    cmds:
+      - node frontend/tools/generate-tokens-css.mjs
+
   default:
     desc: Показать доступные задачи
     cmds:
@@ -43,36 +54,43 @@ tasks:
 
   fmt:
     desc: Отформатировать Go-код во всех модулях
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} fmt"
 
   fmt-check:
     desc: Проверить форматирование Go-кода
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} fmt-check"
 
   vet:
     desc: Выполнить go vet во всех модулях
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} vet"
 
   test:
     desc: Выполнить тесты во всех модулях
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} test"
 
   test-race:
     desc: Выполнить тесты с race detector во всех модулях
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} test-race"
 
   build:
     desc: Собрать все Go-пакеты во всех модулях
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} build"
 
   arch:
     desc: Проверить workspace и архитектурные зависимости
+    deps: [api:generate]
     cmds:
       - "{{.WORKSPACE_TOOL}} arch"
 
@@ -189,7 +207,7 @@ tasks:
       - "{{.PROTOBUF_TOOL}} breaking"
 
   api:generate-check:
-    desc: Проверить актуальность сгенерированных контрактов без изменения рабочего дерева
+    desc: Проверить побайтовую воспроизводимость двух чистых генераций контрактов
     cmds:
       - "{{.PROTOBUF_TOOL}} generate-check"
 
@@ -354,6 +372,7 @@ tasks:
     vars:
       TUNNEL_IMAGE_VERSION:
         sh: git rev-parse --short=12 HEAD
+    deps: [api:generate]
     cmds:
       - >-
         {{.E2E_TOPOLOGY_TOOL}} load-images
@@ -363,31 +382,37 @@ tasks:
 
   tunnel-e2e:deploy:
     desc: Развернуть workloads MM-29 в четырёх явных kubeconfig
+    deps: [api:generate]
     cmds:
       - go run ./backend/e2e/tunnel/cmd/workloadctl deploy {{.CLI_ARGS}}
 
   tunnel-e2e:inspect:
     desc: Собрать bounded diagnostics workloads MM-29
+    deps: [api:generate]
     cmds:
       - go run ./backend/e2e/tunnel/cmd/workloadctl inspect {{.CLI_ARGS}}
 
   tunnel-e2e:frontdoor:
     desc: Запустить локальный health-aware front door MM-30 для двух DC
+    deps: [api:generate]
     cmds:
       - go run ./backend/e2e/tunnel/cmd/frontdoor {{.CLI_ARGS}}
 
   tunnel-e2e:rolling:
     desc: Выполнить bounded rolling redeploy или rollback-матрицу MM-34
+    deps: [api:generate]
     cmds:
       - go run ./backend/e2e/tunnel/cmd/rollingctl {{.CLI_ARGS}}
 
   tunnel-e2e:undeploy:
     desc: Собрать diagnostics и удалить точные workloads MM-29
+    deps: [api:generate]
     cmds:
       - go run ./backend/e2e/tunnel/cmd/workloadctl undeploy {{.CLI_ARGS}}
 
   tunnel-e2e:pod-chaos:
     desc: Выполнить последовательный pod kill/redeploy MM-32 под continuous load
+    deps: [api:generate]
     cmds:
       - go run ./backend/e2e/tunnel/cmd/podchaos {{.CLI_ARGS}}
 
@@ -403,46 +428,55 @@ tasks:
 
   e2e:topology:bootstrap:
     desc: Установить проверенные k3s и kubectl, проверить orbctl и собрать TCP-probe MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} bootstrap"
 
   e2e:topology:versions:
     desc: Показать зафиксированные версии topology toolchain
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} versions"
 
   e2e:topology:inventory:
     desc: Показать versioned inventory четырёх кластеров MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} inventory"
 
   e2e:topology:targets:
     desc: Разрешить или повторно проверить immutable fault targets MM-38
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} targets {{.CLI_ARGS}}"
 
   e2e:topology:up:
     desc: Создать четыре disposable OrbStack VM с k3s MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} up"
 
   e2e:topology:ready:
     desc: Проверить готовность и зональную изоляцию topology MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} ready"
 
   e2e:topology:inspect:
     desc: Собрать безопасные diagnostics topology MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} inspect"
 
   e2e:topology:down:
     desc: Собрать diagnostics и удалить только ресурсы topology MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} down"
 
   e2e:topology:verify:
     desc: Дважды проверить полный lifecycle и изоляцию topology MM-44
+    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} verify"
 
@@ -570,22 +604,22 @@ tasks:
   frontend:build:
     desc: Собрать все frontend-пакеты
     cmds:
-      - pnpm --dir frontend build
+      - cd frontend && pnpm build
 
   frontend:test:
     desc: Выполнить тесты всех frontend-пакетов
     cmds:
-      - pnpm --dir frontend test
+      - cd frontend && pnpm test
 
   frontend:lint:
     desc: Выполнить lint всех frontend-пакетов
     cmds:
-      - pnpm --dir frontend lint
+      - cd frontend && pnpm lint
 
   frontend:typecheck:
     desc: Проверить типы всех frontend-пакетов
     cmds:
-      - pnpm --dir frontend typecheck
+      - cd frontend && pnpm typecheck
 
   frontend:verify:
     desc: Выполнить все frontend-проверки
