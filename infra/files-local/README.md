@@ -1,5 +1,9 @@
 # Изолированный стенд Files (MM-43)
 
+> Постоянный dev использует общий [корневой стенд](../dev/README.md) и `task dev:up`.
+> Описанные ниже отдельные Compose — интеграционные фикстуры и legacy cleanup;
+> прямой persistent `up` отключён. Не создавайте второй набор баз для разработки.
+
 Стенд проверяет приватный файловый контур: PostgreSQL с синхронной физической
 репликой, четыре SeaweedFS зоны, OpenBao transit, сетевой sandbox и ClamAV.
 Он имеет собственный Compose project `marketmesh-files-local`; остальные

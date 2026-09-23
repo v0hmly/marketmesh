@@ -44,7 +44,7 @@ task dev:up
 ```
 
 Команда собирает storefront, Auth, User и gateway, поднимает Files с AV/CDR,
-PostgreSQL, Redis, NATS, Mailpit, Grafana Stack и локальную аналитику Rybbit.
+общие PostgreSQL (primary + синхронная replica), Redis, ClickHouse, NATS, Mailpit, Grafana Stack и локальную аналитику Rybbit.
 Она создаёт конфигурацию, применяет миграции, ждёт готовности и при необходимости
 обновляет сертификаты. Ручные переменные окружения не нужны. Данные сохраняются
 между запусками. Короткий синоним — `task up`.
@@ -56,6 +56,8 @@ PostgreSQL, Redis, NATS, Mailpit, Grafana Stack и локальную анали
 
 `task dev:status` показывает состояние, `task dev:down` останавливает стенд без
 удаления данных. Первый запуск собирает образы и скачивает антивирусные базы.
+При переходе со старого раздельного dev выполните `task dev:reset`, затем
+`task dev:up`: это явное удаление прежних локальных данных без переноса.
 Браузеру требуется доверие локальным CA; пути к сертификатам выводятся после
 запуска. Подробности и границы стенда — [infra/dev](infra/dev/README.md).
 
@@ -72,12 +74,11 @@ task arch       # проверить модульные пути и запрещ
 task api:verify # проверить protobuf workflow и контракты
 task verify     # выполнить обязательный локальный набор проверок workspace
 task infra:up   # запустить локальную инфраструктуру
-task infra:smoke # проверить PostgreSQL, DMZ и observability pipeline
+task dev:up -- --profile infrastructure # только общие базы и очереди
 task account:up # запустить кабинет с настоящими Auth и User
 task account:test # проверить полный сценарий аккаунта в Chromium
 task observability:up # запустить только observability-стек
-task observability:smoke # проверить связанный trace и log
-task observability:outage # проверить bounded queues при недоступных backends
+task dev:stop -- analytics-gateway analytics-client analytics-backend # остановить только Rybbit
 ```
 
 Taskfile вызывает `backend/tools/go-workspace.sh` для Go-команд и `api/tools/protobuf.sh` для protobuf-команд.

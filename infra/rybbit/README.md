@@ -1,5 +1,9 @@
 # Локальная аналитика Rybbit (MM-75)
 
+> Постоянный dev использует общий [корневой стенд](../dev/README.md) и `task dev:up`.
+> Описанные ниже отдельные Compose — интеграционные фикстуры и legacy cleanup;
+> прямой persistent `up` отключён. Не создавайте второй набор баз для разработки.
+
 ```sh
 task analytics:up
 task analytics:status

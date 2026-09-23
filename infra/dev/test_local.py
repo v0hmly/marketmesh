@@ -33,6 +33,12 @@ class SelectionTests(unittest.TestCase):
         self.assertEqual(dev.selection(self.model, [], ['analytics']), core | {'analytics'})
         self.assertEqual(dev.selection(self.model, [], ['full']), core | {'analytics', 'grafana', 'loki'})
 
+    def test_shared_infrastructure_does_not_start_consumers(self):
+        model = {**self.model, 'postgres-primary': {}, 'postgres-replica': {'depends_on': {'postgres-primary': {}}},
+                 'nats': {}, 'clickhouse': {'profiles': ['infrastructure', 'analytics', 'full']}}
+        self.assertEqual(dev.selection(model, [], ['infrastructure']), {'postgres-primary', 'postgres-replica', 'redis', 'nats', 'clickhouse'})
+        self.assertEqual(dev.selection(model, ['clickhouse'], []), {'clickhouse'})
+
     def test_unknown_service_fails(self):
         with self.assertRaisesRegex(RuntimeError, 'Неизвестные'):
             dev.selection(self.model, ['missing'], [])
@@ -83,6 +89,48 @@ class StateTests(unittest.TestCase):
         with patch.dict(dev.ENV, POSTGRES_PASSWORD='unrelated-shell-password'), patch.object(dev, 'run') as run:
             dev.compose('config', '--quiet')
         self.assertEqual(run.call_args.kwargs['env']['POSTGRES_PASSWORD'], 'saved-local-password')
+
+    def test_reset_refuses_unowned_files_even_without_containers(self):
+        with patch.object(dev, 'run', return_value=''):
+            with self.assertRaisesRegex(RuntimeError, 'без owner.json'):
+                dev.reset()
+        self.assertTrue(self.account.exists())
+
+    def test_reset_checks_all_ownership_before_any_mutation(self):
+        (self.state / 'owner.json').write_text(json.dumps({'workspace': str(self.root), 'project': dev.PROJECT}))
+        def docker(*args, **kwargs):
+            if args[:3] == ('docker', 'ps', '-aq'):
+                return 'owned-container'
+            if args[:2] == ('docker', 'inspect'):
+                return json.dumps({'com.docker.compose.project.working_dir': str(self.root)})
+            if args[:3] == ('docker', 'volume', 'ls'):
+                return 'foreign-volume'
+            if args[:3] == ('docker', 'volume', 'inspect'):
+                return json.dumps({'marketmesh.dev.workspace': '/another-checkout'})
+            self.fail(f'Unexpected mutation: {args[:3]}')
+        with patch.object(dev, 'run', side_effect=docker):
+            with self.assertRaisesRegex(RuntimeError, 'другому стенду'):
+                dev.reset()
+        self.assertTrue((self.state / 'owner.json').is_file())
+
+    def test_reset_of_partial_owned_state_preserves_other_files(self):
+        (self.state / 'owner.json').write_text(json.dumps({'workspace': str(self.root), 'project': dev.PROJECT}))
+        (self.state / 'lock').touch()
+        outside = self.root / 'taskboard.db'
+        outside.write_text('keep')
+        calls = []
+        def docker(*args, **kwargs):
+            calls.append(args)
+            if args[:3] == ('docker', 'ps', '-aq'):
+                return 'owned-container'
+            if args[:2] == ('docker', 'inspect'):
+                return json.dumps({'com.docker.compose.project.working_dir': str(self.root)})
+            return ''
+        with patch.object(dev, 'run', side_effect=docker):
+            dev.reset()
+        self.assertIn(('docker', 'rm', '-f', 'owned-container'), calls)
+        self.assertEqual(outside.read_text(), 'keep')
+        self.assertEqual([p.name for p in self.state.iterdir()], ['lock'])
 
     def test_certificate_renewal_preserves_persistent_credentials(self):
         names = [f'{service}/{name}' for service in ('auth', 'user', 'gateway-in', 'gateway-out', 'frontdoor', 'nats', 'provision')

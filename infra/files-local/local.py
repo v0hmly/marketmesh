@@ -173,14 +173,9 @@ def existing():
 
 def main():
     command = sys.argv[1] if len(sys.argv) == 2 else ""
-    if command == "up":
-        start()
-    elif command == "renew":
-        existing()
-        compose("down", "--remove-orphans")
-        run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(STATE / "pki"), quiet=True)
-        start()  # Storage volumes, transit keys and metadata are retained.
-    elif command == "down":
+    if command in ("up", "renew"):
+        raise RuntimeError("Используйте task dev:up или task dev:renew; отдельный постоянный Files-стенд отключён (infra/dev/README.md)")
+    if command == "down":
         existing()
         compose("down", "--remove-orphans")
     elif command == "status":

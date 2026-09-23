@@ -4,6 +4,9 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly COMPOSE_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+case "${1:-}" in
+ up|verify|ready|smoke|persistence|psql-rw|psql-ro|observability-up|observability-verify|observability-ready|observability-smoke|observability-persistence|observability-outage) echo "Отдельный постоянный стенд отключён. Используйте task dev:up с профилем или именами сервисов (infra/dev/README.md)." >&2; exit 2 ;;
+esac
 readonly COMPOSE_FILE="${COMPOSE_DIR}/compose.yml"
 readonly ENV_FILE="${COMPOSE_DIR}/.env"
 readonly OBSERVABILITY_CHECK="${COMPOSE_DIR}/checks/observability-smoke.sh"
