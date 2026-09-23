@@ -12,6 +12,7 @@ import sys
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parents[2]
+os.environ["GOWORK"] = str(ROOT / "backend/go.work")
 spec = importlib.util.spec_from_file_location("files_local", ROOT / "infra/files-local/local.py")
 f = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(f)
@@ -68,14 +69,14 @@ if mode == "down":
     compose("down", "--remove-orphans")
     raise SystemExit(0)
 
-run("go", "run", "./cmd/account-local", "generate", cwd=ROOT / "tools/account-local")
+run("go", "run", "./cmd/account-local", "generate", cwd=ROOT / "backend/tools/account-local")
 pki = state / "files-pki"
 if mode == "renew":
     if not overlay.is_file():
         raise RuntimeError("owned Files overlay required for renewal")
     compose("down", "--remove-orphans")  # Preserve data; restart all trust consumers together.
 if not pki.exists() or mode == "renew":
-    run("go", "run", str(ROOT / "infra/files-local/pki.go"), str(pki))
+    run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(pki))
 else:
     if pki.is_symlink() or not (pki / "ca.crt").is_file():
         raise RuntimeError("invalid owned workload PKI")
@@ -105,7 +106,7 @@ env["MM_FILES_BROWSER_ORIGINS"] = "https://frontdoor:8443" + ("" if fresh else "
 try:
     f.compose("build", "worker")
     f.compose("up", "-d", "worker")
-    run("go", "run", str(ROOT / "infra/files-local/storage.go"), str(f.STATE))
+    run("go", "run", str(ROOT / "backend/fixtures/files-local/storage.go"), str(f.STATE))
     compose("build", "auth")
     compose("up", "-d", "--wait", "--wait-timeout", "150", "postgres-primary", "postgres-replica")
     compose("up", "-d", "redis", "nats")

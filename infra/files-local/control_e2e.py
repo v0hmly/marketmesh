@@ -37,15 +37,15 @@ def settings(name, updates):
     path.chmod(0o600)
 
 def prepare():
-    run("go", "run", "./cmd/account-local", "generate", cwd=f.ROOT / "tools/account-local")
-    run("go", "run", str(f.ROOT / "infra/files-local/pki.go"), str(state / "pki"))
+    run("go", "run", "./cmd/account-local", "generate", cwd=f.ROOT / "backend/tools/account-local")
+    run("go", "run", str(f.ROOT / "backend/fixtures/files-local/pki.go"), str(state / "pki"))
     # This narrow regression fixture uses the original password-only Auth
     # contract. Full email/MFA coverage belongs to account-local's Mailpit E2E.
     # Never disable email against a database containing migration 000004.
     legacy_auth = state / "legacy-auth-migrations"
     legacy_auth.mkdir(mode=0o700)
     for name in ("000001_credentials.up.sql", "000002_sessions.up.sql", "000003_registration_outbox.up.sql"):
-        (legacy_auth / name).write_bytes((f.ROOT / "services/auth/migrations" / name).read_bytes())
+        (legacy_auth / name).write_bytes((f.ROOT / "backend/services/auth/migrations" / name).read_bytes())
     settings("auth", {"AUTH_EMAIL_ENABLED":"false"})
     prefix = "spiffe://marketmesh.test/env/test/cluster/dc-a/ns/marketmesh/sa/"
     settings("auth", {"AUTH_SESSION_AUDIENCES":json.dumps({"user":["user:profile:read","user:profile:write"],"files":["files:read","files:write"]}), "AUTH_FILES_SCOPED_ENABLED":"true", "AUTH_FILES_ADDRESS":":9093", "AUTH_FILES_TLS_CERT_FILE":"/workload/auth.crt", "AUTH_FILES_TLS_KEY_FILE":"/workload/auth.key", "AUTH_FILES_CLIENT_CA_FILE":"/workload/ca.crt", "AUTH_FILES_OWN_URI":prefix+"auth", "AUTH_FILES_EXPECTED_URI":prefix+"files"})

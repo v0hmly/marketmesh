@@ -3,6 +3,7 @@ set -euo pipefail
 umask 077
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export GOWORK="$ROOT/backend/go.work"
 if [[ "${1:-}" == test ]]; then
  export ACCOUNT_MAILPIT_PORT=0
  export ACCOUNT_LOCAL_PROJECT="marketmesh-account-test-$(date +%s)-$$"
@@ -58,10 +59,10 @@ generate(){
   printf '%s|%s\n' "$ACCOUNT_LOCAL_PROJECT" "$SCRIPT_DIR" > "$ACCOUNT_LOCAL_STATE/.owner"
  fi
  export FIXTURE_ROOT="$ACCOUNT_LOCAL_STATE"
- (cd "$ROOT/tools/account-local" && go run ./cmd/account-local generate)
+ (cd "$ROOT/backend/tools/account-local" && go run ./cmd/account-local generate)
 }
 wait_ready(){
- (cd "$ROOT/tools/account-local" && go run ./cmd/account-local ready)
+ (cd "$ROOT/backend/tools/account-local" && go run ./cmd/account-local ready)
 }
 up(){
  generate

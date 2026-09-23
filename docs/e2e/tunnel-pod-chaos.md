@@ -177,7 +177,7 @@ runner запускается только с абсолютными non-symlink
 task tunnel-e2e:pod-chaos -- \
   --run-id mm32-example \
   --inventory /absolute/path/inventory.json \
-  --scenario /absolute/path/e2e/tunnel/podchaos/testdata/scenario.json \
+  --scenario /absolute/path/backend/e2e/tunnel/podchaos/testdata/scenario.json \
   --artifacts /absolute/path/mm32-artifacts \
   --kubectl /absolute/path/mm28-topology/mm32-example/bin/kubectl \
   --revision <commit> \

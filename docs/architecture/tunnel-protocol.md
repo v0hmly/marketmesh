@@ -340,7 +340,7 @@ Profile и Auth по-прежнему имеют собственный пред
 ADDRESS_LIMIT_REACHED (ResourceExhausted). Только точные ErrorInfo домена
 `marketmesh.user` без metadata проходят наружу; чужой и отсутствующий ID
 неразличимы. Произвольный upstream текст не пересылается. Все ответы — no-store.
-Порядок миграции и включения описан в [Gateway In](../../services/gateway-in/README.md#адресная-книга-mm-68).
+Порядок миграции и включения описан в [Gateway In](../../backend/services/gateway-in/README.md#адресная-книга-mm-68).
 
 ## Настройки User (MM-69)
 
@@ -354,4 +354,4 @@ GetSettings/UpdateSettings используют маршруты 109/110 и priv
 system/light/dark. UpdateSettings использует expected_version и возвращает
 подтверждённое состояние; повторов записи нет. Закрытый набор ошибок —
 PROFILE_NOT_READY и VERSION_CONFLICT, без upstream-текста или дополнительных
-metadata. [Включение и откат](../../services/gateway-in/README.md#тема-кабинета-mm-69).
+metadata. [Включение и откат](../../backend/services/gateway-in/README.md#тема-кабинета-mm-69).

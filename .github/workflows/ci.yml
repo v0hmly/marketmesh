@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 30
     env:
       GOTOOLCHAIN: local
+      GOWORK: ${{ github.workspace }}/backend/go.work
       CI_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/dev' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,16 +30,18 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: go.work
+          go-version-file: backend/go.work
           cache-dependency-path: |
             **/go.mod
             **/go.sum
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24.19.0'
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Установить инструменты CI
         run: ./tools/ci.sh bootstrap
       - name: Проверить workflow и новые коммиты на секреты
@@ -52,9 +55,9 @@ jobs:
         run: |
           python3 -m unittest discover -s infra/files-dc-e2e -p 'test_*.py' -v
           PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/dev -p 'test_*.py' -v
-          go test -race infra/files-dc-e2e/tunnel_balancer.go infra/files-dc-e2e/tunnel_balancer_test.go
-          go test -tags=integration ./services/files/internal/app -run '^$'
-          go test infra/files-local/storage.go infra/files-local/storage_test.go
+          go test -race backend/fixtures/files-dc-e2e/tunnel_balancer.go backend/fixtures/files-dc-e2e/tunnel_balancer_test.go
+          go test -tags=integration ./backend/services/files/internal/app -run '^$'
+          go test backend/fixtures/files-local/storage.go backend/fixtures/files-local/storage_test.go
       - name: Проверить frontend
         run: ./tools/ci.sh frontend
       - name: Проверить protobuf и воспроизводимость генерации

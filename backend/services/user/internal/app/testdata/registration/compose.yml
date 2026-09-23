@@ -1,0 +1,142 @@
+x-test-image: &test-image
+  image: ${REGISTRATION_TEST_IMAGE:?set by integration.sh}
+  build:
+    context: ../../../../../../..
+    dockerfile: backend/services/user/internal/app/testdata/registration/Dockerfile
+
+services:
+  fixture-generator:
+    <<: *test-image
+    entrypoint: ["/usr/local/bin/registration-fixture-certgen"]
+    network_mode: none
+    volumes:
+      - fixture:/fixture
+
+  postgres:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: auth_test
+      POSTGRES_PASSWORD: auth_test_password
+    command:
+      - bash
+      - -ec
+      - |
+        printf 'local all all trust\nhost all all all scram-sha-256\nhost replication auth_test all scram-sha-256\n' > /tmp/registration-pg-hba.conf
+        exec docker-entrypoint.sh postgres -c hba_file=/tmp/registration-pg-hba.conf -c wal_level=replica -c max_wal_senders=10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --quiet --username auth_test --dbname auth"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [registration-integration]
+
+  postgres-ro:
+    image: postgres:18.6-bookworm
+    environment:
+      PGPASSWORD: auth_test_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - bash
+      - -ec
+      - |
+        install -d -o postgres -g postgres -m 0700 /var/lib/postgresql/18/replica
+        gosu postgres pg_basebackup -h postgres -U auth_test -D /var/lib/postgresql/18/replica -R -X stream
+        exec gosu postgres postgres -D /var/lib/postgresql/18/replica
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h 127.0.0.1 -U auth_test -d auth -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [registration-integration]
+
+  user-postgres:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: auth_test
+      POSTGRES_PASSWORD: auth_test_password
+    command:
+      - bash
+      - -ec
+      - |
+        printf 'local all all trust\nhost all all all scram-sha-256\nhost replication auth_test all scram-sha-256\n' > /tmp/registration-pg-hba.conf
+        exec docker-entrypoint.sh postgres -c hba_file=/tmp/registration-pg-hba.conf -c wal_level=replica -c max_wal_senders=10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --quiet --username auth_test --dbname users"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [registration-integration]
+
+  user-postgres-ro:
+    image: postgres:18.6-bookworm
+    environment:
+      PGPASSWORD: auth_test_password
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+    command:
+      - bash
+      - -ec
+      - |
+        install -d -o postgres -g postgres -m 0700 /var/lib/postgresql/18/replica
+        gosu postgres pg_basebackup -h user-postgres -U auth_test -D /var/lib/postgresql/18/replica -R -X stream
+        exec gosu postgres postgres -D /var/lib/postgresql/18/replica
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h 127.0.0.1 -U auth_test -d users -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [registration-integration]
+
+  nats:
+    image: nats:2.14.6
+    user: "0:0"
+    command: ["--config", "/fixture/nats.conf"]
+    volumes:
+      - fixture:/fixture:ro
+      - nats-data:/data
+    networks: [registration-integration]
+
+  user-registration-integration:
+    <<: *test-image
+    environment:
+      MARKETMESH_AUTH_POSTGRES_DSN: postgres://auth_test:auth_test_password@postgres:5432/auth?sslmode=disable
+      MARKETMESH_AUTH_POSTGRES_RO_DSN: postgres://auth_test:auth_test_password@postgres-ro:5432/auth?sslmode=disable
+      MARKETMESH_USER_POSTGRES_DSN: postgres://auth_test:auth_test_password@user-postgres:5432/users?sslmode=disable
+      MARKETMESH_USER_POSTGRES_RO_DSN: postgres://auth_test:auth_test_password@user-postgres-ro:5432/users?sslmode=disable
+      AUTH_MIGRATIONS_DIR: /workspace/backend/services/auth/migrations
+      NATS_TEST_USER_CERT_FILE: /fixture/user-cert.pem
+      NATS_TEST_USER_KEY_FILE: /fixture/user-key.pem
+      NATS_TEST_URL: tls://nats:4222
+      NATS_TEST_SERVER_NAME: nats
+      NATS_TEST_CA_FILE: /fixture/ca.pem
+      NATS_TEST_CERT_FILE: /fixture/auth-cert.pem
+      NATS_TEST_KEY_FILE: /fixture/auth-key.pem
+      NATS_TEST_ADMIN_CERT_FILE: /fixture/admin-cert.pem
+      NATS_TEST_ADMIN_KEY_FILE: /fixture/admin-key.pem
+    volumes:
+      - fixture:/fixture:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-ro:
+        condition: service_healthy
+      user-postgres:
+        condition: service_healthy
+      user-postgres-ro:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    networks: [registration-integration]
+
+volumes:
+  fixture:
+  nats-data:
+
+networks:
+  registration-integration:
+    internal: true

@@ -30,8 +30,8 @@
 | `city` | Необязательный город: до 480 исходных байт UTF-8 и 120 Unicode-символов после trim, без управляющих символов. |
 | `show_age` | Предпочтение показа возраста, по умолчанию false; без пригодной даты рождения возраст не отображается. |
 
-Проверки соответствуют доменам [credential](../../services/auth/internal/domain/credential/credential.go)
-и [profile](../../services/user/internal/domain/profile/profile.go). Клиентские
+Проверки соответствуют доменам [credential](../../backend/services/auth/internal/domain/credential/credential.go)
+и [profile](../../backend/services/user/internal/domain/profile/profile.go). Клиентские
 ограничения должны учитывать разницу между байтами UTF-8 и символами, а сервер
 остаётся источником окончательной валидации.
 
@@ -114,7 +114,7 @@ refresh ограничивается явно, а не заменяется не
 
 Список устройств, новый session lifecycle и инфраструктура уведомлений сюда не
 добавляются. Действующие свойства cookie и проверки Origin описаны в
-[документации Auth](../../services/auth/README.md).
+[документации Auth](../../backend/services/auth/README.md).
 
 ## Адресная книга
 

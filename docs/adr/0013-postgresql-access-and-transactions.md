@@ -18,7 +18,7 @@ Go-сервисам MarketMesh нужен общий production-ready спосо
 
 Использовать `github.com/jackc/pgx/v5` и `pgxpool` напрямую, без ORM, `database/sql`, `sqlx`, `scany` и внешней pgx telemetry-обёртки.
 
-В `platform/postgres` реализуется небольшая явная обвязка:
+В `backend/platform/postgres` реализуется небольшая явная обвязка:
 
 - обязательные независимые RW- и RO-пулы с отдельным lifecycle;
 - обязательный общий `application_name`, явно переданный composition root,
@@ -34,8 +34,8 @@ Go-сервисам MarketMesh нужен общий production-ready спосо
 - запрет вложенных транзакций; скрытые savepoint и автоматическое переиспользование отсутствуют;
 - ограниченный retry всей callback только при явной идемпотентности и SQLSTATE `40001`/`40P01`;
 - сохранение исходной error chain для `errors.Is`/`errors.As` при безопасном стабильном тексте platform errors;
-- readiness обоих пулов и bounded lifecycle через `platform/runtime`;
-- собственная небольшая pgx `QueryTracer` и OTel pool/transaction metrics через явно переданный `platform/telemetry`, без process-wide globals;
+- readiness обоих пулов и bounded lifecycle через `backend/platform/runtime`;
+- собственная небольшая pgx `QueryTracer` и OTel pool/transaction metrics через явно переданный `backend/platform/telemetry`, без process-wide globals;
 - запрет SQL, arguments, DSN, error details, PII и high-cardinality values в telemetry.
 
 Transaction boundary принадлежит application use case. Platform предоставляет механизм, но не универсальный business `Transactor` или repository. Application callback получает transaction-scoped executor и передаёт его конкретным outbound adapters. Domain и public application API не импортируют pgx.
@@ -93,7 +93,7 @@ Savepoint меняет semantics отказа и может создать ло�
 - Local `application_name` равен точному имени сервиса. Kubernetes использует
   `<pod>/<namespace>/<cluster>`: pod и namespace поступают через Downward API,
   cluster задаётся отдельно, а composition root соблюдает общий 63-byte budget.
-- `platform/postgres` не читает process environment. Канонический
+- `backend/platform/postgres` не читает process environment. Канонический
   `application_name` явно переопределяет значения DSN и `PGAPPNAME`, не
   усекается и не используется как high-cardinality metric или trace attribute.
 - Все операции получают caller context; `Rows` обязательно закрываются.

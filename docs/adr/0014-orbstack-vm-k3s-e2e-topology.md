@@ -144,5 +144,5 @@ SHA-256 бинарник k3s `v1.36.4+k3s1` (Kubernetes 1.36.4), запуска�
 ## Связанные документы
 
 - [Обзор архитектуры](../architecture/overview.md)
-- [README topology](../../tools/e2e-topology/README.md)
+- [README topology](../../backend/tools/e2e-topology/README.md)
 - [ADR-0001: зоны доверия и модель доступа](0001-trust-zones-and-access-model.md)

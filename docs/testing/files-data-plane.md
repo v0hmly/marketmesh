@@ -43,8 +43,9 @@ ADR явно ограничивает текущую модель личным t
 схема и записи создаются внутри откатываемой транзакции):
 
 ```sh
+export GOWORK="$PWD/backend/go.work"
 FILES_POSTGRES_TEST_DSN='postgres://postgres@127.0.0.1:PORT/queue_test?sslmode=disable' \
-  go test -race -tags=integration ./services/files/internal/adapter/out/postgres -v
+  go test -race -tags=integration ./backend/services/files/internal/adapter/out/postgres -v
 ```
 
 В dev теперь есть [базовый CI MM-6](../ci.md); состояние обязательного `verify`
@@ -69,8 +70,9 @@ python3 infra/files-local/database_checks.py
 Для fuzz из корня, отдельно для каждого target:
 
 ```sh
-go test ./services/files/internal/adapter/out/content -run '^$' -fuzz Fuzz -fuzztime 30s -parallel 1
-go test ./services/files/internal/adapter/out/raster -run '^$' -fuzz Fuzz -fuzztime 30s -parallel 1
+export GOWORK="$PWD/backend/go.work"
+go test ./backend/services/files/internal/adapter/out/content -run '^$' -fuzz Fuzz -fuzztime 30s -parallel 1
+go test ./backend/services/files/internal/adapter/out/raster -run '^$' -fuzz Fuzz -fuzztime 30s -parallel 1
 ```
 
 ## Пройденные проверки

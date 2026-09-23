@@ -25,7 +25,7 @@
 (`SHOP_STATUS_PENDING`), заявка отклонена (причина и что поправить), магазин
 заблокирован, серверная ошибка. Статус читается через `GetMyShop` после входа.
 
-Решение по заявке приходит письмом `seller_decision` ([platform/mail](../../platform/mail/README.md)).
+Решение по заявке приходит письмом `seller_decision` ([backend/platform/mail](../../backend/platform/mail/README.md)).
 
 ## Кабинет
 

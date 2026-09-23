@@ -11,13 +11,12 @@ MarketMesh — онлайн-магазин и платформа, где мас�
 ## Структура
 
 ```text
-api/         protobuf-схемы и сгенерированные контракты
-frontend/    Vue-приложение и frontend-пакеты
-infra/       Docker Compose и Kubernetes
-platform/    общие технические Go-библиотеки
-services/    независимо развёртываемые Go-сервисы
-tools/       автоматизация монорепозитория
-docs/        описание продукта, архитектурная документация и ADR
+backend/     Go workspace: сервисы, библиотеки, генерация, инструменты и тесты
+frontend/    pnpm workspace: приложения, пакеты, генерация и TS/JS-инструменты
+api/         protobuf-схемы, EasyP и скрипты генерации
+infra/       Docker Compose, Kubernetes и подготовка окружений
+tools/       общепроектная автоматизация CI и Taskboard
+docs/        продукт, архитектура, дизайн и ADR
 ```
 
 Go-часть организована как multimodule workspace. Каждый сервис имеет собственный `go.mod`; общие библиотеки и сгенерированные контракты также отделены модульными границами. Детали зафиксированы в [ADR-0012](docs/adr/0012-monorepository-and-go-workspace.md).
@@ -81,15 +80,15 @@ task observability:smoke # проверить связанный trace и log
 task observability:outage # проверить bounded queues при недоступных backends
 ```
 
-Taskfile вызывает `tools/go-workspace.sh` для Go-команд и `tools/protobuf.sh` для protobuf-команд.
+Taskfile вызывает `backend/tools/go-workspace.sh` для Go-команд и `api/tools/protobuf.sh` для protobuf-команд.
 
-Frontend-команды запускаются через корневой pnpm workspace:
+Frontend workspace находится в `frontend/`. Из корня:
 
 ```bash
-pnpm build
-pnpm test
-pnpm lint
-pnpm typecheck
+pnpm --dir frontend build
+pnpm --dir frontend test
+pnpm --dir frontend lint
+pnpm --dir frontend typecheck
 ```
 
 Эквивалентные команды Task: `task frontend:build`, `task frontend:test`, `task frontend:lint`, `task frontend:typecheck` и `task frontend:verify`.

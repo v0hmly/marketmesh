@@ -51,3 +51,7 @@ graphify-out/
 .taskboard/*.db-wal
 
 .omo/
+
+# Python infrastructure-tool caches
+__pycache__/
+*.pyc

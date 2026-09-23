@@ -24,7 +24,7 @@ class SafetyTests(unittest.TestCase):
             self.assertNotIn("AUTH_EMAIL_KEY_FILE", actual)
             self.assertNotIn("AUTH_SMTP_ADDRESS", actual)
             self.assertNotIn("mail.key", LEGACY_AUTH_FILES)
-        schema = legacy_auth_schema(Path(__file__).resolve().parents[2] / "services/auth/migrations")
+        schema = legacy_auth_schema(Path(__file__).resolve().parents[2] / "backend/services/auth/migrations")
         self.assertIn("CREATE TABLE auth.sessions", schema)
         self.assertIn("CREATE TABLE auth.registration_outbox", schema)
         self.assertNotIn("CREATE TABLE auth.account_security", schema)

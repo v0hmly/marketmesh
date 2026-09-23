@@ -7,7 +7,7 @@
 ## Двух-DC E2E topology
 
 Инструмент MM-44 описан в
-[`tools/e2e-topology/README.md`](../../tools/e2e-topology/README.md). Он создаёт
+[`backend/tools/e2e-topology/README.md`](../../backend/tools/e2e-topology/README.md). Он создаёт
 четыре одноразовые OrbStack VM с k3s и не добавляет application workloads или
 fault scenarios. Все kube-команды используют только явные `--kubeconfig` и
 `--context`; пользовательский current context не читается и не изменяется.
@@ -17,7 +17,7 @@ fault scenarios. Все kube-команды используют только я
 
 ## PostgreSQL client identity
 
-Каждый Go-service передаёт в `platform/postgres.Config.ApplicationName`
+Каждый Go-service передаёт в `backend/platform/postgres.Config.ApplicationName`
 стабильную identity формата `<pod>/<namespace>/<cluster>`. Pod name и namespace
 берутся через Kubernetes Downward API, а cluster name задаётся явно в
 deployment overlay, Helm values или другой конфигурации окружения:
@@ -47,7 +47,7 @@ database, err := postgres.New(ctx, postgres.Config{
 }, telemetryPipeline)
 ```
 
-`platform/postgres` не читает environment и Kubernetes API. Компоненты должны
+`backend/platform/postgres` не читает environment и Kubernetes API. Компоненты должны
 быть печатным ASCII и не содержать `/`. PostgreSQL принимает не более 63 байт,
 поэтому deployment обязан соблюдать budget с учётом двух разделителей:
 

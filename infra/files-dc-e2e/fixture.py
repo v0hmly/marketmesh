@@ -21,6 +21,7 @@ import tarfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
+os.environ["GOWORK"] = str(ROOT / "backend/go.work")
 LOCAL = ROOT / "infra/files-local"
 NAMESPACE = "mm43-files"
 REMOTE = "/var/lib/mm43-files"
@@ -85,7 +86,7 @@ class Fixture:
         self.log = self.state / "dependencies.log"
         self.log.touch(mode=0o600)
         self.topology_bin = self.state / "topology"
-        self.run("go", "build", "-o", str(self.topology_bin), "./tools/e2e-topology", timeout=180)
+        self.run("go", "build", "-o", str(self.topology_bin), "./backend/tools/e2e-topology", timeout=180)
 
     def run(self, *args, input=None, timeout=120, env=None, check=True):
         result = subprocess.run(args, cwd=ROOT, env=env, input=input, capture_output=True, timeout=timeout)
@@ -283,7 +284,7 @@ class Fixture:
     def images(self):
         source_tree=self.tree_hash()
         balancer=self.state / "tunnel-balancer"
-        self.run("go","build","-o",str(balancer),"infra/files-dc-e2e/tunnel_balancer.go",
+        self.run("go","build","-o",str(balancer),"backend/fixtures/files-dc-e2e/tunnel_balancer.go",
             env=dict(os.environ,GOOS="linux",CGO_ENABLED="0"),timeout=180)
         for node in self.snapshots:
             if node.endswith("dmz"):
@@ -343,13 +344,13 @@ class Fixture:
         f.ENV = dict(os.environ, GOCACHE=str(self.state / "go-build"))
         f.prepare()
         self.files = f
-        self.run("go", "run", str(LOCAL / "pki.go"), str(f.STATE / "pki"), "dc-a", timeout=120)
+        self.run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(f.STATE / "pki"), "dc-a", timeout=120)
         account = self.state / "account"
-        self.run("go", "run", "./tools/account-local/cmd/account-local", "generate",
+        self.run("go", "run", "./backend/tools/account-local/cmd/account-local", "generate",
                  env=dict(os.environ, FIXTURE_ROOT=str(account), ACCOUNT_LOCAL_PORT="8443"), timeout=120)
         for dc in ("dc-a", "dc-b"):
-            self.run("go", "run", str(LOCAL / "pki.go"), str(self.state / dc / "workload"), dc)
-        self.run("go", "run", str(LOCAL / "pki.go"), str(self.state / "redis-pki"), "dc-a")
+            self.run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(self.state / dc / "workload"), dc)
+        self.run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(self.state / "redis-pki"), "dc-a")
         self.credentials = json.loads((f.STATE / "credentials.json").read_text())
         f.configuration(self.credentials)
         self.passwords = json.loads((f.STATE / "database.json").read_text())
@@ -457,8 +458,8 @@ class Fixture:
             sql += "CREATE ROLE auth_" + role + " LOGIN PASSWORD '" + db["AUTH_"+role.upper()+"_PASSWORD"] + "';\n"
         sql += "ALTER ROLE auth_ro SET default_transaction_read_only=on;\nGRANT CONNECT ON DATABASE auth TO auth_rw,auth_ro;\n"
         write(directory / "db-init.sql", sql)
-        write(directory / "files-migration.sql", (ROOT / "services/files/migrations/000001_files.up.sql").read_text())
-        auth = legacy_auth_schema(ROOT / "services/auth/migrations")
+        write(directory / "files-migration.sql", (ROOT / "backend/services/files/migrations/000001_files.up.sql").read_text())
+        auth = legacy_auth_schema(ROOT / "backend/services/auth/migrations")
         auth += "\nGRANT USAGE ON SCHEMA auth TO auth_rw,auth_ro; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA auth TO auth_rw; GRANT SELECT ON ALL TABLES IN SCHEMA auth TO auth_ro; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA auth TO auth_rw;\n"
         write(directory / "auth-migrations.sql", auth)
         init = (LOCAL / "primary-init.sh").read_text().replace("/run/files-init.sql", "/config/db-init.sql").replace("/migrations/000001_files.up.sql", "/config/files-migration.sql")

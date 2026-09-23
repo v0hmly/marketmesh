@@ -7,7 +7,7 @@ readonly FIXTURE="$(mktemp -d)"
 trap 'rm -rf -- "${FIXTURE}"' EXIT
 
 mkdir -p "${FIXTURE}/tools" "${FIXTURE}/bin"
-cp "${REPO_ROOT}/tools/ci.sh" "${REPO_ROOT}/tools/ci-versions.env" "${FIXTURE}/tools/"
+cp "${REPO_ROOT}/tools/ci.sh" "${REPO_ROOT}/tools/ci-versions.env" "${REPO_ROOT}/tools/layout-check.py" "${FIXTURE}/tools/"
 ln -s "${REPO_ROOT}/bin/gitleaks" "${FIXTURE}/bin/gitleaks"
 cd "${FIXTURE}"
 git init -q

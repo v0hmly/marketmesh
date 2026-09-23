@@ -28,7 +28,7 @@ Go lint на этом этапе — `gofmt` и `go vet`; дополнитель
 
 ### Изоляция Go-модулей
 
-`tools/go-workspace.sh isolated` использует `GOWORK=off` и `-mod=readonly`.
+`backend/tools/go-workspace.sh isolated` использует `GOWORK=off` и `-mod=readonly`.
 Каждый модуль собирается и тестируется по собственным `go.mod`/`go.sum`, без
 временных `replace`, `go get` или `tidy` в CI. Внутренние зависимости закреплены
 на опубликованных commit монорепозитория. Если новый код использует новый API,
@@ -52,7 +52,7 @@ Workflow использует `pull_request`, а не `pull_request_target`, т�
 Нет публикации контейнеров, пакетов или workflow artifacts. Actions закреплены
 по полному SHA, версии Go-инструментов — в
 [`tools/ci-versions.env`](../tools/ci-versions.env), protobuf — в существующем
-[`tools/protobuf-versions.env`](../tools/protobuf-versions.env). Версии Go, pnpm
+[`api/tools/protobuf-versions.env`](../api/tools/protobuf-versions.env). Версии Go, pnpm
 и Node соответствуют требованиям репозитория. Кэшируются только зависимости
 и Go build cache; кэши не должны содержать секреты.
 
@@ -62,7 +62,7 @@ Workflow использует `pull_request`, а не `pull_request_target`, т�
 
 ```bash
 task ci:bootstrap
-pnpm install --frozen-lockfile
+pnpm --dir frontend install --frozen-lockfile
 CI_BASE_REF=origin/dev task ci:verify
 # После commit; чистый checkout обязателен только для этого шага:
 ./tools/ci.sh check-tree

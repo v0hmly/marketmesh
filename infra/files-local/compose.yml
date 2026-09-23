@@ -110,7 +110,7 @@ services:
       - pg-primary:/var/lib/postgresql
       - ./primary.sh:/scripts/primary.sh:ro
       - ./primary-init.sh:/docker-entrypoint-initdb.d/01-files.sh:ro
-      - ../../services/files/migrations:/migrations:ro
+      - ../../backend/services/files/migrations:/migrations:ro
       - ${MM_FILES_STATE}/db-init.sql:/run/files-init.sql:ro
       - ${MM_FILES_STATE}/admin-password:/run/admin-password:ro
       - ${MM_FILES_STATE}/pki/pg-primary.crt:/pki/server.crt:ro
