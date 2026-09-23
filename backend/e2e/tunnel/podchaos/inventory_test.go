@@ -137,7 +137,7 @@ func validTopologyInventory(t *testing.T, runID string) TopologyInventory {
 			Namespace: topologyNamespace, WorkloadIdentityFormat: workloadIdentityFormat,
 		})
 	}
-	commandPrefix := "go run ./tools/e2e-topology --instance " + runID +
+	commandPrefix := "go -C backend run ./tools/e2e-topology --instance " + runID +
 		" --docker-context desktop-linux"
 	return TopologyInventory{
 		APIVersion: topologyInventoryAPIVersion, TargetAPIVersion: topologyTargetAPIVersion,

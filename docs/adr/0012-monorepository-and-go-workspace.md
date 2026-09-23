@@ -42,7 +42,7 @@ EasyP — в `api/`. Go module/import path и `go_package` остаются со
 | `backend/platform` | `github.com/v0hmly/marketmesh/platform` | Общие технические библиотеки, включая logger и telemetry |
 | `backend/api/gen/go` | `github.com/v0hmly/marketmesh/api/gen/go` | Только сгенерированный Go-код контрактов |
 | `backend/api/tunnel` | `github.com/v0hmly/marketmesh/api/tunnel` | Строгий общий декодер и структурная валидация туннельного контракта |
-| `e2e/tunnel` | `github.com/v0hmly/marketmesh/e2e/tunnel` | Изолированные сквозные проверки туннеля |
+| `backend/e2e/tunnel` | `github.com/v0hmly/marketmesh/e2e/tunnel` | Изолированные сквозные проверки туннеля |
 | `backend/tools/account-local` | `github.com/v0hmly/marketmesh/tools/account-local` | Проверяемый локальный контур аккаунта: конфигурация, provision и HTTPS frontdoor |
 | `backend/tools/e2e-topology` | `github.com/v0hmly/marketmesh/tools/e2e-topology` | Изолированная автоматизация disposable Kubernetes topology и её проверок |
 

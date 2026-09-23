@@ -67,7 +67,7 @@ func (t *Topology) Inventory(ctx context.Context) (InventoryDocument, error) {
 }
 
 func (t *Topology) inventoryDocument(addresses map[string]string) (InventoryDocument, error) {
-	commandPrefix := fmt.Sprintf("go run ./tools/e2e-topology --instance %s", t.config.Instance)
+	commandPrefix := fmt.Sprintf("go -C backend run ./tools/e2e-topology --instance %s", t.config.Instance)
 	document := InventoryDocument{
 		APIVersion:       InventoryAPIVersion,
 		TargetAPIVersion: TargetAPIVersion,

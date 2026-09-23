@@ -400,8 +400,8 @@ func TestNewMM28TopologyRequiresExactRepositoryFiles(t *testing.T) {
 
 	for _, relativePath := range []string{
 		"Taskfile.yml",
-		filepath.Join("tools", "e2e-topology", "go.mod"),
-		filepath.Join("tools", "e2e-topology", "main.go"),
+		filepath.Join("backend", "tools", "e2e-topology", "go.mod"),
+		filepath.Join("backend", "tools", "e2e-topology", "main.go"),
 	} {
 		path := filepath.Join(config.RepositoryRoot, relativePath)
 		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
@@ -635,9 +635,9 @@ func (commands *fakeMM28Commands) Run(
 }
 
 func (commands *fakeMM28Commands) runGo(command topologyCommand) (topologyCommandResult, error) {
-	if command.dir != commands.config.RepositoryRoot || len(command.args) != 7 ||
-		!slices.Equal(command.args[:6], []string{
-			"run",
+	if command.dir != commands.config.RepositoryRoot || len(command.args) != 9 ||
+		!slices.Equal(command.args[:8], []string{
+			"-C", "backend", "run",
 			"./tools/e2e-topology",
 			"--instance",
 			commands.config.Instance,
@@ -646,7 +646,7 @@ func (commands *fakeMM28Commands) runGo(command topologyCommand) (topologyComman
 		}) {
 		return topologyCommandResult{}, fmt.Errorf("unexpected MM-28 command: %v", command.args)
 	}
-	action := command.args[6]
+	action := command.args[8]
 	if action == "ready" {
 		commands.readyCallIndex = len(commands.calls) - 1
 	}
@@ -848,7 +848,7 @@ func (commands *fakeMM28Commands) hasDockerInspectionAfterReady() bool {
 
 func testMM28Inventory(config MM28TopologyConfig) mm28Inventory {
 	prefix := fmt.Sprintf(
-		"go run ./tools/e2e-topology --instance %s --docker-context %s",
+		"go -C backend run ./tools/e2e-topology --instance %s --docker-context %s",
 		config.Instance,
 		config.DockerContext,
 	)

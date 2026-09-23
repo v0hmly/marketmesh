@@ -132,8 +132,8 @@ func validateMM28TopologyConfig(config MM28TopologyConfig) error {
 func validateMM28RepositoryRoot(root string) error {
 	for _, relativePath := range []string{
 		"Taskfile.yml",
-		filepath.Join("tools", "e2e-topology", "go.mod"),
-		filepath.Join("tools", "e2e-topology", "main.go"),
+		filepath.Join("backend", "tools", "e2e-topology", "go.mod"),
+		filepath.Join("backend", "tools", "e2e-topology", "main.go"),
 	} {
 		info, err := os.Lstat(filepath.Join(root, relativePath))
 		if err != nil || !info.Mode().IsRegular() {
@@ -530,7 +530,7 @@ func (topology *MM28Topology) validateInventoryHeader(inventory mm28Inventory) e
 	}
 
 	prefix := fmt.Sprintf(
-		"go run ./tools/e2e-topology --instance %s --docker-context %s",
+		"go -C backend run ./tools/e2e-topology --instance %s --docker-context %s",
 		topology.config.Instance,
 		topology.config.DockerContext,
 	)
@@ -559,7 +559,7 @@ func (topology *MM28Topology) runMM28(
 	return topology.runCommand(ctx, topologyCommand{
 		program: "go",
 		args: []string{
-			"run",
+			"-C", "backend", "run",
 			"./tools/e2e-topology",
 			"--instance",
 			topology.config.Instance,

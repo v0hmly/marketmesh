@@ -159,7 +159,7 @@ func validateTopologyInventory(inventory TopologyInventory, runID string) error 
 		)
 	}
 	commandPrefix := fmt.Sprintf(
-		"go run ./tools/e2e-topology --instance %s --docker-context %s",
+		"go -C backend run ./tools/e2e-topology --instance %s --docker-context %s",
 		inventory.Instance,
 		inventory.DockerContext,
 	)
