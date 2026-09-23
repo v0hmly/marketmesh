@@ -1,0 +1,280 @@
+# Единый dev-проект. Определения контейнеров переиспользуют изолированные тестовые стенды.
+name: marketmesh-dev
+
+x-app-build: &app-build
+  context: .
+  dockerfile: infra/account-local/Dockerfile
+  args:
+    VITE_ACCOUNT_AVATAR_ENABLED: "true"
+    VITE_FILES_UPLOAD_ORIGIN: https://localhost:18343
+    VITE_FILES_DOWNLOAD_ORIGINS: https://localhost:18344,https://localhost:18345
+    VITE_RYBBIT_ENABLED: ${ACCOUNT_RYBBIT_ENABLED:-false}
+
+services:
+  mailpit:
+    extends: {file: infra/account-local/compose.yml, service: mailpit}
+  postgres-primary:
+    extends: {file: infra/account-local/compose.yml, service: postgres-primary}
+  postgres-replica:
+    extends: {file: infra/account-local/compose.yml, service: postgres-replica}
+  redis:
+    extends: {file: infra/account-local/compose.yml, service: redis}
+  nats:
+    extends: {file: infra/account-local/compose.yml, service: nats}
+  provision:
+    extends: {file: infra/account-local/compose.yml, service: provision}
+    profiles: !reset []
+    build: *app-build
+    depends_on:
+      postgres-primary: {condition: service_healthy}
+      postgres-replica: {condition: service_healthy}
+      nats: {condition: service_started}
+  auth:
+    extends: {file: infra/account-local/compose.yml, service: auth}
+    build: *app-build
+    volumes: ["${ACCOUNT_LOCAL_STATE}/files-pki:/workload:ro"]
+    depends_on:
+      provision: {condition: service_completed_successfully}
+      redis: {condition: service_started}
+      mailpit: {condition: service_healthy}
+  user:
+    extends: {file: infra/account-local/compose.yml, service: user}
+    build: *app-build
+    volumes: ["${ACCOUNT_LOCAL_STATE}/files-pki:/workload:ro"]
+    depends_on:
+      provision: {condition: service_completed_successfully}
+      auth: {condition: service_healthy}
+  gateway-in:
+    extends: {file: infra/account-local/compose.yml, service: gateway-in}
+    build: *app-build
+    scale: 2
+  gateway-out:
+    extends: {file: infra/account-local/compose.yml, service: gateway-out}
+    build: *app-build
+    volumes: ["${ACCOUNT_LOCAL_STATE}/files-pki:/workload:ro"]
+    depends_on:
+      auth: {condition: service_healthy}
+      user: {condition: service_healthy}
+      gateway-in: {condition: service_started}
+      files-control: {condition: service_started}
+  frontdoor:
+    extends: {file: infra/account-local/compose.yml, service: frontdoor}
+    build: *app-build
+    environment:
+      ACCOUNT_FILES_ORIGINS: https://localhost:18343,https://localhost:18344,https://localhost:18345
+      ACCOUNT_RYBBIT_ENABLED: ${ACCOUNT_RYBBIT_ENABLED:-false}
+      RYBBIT_SITE_ID: ${RYBBIT_SITE_ID:-1}
+    networks: [dmz, ingress, analytics]
+    depends_on:
+      gateway-out: {condition: service_healthy}
+  volume-init:
+    extends: {file: infra/files-local/compose.yml, service: volume-init}
+  bao:
+    extends: {file: infra/files-local/compose.yml, service: bao}
+  quarantine:
+    extends: {file: infra/files-local/compose.yml, service: quarantine}
+  internal-clean:
+    extends: {file: infra/files-local/compose.yml, service: internal-clean}
+  delivery-a:
+    extends: {file: infra/files-local/compose.yml, service: delivery-a}
+  delivery-b:
+    extends: {file: infra/files-local/compose.yml, service: delivery-b}
+  pg-primary:
+    extends: {file: infra/files-local/compose.yml, service: pg-primary}
+  pg-replica:
+    extends: {file: infra/files-local/compose.yml, service: pg-replica}
+  sandbox:
+    extends: {file: infra/files-local/compose.yml, service: sandbox}
+  antivirus:
+    extends: {file: infra/files-local/compose.yml, service: antivirus}
+    depends_on:
+      signatures: {condition: service_completed_successfully}
+  signatures:
+    extends: {file: infra/files-local/compose.yml, service: signatures}
+    profiles: !reset []
+    build: {context: ., dockerfile: infra/files-local/Dockerfile, target: antivirus}
+  worker:
+    extends: {file: infra/files-local/compose.yml, service: worker}
+    depends_on:
+      quarantine: {condition: service_started}
+      internal-clean: {condition: service_started}
+      delivery-a: {condition: service_started}
+      delivery-b: {condition: service_started}
+      sandbox: {condition: service_started}
+      antivirus: {condition: service_started}
+  files-control:
+    image: marketmesh-mm43-files:local
+    build: {context: ., dockerfile: infra/files-local/Dockerfile, target: runtime}
+    user: "${MM_FILES_UID}:${MM_FILES_GID}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment: {FILES_CONFIG_FILE: /config.json}
+    volumes:
+      - ${ACCOUNT_LOCAL_STATE}/files-control.json:/config.json:ro
+      - ${ACCOUNT_LOCAL_STATE}/files-pki:/workload:ro
+      - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
+    networks: [internal, files-internal, quarantine-dmz, delivery-a-dmz, delivery-b-dmz]
+    depends_on:
+      auth: {condition: service_healthy}
+      worker: {condition: service_started}
+    logging: {driver: json-file, options: {max-size: 1m, max-file: "1"}}
+  analytics-postgres:
+    extends: {file: infra/rybbit/compose.yml, service: postgres}
+    profiles: [analytics, full]
+    networks: !override
+      storage: {aliases: [postgres]}
+    volumes: [analytics-postgres:/var/lib/postgresql]
+  analytics-redis:
+    extends: {file: infra/rybbit/compose.yml, service: redis}
+    profiles: [analytics, full]
+    networks: !override
+      storage: {aliases: [redis]}
+    volumes: [analytics-redis:/data]
+  analytics-clickhouse:
+    extends: {file: infra/rybbit/compose.yml, service: clickhouse}
+    profiles: [analytics, full]
+    networks: !override
+      storage: {aliases: [clickhouse]}
+    volumes: [analytics-clickhouse:/var/lib/clickhouse]
+  analytics-backend:
+    extends: {file: infra/rybbit/compose.yml, service: backend}
+    profiles: [analytics, full]
+    networks: !override
+      storage: {aliases: [backend]}
+      analytics: {aliases: [backend]}
+    depends_on: !override
+      analytics-postgres: {condition: service_healthy}
+      analytics-redis: {condition: service_healthy}
+      analytics-clickhouse: {condition: service_healthy}
+  analytics-client:
+    extends: {file: infra/rybbit/compose.yml, service: client}
+    profiles: [analytics, full]
+    networks: !override
+      analytics: {aliases: [client]}
+    depends_on: !override
+      analytics-backend: {condition: service_healthy}
+  analytics-gateway:
+    extends: {file: infra/rybbit/compose.yml, service: gateway}
+    profiles: [analytics, full]
+    networks: !override
+      analytics: {aliases: [gateway]}
+    depends_on: !override
+      analytics-backend: {condition: service_healthy}
+      analytics-client: {condition: service_healthy}
+  observability-init:
+    extends: {file: infra/compose/compose.yml, service: observability-init}
+    profiles: [observability, full]
+  alloy-dmz:
+    extends: {file: infra/compose/compose.yml, service: alloy-dmz}
+    profiles: [observability, full]
+  alloy-internal:
+    extends: {file: infra/compose/compose.yml, service: alloy-internal}
+    profiles: [observability, full]
+  tempo:
+    extends: {file: infra/compose/compose.yml, service: tempo}
+    profiles: [observability, full]
+  loki:
+    extends: {file: infra/compose/compose.yml, service: loki}
+    profiles: [observability, full]
+  grafana:
+    extends: {file: infra/compose/compose.yml, service: grafana}
+    profiles: [observability, full]
+  observability-gateway:
+    extends: {file: infra/compose/compose.yml, service: observability-gateway}
+    profiles: [observability, full]
+
+networks:
+  internal:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  dmz:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  mail:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  ingress:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  files-internal:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  quarantine-dmz:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  delivery-a-dmz:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  delivery-b-dmz:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  kms-q:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  kms-internal:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  kms-a:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  kms-b:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  bootstrap:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  storage:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  analytics:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  observability:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  observability-access:
+    internal: false
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+
+volumes:
+  mailpit:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  postgres-primary:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  postgres-replica:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  nats-data:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  bao:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  quarantine:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  internal-clean:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  delivery-a:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  delivery-b:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  av-socket:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  sandbox-socket:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  signatures:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  pg-primary:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  pg-replica:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  analytics-postgres:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  analytics-redis:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  analytics-clickhouse:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  tempo-data:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  loki-data:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  grafana-data:
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}

@@ -210,6 +210,37 @@ tasks:
       - task: build
       - task: arch
 
+  dev:up:
+    aliases: [up]
+    desc: Поднять полный локальный стенд с Files, Mailpit, Grafana и Rybbit
+    cmds:
+      - python3 infra/dev/local.py up {{.CLI_ARGS}}
+
+  dev:down:
+    desc: Остановить полный локальный стенд с сохранением данных
+    cmds:
+      - python3 infra/dev/local.py down
+
+  dev:status:
+    desc: Показать состояние полного локального стенда
+    cmds:
+      - python3 infra/dev/local.py status
+
+  dev:renew:
+    desc: Обновить локальные сертификаты и перезапустить стенд без удаления данных
+    cmds:
+      - python3 infra/dev/local.py renew {{.CLI_ARGS}}
+
+  dev:config:
+    desc: Подготовить локальные ключи и проверить единый Compose
+    cmds:
+      - python3 infra/dev/local.py config
+
+  dev:logs:
+    desc: Показать последние логи выбранных сервисов
+    cmds:
+      - python3 infra/dev/local.py logs {{.CLI_ARGS}}
+
   infra:env:
     desc: Создать локальную конфигурацию инфраструктуры без вывода секретов
     cmds:
