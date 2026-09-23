@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Карточка изделия — кружка «Пена»</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens-vars.css">
+<link rel="stylesheet" href="ds/marketmesh/components/bundle.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; }
+  a { color: var(--text-link); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--action-primary-hover); }
+  a.button, a.brand, a.plain { text-decoration: none; }
+  a.button { box-sizing: border-box; }
+  a.plain { color: var(--text-primary); }
+  a.plain:hover { color: var(--text-link); text-decoration: underline; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+  .thumb { border-radius: var(--r-md); border: 2px solid transparent; padding: 0; cursor: pointer; height: 96px; display: flex; align-items: center; justify-content: center; font: inherit; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary); }
+  .thumb:focus-visible, .variant input:focus-visible + span, .step:focus-visible { outline: 3px solid var(--ring-focus); outline-offset: 3px; box-shadow: 0 0 0 3px var(--ring-focus-inner); }
+  .variant { position: relative; }
+  .variant input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .variant span { display: flex; flex-direction: column; gap: 2px; min-height: 45px; box-sizing: border-box; justify-content: center; padding: 8px 16px; border: 1px solid var(--border-control); border-radius: var(--r-sm); background: var(--action-secondary); cursor: pointer; font-size: 0.875rem; }
+  .variant span small { font-size: 0.73rem; color: var(--text-secondary); }
+  .variant input:checked + span { border-color: var(--text-link); background: var(--surface-tint); box-shadow: inset 0 0 0 1px var(--text-link); }
+  .variant input:disabled + span { cursor: not-allowed; background: var(--surface-sunken); color: var(--text-disabled); border-style: dashed; }
+  .step { width: 45px; height: 45px; border: 1px solid var(--border-control); background: var(--action-secondary); border-radius: var(--r-sm); font: inherit; font-size: 1.15rem; color: var(--text-link); cursor: pointer; }
+  .step:disabled { opacity: 0.55; cursor: not-allowed; }
+</style>
+</helmet>
+<div style="width: 1440px; height: 2680px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; flex-direction: column;">
+
+  <header style="display: flex; align-items: center; gap: 24px; padding: 16px 56px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-raised);">
+    <a class="brand" href="Home.dc.html"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></a>
+    <a class="button secondary" href="Home.dc.html">Каталог</a>
+    <form role="search" style="flex-grow: 1; display: flex; gap: 8px; align-items: center;">
+      <div class="field" style="flex-grow: 1;">
+        <label for="q" class="sr-only">Поиск по изделиям и мастерским</label>
+        <input class="ctl" type="search" id="q" placeholder="Изделия, мастерские, материалы">
+      </div>
+      <button type="submit" class="button secondary">Найти</button>
+    </form>
+    <nav aria-label="Ваше" style="display: flex; align-items: center; gap: 22px; font-size: 0.875rem;">
+      <a class="plain" href="AccountFavorites.dc.html">Избранное <span style="color: var(--text-secondary);">6</span></a>
+      <a class="plain" href="AccountOrders.dc.html">Заказы</a>
+      <a class="plain" href="#cart">Корзина <span style="color: var(--text-secondary); font-variant-numeric: tabular-nums;">{{cartCount}}</span></a>
+      <a href="MarketMeshId.dc.html" aria-label="MarketMesh ID: Вера Ильина" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-round); background: var(--surface-avatar); color: var(--on-surface-avatar); font-family: var(--font-serif); font-size: 1rem; text-decoration: none;">ВИ</a>
+    </nav>
+  </header>
+
+  <main style="padding: 28px 56px 64px; display: flex; flex-direction: column; gap: 40px;">
+
+    <nav aria-label="Путь к изделию">
+      <ol style="margin: 0; padding: 0; list-style: none; display: flex; gap: 10px; font-size: 0.875rem; color: var(--text-secondary);">
+        <li><a href="Home.dc.html">Главная</a></li>
+        <li aria-hidden="true">/</li>
+        <li><a href="Home.dc.html">Керамика</a></li>
+        <li aria-hidden="true">/</li>
+        <li aria-current="page">Кружка «Пена»</li>
+      </ol>
+    </nav>
+
+    <sc-if value="{{showFeedback}}" hint-placeholder-val="{{false}}">
+      <div class="notice success" role="status">{{feedbackText}}</div>
+    </sc-if>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; align-items: start;">
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <span role="img" aria-label="{{photoLabel}}" style="display: flex; align-items: center; justify-content: center; height: 620px; border-radius: var(--r-lg); background: {{photoTone}}; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">{{photoCaption}}</span>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;" role="group" aria-label="Фотографии изделия">
+          <sc-for list="{{thumbs}}" as="t" hint-placeholder-count="4">
+            <button type="button" class="thumb" style="background: {{t.tone}}; border-color: {{t.border}};" onClick="{{t.onPick}}" aria-pressed="{{t.pressed}}" aria-label="{{t.label}}">{{t.short}}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 22px;">
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <a href="Shop.dc.html" style="font-size: 0.875rem;">Мастерская «Глина и соль» · Санкт-Петербург</a>
+          <h1 style="margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 2.8rem; line-height: 1.15; letter-spacing: -0.045em;">Кружка «Пена», 300 мл</h1>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="display: inline-flex; gap: 2px;" role="img" aria-label="Оценка 4,8 из 5">
+              <sc-for list="{{ratingStars}}" as="star" hint-placeholder-count="5">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="color: {{star.color}};" fill="{{star.fill}}" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 3.6l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.9l6-.8z"/></svg>
+              </sc-for>
+            </span>
+            <span style="font-size: 0.875rem; font-weight: 600;">4,8</span>
+            <a href="#reviews" style="font-size: 0.875rem;">23 отзыва</a>
+          </div>
+        </div>
+
+        <span style="font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">{{price}}</span>
+
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px;">
+          <legend style="padding: 0 0 10px; font-size: 0.875rem; font-weight: 600;">Глазурь</legend>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <sc-for list="{{variants}}" as="v" hint-placeholder-count="3">
+              <label class="variant">
+                <input type="radio" name="glaze" value="{{v.id}}" checked="{{v.checked}}" disabled="{{v.disabled}}" onChange="{{v.onPick}}">
+                <span>{{v.label}}<small>{{v.note}}</small></span>
+              </label>
+            </sc-for>
+          </div>
+        </fieldset>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span id="qty-label" style="font-size: 0.875rem; font-weight: 600;">Количество</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button type="button" class="step" onClick="{{onMinus}}" disabled="{{minusDisabled}}" aria-label="Меньше">−</button>
+            <output aria-labelledby="qty-label" aria-live="polite" style="min-width: 48px; text-align: center; font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums;">{{qty}}</output>
+            <button type="button" class="step" onClick="{{onPlus}}" disabled="{{plusDisabled}}" aria-label="Больше">+</button>
+            <span style="font-size: 0.875rem; color: var(--text-secondary);">{{stockLine}}</span>
+          </div>
+          <sc-if value="{{atLimit}}" hint-placeholder-val="{{false}}">
+            <span class="field-help">Больше в этой партии нет — мастер пополнит её, когда изготовит новые.</span>
+          </sc-if>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button type="button" class="button primary wide" style="flex-grow: 1;" onClick="{{onCart}}">
+            <span>{{cartLabel}}</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+          <button type="button" class="button secondary" onClick="{{onFav}}" aria-pressed="{{favPressed}}">{{favLabel}}</button>
+        </div>
+
+        <dl style="margin: 0; padding: 20px 22px; border-radius: var(--r-md); background: var(--surface-tint); display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; gap: 16px;">
+            <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Отправка</dt>
+            <dd style="margin: 0; font-size: 0.875rem; text-align: right;">Мастер отправляет в течение [СРОК ОТПРАВКИ]</dd>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 16px;">
+            <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Получение</dt>
+            <dd style="margin: 0; font-size: 0.875rem; text-align: right;">До двери или в пункт выдачи · Санкт-Петербург</dd>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 16px;">
+            <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">Возврат</dt>
+            <dd style="margin: 0; font-size: 0.875rem; text-align: right;">[УСЛОВИЯ ВОЗВРАТА]</dd>
+          </div>
+        </dl>
+
+        <div class="card" style="padding: 20px 22px; display: flex; align-items: center; gap: 16px;">
+          <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; flex-shrink: 0; border-radius: var(--r-round); background: var(--surface-avatar); color: var(--on-surface-avatar); font-family: var(--font-serif); font-size: 1.15rem;">Г</span>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+            <a class="plain" href="Shop.dc.html" style="font-size: 1rem; font-weight: 600;">Мастерская «Глина и соль»</a>
+            <span style="font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">4,9 · 128 ОТЗЫВОВ · 14 ИЗДЕЛИЙ В ПРОДАЖЕ</span>
+          </div>
+          <a class="button secondary" href="Shop.dc.html">В мастерскую</a>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; align-items: start;">
+      <section aria-labelledby="about-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="about-title" style="margin: 0; font-size: 1.55rem; font-weight: 600; letter-spacing: -0.035em;">Об изделии</h2>
+        <p style="margin: 0; font-size: 1rem; line-height: 1.8; max-width: 62ch;">Кружка из каменной массы, сформованная вручную. Каждая чуть отличается по форме и рисунку глазури — это не брак, а след ручной работы.</p>
+        <p style="margin: 0; font-size: 1rem; line-height: 1.8; max-width: 62ch;">Глазурь пищевая, без свинца. Толстые стенки долго держат тепло, ручка рассчитана на три пальца.</p>
+      </section>
+
+      <section aria-labelledby="specs-title" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="specs-title" style="margin: 0; font-size: 1.55rem; font-weight: 600; letter-spacing: -0.035em;">Характеристики</h2>
+        <dl style="margin: 0; display: flex; flex-direction: column;">
+          <sc-for list="{{specs}}" as="spec" hint-placeholder-count="6">
+            <div style="display: flex; justify-content: space-between; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
+              <dt style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">{{spec.name}}</dt>
+              <dd style="margin: 0; font-size: 0.875rem; text-align: right;">{{spec.value}}</dd>
+            </div>
+          </sc-for>
+        </dl>
+      </section>
+    </div>
+
+    <section id="reviews" aria-labelledby="reviews-title" style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px;">
+        <h2 id="reviews-title" style="margin: 0; font-size: 1.55rem; font-weight: 600; letter-spacing: -0.035em;">Отзывы · 23</h2>
+        <a href="AccountReviews.dc.html" style="font-size: 0.875rem;">Написать отзыв можно после получения</a>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+        <sc-for list="{{reviews}}" as="r" hint-placeholder-count="3">
+          <li class="card" style="padding: 22px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--r-round); background: var(--surface-avatar); color: var(--on-surface-avatar); font-family: var(--font-serif);">{{r.initial}}</span>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 0.875rem; font-weight: 600;">{{r.who}}</span>
+                <span style="font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">{{r.date}}</span>
+              </div>
+            </div>
+            <span style="display: inline-flex; gap: 2px;" role="img" aria-label="{{r.ratingLabel}}">
+              <sc-for list="{{r.stars}}" as="star" hint-placeholder-count="5">
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="color: {{star.color}};" fill="{{star.fill}}" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 3.6l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.9l6-.8z"/></svg>
+              </sc-for>
+            </span>
+            <p style="margin: 0; font-size: 0.875rem; line-height: 1.75;">{{r.text}}</p>
+            <sc-if value="{{r.hasReply}}" hint-placeholder-val="{{false}}">
+              <div style="padding: 14px 16px; border-radius: var(--r-md); background: var(--surface-tint); display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">ОТВЕТ МАСТЕРА</span>
+                <p style="margin: 0; font-size: 0.875rem; line-height: 1.7;">{{r.reply}}</p>
+              </div>
+            </sc-if>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+
+    <section aria-labelledby="more-title" style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px;">
+        <h2 id="more-title" style="margin: 0; font-size: 1.55rem; font-weight: 600; letter-spacing: -0.035em;">Ещё у этого мастера</h2>
+        <a href="Shop.dc.html" style="font-size: 0.875rem;">Все 14 изделий</a>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px;">
+        <sc-for list="{{more}}" as="m" hint-placeholder-count="4">
+          <li class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; height: 200px; border-radius: var(--r-md); background: {{m.tone}}; font-size: 0.73rem; letter-spacing: 0.14em; color: var(--text-secondary);">ФОТО</span>
+            <span style="font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums;">{{m.price}}</span>
+            <a class="plain" href="Product.dc.html" style="font-size: 0.875rem; line-height: 1.45;">{{m.title}}</a>
+            <span style="font-size: 0.73rem; color: var(--text-secondary);">{{m.stock}}</span>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer style="margin-top: auto; border-top: 1px solid var(--border-subtle); background: var(--surface-raised); padding: 56px 56px 0;">
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 80px; align-items: start; padding-bottom: 56px;">
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px;">
+        <nav aria-labelledby="ft-buyers">
+          <h2 id="ft-buyers" style="margin: 0 0 16px; font-size: 0.73rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary);">Покупателям</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.875rem;">
+            <li><a class="plain" href="#help-batches">Как устроены партии</a></li>
+            <li><a class="plain" href="#help-delivery">Доставка и оплата</a></li>
+            <li><a class="plain" href="#help-returns">Возврат изделия</a></li>
+            <li><a class="plain" href="AccountOrders.dc.html">Мои заказы</a></li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="ft-makers">
+          <h2 id="ft-makers" style="margin: 0 0 16px; font-size: 0.73rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary);">Мастерам</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.875rem;">
+            <li><a class="plain" href="SellerApply.dc.html">Открыть мастерскую</a></li>
+            <li><a class="plain" href="SellerLogin.dc.html">Портал продавца</a></li>
+            <li><a class="plain" href="#rules-makers">Правила для мастеров</a></li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="ft-about">
+          <h2 id="ft-about" style="margin: 0 0 16px; font-size: 0.73rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary);">MarketMesh</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 0.875rem;">
+            <li><a class="plain" href="#about">О проекте</a></li>
+            <li><a class="plain" href="#terms">Условия использования</a></li>
+            <li><a class="plain" href="#privacy">Политика конфиденциальности</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <section aria-labelledby="fb-title" style="display: flex; flex-direction: column; gap: 20px; padding: 28px; border: 1px solid var(--border-subtle); border-radius: var(--r-md); background: var(--surface-page);">
+        <div>
+          <h2 id="fb-title" style="margin: 0 0 6px; font-size: 1.3rem; font-weight: 600; letter-spacing: -0.03em;">Напишите нам</h2>
+          <p style="margin: 0; font-size: 0.875rem; line-height: 1.6; color: var(--text-secondary);">Ответим на почту вашего MarketMesh ID — vera.ilina@example.com.</p>
+        </div>
+
+        <sc-if value="{{fbSent}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
+            <div class="notice success" role="status">{{fbSentText}}</div>
+            <button type="button" class="button text-button" onClick="{{onFbAgain}}">Написать ещё одно сообщение</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{fbShowForm}}" hint-placeholder-val="{{true}}">
+          <form novalidate onSubmit="{{onFbSubmit}}" aria-busy="{{fbBusyAttr}}" aria-labelledby="fb-title" style="display: flex; flex-direction: column; gap: 18px;">
+            <sc-if value="{{fbHasNotice}}" hint-placeholder-val="{{false}}">
+              <div class="notice error" role="alert">{{fbNotice}}</div>
+            </sc-if>
+
+            <div class="field">
+              <label for="fb-topic">Тема</label>
+              <span class="select-wrap">
+                <select class="ctl" id="fb-topic" value="{{fbTopic}}" onChange="{{onFbTopic}}">
+                  <option value="idea">Идея или пожелание</option>
+                  <option value="bug">Что-то работает не так</option>
+                  <option value="order">Вопрос по заказу</option>
+                  <option value="other">Другое</option>
+                </select>
+              </span>
+            </div>
+
+            <sc-if value="{{fbIsOrder}}" hint-placeholder-val="{{false}}">
+              <div class="field">
+                <label for="fb-order">Заказ</label>
+                <span class="select-wrap">
+                  <select class="ctl" id="fb-order" value="{{fbOrder}}" onChange="{{onFbOrder}}" aria-invalid="{{fbOrderInvalid}}" aria-describedby="{{fbOrderDescribedBy}}">
+                    <option value="">Выберите заказ</option>
+                    <option value="1482-0091">№ 1482-0091 · 18 сентября · 7 500 ₽</option>
+                    <option value="1471-0088">№ 1471-0088 · 12 сентября · 2 400 ₽</option>
+                    <option value="1402-0075">№ 1402-0075 · 29 августа · 5 900 ₽</option>
+                    <option value="1388-0064">№ 1388-0064 · 14 августа · отменён</option>
+                  </select>
+                </span>
+                <sc-if value="{{fbHasOrderError}}" hint-placeholder-val="{{false}}">
+                  <span class="field-error" id="fb-order-error">{{fbOrderError}}</span>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <div class="field">
+              <div class="label-line">
+                <label for="fb-message">Сообщение</label>
+                <sc-if value="{{fbShowCount}}" hint-placeholder-val="{{false}}">
+                  <span class="field-count" id="fb-message-count">{{fbCountText}}</span>
+                </sc-if>
+              </div>
+              <textarea class="ctl" id="fb-message" rows="4" maxlength="2000" value="{{fbMessage}}" onChange="{{onFbMessage}}" aria-invalid="{{fbMessageInvalid}}" aria-describedby="{{fbMessageDescribedBy}}"></textarea>
+              <span class="field-help" id="fb-message-help">Если пишете об изделии или мастерской, укажите название — так ответим быстрее.</span>
+              <sc-if value="{{fbHasMessageError}}" hint-placeholder-val="{{false}}">
+                <span class="field-error" id="fb-message-error">{{fbMessageError}}</span>
+              </sc-if>
+            </div>
+
+            <button type="submit" class="button secondary" style="align-self: flex-start;" disabled="{{fbBusy}}">{{fbSubmitLabel}}</button>
+          </form>
+        </sc-if>
+      </section>
+    </div>
+
+    <div class="site-footer">
+      <span>MarketMesh</span>
+      <span>Сделано людьми. Для людей.</span>
+      <span class="footer-meta">Витрина</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"feedbackOutcome":{"editor":"enum","default":"success","options":["success","serverError","rateLimited"],"section":"Демо: обратная связь"},"$preview":{"width":1440,"height":2680}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { photo: 0, variant: 'white', qty: 1, cartCount: 2, added: false, fav: false, feedback: '' };
+    this.onMinus = () => this.setState({ qty: Math.max(1, this.state.qty - 1) });
+    this.onPlus = () => {
+      const max = this.variantById(this.state.variant).left;
+      this.setState({ qty: Math.min(max, this.state.qty + 1) });
+    };
+    this.onCart = () => {
+      const v = this.variantById(this.state.variant);
+      this.setState({
+        added: true,
+        cartCount: this.state.cartCount + this.state.qty,
+        feedback: 'В корзине: кружка «Пена», глазурь «' + v.label + '», ' + this.state.qty + ' шт. Придержим их за вами, пока оформляете заказ.'
+      });
+    };
+    this.onFav = () => this.setState({
+      fav: !this.state.fav,
+      feedback: this.state.fav ? 'Кружка убрана из избранного.' : 'Кружка в избранном. Сообщим, если партия закончится и мастер её пополнит.'
+    });
+  }
+
+  variantsData() {
+    return [
+      { id: 'white', label: 'Белая матовая', left: 5, batch: 12 },
+      { id: 'moss', label: 'Мох', left: 3, batch: 8 },
+      { id: 'graphite', label: 'Графит', left: 0, batch: 6 }
+    ];
+  }
+
+  variantById(id) {
+    return this.variantsData().find((v) => v.id === id);
+  }
+
+  stars(value) {
+    const out = [];
+    for (let i = 1; i <= 5; i++) {
+      out.push({ color: i <= Math.round(value) ? 'var(--brand-accent)' : 'var(--border-control)', fill: i <= Math.round(value) ? 'currentColor' : 'none' });
+    }
+    return out;
+  }
+
+  pageVals() {
+    const s = this.state;
+    const v = this.variantById(s.variant);
+    const tones = ['var(--surface-avatar)', 'var(--surface-tint)', 'var(--surface-badge)', 'var(--surface-sunken)'];
+    const captions = ['ФОТО 1 · КРУЖКА ЦЕЛИКОМ', 'ФОТО 2 · ГЛАЗУРЬ КРУПНО', 'ФОТО 3 · В РУКЕ', 'ФОТО 4 · ДОННОЕ КЛЕЙМО'];
+
+    const variants = this.variantsData().map((x) => ({
+      id: x.id,
+      label: x.label,
+      note: x.left === 0 ? 'Партия распродана' : 'В партии ' + x.left + ' из ' + x.batch,
+      checked: s.variant === x.id,
+      disabled: x.left === 0,
+      onPick: () => this.setState({ variant: x.id, qty: Math.min(s.qty, x.left) || 1, added: false })
+    }));
+
+    return {
+      cartCount: String(s.cartCount),
+      showFeedback: !!s.feedback,
+      feedbackText: s.feedback,
+
+      photoTone: tones[s.photo],
+      photoCaption: captions[s.photo],
+      photoLabel: 'Фотография ' + (s.photo + 1) + ' из 4',
+      thumbs: tones.map((t, i) => ({
+        tone: t,
+        short: String(i + 1),
+        border: s.photo === i ? 'var(--text-link)' : 'transparent',
+        pressed: s.photo === i ? 'true' : 'false',
+        label: 'Показать фотографию ' + (i + 1),
+        onPick: () => this.setState({ photo: i })
+      })),
+
+      ratingStars: this.stars(4.8),
+      price: '2 400 ₽',
+      variants: variants,
+
+      qty: String(s.qty),
+      minusDisabled: s.qty <= 1,
+      plusDisabled: s.qty >= v.left,
+      atLimit: s.qty >= v.left,
+      stockLine: 'В партии этой глазури ' + v.left + ' из ' + v.batch,
+      onMinus: this.onMinus,
+      onPlus: this.onPlus,
+
+      cartLabel: s.added ? 'Добавлено — добавить ещё' : 'В корзину',
+      onCart: this.onCart,
+      favPressed: s.fav ? 'true' : 'false',
+      favLabel: s.fav ? 'В избранном' : 'В избранное',
+      onFav: this.onFav,
+
+      specs: [
+        { name: 'Материал', value: 'Каменная масса, пищевая глазурь' },
+        { name: 'Объём', value: '300 мл' },
+        { name: 'Высота и диаметр', value: '9 см · 8,5 см' },
+        { name: 'Изготовление', value: 'Ручная формовка, обжиг при 1240 °C' },
+        { name: 'Уход', value: 'Можно в посудомоечную и микроволновую печь' },
+        { name: 'Партия', value: 'Белая — 12, мох — 8, графит — 6' }
+      ],
+
+      reviews: [
+        { initial: 'В', who: 'Вера, Санкт-Петербург, 37 лет', date: '2 СЕНТЯБРЯ', stars: this.stars(5), ratingLabel: 'Оценка 5 из 5', text: 'Глазурь ровная, ручка удобно ложится в ладонь. Пришла в плотной коробке с бумагой, ни одного скола.', reply: 'Спасибо! Партию такой глазури повторим в октябре.', hasReply: true },
+        { initial: 'А', who: 'Анна, Москва', date: '28 АВГУСТА', stars: this.stars(5), ratingLabel: 'Оценка 5 из 5', text: 'Взяла две в цвете мох — оттенок живой, на фото он чуть светлее. Держит тепло дольше обычных кружек.', reply: '', hasReply: false },
+        { initial: 'М', who: 'Максим, Казань, 29 лет', date: '14 АВГУСТА', stars: this.stars(4), ratingLabel: 'Оценка 4 из 5', text: 'Кружка отличная, но тяжелее, чем ожидал. Для утреннего кофе — в самый раз.', reply: '', hasReply: false }
+      ],
+
+      more: [
+        { title: 'Миска «Туман», 600 мл', price: '2 100 ₽', stock: 'В партии 9 из 10', tone: 'var(--surface-reconcile)' },
+        { title: 'Керамическая тарелка «Волна»', price: '1 800 ₽', stock: 'Партия распродана', tone: 'var(--surface-avatar)' },
+        { title: 'Сахарница «Соль» с крышкой', price: '2 600 ₽', stock: 'Осталось 2 из 6', tone: 'var(--surface-tint)' },
+        { title: 'Набор пиал, 4 шт.', price: '4 800 ₽', stock: 'В партии 5 из 5', tone: 'var(--surface-badge)' }
+      ]
+    };
+  }
+
+  // ---- Подвал: форма обратной связи (одинакова на всех экранах витрины) ----
+
+  fbState() {
+    return this.state.fb || { topic: 'idea', order: '', message: '', busy: false, sent: false, ticket: '', notice: '', errors: {} };
+  }
+
+  fbSet(patch) {
+    this.setState({ fb: Object.assign({}, this.fbState(), patch) });
+  }
+
+  fbSubmit(e) {
+    e.preventDefault();
+    const fb = this.fbState();
+    if (fb.busy) return;
+    const errors = {};
+    if (fb.topic === 'order' && !fb.order) {
+      errors.order = 'Заказ не выбран. Выберите его из списка — так поддержка сразу увидит детали.';
+    }
+    if (!fb.message.trim()) {
+      errors.message = 'Сообщение пустое. Опишите вопрос или идею хотя бы парой предложений.';
+    }
+    if (errors.order || errors.message) {
+      this.fbSet({ errors: errors, notice: '' });
+      return;
+    }
+    this.fbSet({ errors: {}, notice: '', busy: true });
+    const outcome = this.props.feedbackOutcome || 'success';
+    setTimeout(() => {
+      if (outcome === 'serverError') {
+        this.fbSet({ busy: false, notice: 'Сообщение не отправилось: служба поддержки сейчас не отвечает. Текст остался в форме — попробуйте отправить через минуту.' });
+      } else if (outcome === 'rateLimited') {
+        this.fbSet({ busy: false, notice: 'Сообщение не отправилось: за последний час вы уже отправили пять обращений. Следующее можно отправить через 20 минут, текст останется в форме.' });
+      } else {
+        this.fbSet({ busy: false, sent: true, ticket: '48213' });
+      }
+    }, 900);
+  }
+
+  footerVals() {
+    const fb = this.fbState();
+    const length = fb.message.length;
+    const showCount = 2000 - length <= 200;
+    const messageIds = ['fb-message-help'];
+    if (fb.errors.message) messageIds.push('fb-message-error');
+    if (showCount) messageIds.push('fb-message-count');
+    return {
+      fbSent: fb.sent,
+      fbShowForm: !fb.sent,
+      fbSentText: 'Сообщение отправлено, номер обращения — ' + fb.ticket + '. Ответ придёт на vera.ilina@example.com в течение [СРОК ОТВЕТА].',
+      fbTopic: fb.topic,
+      fbIsOrder: fb.topic === 'order',
+      fbOrder: fb.order,
+      fbOrderInvalid: fb.errors.order ? 'true' : 'false',
+      fbOrderDescribedBy: fb.errors.order ? 'fb-order-error' : undefined,
+      fbHasOrderError: !!fb.errors.order,
+      fbOrderError: fb.errors.order || '',
+      fbMessage: fb.message,
+      fbMessageInvalid: fb.errors.message ? 'true' : 'false',
+      fbMessageDescribedBy: messageIds.join(' '),
+      fbHasMessageError: !!fb.errors.message,
+      fbMessageError: fb.errors.message || '',
+      fbShowCount: showCount,
+      fbCountText: length + ' / 2000',
+      fbBusy: fb.busy,
+      fbBusyAttr: fb.busy ? 'true' : 'false',
+      fbSubmitLabel: fb.busy ? 'Отправляем…' : 'Отправить',
+      fbHasNotice: !!fb.notice,
+      fbNotice: fb.notice,
+      onFbSubmit: (e) => this.fbSubmit(e),
+      onFbTopic: (e) => this.fbSet({ topic: e.target.value, errors: Object.assign({}, fb.errors, { order: '' }) }),
+      onFbOrder: (e) => this.fbSet({ order: e.target.value, errors: Object.assign({}, fb.errors, { order: '' }) }),
+      onFbMessage: (e) => this.fbSet({ message: e.target.value, errors: Object.assign({}, fb.errors, { message: '' }) }),
+      onFbAgain: () => this.setState({ fb: null })
+    };
+  }
+
+  renderVals() {
+    return Object.assign({}, this.pageVals(), this.footerVals());
+  }
+}
+</script>
+</body>
+</html>

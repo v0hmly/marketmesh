@@ -255,6 +255,69 @@
       "w": 1280,
       "x": 2720,
       "y": 0
+    },
+    "Home.dc.html": {
+      "h": 3000,
+      "is_interactive": true,
+      "page": "storefront",
+      "title": "Главная · лента",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Product.dc.html": {
+      "h": 2680,
+      "is_interactive": true,
+      "page": "storefront",
+      "title": "Карточка изделия",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Shop.dc.html": {
+      "h": 2260,
+      "is_interactive": true,
+      "page": "storefront",
+      "title": "Карточка мастерской",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "SecurityVerify.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "buyer",
+      "title": "Ссылка из письма · подтверждение почты",
+      "w": 1280,
+      "x": 0,
+      "y": 1060
+    },
+    "SecurityReset.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "buyer",
+      "title": "Ссылка из письма · новый пароль",
+      "w": 1280,
+      "x": 1360,
+      "y": 1060
+    },
+    "SecurityChangeEmail.dc.html": {
+      "h": 720,
+      "is_interactive": true,
+      "page": "buyer",
+      "title": "Ссылка из письма · новая почта",
+      "w": 1280,
+      "x": 2720,
+      "y": 1060
+    },
+    "SecurityCancelEmail.dc.html": {
+      "h": 720,
+      "is_interactive": true,
+      "page": "buyer",
+      "title": "Ссылка из письма · отмена смены почты",
+      "w": 1280,
+      "x": 4080,
+      "y": 1060
     }
   },
   "createdOnFiles": {
@@ -278,6 +341,10 @@
   "order": [
     "Login.dc.html",
     "Register.dc.html",
+    "SecurityVerify.dc.html",
+    "SecurityReset.dc.html",
+    "SecurityChangeEmail.dc.html",
+    "SecurityCancelEmail.dc.html",
     "SellerLogin.dc.html",
     "SellerApply.dc.html",
     "StaffLogin.dc.html",
@@ -305,7 +372,10 @@
     "MarketMeshId.dc.html",
     "SellerDashboard.dc.html",
     "SellerProducts.dc.html",
-    "SellerOrders.dc.html"
+    "SellerOrders.dc.html",
+    "Home.dc.html",
+    "Product.dc.html",
+    "Shop.dc.html"
   ],
   "pages": [
     {
@@ -335,6 +405,10 @@
     {
       "id": "seller-account",
       "name": "Кабинет продавца"
+    },
+    {
+      "id": "storefront",
+      "name": "Витрина"
     }
   ],
   "title": "Вход и регистрация"
