@@ -138,4 +138,29 @@ describe('shell confirmed account theme', () => {
     await pending;
     expect(controller.failed.value).toBe(false);
   });
+  it('exposes the confirmed version with its owner for CAS and forgets it on reset', async () => {
+    const { session, state } = fixture();
+    let resolve!: (value: AccountSettings) => void;
+    vi.mocked(session.readSettings).mockReturnValueOnce(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    const controller = theme(session);
+    expect(controller.loading.value).toBe(true);
+    expect(controller.confirmed.value).toBeNull();
+    resolve(settings('dark', 5n));
+    await flushPromises();
+    expect(controller.loading.value).toBe(false);
+    expect(controller.confirmed.value?.settings.version).toBe(5n);
+    expect(controller.confirmed.value?.guard).toEqual({
+      generation: 'g1',
+      subjectId: '01'.repeat(16),
+    });
+    controller.accept(settings('light', 6n), session.capture());
+    expect(controller.confirmed.value?.settings.theme).toBe('light');
+    state.value = { status: 'signingOut', generation: 'g2', subjectId: null };
+    expect(controller.confirmed.value).toBeNull();
+    expect(controller.loading.value).toBe(false);
+  });
 });

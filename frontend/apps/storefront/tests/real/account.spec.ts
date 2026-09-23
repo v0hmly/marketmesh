@@ -84,7 +84,10 @@ async function login(page: Page, who: typeof a, stage: AccountStage = 'profile')
 }
 async function ready(page: Page, stage: AccountStage = 'profile') {
   step(stage, 'ready', 'start');
-  await expect(page.getByLabel('Имя', { exact: true })).toBeVisible({ timeout: 45_000 });
+  // Без раздела заказов кабинет открывается на MarketMesh ID.
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeVisible({
+    timeout: 45_000,
+  });
   step(stage, 'ready', 'done');
 }
 async function confirmedLogout(page: Page, stage: AccountStage) {
@@ -92,7 +95,7 @@ async function confirmedLogout(page: Page, stage: AccountStage) {
   const response = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === '/auth.v1.AuthService/Logout',
   );
-  await page.getByRole('button', { name: 'Выйти', exact: true }).click();
+  await page.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
   expect((await response).status()).toBe(200);
   // App navigates only after the durable session journal is settled.
   await expect(page).toHaveURL(/\/login$/);
@@ -142,11 +145,18 @@ async function rpc(page: Page, method = 'GetMe', body: Record<string, unknown> =
     { method, body },
   );
 }
-async function save(page: Page, name: string, bio: string) {
-  await page.getByLabel('Имя', { exact: true }).fill(name);
-  await page.getByRole('textbox', { name: 'О себе', exact: true }).fill(bio);
-  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
-  await expect(page.getByText('Изменения сохранены.', { exact: true })).toBeVisible();
+/** Меняет имя и город в MarketMesh ID; хотя бы одно значение должно отличаться. */
+async function save(page: Page, name: string, city: string) {
+  const edit = page.getByRole('button', { name: 'Изменить данные', exact: true });
+  if (await edit.isVisible()) await edit.click();
+  await page.getByRole('textbox', { name: 'Имя', exact: true }).fill(name);
+  await page.getByRole('textbox', { name: 'Город проживания', exact: true }).fill(city);
+  const response = page.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === '/user.v1.UserService/UpdateMe',
+  );
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  expect((await response).status()).toBe(200);
+  await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
 }
 async function assertPrivateCookies(context: BrowserContext, page: Page) {
   const cookies = await context.cookies();
@@ -262,7 +272,7 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   await save(page, 'Мастер А', '<script>window.unwanted = true</script>');
   await page.reload();
   await ready(page);
-  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toHaveValue(
+  await expect(page.locator('.id-rows').first()).toContainText(
     '<script>window.unwanted = true</script>',
   );
   expect(await page.evaluate(() => 'unwanted' in window)).toBe(false);
@@ -274,17 +284,18 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   await second.goto('/account');
   await ready(second);
   await save(page, 'Мастер А', 'Сохранено первой вкладкой');
-  await second.getByRole('textbox', { name: 'О себе', exact: true }).fill('Мой черновик');
-  await second.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+  await second.getByRole('button', { name: 'Изменить данные', exact: true }).click();
+  await second.getByRole('textbox', { name: 'Город проживания', exact: true }).fill('Мой черновик');
+  await second.getByRole('button', { name: 'Сохранить', exact: true }).click();
   await expect(second.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
-  await expect(second.getByRole('textbox', { name: 'О себе', exact: true })).toHaveValue(
+  await expect(second.getByRole('textbox', { name: 'Город проживания', exact: true })).toHaveValue(
     'Мой черновик',
   );
   await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
   await expect(second.locator('.latest-profile')).toContainText('Сохранено первой вкладкой');
   await second.getByRole('button', { name: 'Оставить мой черновик для сохранения' }).click();
-  await second.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
-  await expect(second.getByText('Изменения сохранены.', { exact: true })).toBeVisible();
+  await second.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await expect(second.getByText('Данные сохранены.', { exact: true })).toBeVisible();
   await second.close();
   const other = await browser.newContext({
     baseURL: process.env.BASE_URL,
@@ -315,7 +326,7 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
       (forgedWrite.status === 200 &&
         forgedWrite.body.profile?.subjectId === profileB.body.profile?.subjectId),
   ).toBe(true);
-  expect((await rpc(page)).body.profile?.bio).toBe('Мой черновик');
+  expect((await rpc(page)).body.profile?.city).toBe('Мой черновик');
   await assertPrivateCookies(other, otherPage);
   const anonymous = await browser.newContext({
     baseURL: process.env.BASE_URL,
@@ -329,9 +340,9 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   const logoutResponse = page.waitForResponse((response) =>
     response.url().endsWith('/auth.v1.AuthService/Logout'),
   );
-  await page.getByRole('button', { name: 'Выйти', exact: true }).click();
+  await page.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
   expect((await logoutResponse).status()).toBe(200);
-  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toHaveCount(0);
+  await expect(page.locator('.id-rows')).toHaveCount(0);
   // A separate context retains the old cookies; no UI bootstrap runs in this page.
   const replay = await browser.newContext({
     baseURL: process.env.BASE_URL,
@@ -350,22 +361,36 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   const parallelPage = await parallel.newPage();
   await login(parallelPage, a);
   await ready(parallelPage);
-  const logoutAllResponse = page.waitForResponse((response) =>
-    response.url().endsWith('/auth.v1.AuthService/LogoutAll'),
+  // After a new sign-in the other sessions are protected: the UI blocks the action and
+  // the server rejects it regardless.
+  await expect(page.getByText('Вы вошли с нового устройства.', { exact: false })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Выйти на всех устройствах', exact: true }),
+  ).toBeDisabled();
+  const logoutAll = await page.evaluate(
+    async () =>
+      (
+        await fetch('/auth.v1.AuthService/LogoutAll', {
+          method: 'POST',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', 'Connect-Protocol-Version': '1' },
+          body: '{}',
+        })
+      ).status,
   );
-  await page.getByRole('button', { name: 'Выйти на всех устройствах', exact: true }).click();
-  expect((await logoutAllResponse).status()).toBe(400);
-  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toBeVisible();
+  expect(logoutAll).toBe(400);
+  await expect(page.locator('.id-rows').first()).toBeVisible();
   expect((await rpc(parallelPage)).status).toBe(200);
   expect((await rpc(otherPage)).status).toBe(200);
   await other.setOffline(true);
-  await otherPage.getByRole('button', { name: 'Выйти', exact: true }).click();
+  await otherPage.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
   await expect(
-    otherPage.getByText(
-      'Сервер не подтвердил выход. Сессия может оставаться активной. Проверьте соединение.',
-    ),
+    otherPage.getByText('Сервер не подтвердил выход. Сессия может оставаться активной.', {
+      exact: false,
+    }),
   ).toBeVisible();
-  await expect(otherPage.getByRole('textbox', { name: 'О себе', exact: true })).toHaveCount(0);
+  await expect(otherPage.locator('.id-rows')).toHaveCount(0);
   await other.setOffline(false);
   // An unconfirmed local logout must not claim server revocation.
   expect((await rpc(otherPage)).status).toBe(200);
@@ -411,23 +436,23 @@ test('real address book CRUD, CAS, owner isolation, relogin and ambiguous operat
   await ready(page, 'book-initial');
   await openAddresses(page);
   await createDelivery(page, 'Первый получатель');
-  await expect(page.locator('.address-card')).toHaveCount(1);
+  await expect(page.locator('.address-row')).toHaveCount(1);
   await createDelivery(page, 'Второй получатель');
-  await expect(page.locator('.address-card')).toHaveCount(2);
+  await expect(page.locator('.address-row')).toHaveCount(2);
   let response = await rpc(page, 'ListAddresses');
   expect(response.status).toBe(200);
   expect(response.cache).toContain('no-store');
   expect(response.body.book?.addresses?.length).toBe(2);
   expect(response.body.book?.addresses?.filter((item) => item.isDefault).length).toBe(1);
   const firstId = response.body.book!.addresses![0]!.addressId;
-  const second = page.locator('.address-card').filter({ hasText: 'Второй получатель' });
+  const second = page.locator('.address-row').filter({ hasText: 'Второй получатель' });
   await second.getByRole('button', { name: 'Использовать по умолчанию', exact: false }).click();
   await expect(second).toContainText('По умолчанию');
   const otherTab = await context.newPage();
   await otherTab.goto('/account/addresses');
-  await expect(otherTab.locator('.address-card')).toHaveCount(2);
+  await expect(otherTab.locator('.address-row')).toHaveCount(2);
   await otherTab
-    .locator('.address-card')
+    .locator('.address-row')
     .filter({ hasText: 'Первый получатель' })
     .getByRole('button', { name: 'Изменить', exact: false })
     .click();
@@ -445,26 +470,27 @@ test('real address book CRUD, CAS, owner isolation, relogin and ambiguous operat
   );
   await otherTab.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
   await expect(
-    otherTab.locator('.address-card').filter({ hasText: 'Второй получатель' }),
+    otherTab.locator('.address-row').filter({ hasText: 'Второй получатель' }),
   ).toContainText('Сохранено первой вкладкой');
   await otherTab.getByRole('button', { name: 'Оставить мой черновик для сохранения' }).click();
   await otherTab.getByRole('button', { name: 'Сохранить адрес', exact: true }).click();
   await expect(otherTab.getByText('Адрес сохранён.', { exact: true })).toBeVisible();
   await otherTab.close();
   await page.reload();
-  await expect(page.locator('.address-card')).toHaveCount(2);
+  await expect(page.locator('.address-row')).toHaveCount(2);
   await second.getByRole('button', { name: 'Удалить', exact: false }).click();
-  await expect(page.getByRole('button', { name: 'Отменить удаление' })).toBeVisible();
+  const confirmDelete = page.getByRole('dialog', { name: 'Удалить адрес «Второй получатель»?' });
+  await expect(confirmDelete).toBeVisible();
   expect((await rpc(page, 'ListAddresses')).body.book?.addresses?.length).toBe(2);
-  await page.getByRole('button', { name: 'Подтвердить удаление' }).click();
-  await expect(page.locator('.address-card')).toHaveCount(1);
+  await confirmDelete.getByRole('button', { name: 'Удалить адрес', exact: true }).click();
+  await expect(page.locator('.address-row')).toHaveCount(1);
   await expect(page.getByText('По умолчанию', { exact: true })).toHaveCount(0);
   await confirmedLogout(page, 'book-relogin');
   await login(page, bookA, 'book-relogin');
   await ready(page, 'book-relogin');
   await openAddresses(page);
-  await expect(page.locator('.address-card')).toHaveCount(1);
-  await expect(page.locator('.address-card')).toContainText('Черновик второй вкладки');
+  await expect(page.locator('.address-row')).toHaveCount(1);
+  await expect(page.locator('.address-row')).toContainText('Черновик второй вкладки');
   const other = await browser.newContext({
     baseURL: process.env.BASE_URL,
     ignoreHTTPSErrors: false,
@@ -475,7 +501,7 @@ test('real address book CRUD, CAS, owner isolation, relogin and ambiguous operat
     await login(foreign, bookB, 'book-foreign');
     await ready(foreign, 'book-foreign');
     await openAddresses(foreign);
-    await expect(foreign.locator('.address-card')).toHaveCount(0);
+    await expect(foreign.locator('.address-row')).toHaveCount(0);
     const theirs = await rpc(foreign, 'ListAddresses');
     response = await rpc(page, 'ListAddresses');
     expect(theirs.body.book?.subjectId !== response.body.book?.subjectId).toBe(true);
@@ -514,7 +540,7 @@ test('real address book CRUD, CAS, owner isolation, relogin and ambiguous operat
   expect(creates).toBe(1);
   await page.unroute('**/user.v1.UserService/CreateAddress');
   await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
-  await expect(page.locator('.address-card')).toHaveCount(2);
+  await expect(page.locator('.address-row')).toHaveCount(2);
   await page.getByRole('button', { name: 'Принять актуальную книгу' }).click();
   expect(creates).toBe(1);
   const privateValues = [
@@ -537,8 +563,8 @@ test('real address book CRUD, CAS, owner isolation, relogin and ambiguous operat
     expect(revoked.status()).toBe(200);
     await route.abort('failed');
   });
-  await page.getByRole('button', { name: 'Выйти', exact: true }).click();
-  await expect(page.locator('.address-card')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
+  await expect(page.locator('.address-row')).toHaveCount(0);
   await expect(page.getByText('Сервер не подтвердил выход.', { exact: false })).toBeVisible();
   expect(logouts).toBe(1);
   await page.unroute('**/auth.v1.AuthService/Logout');
@@ -583,7 +609,7 @@ test('real maximum Unicode address book crosses 64 KiB and enforces the twenty a
   expect(limit.status).toBe(429);
   expect(errorInfo(limit).reason).toBe('ADDRESS_LIMIT_REACHED');
   await openAddresses(page);
-  await expect(page.locator('.address-card')).toHaveCount(20);
+  await expect(page.locator('.address-row')).toHaveCount(20);
   await expect(page.getByRole('button', { name: 'Добавить адрес', exact: true })).toBeDisabled();
   // Exercise the actual browser's binary full-book response and the larger transport limit.
   const size = await page.evaluate(async () => {
@@ -599,17 +625,23 @@ test('real maximum Unicode address book crosses 64 KiB and enforces the twenty a
   expect(size.status).toBe(200);
   expect(size.bytes > 65_536 && size.bytes < 131_072).toBe(true);
   await page.reload();
-  await expect(page.locator('.address-card')).toHaveCount(20);
+  await expect(page.locator('.address-row')).toHaveCount(20);
 });
 
+const themePicker = (page: Page) => page.getByLabel('Тема оформления', { exact: true });
 async function openSettings(page: Page) {
-  await page.getByRole('link', { name: 'Оформление', exact: true }).click();
-  await expect(page.getByRole('group', { name: 'Тема оформления', exact: true })).toBeVisible();
+  // Тема выбирается в боковой панели кабинета, список активен после чтения настроек.
+  await expect(themePicker(page)).toBeEnabled();
 }
 async function selectTheme(page: Page, label: string) {
-  await page.getByRole('radio', { name: label, exact: true }).check();
-  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
-  await expect(page.getByText('Оформление сохранено.', { exact: true })).toBeVisible();
+  const response = page.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === '/user.v1.UserService/UpdateSettings',
+  );
+  await themePicker(page).selectOption({ label });
+  expect((await response).status()).toBe(200);
+  await expect(
+    page.getByText('Тема сохранена и применится на всех ваших устройствах.', { exact: true }),
+  ).toBeVisible();
 }
 test('real themes persist with independent versions, isolated owners, CAS and a lost committed reply', async ({
   page,
@@ -624,7 +656,7 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
   await login(page, themeA, 'theme-initial');
   await ready(page, 'theme-initial');
   await openSettings(page);
-  await expect(page.getByRole('radio', { name: 'Как в системе', exact: true })).toBeChecked();
+  await expect(themePicker(page)).toHaveValue('system');
   const initialSettings = await rpc(page, 'GetSettings');
   const initialProfile = await rpc(page);
   const initialBook = await rpc(page, 'ListAddresses');
@@ -654,7 +686,6 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
   const saved = await rpc(page, 'GetSettings');
   expect(saved.body.settings?.theme).toBe('THEME_DARK');
   expect(saved.body.settings?.version !== initialSettings.body.settings!.version).toBe(true);
-  await page.getByRole('link', { name: 'О себе', exact: true }).click();
   await page.reload();
   await ready(page, 'theme-initial');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
@@ -673,7 +704,7 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
     await login(foreign, themeB, 'theme-foreign');
     await ready(foreign, 'theme-foreign');
     await openSettings(foreign);
-    await expect(foreign.getByRole('radio', { name: 'Как в системе', exact: true })).toBeChecked();
+    await expect(themePicker(foreign)).toHaveValue('system');
     await selectTheme(foreign, 'Светлая');
     const foreignSettings = await rpc(foreign, 'GetSettings');
     expect(foreignSettings.body.settings?.subjectId !== saved.body.settings!.subjectId).toBe(true);
@@ -693,20 +724,23 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
   await openSettings(page);
   const second = await context.newPage();
   await second.goto('/account/settings');
-  await expect(second.getByRole('radio', { name: 'Тёмная', exact: true })).toBeChecked();
-  await second.getByRole('radio', { name: 'Светлая', exact: true }).check();
-  await selectTheme(page, 'Как в системе');
-  await second.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
-  await expect(second.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
-  await expect(second.getByRole('radio', { name: 'Светлая', exact: true })).toBeChecked();
-  await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
-  await expect(second.locator('.settings-latest')).toContainText('Как в системе');
-  await second.getByRole('button', { name: 'Оставить мой выбор для сохранения' }).click();
-  await second.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
-  await expect(second.getByText('Оформление сохранено.', { exact: true })).toBeVisible();
+  await expect(second).toHaveURL(/\/account\/id$/);
+  await openSettings(second);
+  await expect(themePicker(second)).toHaveValue('dark');
+  await selectTheme(page, 'Системная');
+  // The second tab holds the previous version: its write conflicts, is reread, never retried.
+  const conflict = second.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === '/user.v1.UserService/UpdateSettings',
+  );
+  await themePicker(second).selectOption({ label: 'Светлая' });
+  expect((await conflict).status()).toBe(409);
+  await expect(second.getByText('Тему изменили в другом окне', { exact: false })).toBeVisible();
+  await expect(themePicker(second)).toHaveValue('system');
+  await expect(second.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await selectTheme(second, 'Светлая');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
-  await expect(page.getByRole('radio', { name: 'Светлая', exact: true })).toBeChecked();
+  await expect(themePicker(page)).toHaveValue('light');
   let writes = 0;
   await page.route('**/user.v1.UserService/UpdateSettings', async (route) => {
     writes++;
@@ -714,17 +748,14 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
     expect(committed.status()).toBe(200);
     await route.abort('failed');
   });
-  await page.getByRole('radio', { name: 'Тёмная', exact: true }).check();
-  await page.getByRole('button', { name: 'Сохранить оформление', exact: true }).click();
-  await expect(page.getByText('Сохранение не подтверждено.', { exact: false })).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
-  expect(writes).toBe(1);
-  await page.unroute('**/user.v1.UserService/UpdateSettings');
-  await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
-  await expect(page.locator('.settings-latest')).toContainText('Тёмная');
-  await page.getByRole('button', { name: 'Принять актуальные настройки' }).click();
+  // The committed write loses its reply: the reread confirms it without a second write.
+  await themePicker(page).selectOption({ label: 'Тёмная' });
+  await expect(
+    page.getByText('Тема сохранена и применится на всех ваших устройствах.', { exact: true }),
+  ).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   expect(writes).toBe(1);
+  await page.unroute('**/user.v1.UserService/UpdateSettings');
   expect(
     await page.evaluate(() =>
       /theme|dark|light/.test(JSON.stringify({ ...localStorage, ...sessionStorage })),
@@ -732,7 +763,7 @@ test('real themes persist with independent versions, isolated owners, CAS and a 
   ).toBe(false);
   await confirmedLogout(second, 'theme-relogin');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(themePicker(page)).toHaveCount(0);
   await second.close();
 });
 
@@ -746,7 +777,17 @@ test('real identity fields persist with CAS, owner isolation and an ambiguous co
   await register(page, owner);
   await login(page, owner);
   await ready(page);
-  await save(page, 'Вера', 'Существующая биография');
+  // «О себе» больше не редактируется в интерфейсе (MM-97), но данные User сохраняются.
+  const initial = (await rpc(page)).body.profile!;
+  expect(
+    (
+      await rpc(page, 'UpdateMe', {
+        displayName: 'Вера',
+        bio: 'Существующая биография',
+        expectedVersion: initial.version,
+      })
+    ).status,
+  ).toBe(200);
   await page.goto('/account/id');
   const edit = (target: Page) =>
     target.getByRole('button', { name: 'Изменить данные', exact: true });
@@ -788,18 +829,6 @@ test('real identity fields persist with CAS, owner isolation and an ambiguous co
   await expect(page.locator('.public-preview')).not.toContainText(values['id-last']);
   await expect(page.locator('.public-preview')).not.toContainText(values['id-phone']);
   await expect(page.locator('.public-preview')).not.toContainText('2000');
-  // The original profile editor preserves the additional fields.
-  await page.goto('/account');
-  await ready(page);
-  await save(page, 'Вера', 'Новая биография');
-  expect((await rpc(page)).body.profile).toMatchObject({
-    lastName: 'Ильина 😀',
-    birthDate: '2000-02-29',
-    city: 'Санкт-Петербург',
-    showAge: true,
-  });
-  await page.goto('/account/id');
-  await expect(edit(page)).toBeVisible();
   saved = (await rpc(page)).body.profile!;
   const validInput = {
     displayName: saved.displayName,
@@ -883,6 +912,6 @@ test('real identity fields persist with CAS, owner isolation and an ambiguous co
     gender: 'GENDER_FEMALE',
     city: 'Казань',
     showAge: true,
-    bio: 'Новая биография',
+    bio: 'Существующая биография',
   });
 });

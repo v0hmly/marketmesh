@@ -18,6 +18,11 @@ export function createStorefrontRouter(history: RouterHistory = createWebHistory
       ...staffRoutes,
       { path: '/:pathMatch(.*)*', redirect: '/account' },
     ],
-    scrollBehavior: () => ({ top: 0 }),
+    // Якорь-идентификатор (например, /account/id#security) ведёт к разделу, если он уже
+    // на странице; остальное — к началу. Hash ссылок из писем (#token=…) не селектор.
+    scrollBehavior: (to) =>
+      /^#[A-Za-z][\w-]*$/.test(to.hash) && document.getElementById(to.hash.slice(1))
+        ? { el: to.hash, top: 24 }
+        : { top: 0 },
   });
 }

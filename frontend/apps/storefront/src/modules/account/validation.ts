@@ -3,32 +3,6 @@ import { trimDisplayName, wellFormed } from '../../shared/validation';
 const utf8 = new TextEncoder();
 const controls = /\p{Cc}/u;
 
-export function validateProfile(
-  displayName: string,
-  bio: string,
-): { displayName?: string; bio?: string } {
-  const errors: { displayName?: string; bio?: string } = {};
-  const normalized = trimDisplayName(displayName);
-  if (
-    !wellFormed(displayName) ||
-    utf8.encode(displayName).length > 320 ||
-    Array.from(normalized).length > 80 ||
-    controls.test(displayName)
-  ) {
-    errors.displayName = 'Имя: не более 80 символов и 320 байт UTF-8, без управляющих символов.';
-  }
-  if (
-    !wellFormed(bio) ||
-    utf8.encode(bio).length > 4000 ||
-    Array.from(bio).length > 1000 ||
-    controls.test(bio.replace(/[\n\t]/g, ''))
-  ) {
-    errors.bio =
-      'О себе: не более 1000 символов и 4000 байт UTF-8. Допустимы переносы строк и табуляция.';
-  }
-  return errors;
-}
-
 const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function calendarDate(value: string): RegExpExecArray | null {
@@ -114,6 +88,19 @@ export function yearWord(age: number): string {
   if (tail === 1) return 'год';
   if (tail >= 2 && tail <= 4) return 'года';
   return 'лет';
+}
+
+/** Публичная строка рядом с отзывом: имя, город и возраст, если его разрешено показывать. */
+export function publicLineOf(identity: {
+  displayName: string;
+  city: string;
+  birthDate: string;
+  showAge: boolean;
+}): string {
+  const parts = [identity.displayName.trim(), identity.city.trim()];
+  const age = identity.showAge ? ageOf(identity.birthDate) : null;
+  if (age !== null) parts.push(`${age} ${yearWord(age)}`);
+  return parts.filter(Boolean).join(', ') || 'Покупатель MarketMesh';
 }
 
 const monthNames = [

@@ -35,14 +35,18 @@ test('email verification, optional code, reissued code, reset and security notif
   await expect(page.getByRole('alert')).toContainText('Подтвердите почту');
   await verifyEmail(page, email);
   await signIn(page, email, password);
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account\/id$/);
   await page.goto('/account/security');
-  await expect(page.getByText(email, { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/account\/id#security$/);
+  await expect(page.locator('.security-row').filter({ hasText: 'Почта для входа' })).toContainText(
+    email,
+  );
   await accessible(page);
   await expect(
-    page.getByRole('button', { name: 'Закрыть все сеансы', exact: true }),
+    page.getByRole('button', { name: 'Выйти на всех устройствах', exact: true }),
   ).toBeDisabled();
   const oldCookies = await context.cookies();
+  await page.getByRole('button', { name: 'Включить', exact: true }).click();
   await page.getByLabel('Пароль для настройки входа').fill(password);
   await page.getByRole('button', { name: 'Включить подтверждение входа', exact: true }).click();
   const enableMail = await letter(email, 'Код для входа в MarketMesh');
@@ -64,7 +68,8 @@ test('email verification, optional code, reissued code, reset and security notif
   expect((await context.cookies()).filter((c) => c.name.startsWith('__Host-mm-')).length).toBe(0);
   await context.addCookies(oldCookies);
   await page.goto('/account');
-  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Личное начинается со входа', { exact: true })).toBeVisible();
   await context.clearCookies();
   await signIn(page, email, password);
   const loginMail = await letter(email, 'Код для входа в MarketMesh', new Set([enableMail.ID]));
@@ -84,7 +89,7 @@ test('email verification, optional code, reissued code, reset and security notif
   expect(reissued.Text.includes('с момента запроса')).toBe(true);
   await page.getByLabel('Код из письма', { exact: true }).fill(letterCode(reissued));
   await page.getByRole('button', { name: 'Подтвердить вход', exact: true }).click();
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account\/id$/);
   await letter(email, 'Вход в аккаунт MarketMesh');
   await page.goto('/account/security/reset');
   await accessible(page);
@@ -141,9 +146,11 @@ test('email change requires password and confirmation at the new address', async
   await expect(page.getByRole('heading', { name: 'Аккаунт создан.' })).toBeVisible();
   await verifyEmail(page, oldAddress);
   await signIn(page, oldAddress, password);
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account\/id$/);
   await page.goto('/account/security');
-  await expect(page.getByText(oldAddress, { exact: true })).toBeVisible();
+  const loginEmail = page.locator('.security-row').filter({ hasText: 'Почта для входа' });
+  await expect(loginEmail).toContainText(oldAddress);
+  await page.getByRole('button', { name: 'Сменить почту', exact: true }).click();
   await page.getByLabel('Новая почта', { exact: true }).fill(newAddress);
   await page.getByLabel('Текущий пароль для смены почты').fill('WrongPassword1!');
   await page.getByRole('button', { name: 'Отправить подтверждение', exact: true }).click();
@@ -160,7 +167,7 @@ test('email change requires password and confirmation at the new address', async
   await signIn(page, oldAddress, password);
   await expect(page.getByRole('alert')).toContainText('Почта или пароль указаны неверно');
   await signIn(page, newAddress, password);
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account\/id$/);
   await page.goto('/account/security');
-  await expect(page.getByText(newAddress, { exact: true })).toBeVisible();
+  await expect(loginEmail).toContainText(newAddress);
 });

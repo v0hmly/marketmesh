@@ -1,5 +1,8 @@
 import { inject, type InjectionKey } from 'vue';
 import type { ThemeController } from './theme';
+
+/** Модули видят shell только через context и session: тип подтверждённых настроек — отсюда. */
+export type { ConfirmedSettings } from './theme';
 import type { SessionController } from './session';
 import type { SellerApi } from '../shared/api/seller';
 import type { StaffApi } from '../shared/api/staff';

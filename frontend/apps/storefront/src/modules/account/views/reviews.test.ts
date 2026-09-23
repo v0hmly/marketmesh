@@ -87,6 +87,11 @@ describe('reviews section', () => {
     expect(wrapper.text()).toContain('Ждут отзыва · 2');
     await button(wrapper, 'Написать отзыв на «Плед из шерсти мериноса»').trigger('click');
     expect(wrapper.find('#rate-w1-1').exists()).toBe(true);
+    // Без MarketMesh ID города нет, и ссылки на раздел тоже.
+    expect(wrapper.find('.form-footer .field-help').text()).toBe(
+      'Рядом с отзывом покажем ваше имя.',
+    );
+    expect(session.readProfile).not.toHaveBeenCalled();
     await wrapper.find('form').trigger('submit');
     expect(wrapper.text()).toContain('Поставьте оценку — без неё отзыв не отправить.');
     expect(wrapper.text()).toContain('Напишите хотя бы одно предложение');

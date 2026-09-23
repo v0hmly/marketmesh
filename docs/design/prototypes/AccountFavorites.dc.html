@@ -88,10 +88,7 @@
 
           <div style="display: flex; flex-direction: column; gap: 10px;">
             <sc-if value="{{item.inStock}}" hint-placeholder-val="{{true}}">
-              <button type="button" class="button primary wide" onClick="{{item.onAdd}}">
-                <span>В корзину</span>
-                <span aria-hidden="true">↗</span>
-              </button>
+              <button type="button" class="button secondary" onClick="{{item.onAdd}}">В корзину</button>
             </sc-if>
             <sc-if value="{{item.outOfStock}}" hint-placeholder-val="{{false}}">
               <button type="button" class="button secondary" onClick="{{item.onNotify}}">{{item.notifyLabel}}</button>

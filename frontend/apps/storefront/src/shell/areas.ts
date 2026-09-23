@@ -19,9 +19,18 @@ export const areaHomePath: Record<Area, string> = {
   staff: '/staff',
 };
 
+/** Название области в подвале, если маршрут не задаёт своё (`meta.section`). */
+export const areaTitle: Record<Area, string> = {
+  buyer: 'Личный кабинет',
+  seller: 'Портал продавца',
+  staff: 'Для сотрудников',
+};
+
 declare module 'vue-router' {
   interface RouteMeta {
     /** Продуктовая область маршрута; обязательна для модульных маршрутов. */
     area?: Area;
+    /** Название места для подвала, если оно точнее названия области. */
+    section?: string;
   }
 }

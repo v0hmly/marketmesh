@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
-import AccountNav from '../components/AccountNav.vue';
+import { useAccountCounts } from '../counts';
 import { loadSampleFavorites, type SampleFavorite } from '../sample-data';
 
 const session = useSession();
+const counts = useAccountCounts();
 const items = ref<SampleFavorite[] | null>(null);
 const loading = ref(false);
 const failure = ref('');
@@ -61,6 +62,7 @@ async function read() {
     const value = await loadSampleFavorites();
     if (attempt !== revision || !active) return;
     items.value = value;
+    if (counts) counts.favorites = value.length;
   } catch {
     if (attempt !== revision) return;
     failure.value =
@@ -79,6 +81,7 @@ function notify(item: SampleFavorite) {
 }
 function remove(item: SampleFavorite) {
   items.value = items.value?.filter((candidate) => candidate.id !== item.id) ?? [];
+  if (counts) counts.favorites = items.value.length;
   feedback.value = `«${item.title}» убрано из избранного.`;
 }
 watch(() => session.state.value.generation, clear, { flush: 'sync' });
@@ -104,17 +107,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section aria-labelledby="favorites-title">
-    <AccountNav />
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
-        <h1 id="favorites-title">Избранное</h1>
-        <p class="lede">
-          Изделия, к которым вы хотите вернуться. Мы предупредим, когда мастер пополнит партию.
-        </p>
-      </div>
-      <span class="section-number" aria-hidden="true">05 / ИЗБРАННОЕ</span>
+  <section class="account-section" aria-labelledby="favorites-title">
+    <div class="account-heading">
+      <h1 id="favorites-title">Избранное</h1>
+      <p class="lede">
+        Изделия, к которым вы хотите вернуться. Мы предупредим, когда мастер пополнит партию.
+      </p>
     </div>
     <div v-if="!permitted" class="card state-card">
       <p v-if="['unknown', 'checking'].includes(session.state.value.status)" role="status">
@@ -174,9 +172,8 @@ onBeforeUnmount(() => {
             }}</span>
           </div>
           <div class="favorite-actions">
-            <button v-if="item.left > 0" class="button primary wide" @click="add(item)">
-              В корзину <span aria-hidden="true">↗</span
-              ><span class="visually-hidden">: {{ item.title }}</span>
+            <button v-if="item.left > 0" class="button secondary" @click="add(item)">
+              В корзину<span class="visually-hidden">: {{ item.title }}</span>
             </button>
             <button v-else class="button secondary" @click="notify(item)">
               {{ notified.includes(item.id) ? 'Сообщим о пополнении' : 'Сообщить о пополнении'

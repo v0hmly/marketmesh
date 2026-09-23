@@ -17,6 +17,14 @@ vi.mock('../avatar/api', async (original) => ({
   ...(await original<object>()),
   prepareUpload: vi.fn(async (file: File) => ({ file })),
 }));
+// MarketMesh ID includes the sign-in section; its reads are not part of the avatar lifecycle.
+vi.mock('../security/api', async (original) => ({
+  ...(await original<object>()),
+  createSecurityApi: () => ({
+    getCredentials: vi.fn(() => new Promise(() => {})),
+    listSessions: vi.fn(() => new Promise(() => {})),
+  }),
+}));
 const mounted: VueWrapper[] = [];
 afterEach(() => {
   for (const wrapper of mounted.splice(0)) wrapper.unmount();

@@ -102,13 +102,16 @@ afterEach(() => {
   for (const wrapper of mounted.splice(0)) wrapper.unmount();
   vi.useRealTimers();
 });
-async function open(session: SessionController) {
+async function open(session: SessionController, attach = false) {
   const router = createStorefrontRouter(createMemoryHistory());
   await router.push('/account/addresses');
   await router.isReady();
   const wrapper = mount(
     { template: '<RouterView />' },
-    { global: { plugins: [router], provide: { [sessionKey as symbol]: session } } },
+    {
+      attachTo: attach ? document.body : undefined,
+      global: { plugins: [router], provide: { [sessionKey as symbol]: session } },
+    },
   );
   mounted.push(wrapper);
   await flushPromises();
@@ -139,16 +142,17 @@ describe('address book', () => {
       { fields: fields('Борис'), expectedBookVersion: 1n },
       { generation: 'g1', subjectId: '01'.repeat(16) },
     );
-    expect(wrapper.findAll('.address-card')).toHaveLength(2);
+    expect(wrapper.findAll('.address-row')).toHaveLength(2);
     await button(wrapper, 'Удалить адрес Анна').trigger('click');
     expect(session.deleteAddress).not.toHaveBeenCalled();
-    await button(wrapper, 'Подтвердить удаление').trigger('click');
+    expect(wrapper.find('[role="dialog"] h2').text()).toBe('Удалить адрес «Анна»?');
+    await wrapper.find('[role="dialog"] .button.primary').trigger('click');
     await flushPromises();
     expect(session.deleteAddress).toHaveBeenCalledWith(
       { addressId: address().addressId, expectedBookVersion: 2n },
       expect.anything(),
     );
-    expect(wrapper.findAll('.address-card')).toHaveLength(0);
+    expect(wrapper.findAll('.address-row')).toHaveLength(0);
   });
   it('updates fields and selects a default without changing other records', async () => {
     const { session } = fixture();
@@ -168,7 +172,7 @@ describe('address book', () => {
       { addressId: address(2).addressId, expectedBookVersion: 7n },
       expect.anything(),
     );
-    expect(wrapper.findAll('.address-card')[1]!.text()).toContain('По умолчанию');
+    expect(wrapper.findAll('.address-row')[1]!.text()).toContain('По умолчанию');
     await button(wrapper, 'Изменить адрес Анна').trigger('click');
     await wrapper.find('#address-comment').setValue('<script>текст</script>');
     await submit(wrapper);
@@ -217,7 +221,7 @@ describe('address book', () => {
     );
     await button(wrapper, 'Перечитать актуальные').trigger('click');
     await flushPromises();
-    expect(wrapper.findAll('.address-card')).toHaveLength(2);
+    expect(wrapper.findAll('.address-row')).toHaveLength(2);
     expect(session.createAddress).toHaveBeenCalledTimes(1);
     await button(wrapper, 'Принять актуальную').trigger('click');
     expect(wrapper.find('form').exists()).toBe(false);
@@ -275,7 +279,7 @@ describe('address book', () => {
     resolve(snapshot());
     await flushPromises();
     expect(wrapper.text()).not.toContain('Анна');
-    expect(wrapper.findAll('.address-card')).toHaveLength(0);
+    expect(wrapper.findAll('.address-row')).toHaveLength(0);
   });
   it('bounds profile provisioning polls and treats plain NotFound as an error', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
@@ -297,5 +301,52 @@ describe('address book', () => {
     );
     const view = await open(other.session);
     expect(view.wrapper.text()).toContain('Адреса пока недоступны');
+  });
+  it('confirms deletion in a modal dialog that traps focus and cancels on Escape', async () => {
+    const { session } = fixture();
+    const { wrapper } = await open(session, true);
+    expect(wrapper.find('.lede').text()).toContain('под рукой при оформлении заказа');
+    expect(wrapper.find('.address-row address').html()).toContain('<br>');
+    const trigger = button(wrapper, 'Удалить адрес Анна');
+    (trigger.element as HTMLButtonElement).focus();
+    await trigger.trigger('click');
+    await flushPromises();
+    const dialog = wrapper.find('[role="dialog"]');
+    expect(dialog.attributes('aria-modal')).toBe('true');
+    expect(wrapper.find(`#${dialog.attributes('aria-labelledby')}`).text()).toBe(
+      'Удалить адрес «Анна»?',
+    );
+    expect(wrapper.find('.reconcile-panel').exists()).toBe(false);
+    const cancel = dialog.find('.button.text-button');
+    const confirm = dialog.find('.button.primary');
+    expect(cancel.text()).toBe('Оставить адрес');
+    expect(confirm.text()).toBe('Удалить адрес');
+    expect(document.activeElement).toBe(cancel.element);
+    expect(document.body.style.overflow).toBe('hidden');
+    await dialog.trigger('keydown', { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(confirm.element);
+    await dialog.trigger('keydown', { key: 'Tab' });
+    expect(document.activeElement).toBe(cancel.element);
+    await wrapper.find('.dialog-scrim').trigger('click');
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+    await dialog.trigger('keydown', { key: 'Escape' });
+    await flushPromises();
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(trigger.element);
+    expect(document.body.style.overflow).toBe('');
+    expect(session.deleteAddress).not.toHaveBeenCalled();
+  });
+  it('closes the dialog on a rejected deletion so the error is not hidden behind it', async () => {
+    const { session } = fixture();
+    vi.mocked(session.deleteAddress).mockRejectedValueOnce(
+      new ConnectError('private', Code.PermissionDenied),
+    );
+    const { wrapper } = await open(session);
+    await button(wrapper, 'Удалить адрес Анна').trigger('click');
+    await wrapper.find('[role="dialog"] .button.primary').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(wrapper.find('[role="alert"]').text()).toContain('Недостаточно прав');
+    expect(wrapper.findAll('.address-row')).toHaveLength(1);
   });
 });

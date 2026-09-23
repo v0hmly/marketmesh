@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
-import AccountNav from '../components/AccountNav.vue';
+import { useAccountCounts } from '../counts';
 import { loadSampleOrders, type SampleOrder, type SampleOrderStatus } from '../sample-data';
 
 const session = useSession();
+const counts = useAccountCounts();
 const orders = ref<SampleOrder[] | null>(null);
 const loading = ref(false);
 const failure = ref('');
@@ -66,6 +67,7 @@ async function read() {
     const value = await loadSampleOrders();
     if (attempt !== revision || !active) return;
     orders.value = value;
+    if (counts) counts.orders = value.length;
   } catch {
     if (attempt !== revision) return;
     failure.value =
@@ -110,17 +112,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section aria-labelledby="orders-title">
-    <AccountNav />
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
-        <h1 id="orders-title">Заказы</h1>
-        <p class="lede">
-          Всё, что вы заказали: состав, получение и следующий шаг по каждому заказу.
-        </p>
-      </div>
-      <span class="section-number" aria-hidden="true">04 / ЗАКАЗЫ</span>
+  <section class="account-section" aria-labelledby="orders-title">
+    <div class="account-heading">
+      <h1 id="orders-title">Заказы</h1>
+      <p class="lede">Всё, что вы заказали: состав, получение и следующий шаг по каждому заказу.</p>
     </div>
     <div v-if="!permitted" class="card state-card">
       <p v-if="['unknown', 'checking'].includes(session.state.value.status)" role="status">

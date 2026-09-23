@@ -58,5 +58,5 @@ test('analytics sends bounded fields once per page and an outage does not block 
   await page.getByLabel('Почта', { exact: true }).fill(identifier);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account\/id$/);
 });

@@ -18,9 +18,9 @@
   --danger: #8d3428;
   --page: #f7f5ef;
   --focus: #7b9139;
-  --input-border: #b9c6b9;
+  --input-border: #6e896f;
   --input-bg: #fffefa;
-  --input-hover: #6e896f;
+  --input-hover: #415a3b;
   --disabled-bg: #f1f3ed;
   --disabled-ink: #647269;
   --brand-accent: #7f963f;
@@ -28,7 +28,7 @@
   --button-primary-ink: #fffef5;
   --button-primary-hover: #163c2a;
   --button-secondary: #f8f9ef;
-  --button-border: #c6d1be;
+  --button-border: #6e896f;
   --button-hover: #e7eddb;
   --button-text-hover: #edf0e4;
   --identity-bg: #eff1e7;
@@ -42,10 +42,11 @@
   --success-bg: #f0f4e3;
   --success-border: #d4dfbd;
   --success-ink: #3c5733;
-  --pending: #8c9c64;
+  --pending: #7f8f57;
   --reconcile-border: #d8d9bc;
   --reconcile-bg: #f7f6e9;
   --shadow: #29432c03;
+  --scrim: #203d3099;
 }
 
 :root[data-theme='dark'] {
@@ -87,6 +88,7 @@
   --reconcile-border: #82945b;
   --reconcile-bg: #303822;
   --shadow: #00000030;
+  --scrim: #0d1511cc;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -129,6 +131,7 @@
     --reconcile-border: #82945b;
     --reconcile-bg: #303822;
     --shadow: #00000030;
+    --scrim: #0d1511cc;
   }
 }
 
@@ -143,6 +146,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -150,8 +154,17 @@ textarea {
 button,
 a,
 input,
+select,
 textarea {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Без сброса браузер рисует вокруг группы серую рамку с отступами. */
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
 }
 
 button {
@@ -171,6 +184,7 @@ a {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 4px;
@@ -213,6 +227,7 @@ h4 {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--input-border);
@@ -225,13 +240,41 @@ textarea {
 }
 
 input:hover,
+select:hover:not(:disabled),
 textarea:hover {
   border-color: var(--input-hover);
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--green);
+}
+
+/* Список: оболочка поля и шеврон на CSS, как Select в дизайн-системе. */
+select {
+  appearance: none;
+  padding-right: 42px;
+  cursor: pointer;
+}
+
+.select-wrap {
+  position: relative;
+  display: block;
+}
+
+.select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -7px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  pointer-events: none;
 }
 
 input[aria-invalid='true'],
@@ -241,10 +284,11 @@ textarea[aria-invalid='true'] {
 
 textarea {
   resize: vertical;
-  min-height: 170px;
+  min-height: 110px;
 }
 
 input:disabled,
+select:disabled,
 textarea:disabled {
   background: var(--disabled-bg);
   color: var(--disabled-ink);
@@ -552,6 +596,7 @@ main:focus {
 
 .secondary:hover:not(:disabled) {
   background: var(--button-hover);
+  border-color: var(--input-hover);
 }
 
 .text-button {
@@ -995,19 +1040,92 @@ main:focus {
   }
 }
 
-.account-nav {
+/* Каркас кабинета покупателя (MM-97): панель 268px слева, экран раздела справа. */
+.account-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+.account-layout-signed {
+  grid-template-columns: 268px minmax(0, 1fr);
+}
+.account-wide {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.account-sidebar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  margin-bottom: 32px;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+.account-main {
+  min-width: 0;
+}
+.account-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .account-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--ink);
   text-decoration: none;
-  padding: 8px 0;
-  border-bottom: 2px solid transparent;
+  overflow-wrap: anywhere;
 }
+.account-nav a:hover {
+  background: var(--button-text-hover);
+}
+/* Активный раздел отличается не только цветом: фон, насыщенность и aria-current. */
 .account-nav .account-link-active {
-  border-bottom-color: var(--green);
+  font-weight: 600;
+  color: var(--green);
+  background: var(--identity-bg);
+}
+.account-nav-count {
+  font-size: 0.73rem;
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.theme-setting {
+  margin: 0;
+}
+.theme-setting .text-button {
+  align-self: flex-start;
+}
+.theme-setting .notice {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  padding: 12px 14px;
+}
+.account-signout {
+  align-self: flex-start;
+  padding-inline: 14px;
+}
+.account-section {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.account-section > .notice {
+  margin: 0;
+}
+/* Заголовок кабинета — название раздела, как пункт меню; без eyebrow и номера. */
+.account-heading h1 {
+  font-size: 2.6rem;
+  letter-spacing: -0.04em;
+  margin-bottom: 10px;
 }
 .address-content {
   max-width: 900px;
@@ -1024,20 +1142,83 @@ main:focus {
 }
 .address-list {
   list-style: none;
+  margin: 0;
   padding: 0;
   display: grid;
   gap: 20px;
 }
-.address-card,
 .address-empty {
   padding: 26px;
   overflow-wrap: anywhere;
 }
-.address-card > p {
-  margin-top: 12px;
+/* AddressRow: панель r-md без тени — адреса равноправные строки одного списка. */
+.address-row {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow-wrap: anywhere;
 }
-.address-card .button-row {
-  margin-top: 20px;
+.address-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.address-head h2 {
+  font-size: 1.15rem;
+}
+.address-row address,
+.address-comment {
+  font-style: normal;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+/* Dialog: подтверждение необратимого действия поверх страницы. */
+.dialog-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--scrim);
+  overflow-y: auto;
+}
+.dialog {
+  max-width: 420px;
+  width: 100%;
+  padding: 32px;
+  display: grid;
+  gap: 16px;
+}
+.dialog:focus {
+  outline: none;
+}
+.dialog h2 {
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+.dialog p {
+  color: var(--muted);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
 }
 .address-editor {
   margin-top: 28px;
@@ -1063,20 +1244,14 @@ main:focus {
     align-items: start;
     flex-direction: column;
   }
-  .address-card {
-    padding: 22px;
+  .address-row {
+    padding: 18px;
+  }
+  .dialog {
+    padding: 24px;
   }
 }
 
-.settings-card {
-  max-width: 820px;
-}
-.theme-options {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-}
 .theme-options legend {
   font-size: 1.4rem;
   font-weight: 600;
@@ -1109,10 +1284,6 @@ main:focus {
   color: var(--muted);
   margin-top: 5px;
   font-size: 0.85rem;
-}
-.settings-card .reconcile-panel > button,
-.settings-latest {
-  margin: 16px 0;
 }
 
 /* Разделы кабинета покупателя: заказы, избранное, отзывы, MarketMesh ID (MM-83). */
@@ -1330,7 +1501,7 @@ main:focus {
   gap: 12px;
 }
 .stock-out {
-  color: var(--danger);
+  color: var(--muted);
 }
 .favorite-actions {
   display: flex;
@@ -1570,6 +1741,121 @@ main:focus {
   .id-form-grid,
   .public-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* MarketMesh ID: почта в личных данных, вход и безопасность, сеансы (MM-97). */
+.id-email {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.security-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.security-sections:focus {
+  outline: none;
+}
+.security-sections > .notice {
+  margin: 0;
+}
+.security-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.security-card .subtle {
+  margin: 6px 0 0;
+}
+.security-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.security-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.security-row-text .subtle {
+  margin: 0;
+}
+.security-row-title {
+  font-weight: 600;
+}
+.security-form fieldset {
+  display: grid;
+  gap: 4px;
+  max-width: 520px;
+}
+.security-form .button-row {
+  justify-content: flex-end;
+}
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.session-device {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sessions-footer .subtle {
+  margin: 0;
+}
+.security-card > .notice {
+  margin: 0;
+}
+
+/* Каркас кабинета на узких экранах: панель сужается, затем встаёт над содержимым. */
+@media (max-width: 1000px) {
+  .account-layout {
+    gap: 28px;
+  }
+  .account-layout-signed {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .account-layout-signed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .account-sidebar {
+    gap: 20px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .account-heading h1 {
+    font-size: 2.2rem;
+  }
+  .security-row,
+  .session-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
   }
 }
 
