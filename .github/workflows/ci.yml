@@ -50,7 +50,7 @@ jobs:
           ./tools/ci-test.sh
           ./tools/ci.sh secrets
       - name: Сгенерировать CSS дизайн-токенов
-        run: task design:generate
+        run: ./bin/task design:generate
       - name: Проверить Go workspace и изолированные модули
         run: ./tools/ci.sh go
       - name: Проверить безопасность Files DC harness без VM

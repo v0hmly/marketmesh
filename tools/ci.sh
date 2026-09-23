@@ -66,6 +66,7 @@ case "${1:-}" in
     ;;
   secrets) secrets ;;
   vulnerabilities)
+    task api:generate
     ./backend/tools/go-workspace.sh vuln
     (cd frontend && pnpm audit --audit-level=high)
     ;;
