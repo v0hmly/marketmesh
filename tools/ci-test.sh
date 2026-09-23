@@ -37,6 +37,21 @@ printf 'generated\n' > generated.txt
 expect_failure ./tools/ci.sh check-tree
 rm generated.txt
 
+# .gitignore must not conceal a generated file force-added to the index.
+mkdir -p frontend/gen/fixture
+printf '/frontend/gen/**/*_pb.ts\n' >> .gitignore
+printf '// @generated\n' > frontend/gen/fixture/example_pb.ts
+python3 tools/layout-check.py
+git add -f frontend/gen/fixture/example_pb.ts
+expect_failure python3 tools/layout-check.py
+if ! grep -q 'generated artifacts must be ignored' "${FIXTURE}/bin/check.log"; then
+  printf '%s\n' 'Layout не обнаружил сгенерированный файл в индексе.' >&2
+  exit 1
+fi
+git rm --cached -q frontend/gen/fixture/example_pb.ts
+rm frontend/gen/fixture/example_pb.ts
+git restore .gitignore
+
 # Синтетический маркер формата PAT; значение никогда не выдавалось GitHub.
 printf 'token=ghp_%s\n' "$(openssl rand -hex 18)" > accidental.txt
 git add accidental.txt

@@ -11,6 +11,12 @@
   с единственными `package.json`, `pnpm-workspace.yaml` и lock-файлом на уровне workspace.
 - `api/` — исходные protobuf-схемы, `easyp.yaml`, `easyp.lock` и автоматизация API.
   Генерируемый Go-код находится в `backend/api/gen/go/`, TS — в `frontend/gen/`.
+- Сгенерированные файлы не коммитятся: protobuf Go/TS, CSS из дизайн-токенов,
+  результаты сборки и отчёты добавляются в `.gitignore`. В Git остаются исходники,
+  генераторы, их закреплённые версии, lock-файлы и ручные manifests/README.
+  Новая генерация подключается к `task generate` и сборке из чистого checkout;
+  Docker генерирует внутри build stage и не использует локальные результаты.
+  Изменять артефакты вручную или добавлять через `git add -f` запрещено.
 - Общие команды запускаются из корня через `task`; ручные Go-команды — из `backend/`
   либо с `GOWORK="$PWD/backend/go.work"`. pnpm из корня: `pnpm --dir frontend …`.
 - В корень не возвращать языковые workspace/lock-файлы. Общий `bin/` и `.cache/`

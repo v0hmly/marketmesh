@@ -6,7 +6,8 @@ Go workspace находится в `backend/go.work`. Сервисы — в `ser
 `fixtures/` — Go-помощники инфраструктурных проверок и контейнерные workspace.
 
 Из корня репозитория используйте `task build`, `task test-race`, `task arch`
-и `task verify`. Для отдельного пакета:
+и `task verify`. Перед прямыми Go-командами или работой в IDE выполните `task generate` из корня.
+Для отдельного пакета:
 
 ```bash
 cd backend

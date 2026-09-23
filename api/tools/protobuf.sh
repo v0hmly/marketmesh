@@ -172,8 +172,8 @@ install_es_plugin() {
   if [[ ! -x "${PROTOC_GEN_ES_SOURCE}" ]] || \
     ! "${PROTOC_GEN_ES_SOURCE}" --version 2>&1 | grep -q "v${PROTOC_GEN_ES_VERSION}"; then
     (
-      cd "${REPO_ROOT}"
-      pnpm --dir frontend install --frozen-lockfile
+      cd "${REPO_ROOT}/frontend"
+      pnpm install --frozen-lockfile
     )
   fi
 
@@ -393,21 +393,23 @@ generate_check() (
     "${check_dir}/actual/go" \
     "${check_dir}/actual/ts"
 
-  copy_generated \
-    "${REPO_ROOT}/backend/api/gen/go" \
-    "${check_dir}/expected/go" \
-    \( -name '*.pb.go' -o -name '*.connect.go' \)
-  copy_generated \
-    "${REPO_ROOT}/frontend/gen" \
-    "${check_dir}/expected/ts" \
-    -name '*_pb.ts'
-
+  generate_to "${relative_check_dir}/expected/go" "${relative_check_dir}/expected/ts"
+  # A removed schema must not leave buildable stale code behind. Hand-written
+  # module/package scaffolding must survive regeneration.
+  printf 'stale\n' >"${check_dir}/actual/go/removed.pb.go"
+  printf 'stale\n' >"${check_dir}/actual/go/removed.connect.go"
+  printf 'stale\n' >"${check_dir}/actual/ts/removed_pb.ts"
+  for output in expected actual; do
+    printf 'module fixture\n' >"${check_dir}/${output}/go/go.mod"
+    printf '{}\n' >"${check_dir}/${output}/ts/package.json"
+  done
   generate_to "${relative_check_dir}/actual/go" "${relative_check_dir}/actual/ts"
 
   if ! diff -ru "${check_dir}/expected" "${check_dir}/actual"; then
-    printf 'Сгенерированные API-файлы устарели. Выполните task api:generate.\n' >&2
+    printf 'Повторная генерация API дала разные результаты.\n' >&2
     return 1
   fi
+
 )
 
 # Git hooks export repository-local variables; -C does not override them.
@@ -706,12 +708,16 @@ main() {
       run_easyp lint --root proto --path .
       ;;
     generate)
+      verify_pins
+      run_easyp mod download
       generate_to backend/api/gen/go frontend/gen
       ;;
     breaking)
       breaking_snapshot "${REPO_ROOT}" api/proto "${PROTO_BREAKING_REF:-dev}" api
       ;;
     generate-check)
+      verify_pins
+      run_easyp mod download
       generate_check
       ;;
     self-test)

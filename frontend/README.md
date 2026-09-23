@@ -16,3 +16,7 @@ Frontend строится на Vue и pnpm workspace. До появления н
 Установка из корня: `pnpm --dir frontend install --frozen-lockfile`.
 В каталоге `frontend/` доступны обычные `pnpm build`, `pnpm test`, `pnpm lint`
 и `pnpm typecheck`; корневые `task frontend:*` делегируют им работу.
+
+Команды workspace генерируют API до проверки/сборки. Перед прямым
+`pnpm --filter @marketmesh/storefront dev` выполните из корня `task generate`.
+Генерации нужны Go, Node и pnpm; результаты в `gen/` игнорируются Git.

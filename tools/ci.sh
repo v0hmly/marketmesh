@@ -56,7 +56,7 @@ case "${1:-}" in
     ./backend/tools/go-workspace.sh mod-verify
     ;;
   frontend)
-    pnpm --dir frontend install --frozen-lockfile
+    (cd frontend && pnpm install --frozen-lockfile)
     task frontend:verify
     ;;
   api)
@@ -66,8 +66,9 @@ case "${1:-}" in
     ;;
   secrets) secrets ;;
   vulnerabilities)
+    task api:generate
     ./backend/tools/go-workspace.sh vuln
-    pnpm --dir frontend audit --audit-level=high
+    (cd frontend && pnpm audit --audit-level=high)
     ;;
   check-tree) check_tree ;;
   *)
