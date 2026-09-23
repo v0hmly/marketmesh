@@ -14,7 +14,7 @@
 ## Приглашение
 
 Доступ открывает приглашение письмом (`staff_invite` в
-[platform/mail](../../platform/mail/README.md)): ссылка с одноразовым токеном,
+[backend/platform/mail](../../backend/platform/mail/README.md)): ссылка с одноразовым токеном,
 ограниченным сроком и привязкой к адресу приглашённого. Экран `/staff/invite`
 отрабатывает состояния `INVITE_STATE_ACTIVE`, `EXPIRED`, `USED` и
 `WRONG_ACCOUNT` (приглашение чужого адреса).

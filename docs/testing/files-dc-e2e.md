@@ -90,7 +90,7 @@ Promotion и маршрутизацией явно управляет harness; �
 
 ## Запуск
 
-Нужны работающий OrbStack, Docker CLI, Go из `go.work`, Python 3 и свободные
+Нужны работающий OrbStack, Docker CLI, Go из `backend/go.work`, Python 3 и свободные
 ресурсы для четырёх VM/парсеров. Standalone PostgreSQL и пользовательский kubeconfig
 не используются. Запуск из корня, последовательно:
 

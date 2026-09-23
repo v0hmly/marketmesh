@@ -21,7 +21,7 @@ Go-микросервисы MarketMesh будут иметь несколько 
 Типовая структура сервиса:
 
 ```text
-services/<service>/
+backend/services/<service>/
 ├── cmd/
 │   └── <service>/
 │       └── main.go

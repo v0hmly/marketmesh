@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
+os.environ["GOWORK"] = str(ROOT / "backend/go.work")
 PROJECT = os.environ.get("FILES_LOCAL_PROJECT", "marketmesh-files-local")
 if not re.fullmatch(r"marketmesh-files-[a-z0-9][a-z0-9-]{0,39}", PROJECT):
     raise RuntimeError("invalid Files project")
@@ -50,7 +51,7 @@ def prepare():
         if json.loads((STATE / "owner.json").read_text()) != {"task": "MM-43", "project": PROJECT}:
             raise RuntimeError("unowned fixture state")
         return
-    run("go", "run", str(ROOT / "infra/files-local/pki.go"), str(STATE / "pki"), quiet=True)
+    run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(STATE / "pki"), quiet=True)
     creds = {zone: {role: credential() for role in ("admin", "control", "worker", "capability")} for zone in ZONES}
     write("credentials.json", creds)
     passwords = {role: secrets.token_hex(24) for role in ("postgres", "files_rw", "files_worker", "files_ro", "files_replicator")}
@@ -155,7 +156,7 @@ def start():
     compose("run", "--rm", "signatures")
     compose("up", "-d", "--force-recreate", "quarantine", "internal-clean", "delivery-a", "delivery-b", "sandbox", "antivirus")
     for attempt in range(30):
-        result = subprocess.run(["go", "run", str(ROOT / "infra/files-local/storage.go"), str(STATE)], cwd=ROOT, env=ENV, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(["go", "run", str(ROOT / "backend/fixtures/files-local/storage.go"), str(STATE)], cwd=ROOT, env=ENV, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode == 0:
             break
         time.sleep(1)
@@ -177,7 +178,7 @@ def main():
     elif command == "renew":
         existing()
         compose("down", "--remove-orphans")
-        run("go", "run", str(ROOT / "infra/files-local/pki.go"), str(STATE / "pki"), quiet=True)
+        run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(STATE / "pki"), quiet=True)
         start()  # Storage volumes, transit keys and metadata are retained.
     elif command == "down":
         existing()

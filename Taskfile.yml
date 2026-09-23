@@ -2,12 +2,15 @@ version: "3"
 
 silent: true
 
+env:
+  GOWORK: "{{.ROOT_DIR}}/backend/go.work"
+
 vars:
-  WORKSPACE_TOOL: ./tools/go-workspace.sh
-  PROTOBUF_TOOL: ./tools/protobuf.sh
+  WORKSPACE_TOOL: ./backend/tools/go-workspace.sh
+  PROTOBUF_TOOL: ./api/tools/protobuf.sh
   INFRA_TOOL: ./infra/compose/scripts/local.sh
   ACCOUNT_LOCAL_TOOL: ./infra/account-local/local.sh
-  E2E_TOPOLOGY_TOOL: go run ./tools/e2e-topology
+  E2E_TOPOLOGY_TOOL: go run ./backend/tools/e2e-topology
   TASKBOARD_TOOL: ./tools/taskboard.sh
   TASKBOARD_PROJECT: "01M1BNBBHNN26MRG0XAXVR5K5M"
 
@@ -32,6 +35,11 @@ tasks:
         fi
         git config --local core.hooksPath .githooks
         printf '%s\n' 'Git hooks подключены из .githooks.'
+
+  layout:check:
+    desc: Проверить размещение языковых файлов, пути Docker и локальные ссылки документации
+    cmds:
+      - python3 tools/layout-check.py
 
   fmt:
     desc: Отформатировать Go-код во всех модулях
@@ -151,17 +159,17 @@ tasks:
       - "{{.PROTOBUF_TOOL}} versions"
 
   api:config:
-    desc: Проверить easyp.yaml
+    desc: Проверить api/easyp.yaml
     cmds:
       - "{{.PROTOBUF_TOOL}} config"
 
   api:deps:
-    desc: Скачать protobuf-зависимости строго по easyp.lock
+    desc: Скачать protobuf-зависимости строго по api/easyp.lock
     cmds:
       - "{{.PROTOBUF_TOOL}} deps"
 
   api:deps:update:
-    desc: Обновить protobuf-зависимости и easyp.lock
+    desc: Обновить protobuf-зависимости и api/easyp.lock
     cmds:
       - "{{.PROTOBUF_TOOL}} deps-update"
 
@@ -299,47 +307,47 @@ tasks:
   postgres:integration:
     desc: Выполнить интеграционные тесты PostgreSQL против primary и synchronous replica
     cmds:
-      - bash platform/postgres/testdata/integration.sh
+      - bash backend/platform/postgres/testdata/integration.sh
 
   redis:integration:
     desc: Выполнить интеграционные тесты независимых edge и auth Redis
     cmds:
-      - bash platform/redis/testdata/integration.sh
+      - bash backend/platform/redis/testdata/integration.sh
 
   auth:integration:
     desc: Выполнить интеграционные тесты PostgreSQL-адаптера Auth
     cmds:
-      - bash services/auth/internal/adapter/out/postgres/testdata/integration.sh
+      - bash backend/services/auth/internal/adapter/out/postgres/testdata/integration.sh
 
   auth:sessions:integration:
     desc: Проверить ротацию и отзыв сессий Auth с PostgreSQL и Redis
     cmds:
-      - bash services/auth/internal/adapter/out/postgressession/testdata/integration.sh
+      - bash backend/services/auth/internal/adapter/out/postgressession/testdata/integration.sh
 
   user:integration:
     desc: Проверить профиль User с PostgreSQL primary/replica, mTLS и проверкой сессии
     cmds:
-      - bash services/user/internal/adapter/out/postgres/testdata/integration.sh
+      - bash backend/services/user/internal/adapter/out/postgres/testdata/integration.sh
 
   auth:browser:integration:
     desc: Проверить публичный HTTPS Auth через обратный mTLS-туннель с PostgreSQL и Redis
     cmds:
-      - bash services/gateway-in/internal/app/testdata/auth/integration.sh
+      - bash backend/services/gateway-in/internal/app/testdata/auth/integration.sh
 
   auth:registration:integration:
     desc: Проверить атомарную регистрацию и доставку outbox через PostgreSQL и NATS JetStream
     cmds:
-      - bash services/auth/internal/app/testdata/registration/integration.sh
+      - bash backend/services/auth/internal/app/testdata/registration/integration.sh
 
   user:registration:integration:
     desc: Проверить регистрацию Auth, inbox User и backfill через настоящий JetStream
     cmds:
-      - bash services/user/internal/app/testdata/registration/integration.sh
+      - bash backend/services/user/internal/app/testdata/registration/integration.sh
 
   tunnel-e2e:images:
     desc: Собрать локальные immutable-source образы MM-29 без публикации
     cmds:
-      - bash e2e/tunnel/scripts/images.sh
+      - bash backend/e2e/tunnel/scripts/images.sh
 
   tunnel-e2e:load:
     desc: Импортировать образы MM-29 в containerd всех четырёх VM topology MM-44
@@ -356,32 +364,32 @@ tasks:
   tunnel-e2e:deploy:
     desc: Развернуть workloads MM-29 в четырёх явных kubeconfig
     cmds:
-      - go run ./e2e/tunnel/cmd/workloadctl deploy {{.CLI_ARGS}}
+      - go run ./backend/e2e/tunnel/cmd/workloadctl deploy {{.CLI_ARGS}}
 
   tunnel-e2e:inspect:
     desc: Собрать bounded diagnostics workloads MM-29
     cmds:
-      - go run ./e2e/tunnel/cmd/workloadctl inspect {{.CLI_ARGS}}
+      - go run ./backend/e2e/tunnel/cmd/workloadctl inspect {{.CLI_ARGS}}
 
   tunnel-e2e:frontdoor:
     desc: Запустить локальный health-aware front door MM-30 для двух DC
     cmds:
-      - go run ./e2e/tunnel/cmd/frontdoor {{.CLI_ARGS}}
+      - go run ./backend/e2e/tunnel/cmd/frontdoor {{.CLI_ARGS}}
 
   tunnel-e2e:rolling:
     desc: Выполнить bounded rolling redeploy или rollback-матрицу MM-34
     cmds:
-      - go run ./e2e/tunnel/cmd/rollingctl {{.CLI_ARGS}}
+      - go run ./backend/e2e/tunnel/cmd/rollingctl {{.CLI_ARGS}}
 
   tunnel-e2e:undeploy:
     desc: Собрать diagnostics и удалить точные workloads MM-29
     cmds:
-      - go run ./e2e/tunnel/cmd/workloadctl undeploy {{.CLI_ARGS}}
+      - go run ./backend/e2e/tunnel/cmd/workloadctl undeploy {{.CLI_ARGS}}
 
   tunnel-e2e:pod-chaos:
     desc: Выполнить последовательный pod kill/redeploy MM-32 под continuous load
     cmds:
-      - go run ./e2e/tunnel/cmd/podchaos {{.CLI_ARGS}}
+      - go run ./backend/e2e/tunnel/cmd/podchaos {{.CLI_ARGS}}
 
   infra:down:
     desc: Остановить окружение с сохранением данных
@@ -562,22 +570,22 @@ tasks:
   frontend:build:
     desc: Собрать все frontend-пакеты
     cmds:
-      - pnpm build
+      - pnpm --dir frontend build
 
   frontend:test:
     desc: Выполнить тесты всех frontend-пакетов
     cmds:
-      - pnpm test
+      - pnpm --dir frontend test
 
   frontend:lint:
     desc: Выполнить lint всех frontend-пакетов
     cmds:
-      - pnpm lint
+      - pnpm --dir frontend lint
 
   frontend:typecheck:
     desc: Проверить типы всех frontend-пакетов
     cmds:
-      - pnpm typecheck
+      - pnpm --dir frontend typecheck
 
   frontend:verify:
     desc: Выполнить все frontend-проверки

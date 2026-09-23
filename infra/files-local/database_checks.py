@@ -30,7 +30,7 @@ try:
     sql("pg-primary", "CREATE DATABASE " + database)
     created = True
     for direction in ("up", "down", "up"):
-        migration = (f.ROOT / "services/files/migrations" / ("000001_files." + direction + ".sql")).read_text()
+        migration = (f.ROOT / "backend/services/files/migrations" / ("000001_files." + direction + ".sql")).read_text()
         sql("pg-primary", migration, database)
     sql("pg-primary", "CREATE TABLE probe (id integer PRIMARY KEY)", database)
     f.compose("stop", "pg-replica", quiet=True)

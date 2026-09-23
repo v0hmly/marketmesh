@@ -1,12 +1,13 @@
 FROM golang:1.27.0-bookworm@sha256:ded31c68586d2e49e760acc2e65a884b23d032e9bbbed0ae0c55abd3fcaf4452 AS build
 WORKDIR /workspace
-COPY api/gen/go/ api/gen/go/
-COPY platform/ platform/
-COPY services/files/ services/files/
-RUN printf 'go 1.27.0\nuse (\n ./api/gen/go\n ./platform\n ./services/files\n)\n' > go.work
+ENV GOWORK=/workspace/backend/go.work
+COPY backend/api/gen/go/ backend/api/gen/go/
+COPY backend/platform/ backend/platform/
+COPY backend/services/files/ backend/services/files/
+RUN printf 'go 1.27.0\nuse (\n ./api/gen/go\n ./platform\n ./services/files\n)\n' > backend/go.work
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -o /out/files ./services/files/cmd/files && \
-    CGO_ENABLED=0 go build -trimpath -o /out/files-sandbox ./services/files/cmd/files-sandbox
+    CGO_ENABLED=0 go build -trimpath -o /out/files ./backend/services/files/cmd/files && \
+    CGO_ENABLED=0 go build -trimpath -o /out/files-sandbox ./backend/services/files/cmd/files-sandbox
 
 FROM debian:13.7-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS parsers
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -41,8 +42,8 @@ ENTRYPOINT ["/usr/local/bin/files"]
 
 FROM build AS integration-build
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go test -race -tags=integration -c -o /out/files-integration ./services/files/internal/app && \
-    go test -race -tags=integration -c -o /out/files-s3-integration ./services/files/internal/adapter/out/s3store
+    go test -race -tags=integration -c -o /out/files-integration ./backend/services/files/internal/app && \
+    go test -race -tags=integration -c -o /out/files-s3-integration ./backend/services/files/internal/adapter/out/s3store
 FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS integration
 COPY --from=integration-build /out/files-integration /usr/local/bin/files-integration
 COPY --from=integration-build /out/files-s3-integration /usr/local/bin/files-s3-integration

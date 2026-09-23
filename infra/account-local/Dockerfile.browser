@@ -3,16 +3,17 @@ ENV CI=true PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 WORKDIR /app
 RUN npm install --global pnpm@11.19.0 \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY api/gen/ts/package.json api/gen/ts/package.json
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./frontend/
+COPY frontend/gen/package.json frontend/gen/package.json
 COPY frontend/apps/storefront/package.json frontend/apps/storefront/package.json
+WORKDIR /app/frontend
 RUN pnpm install --frozen-lockfile
 RUN apt-get update && apt-get upgrade -y \
     && pnpm --filter @marketmesh/storefront exec playwright install --with-deps chromium \
     && apt-get install -y --no-install-recommends libnss3-tools openssl \
     && rm -rf /var/lib/apt/lists/*
-COPY api/gen/ts api/gen/ts
-COPY frontend/apps/storefront frontend/apps/storefront
+COPY frontend/gen gen
+COPY frontend/apps/storefront apps/storefront
 COPY infra/account-local/browser-entrypoint.sh /usr/local/bin/account-browser
 RUN chmod 755 /usr/local/bin/account-browser && chown -R node:node /app
 USER node

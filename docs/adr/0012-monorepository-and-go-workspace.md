@@ -16,24 +16,37 @@ MarketMesh объединяет независимо развёртываемы�
 
 ## Решение
 
-Использовать один Git-монорепозиторий и зарегистрированный в репозитории файл `go.work`. Отдельный Go-модуль создаётся для каждого развёртываемого сервиса, для платформенных библиотек в целом и для сгенерированных Go-контрактов.
+Использовать один Git-монорепозиторий и зарегистрированный в репозитории файл `backend/go.work`. Отдельный Go-модуль создаётся для каждого развёртываемого сервиса, для платформенных библиотек в целом и для сгенерированных Go-контрактов.
+
+### Уточнение MM-77 от 23.09.2026
+
+Физические каталоги Go перенесены в `backend/`, pnpm workspace — в `frontend/`,
+EasyP — в `api/`. Go module/import path и `go_package` остаются совместимыми:
+перенос файлов не переименовывает API пакетов и не меняет закреплённые зависимости.
+`backend/go.work` связывает эти идентификаторы с новыми локальными каталогами.
+Проверка `GOWORK=off` продолжает использовать уже опубликованные версии зависимостей;
+проверки workspace и контейнеры собирают текущие локальные исходники. Публикация новых
+самостоятельных версий модулей по прежним VCS-путям после переноса не поддерживается:
+до такого выпуска потребуется отдельное решение о новых module paths и версиях.
+Платформа пока поставляется целиком контейнерами, поэтому это не меняет её поставку.
 
 Набор модулей:
 
 | Каталог | Путь модуля | Назначение |
 | --- | --- | --- |
-| `services/auth` | `github.com/v0hmly/marketmesh/services/auth` | Аутентификация и внешние сессии |
-| `services/user` | `github.com/v0hmly/marketmesh/services/user` | Профиль и настройки пользователя |
-| `services/gateway-in` | `github.com/v0hmly/marketmesh/services/gateway-in` | Публичная граница DMZ и сервер туннеля |
-| `services/gateway-out` | `github.com/v0hmly/marketmesh/services/gateway-out` | Внутренний ретранслятор исходящего туннеля |
-| `platform` | `github.com/v0hmly/marketmesh/platform` | Общие технические библиотеки, включая logger и telemetry |
-| `api/gen/go` | `github.com/v0hmly/marketmesh/api/gen/go` | Только сгенерированный Go-код контрактов |
-| `api/tunnel` | `github.com/v0hmly/marketmesh/api/tunnel` | Строгий общий декодер и структурная валидация туннельного контракта |
-| `e2e/tunnel` | `github.com/v0hmly/marketmesh/e2e/tunnel` | Изолированные сквозные проверки туннеля |
-| `tools/account-local` | `github.com/v0hmly/marketmesh/tools/account-local` | Проверяемый локальный контур аккаунта: конфигурация, provision и HTTPS frontdoor |
-| `tools/e2e-topology` | `github.com/v0hmly/marketmesh/tools/e2e-topology` | Изолированная автоматизация disposable Kubernetes topology и её проверок |
+| `backend/services/auth` | `github.com/v0hmly/marketmesh/services/auth` | Аутентификация и внешние сессии |
+| `backend/services/files` | `github.com/v0hmly/marketmesh/services/files` | Обработка и доставка файлов |
+| `backend/services/user` | `github.com/v0hmly/marketmesh/services/user` | Профиль и настройки пользователя |
+| `backend/services/gateway-in` | `github.com/v0hmly/marketmesh/services/gateway-in` | Публичная граница DMZ и сервер туннеля |
+| `backend/services/gateway-out` | `github.com/v0hmly/marketmesh/services/gateway-out` | Внутренний ретранслятор исходящего туннеля |
+| `backend/platform` | `github.com/v0hmly/marketmesh/platform` | Общие технические библиотеки, включая logger и telemetry |
+| `backend/api/gen/go` | `github.com/v0hmly/marketmesh/api/gen/go` | Только сгенерированный Go-код контрактов |
+| `backend/api/tunnel` | `github.com/v0hmly/marketmesh/api/tunnel` | Строгий общий декодер и структурная валидация туннельного контракта |
+| `backend/e2e/tunnel` | `github.com/v0hmly/marketmesh/e2e/tunnel` | Изолированные сквозные проверки туннеля |
+| `backend/tools/account-local` | `github.com/v0hmly/marketmesh/tools/account-local` | Проверяемый локальный контур аккаунта: конфигурация, provision и HTTPS frontdoor |
+| `backend/tools/e2e-topology` | `github.com/v0hmly/marketmesh/tools/e2e-topology` | Изолированная автоматизация disposable Kubernetes topology и её проверок |
 
-`go.work` разрешает локальные зависимости без директив `replace` в `go.mod`. Директива `replace` на локальный путь в регистрируемом `go.mod` запрещена. Каждый модуль обязан собираться и тестироваться как в workspace, так и с `GOWORK=off` после появления межмодульных зависимостей и зафиксированных версий.
+`backend/go.work` разрешает локальные зависимости без директив `replace` в `go.mod`. Директива `replace` на локальный путь в регистрируемом `go.mod` запрещена. Каждый модуль обязан собираться и тестироваться как в workspace, так и с `GOWORK=off` после появления межмодульных зависимостей и зафиксированных версий.
 
 На текущем этапе модули версионируются и выпускаются вместе с платформой MarketMesh. Сам факт отдельного `go.mod` не означает независимый релиз. Изменение стратегии версионирования принимается отдельным ADR.
 
@@ -41,35 +54,36 @@ MarketMesh объединяет независимо развёртываемы�
 
 ```text
 marketmesh/
+├── backend/
+│   ├── go.work
+│   ├── api/{gen/go,tunnel}/
+│   ├── services/{auth,user,files,gateway-in,gateway-out}/
+│   ├── platform/
+│   ├── e2e/tunnel/
+│   ├── fixtures/
+│   └── tools/
+├── frontend/
+│   ├── package.json
+│   ├── pnpm-workspace.yaml
+│   ├── pnpm-lock.yaml
+│   ├── apps/
+│   ├── packages/
+│   ├── gen/
+│   ├── tests/
+│   └── tools/
 ├── api/
 │   ├── proto/
-│   ├── tunnel/
-│   └── gen/
-│       ├── go/
-│       └── ts/
-├── frontend/
-│   ├── apps/
-│   └── packages/
+│   ├── easyp.yaml
+│   ├── easyp.lock
+│   └── tools/
 ├── infra/
-│   ├── account-local/
-│   ├── compose/
-│   └── kubernetes/
-├── platform/
-├── services/
-│   ├── auth/
-│   ├── user/
-│   ├── gateway-in/
-│   └── gateway-out/
 ├── tools/
-│   ├── account-local/
-│   └── e2e-topology/
 ├── docs/
-├── go.work
-├── pnpm-workspace.yaml
+├── compose.yml
 └── Taskfile.yml
 ```
 
-`api/proto` является источником публичных, внутренних и туннельных protobuf-схем. `api/gen/go` и `api/gen/ts` содержат только воспроизводимо сгенерированные результаты и не редактируются вручную. `api/tunnel` содержит общий fail-closed декодер и структурные ограничения туннельных кадров; он зависит только от `api/gen/go` и protobuf runtime и не реализует состояние gateway или маршрутизацию.
+`api/proto` является источником публичных, внутренних и туннельных protobuf-схем. `backend/api/gen/go` и `frontend/gen` содержат только воспроизводимо сгенерированные результаты и не редактируются вручную. `backend/api/tunnel` содержит общий fail-closed декодер и структурные ограничения туннельных кадров; он зависит только от `backend/api/gen/go` и protobuf runtime и не реализует состояние gateway или маршрутизацию.
 
 `frontend` является pnpm workspace. До выполнения критериев ADR-0010 используется одно модульное Vue-приложение, а не runtime-композиция микрофронтендов. Общий frontend-пакет создаётся только для кода, который действительно используют несколько продуктовых модулей.
 
@@ -82,22 +96,22 @@ marketmesh/
 Допустимый граф верхнего уровня:
 
 ```text
-services/* -> platform
-services/* -> api/gen/go
-services/gateway-* -> api/tunnel -> api/gen/go
-frontend/* -> api/gen/ts
+backend/services/* -> backend/platform
+backend/services/* -> backend/api/gen/go
+backend/services/gateway-* -> backend/api/tunnel -> backend/api/gen/go
+frontend/apps/* -> frontend/gen
 ```
 
 - сервис не импортирует модуль другого сервиса;
 - `platform` не зависит от сервисов и сгенерированных контрактов;
-- `api/gen/go` и `api/gen/ts` не зависят от сервисов или `platform`;
-- `api/tunnel` зависит только от `api/gen/go` и не импортирует сервисы или `platform`;
+- `backend/api/gen/go` и `frontend/gen` не зависят от сервисов или `platform`;
+- `backend/api/tunnel` зависит только от `backend/api/gen/go` и не импортирует сервисы или `platform`;
 - платформенная библиотека не становится местом для общей бизнес-модели;
 - межсервисное взаимодействие выполняется только через контракт или событие;
 - внутренние пакеты каждого Go-модуля дополнительно защищены механизмом `internal`;
 - зависимость между пакетами `platform` должна оставаться направленным ациклическим графом и обосновываться реальным повторным использованием.
 
-Корневые команды Task и совместимые команды Make перебирают все Go-модули из утверждённого списка и выполняют форматирование, сборку, vet и тесты. Оба интерфейса вызывают единый workspace-скрипт и не дублируют логику обхода модулей. Отдельная проверка сверяет пути модулей и запрещённые межмодульные импорты. Добавление или удаление модуля должно атомарно обновлять `go.work`, проверяющий инструмент и этот ADR либо заменяющее его решение.
+Корневые команды Task перебирают все Go-модули из утверждённого списка и выполняют форматирование, сборку, vet и тесты. Они вызывают единый `backend/tools/go-workspace.sh`. Отдельная проверка сверяет пути модулей и запрещённые межмодульные импорты. Добавление или удаление модуля должно атомарно обновлять `backend/go.work`, проверяющий инструмент и этот ADR либо заменяющее его решение.
 
 Docker-образ сервиса собирается с контекстом корня монорепозитория, чтобы сборка могла получить сгенерированные контракты и платформенные модули. Dockerfile при этом находится рядом с сервисом или в согласованном каталоге поставки и копирует только необходимые файлы.
 
@@ -126,7 +140,7 @@ Docker-образ сервиса собирается с контекстом к
 - Граница Go-модуля совпадает с единицей развёртывания или общей технической областью.
 - Все части проекта разрабатываются и проверяются из одного checkout.
 - Случайная зависимость одного сервиса от другого выявляется автоматически.
-- Локальное изменение контракта или platform-пакета сразу доступно сервисам через `go.work`.
+- Локальное изменение контракта или platform-пакета сразу доступно сервисам через `backend/go.work`.
 - Структура допускает последующее выделение модуля или репозитория без переписывания внутренней архитектуры сервиса.
 
 ### Отрицательные и риски
@@ -146,10 +160,10 @@ Docker-образ сервиса собирается с контекстом к
 
 ## Проверяемые инварианты
 
-- Все пути `module` начинаются с `github.com/v0hmly/marketmesh/` и соответствуют каталогу.
-- `go.work` содержит каждый утверждённый Go-модуль ровно один раз.
-- `task build`, `task test` и `task verify`, а также их Make-эквиваленты выполняются из корня репозитория.
-- Граф импортов не содержит зависимости `services/<a>` от `services/<b>`.
+- Все пути `module` начинаются с `github.com/v0hmly/marketmesh/` и соответствуют явной таблице выше; совместимые имена модулей сохранены при переносе MM-77.
+- `backend/go.work` содержит каждый утверждённый Go-модуль ровно один раз.
+- `task build`, `task test` и `task verify` выполняются из корня репозитория.
+- Граф импортов не содержит зависимости `backend/services/<a>` от `backend/services/<b>`.
 - `platform` не импортирует сервисы или сгенерированные контракты.
 - Сгенерированные контракты не импортируют `platform` или сервисы.
 - В `go.mod` нет зарегистрированных `replace` на локальный путь.

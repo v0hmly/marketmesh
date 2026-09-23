@@ -152,7 +152,7 @@ class DCTest:
         # Compile first; output from tests is intentionally restricted to codes
         # and assertions. Dependency details stay in the private diagnostic file.
         probe=f.state / "probe"
-        f.run("go","test","-race","-tags=integration","-c","-o",str(probe),"./services/files/internal/app",timeout=180)
+        f.run("go","test","-race","-tags=integration","-c","-o",str(probe),"./backend/services/files/internal/app",timeout=180)
         expected=["fault-dc-a","blocked-dc-a","restore-dc-a","fault-dc-b","blocked-dc-b","restore-dc-b"]
         process=subprocess.Popen([str(probe),"-test.v","-test.run=^TestLiveDCFiles$","-test.timeout=30m"],
             cwd=ROOT,env=dict(os.environ,FILES_DC_FIXTURE=str(f.state)),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)

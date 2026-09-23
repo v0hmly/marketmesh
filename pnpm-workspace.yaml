@@ -1,4 +1,0 @@
-packages:
-  - frontend/apps/*
-  - frontend/packages/*
-  - api/gen/ts

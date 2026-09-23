@@ -18,6 +18,7 @@ import urllib.request
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parents[2]
+os.environ["GOWORK"] = str(ROOT / "backend/go.work")
 STATE = ROOT / ".cache/dev-stack"
 ACCOUNT = STATE / "account"
 FILES = STATE / "files"
@@ -134,18 +135,18 @@ def prepare(force_renew=False):
         compose("down", "--remove-orphans")
     if renew_account:
         renew_account_certificates()
-    run("go", "run", "./cmd/account-local", "generate", cwd=ROOT / "tools/account-local")
+    run("go", "run", "./cmd/account-local", "generate", cwd=ROOT / "backend/tools/account-local")
     f = module("files_local", "infra/files-local/local.py")
     f.PROJECT, f.STATE = PROJECT, FILES
     f.ENV = dict(ENV, GOCACHE=str(STATE / "go-build"))
     f.prepare()
     if renew_files:
         (STATE / "files-renewing").touch()
-        run("go", "run", str(ROOT / "infra/files-local/pki.go"), str(FILES / "pki"))
+        run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(FILES / "pki"))
         (STATE / "files-renewing").unlink()
     if not (ACCOUNT / "files-pki").exists() or renew_workload:
         (STATE / "workload-renewing").touch()
-        run("go", "run", str(ROOT / "infra/files-local/pki.go"), str(ACCOUNT / "files-pki"))
+        run("go", "run", str(ROOT / "backend/fixtures/files-local/pki.go"), str(ACCOUNT / "files-pki"))
         (STATE / "workload-renewing").unlink()
     f.configuration(json.loads((FILES / "credentials.json").read_text()))
     for zone in f.ZONES:
@@ -170,7 +171,7 @@ def renew_account_certificates():
     pending.touch(mode=0o600)
     with tempfile.TemporaryDirectory(prefix=".dev-renew-", dir=ACCOUNT.parent) as directory:
         temporary = Path(directory)
-        run("go", "run", "./cmd/account-local", "generate", cwd=ROOT / "tools/account-local",
+        run("go", "run", "./cmd/account-local", "generate", cwd=ROOT / "backend/tools/account-local",
             env=dict(ENV, FIXTURE_ROOT=str(temporary)))
         names = [f"{service}/{file}" for service in ("auth", "user", "gateway-in", "gateway-out", "frontdoor", "nats", "provision")
                  for file in ("cert.pem", "key.pem", "ca.pem")]
@@ -236,7 +237,7 @@ def up(args):
     if "quarantine" in selected:
         compose("up", "-d", "--force-recreate", "quarantine", "internal-clean", "delivery-a", "delivery-b")
         for attempt in range(30):
-            result = subprocess.run(["go", "run", str(ROOT / "infra/files-local/storage.go"), str(FILES)], cwd=ROOT, env=ENV,
+            result = subprocess.run(["go", "run", str(ROOT / "backend/fixtures/files-local/storage.go"), str(FILES)], cwd=ROOT, env=ENV,
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if result.returncode == 0:
                 break

@@ -151,7 +151,7 @@ storefront собирается с `VITE_ACCOUNT_ADDRESSES_ENABLED=true`. Provis
 добавочную миграцию `000003_addresses`; профиль, созданный раньше, получает пустую
 книгу с версией 1. Auth выдаёт отдельные scopes чтения/записи адресов. Для внешнего
 окружения эти флаги по умолчанию выключены; порядок поставки описан в
-[Gateway In](../../services/gateway-in/README.md#адресная-книга-mm-68).
+[Gateway In](../../backend/services/gateway-in/README.md#адресная-книга-mm-68).
 
 Браузерный runner доверяет публичному CA контура и в Chromium NSS, и в Node
 (`NODE_EXTRA_CA_CERTS`) для пересылки реальных запросов в тестах потери ответа.
@@ -249,6 +249,6 @@ localhost:18343–18345; frontdoor не проксирует файловые б
 account resources; внешний Files сохраняется. Тест добавляет только постоянный
 origin `https://frontdoor:8443`, сохраняя ранее настроенные точные CORS origins
 работающих кабинетов. Список ограничен 32 origins; wildcard отклоняется. Синтетические файлы проходят
-обычный lifecycle Files. Учтите [лимит одноразового sandbox](../../services/files/README.md):
+обычный lifecycle Files. Учтите [лимит одноразового sandbox](../../backend/services/files/README.md):
 один документ на контейнер и обязательный перезапуск, минимум 11 секунд.
 Границы доверия, параметры поставки и ограничения — в [MM-65](../../docs/security/account-avatar.md).

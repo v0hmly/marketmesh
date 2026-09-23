@@ -87,7 +87,7 @@ dev, preprod или production окружения. Все ожидания, по
 процессов является runner: он обязан отменить их и дождаться завершения.
 
 Consumer-side границы находятся в пакете
-`e2e/tunnel/internal/dcfailover`: `Topology`, `Drainer`, `FrontDoor`,
+`backend/e2e/tunnel/internal/dcfailover`: `Topology`, `Drainer`, `FrontDoor`,
 `Readiness` и `Probe`. Интерфейс `FrontDoor` структурно совпадает с публичным
 контрактом MM-30 и проверяется compile-time и network contract-тестом; локальная
 реализация routing или failback policy отсутствует. `Topology.Preflight`

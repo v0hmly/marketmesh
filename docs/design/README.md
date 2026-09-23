@@ -20,7 +20,7 @@
 | `README.md` | Основания системы: цвет, типографика, сетка, форма, фокус, состояния, иконографика, голос |
 | `tokens.json` | Все токены с парами значений для светлой и тёмной темы и заметками об использовании |
 | `tokens.css` | Сгенерированный из `tokens.json` слой CSS-переменных — **править вручную нельзя** |
-| `generate-tokens-css.mjs` | Генератор `tokens.css`: `node docs/design/design-system/generate-tokens-css.mjs` |
+| `generate-tokens-css.mjs` | Генератор `tokens.css`: `node frontend/tools/generate-tokens-css.mjs` |
 | `components/bundle.css` | Стили компонентов на токенах, без единого литерального значения |
 | `components/*.md` | По файлу на компонент: структура разметки, состояния, правила и известные отклонения |
 | `design-system.json` | Метаданные системы: имя, пространство имён, версия |

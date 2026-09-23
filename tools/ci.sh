@@ -11,7 +11,7 @@ cd "${REPO_ROOT}"
 bootstrap() {
   # GOWORK=off не должен переключать auto toolchain на более старый системный Go.
   local toolchain
-  toolchain="$(go env GOVERSION)"
+  toolchain="$(GOWORK="${REPO_ROOT}/backend/go.work" go env GOVERSION)"
   export GOTOOLCHAIN="${toolchain}"
   mkdir -p bin
   GOBIN="${REPO_ROOT}/bin" GOWORK=off go install "github.com/go-task/task/v3/cmd/task@v${TASK_VERSION}"
@@ -46,14 +46,17 @@ check_tree() {
 
 case "${1:-}" in
   bootstrap) bootstrap ;;
-  workflow-lint) actionlint -shellcheck='' ;;
+  workflow-lint)
+    actionlint -shellcheck=''
+    python3 tools/layout-check.py
+    ;;
   go)
     task fmt-check arch vet test-race build
-    ./tools/go-workspace.sh isolated
-    ./tools/go-workspace.sh mod-verify
+    ./backend/tools/go-workspace.sh isolated
+    ./backend/tools/go-workspace.sh mod-verify
     ;;
   frontend)
-    pnpm install --frozen-lockfile
+    pnpm --dir frontend install --frozen-lockfile
     task frontend:verify
     ;;
   api)
@@ -63,8 +66,8 @@ case "${1:-}" in
     ;;
   secrets) secrets ;;
   vulnerabilities)
-    ./tools/go-workspace.sh vuln
-    pnpm audit --audit-level=high
+    ./backend/tools/go-workspace.sh vuln
+    pnpm --dir frontend audit --audit-level=high
     ;;
   check-tree) check_tree ;;
   *)

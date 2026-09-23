@@ -7,12 +7,12 @@ Vue-приложение кабинета MM-50. Использует реаль
 
 ## Проверки и сборка
 
-Из корня репозитория, с версиями Node/pnpm из корневого `package.json`:
+Из корня репозитория, с версиями Node/pnpm из корневого `frontend/package.json`:
 
 ```sh
-pnpm install --frozen-lockfile
+pnpm --dir frontend install --frozen-lockfile
 task frontend:verify
-pnpm --filter @marketmesh/storefront test:browser
+pnpm --dir frontend --filter @marketmesh/storefront test:browser
 ```
 
 `build` включает TypeScript и выдаёт статический `dist`. `lint` проверяет запрет
@@ -21,7 +21,7 @@ HTML-вставок, прямого импорта внутренних API и �
 не распространяется на production imports.
 
 Browser-тесты требуют Chromium для закреплённой версии Playwright
-(`pnpm --filter @marketmesh/storefront exec playwright install chromium`) и OpenSSL.
+(`pnpm --dir frontend --filter @marketmesh/storefront exec playwright install chromium`) и OpenSSL.
 Они создают и удаляют временный TLS-сертификат, запускают Vite только на loopback
 и используют типизированную подмену сетевых ответов **только в тестах**. Проверяются
 реальные формы, Web Locks между вкладками, доступность axe, мобильная вёрстка и
@@ -42,7 +42,7 @@ RPC-маршруты. Персональные ответы остаются `no
 
 Для Vite можно передать `STOREFRONT_TLS_CERT` и `STOREFRONT_TLS_KEY` с путями к
 локальной паре сертификата/ключа и выполнить
-`pnpm --filter @marketmesh/storefront dev`. Одного Vite недостаточно для входа:
+`pnpm --dir frontend --filter @marketmesh/storefront dev`. Одного Vite недостаточно для входа:
 нужен same-origin frontdoor к настоящему gateway-in. Воспроизводимая полная
 конфигурация запускается через `task account:up`; инструкции по локальному CA
 приведены в руководстве выше. HTTP показывает понятный экран необходимости
@@ -85,7 +85,7 @@ RPC-маршруты. Персональные ответы остаются `no
 
 Раздел `/account/addresses` и ссылка на него доступны при сборке с
 `VITE_ACCOUNT_ADDRESSES_ENABLED=true`. В API должны быть включены адресные флаги
-User и обоих шлюзов, описанные в [Gateway In](../../../services/gateway-in/README.md#адресная-книга-mm-68).
+User и обоих шлюзов, описанные в [Gateway In](../../../backend/services/gateway-in/README.md#адресная-книга-mm-68).
 По умолчанию frontend-флаг выключен; локальный полный контур включает его явно.
 
 Книга сохраняет до 20 адресов с отдельной версией. Первое добавление в пустую книгу

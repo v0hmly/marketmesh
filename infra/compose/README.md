@@ -93,8 +93,8 @@ Internal содержит:
 Раздельные экземпляры Alloy принимают OTLP в каждой зоне и не подключаются к
 соседней зоне. Каждый имеет исходящее подключение к отдельной внутренней сети
 `marketmesh-observability`, где работают Tempo и Loki. Имена `otel-collector`
-сохранены, поэтому конфигурация `platform/telemetry` не получает конкурирующую
-точку приёма. Alloy принимает metrics для совместимости с `platform/telemetry`,
+сохранены, поэтому конфигурация `backend/platform/telemetry` не получает конкурирующую
+точку приёма. Alloy принимает metrics для совместимости с `backend/platform/telemetry`,
 но после bounded processing отбрасывает их: отдельный metrics backend не входит
 в MM-17.
 
@@ -147,7 +147,7 @@ bounded queues по 64 batch. При недоступном Tempo или Loki п
 
 ### Настройка приложений
 
-`platform/telemetry.Config.Endpoint` принимает `host:port` без схемы. Для
+`backend/platform/telemetry.Config.Endpoint` принимает `host:port` без схемы. Для
 локального незашифрованного OTLP обязательно укажите `Insecure: true`:
 
 ```go
@@ -173,12 +173,12 @@ pipeline, err := telemetry.New(ctx, telemetry.Config{
 можно переопределить переменными из `.env.example`, но они по-прежнему
 публикуются только на `127.0.0.1`.
 
-Traces и metrics отправляет `platform/telemetry`. Структурированные logs должны
+Traces и metrics отправляет `backend/platform/telemetry`. Структурированные logs должны
 поступать в тот же Alloy по OTLP/HTTP `/v1/logs` или OTLP/gRPC и содержать
 совпадающие `trace_id`/`span_id`. Не отправляйте тела запросов, токены, Cookie,
 пароли, e-mail, PII и почти уникальные значения в Loki labels. `service.name`,
 `service.version`, `deployment.environment.name` и `service.instance.id`
-совпадают с ресурсом `platform/telemetry`; высококардинальный
+совпадают с ресурсом `backend/platform/telemetry`; высококардинальный
 `service.instance.id` сохраняется как structured metadata, а не index label.
 
 ### Поиск и корреляция в Grafana

@@ -1,6 +1,6 @@
 /* Сгенерировано из tokens.json — не редактировать вручную.
    Источник: docs/design/design-system/tokens.json
-   Команда:  node docs/design/design-system/generate-tokens-css.mjs
+   Команда:  node frontend/tools/generate-tokens-css.mjs
    Система:  MarketMesh, версия токенов 2 */
 
 :root {

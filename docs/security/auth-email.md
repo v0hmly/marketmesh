@@ -126,7 +126,7 @@ password-only binary. Если схема 000004 уже присутствует
 ## Проверка
 
 - `go test -race` для SMTP, Auth и gateway bridge.
-- `bash services/auth/internal/adapter/out/postgressecurity/testdata/integration.sh`:
+- `bash backend/services/auth/internal/adapter/out/postgressecurity/testdata/integration.sh`:
   одноразовый PostgreSQL, конкуренция OTP, лимиты, изоляция владельцев, CAS lease,
   rollback, смена почты и отзыв сеансов. Удаляется только созданный тестом проект.
 - `bash infra/account-local/local.sh test`: настоящий браузер, Auth/User/gateway,
