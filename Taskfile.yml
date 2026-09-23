@@ -372,7 +372,6 @@ tasks:
     vars:
       TUNNEL_IMAGE_VERSION:
         sh: git rev-parse --short=12 HEAD
-    deps: [api:generate]
     cmds:
       - >-
         {{.E2E_TOPOLOGY_TOOL}} load-images
@@ -428,55 +427,46 @@ tasks:
 
   e2e:topology:bootstrap:
     desc: Установить проверенные k3s и kubectl, проверить orbctl и собрать TCP-probe MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} bootstrap"
 
   e2e:topology:versions:
     desc: Показать зафиксированные версии topology toolchain
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} versions"
 
   e2e:topology:inventory:
     desc: Показать versioned inventory четырёх кластеров MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} inventory"
 
   e2e:topology:targets:
     desc: Разрешить или повторно проверить immutable fault targets MM-38
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} targets {{.CLI_ARGS}}"
 
   e2e:topology:up:
     desc: Создать четыре disposable OrbStack VM с k3s MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} up"
 
   e2e:topology:ready:
     desc: Проверить готовность и зональную изоляцию topology MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} ready"
 
   e2e:topology:inspect:
     desc: Собрать безопасные diagnostics topology MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} inspect"
 
   e2e:topology:down:
     desc: Собрать diagnostics и удалить только ресурсы topology MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} down"
 
   e2e:topology:verify:
     desc: Дважды проверить полный lifecycle и изоляцию topology MM-44
-    deps: [api:generate]
     cmds:
       - "{{.E2E_TOPOLOGY_TOOL}} verify"
 
