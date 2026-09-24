@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Предупреждает, если ветка переключается при непустом WAL базы Taskboard:
+# checkout подменяет основной .db под существующим WAL и повреждает базу.
+
+set -u
+
+repo_root="$(git rev-parse --show-toplevel)"
+"${repo_root}/tools/taskboard-wal-check.sh" warn || true
+
+exit 0
