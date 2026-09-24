@@ -268,13 +268,26 @@ verify_architecture() {
 }
 
 verify_isolated_modules() {
+  # Generated contracts are checkout artifacts, not a published source module
+  # after MM-100. Keep all other dependencies pinned while testing without go.work.
+  bash "${REPOSITORY_ROOT}/api/tools/protobuf.sh" generate
   local module
   for module in "${MODULES[@]}"; do
     (
       cd "${BACKEND_ROOT}/${module%%|*}"
+      isolated_directory="$(mktemp -d "${TMPDIR:-/tmp}/marketmesh-isolated.XXXXXX")"
+      trap 'rm -rf -- "${isolated_directory}"' EXIT
+      cp go.mod "${isolated_directory}/isolated.mod"
+      if [[ -f go.sum ]]; then
+        cp go.sum "${isolated_directory}/isolated.sum"
+      fi
+      if [[ "${module%%|*}" != "api/gen/go" ]]; then
+        GOWORK=off go mod edit -modfile="${isolated_directory}/isolated.mod" \
+          -replace="${REPOSITORY_MODULE_PREFIX}/api/gen/go=${BACKEND_ROOT}/api/gen/go"
+      fi
       echo "==> ${module%%|*}: GOWORK=off go test/build -mod=readonly"
-      GOWORK=off go test -mod=readonly ./...
-      GOWORK=off go build -mod=readonly ./...
+      GOWORK=off go test -mod=readonly -modfile="${isolated_directory}/isolated.mod" ./...
+      GOWORK=off go build -mod=readonly -modfile="${isolated_directory}/isolated.mod" ./...
     )
   done
 }
