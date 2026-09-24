@@ -113,7 +113,9 @@ func TestFrontdoorRoutesAndBrowserHeaders(t *testing.T) {
 		want         int
 		body         string
 	}{
-		{"/account", "GET", 200, "fixture SPA"}, {"/account/settings", "GET", 200, "fixture SPA"}, {"/account/addresses", "GET", 200, "fixture SPA"}, {"/account/unknown", "GET", 404, ""}, {"/register", "GET", 200, "fixture SPA"}, {"/assets/app.js", "GET", 200, "fixture JS"}, {"/robots.txt", "GET", 200, "Disallow"},
+		{"/account", "GET", 200, "fixture SPA"},
+		{"/account/orders", "GET", 200, "fixture SPA"}, {"/seller/login", "GET", 200, "fixture SPA"},
+		{"/staff", "GET", 404, ""}, {"/staff/invite", "GET", 404, ""}, {"/staff.v1.StaffService/GetSession", "POST", 404, ""}, {"/assets/missing.js", "GET", 404, ""}, {"/account/settings", "GET", 200, "fixture SPA"}, {"/account/addresses", "GET", 200, "fixture SPA"}, {"/account/unknown", "GET", 404, ""}, {"/register", "GET", 200, "fixture SPA"}, {"/assets/app.js", "GET", 200, "fixture JS"}, {"/robots.txt", "GET", 200, "Disallow"},
 		{"/user.v1.UserService/ListAddresses", "POST", 401, ""},
 		{"/user.v1.UserService/CreateAddress", "POST", 401, ""},
 		{"/user.v1.UserService/UpdateAddress", "POST", 401, ""},
@@ -136,7 +138,11 @@ func TestFrontdoorRoutesAndBrowserHeaders(t *testing.T) {
 			if tc.body != "" && !strings.Contains(w.Body.String(), tc.body) {
 				t.Fatal("missing content")
 			}
-			if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("X-Content-Type-Options") != "nosniff" || !strings.Contains(w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'") {
+			cache := "no-store"
+			if tc.path == "/assets/app.js" {
+				cache = "public, max-age=31536000, immutable"
+			}
+			if w.Header().Get("Cache-Control") != cache || w.Header().Get("X-Content-Type-Options") != "nosniff" || !strings.Contains(w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'") {
 				t.Fatal("browser headers missing")
 			}
 		})

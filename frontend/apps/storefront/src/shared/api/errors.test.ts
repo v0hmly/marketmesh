@@ -2,7 +2,8 @@ import { create, toBinary } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { ErrorInfoSchema } from '@marketmesh/api/google/rpc/error_details_pb';
 import { describe, expect, it } from 'vitest';
-import { isAddressError, isProfilePending, sellerErrorReason } from './errors';
+import { isAddressError, isProfilePending } from '../../modules/account/api/errors';
+import { sellerErrorReason } from '../../modules/seller/errors';
 
 function pending(domain = 'marketmesh.user', reason = 'PROFILE_NOT_READY', metadata = {}) {
   const error = new ConnectError('untrusted message', Code.NotFound);

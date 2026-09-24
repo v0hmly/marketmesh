@@ -35,16 +35,16 @@ ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", MM_DEV_ROOT=str(ROOT),
            RYBBIT_STATE=str(RYBBIT), RYBBIT_WORKSPACE=str(ROOT), RYBBIT_PROJECT=PROJECT, RYBBIT_PORT="8310")
 
 
-def run(*args, env=None, cwd=ROOT, capture=False):
+def run(*args, env=None, cwd=ROOT, capture=False, input=None):
     return subprocess.run(args, cwd=cwd, env=env or ENV, check=True, text=True,
-                          stdout=subprocess.PIPE if capture else None).stdout
+                          stdout=subprocess.PIPE if capture else None, input=input).stdout
 
 
-def compose(*args, capture=False):
+def compose(*args, capture=False, input=None):
     values = dict(line.split("=", 1) for line in (STATE / "compose.env").read_text().splitlines())
     return run("docker", "compose", "--project-directory", str(ROOT), "--project-name", PROJECT,
                "--env-file", str(STATE / "compose.env"), "-f", str(ROOT / "compose.yml"),
-               "--profile", "*", *args, capture=capture,
+               "--profile", "*", *args, capture=capture, input=input,
                env=dict(ENV, **{key: value.strip("'") for key, value in values.items()}))
 
 
@@ -162,7 +162,13 @@ def prepare(force_renew=False):
     module("files_config", "infra/account-local/files_config.py").configure(ACCOUNT, FILES)
     RYBBIT.mkdir(mode=0o700, exist_ok=True)
     run(sys.executable, str(ROOT / "infra/rybbit/state.py"))
-    module("shared_infra", "infra/dev/shared.py").configure(STATE, ACCOUNT, FILES, RYBBIT)
+    shared = module("shared_infra", "infra/dev/shared.py")
+    shared.configure(STATE, ACCOUNT, FILES, RYBBIT)
+    staff = module("staff_config", "infra/dev/staff.py")
+    renew_staff = (STATE / "staff/ca.crt").exists() and (force_renew or (STATE / "staff/renewing").exists() or any(expires(STATE / "staff" / name) for name in ("ca.crt", "staff.crt", "oidc.crt", "browser.crt", "health.crt")))
+    if renew_staff and (STATE / "compose.env").exists():
+        compose("stop", "staff", "staff-oidc")
+    staff.configure(STATE, ACCOUNT, FILES, shared, renew_staff)
     if (RYBBIT / "site-id").exists():
         ENV["RYBBIT_SITE_ID"] = (RYBBIT / "site-id").read_text().strip()
     save_env()
@@ -241,6 +247,11 @@ def up(args):
     check_ports(model, selected)
     names = sorted(selected)
     compose("build", *names)
+    if "provision" in selected:
+        # Add the new consumer to an existing shared cluster, without resetting data.
+        compose("up", "-d", "--wait", "postgres-primary", "postgres-replica")
+        compose("exec", "-T", "postgres-primary", "psql", "-U", "fixture_admin", "-d", "postgres",
+                "-v", "ON_ERROR_STOP=1", "-f", "/run/staff-init.sql", capture=True)
     if "bao" in selected:
         compose("up", "-d", "bao")
         f.initialize_kms()
@@ -263,9 +274,13 @@ def up(args):
     if "frontdoor" in selected:
         wait_http("https://localhost:18443/", ACCOUNT / "browser/ca.pem")
     print("\nСервисы готовы: " + ", ".join(names))
-    for service, url in {"frontdoor": "https://localhost:18443", "mailpit": "http://localhost:18025", "observability-gateway": "http://localhost:3000", "analytics-gateway": "http://localhost:8310"}.items():
+    for service, url in {"frontdoor": "https://localhost:18443", "mailpit": "http://localhost:18025", "observability-gateway": "http://localhost:3000", "analytics-gateway": "http://localhost:8310", "staff": "https://staff.localhost:18444"}.items():
         if service in selected:
             print("  " + service + ": " + url)
+    if "staff" in selected:
+        print("Staff CA: " + str(STATE / "staff/ca.crt"))
+        print("Пропуск mTLS для браузера (импорт .p12 с пустым паролем): " + str(STATE / "staff/browser.p12"))
+        print("Тестовые пароли OIDC: " + str(STATE / "staff/credentials.json"))
     if "frontdoor" in selected:
         print("Локальные CA для браузера: " + str(ACCOUNT / "browser/combined-ca.pem"))
     if "analytics-gateway" in selected:
@@ -295,7 +310,7 @@ def reset():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("up", "down", "status", "renew", "config", "logs", "reset", "stop", "browser"))
+    parser.add_argument("command", choices=("up", "down", "status", "renew", "config", "logs", "reset", "stop", "browser", "staff-invite", "staff-browser"))
     parser.add_argument("--profile", choices=("full", "core", "analytics", "observability", "infrastructure"), action="append")
     parser.add_argument("--persistence", choices=("seed", "check"), help="browser only: сохранность аккаунта и аватара")
     parser.add_argument("services", nargs="*")
@@ -336,6 +351,42 @@ def main():
             if shared & set(args.services):
                 raise RuntimeError("Общие сервисы останавливаются вместе со стендом через task dev:down")
             compose("stop", *args.services)
+        elif args.command == "staff-invite":
+            if len(args.services) != 2:
+                raise RuntimeError("Укажите тестовую почту и роль: task staff:invite -- employee@marketmesh.test support")
+            sql, link = module("staff_config", "infra/dev/staff.py").invitation(STATE, *args.services)
+            # SQL is generated from closed allowlists; stdin keeps credentials/tokens out of argv.
+            compose("exec", "-T", "postgres-primary", "psql", "-U", "fixture_admin", "-d", "staff",
+                    "-v", "ON_ERROR_STOP=1", input=sql, capture=True)
+            print(link)
+        elif args.command == "staff-browser":
+            staff = module("staff_config", "infra/dev/staff.py")
+            data = json.loads((STATE / "staff/credentials.json").read_text())
+            seed = {"employeePassword": data["employee_password"], "otherPassword": data["other_password"]}
+            for kind in ("active", "wrong", "expired"):
+                sql, link = staff.invitation(STATE, "employee@marketmesh.test", "support")
+                if kind == "expired":
+                    sql = sql.replace("now()+interval '24 hours'", "now()-interval '1 minute'")
+                compose("exec", "-T", "postgres-primary", "psql", "-U", "fixture_admin", "-d", "staff",
+                        "-v", "ON_ERROR_STOP=1", input=sql, capture=True)
+                seed[kind] = link
+            staff.write(STATE / "staff/browser/fixture.json", json.dumps(seed))
+            staff.write(STATE / "staff/browser/ca.crt", (STATE / "staff/ca.crt").read_text())
+            staff.write(STATE / "staff/browser/combined-ca.crt", (ACCOUNT / "browser/combined-ca.pem").read_text() + (STATE / "staff/ca.crt").read_text())
+            for name in ("browser.crt", "browser.key"):
+                staff.write(STATE / "staff/browser" / name, (STATE / "staff" / name).read_text())
+            # The unprivileged browser receives only a local corporate client
+            # identity, disposable SSO accounts/invites and public CA.
+            (STATE / "staff/browser").chmod(0o755)
+            for file in (STATE / "staff/browser").iterdir():
+                file.chmod(0o644)
+            try:
+                compose("build", "browser")
+                compose("run", "--rm", "--no-deps", "-e", "BROWSER_APP=staff", "-e", "PUBLIC_STAFF_CA=/staff-fixture/ca.crt",
+                        "-e", "PUBLIC_COMBINED_CA=/staff-fixture/combined-ca.crt", "-e", "BASE_URL=https://staff.localhost:18444", "-e", "ACCOUNT_E2E_RUN_ID=staff-" + secrets.token_hex(8), "browser", *args.services)
+            finally:
+                for name in ("fixture.json", "browser.key", "browser.crt"):
+                    (STATE / "staff/browser" / name).unlink(missing_ok=True)
         elif args.command == "browser":
             run_id = "dev-" + secrets.token_hex(8)
             if args.persistence:

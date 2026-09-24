@@ -61,3 +61,9 @@ __pycache__/
 /backend/api/gen/go/**/*.connect.go
 /frontend/gen/**/*_pb.ts
 /docs/design/design-system/tokens.css
+
+/frontend/packages/design-system/tokens.css
+
+# Browser reports for every workspace application
+/frontend/apps/*/test-results/
+/frontend/apps/*/playwright-report/

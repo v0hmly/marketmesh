@@ -21,3 +21,7 @@ Go import paths сохранены совместимыми с версиями 
 
 API обновляется из корня: `task api:generate`. Go workspace не управляет схемами
 или frontend-зависимостями: они находятся в `api/` и `frontend/` соответственно.
+
+[Staff service](services/staff/README.md) обслуживает отдельный корпоративный портал.
+[Локальный тестовый OIDC](tools/staff-local/README.md) запускается вместе с ним
+через общий `task dev:up`, использует тестовые аккаунты и не предназначен для production.

@@ -636,10 +636,76 @@ tasks:
     cmds:
       - "{{.ACCOUNT_LOCAL_TOOL}} test"
 
+  storefront:build:
+    desc: Собрать storefront из исходников и сгенерированных контрактов
+    cmds:
+      - cd frontend && pnpm generate && pnpm --filter @marketmesh/storefront build
+
+  storefront:verify:
+    desc: Проверить storefront и его общие зависимости
+    cmds:
+      - cd frontend && pnpm generate && pnpm --filter @marketmesh/storefront... --if-present run build
+      - cd frontend && pnpm --filter @marketmesh/storefront... --if-present run test
+      - cd frontend && pnpm --filter @marketmesh/storefront... --if-present run lint
+      - cd frontend && pnpm --filter @marketmesh/storefront... --if-present run typecheck
+      - node --test frontend/tools/architecture/*.test.mjs
+
+  staff:perimeter:
+    desc: Проверить сетевую изоляцию и PostgreSQL-права staff на dev
+    cmds:
+      - python3 infra/dev/verify_staff.py
+
+  staff:browser:
+    desc: Проверить реальный SSO staff, приглашения и изоляцию в dev
+    cmds:
+      - python3 infra/dev/local.py staff-browser {{.CLI_ARGS}}
+
+  staff:invite:
+    desc: Создать одноразовую ссылку для тестовой рабочей почты и роли
+    cmds:
+      - python3 infra/dev/local.py staff-invite {{.CLI_ARGS}}
+
+  staff:build:
+    desc: Собрать отдельное приложение сотрудников
+    cmds:
+      - cd frontend && pnpm generate && pnpm --filter @marketmesh/staff build
+
+  staff:verify:
+    desc: Проверить staff и его общие зависимости
+    cmds:
+      - cd frontend && pnpm generate && pnpm --filter @marketmesh/staff... --if-present run build
+      - cd frontend && pnpm --filter @marketmesh/staff... --if-present run test
+      - cd frontend && pnpm --filter @marketmesh/staff... --if-present run lint
+      - cd frontend && pnpm --filter @marketmesh/staff... --if-present run typecheck
+      - node --test frontend/tools/architecture/*.test.mjs
+
   frontend:build:
     desc: Собрать все frontend-пакеты
     cmds:
       - cd frontend && pnpm build
+
+  frontend:bundles:
+    desc: Собрать все возможности frontend и измерить замыкания JS/CSS
+    env:
+      VITE_ACCOUNT_ADDRESSES_ENABLED: 'true'
+      VITE_ACCOUNT_SETTINGS_ENABLED: 'true'
+      VITE_ACCOUNT_ORDERS_ENABLED: 'true'
+      VITE_ACCOUNT_FAVORITES_ENABLED: 'true'
+      VITE_ACCOUNT_REVIEWS_ENABLED: 'true'
+      VITE_ACCOUNT_ID_ENABLED: 'true'
+      VITE_ACCOUNT_AVATAR_ENABLED: 'true'
+      VITE_SELLER_ENABLED: 'true'
+    cmds:
+      - cd frontend && pnpm build
+      - mkdir -p .cache/frontend-bundles
+      - node frontend/tools/bundles.mjs storefront > .cache/frontend-bundles/storefront.json
+      - node frontend/tools/bundles.mjs staff > .cache/frontend-bundles/staff.json
+
+  frontend:bundles:browser:
+    desc: Проверить production lazy chunks, прямые URL и восстановление
+    cmds:
+      - task: frontend:bundles
+      - cd frontend && pnpm --filter @marketmesh/storefront test:browser --config=playwright.bundles.config.ts
 
   frontend:test:
     desc: Выполнить тесты всех frontend-пакетов
@@ -659,7 +725,7 @@ tasks:
   frontend:verify:
     desc: Выполнить все frontend-проверки
     cmds:
-      - task: frontend:build
+      - task: frontend:bundles
       - task: frontend:test
       - task: frontend:lint
       - task: frontend:typecheck

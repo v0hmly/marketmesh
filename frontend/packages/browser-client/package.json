@@ -1,0 +1,29 @@
+{
+  "name": "@marketmesh/browser-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./transport": "./transport.ts",
+    "./recovery": "./recovery.ts"
+  },
+  "dependencies": {
+    "@connectrpc/connect-web": "2.2.0"
+  },
+  "peerDependencies": {
+    "vue": "3.5.42",
+    "vue-router": "4.6.4"
+  },
+  "scripts": {
+    "lint": "prettier --check *.ts *.vue *.mjs *.json --no-error-on-unmatched-pattern && eslint . --max-warnings 0",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "devDependencies": {
+    "eslint": "10.10.0",
+    "eslint-plugin-vue": "10.11.0",
+    "typescript-eslint": "8.70.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "vue-tsc": "3.3.11"
+  }
+}

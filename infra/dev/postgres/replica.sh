@@ -14,5 +14,5 @@ if [[ ! -s "$PGDATA/PG_VERSION" ]]; then
     --pgdata="$PGDATA" --write-recovery-conf --wal-method=stream --slot=marketmesh_sync
 fi
 exec gosu postgres postgres -D "$PGDATA" \
-  -c ssl=on -c ssl_min_protocol_version=TLSv1.3 \
+  -c hba_file=/scripts/pg_hba.conf -c ssl=on -c ssl_min_protocol_version=TLSv1.3 \
   -c ssl_cert_file=/var/lib/postgresql/tls/server.crt -c ssl_key_file=/var/lib/postgresql/tls/server.key

@@ -1,10 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router';
 import { sellerEnabled } from '../../shared/features';
-import SellerLoginView from './views/SellerLoginView.vue';
-import SellerApplyView from './views/SellerApplyView.vue';
-import SellerDashboardView from './views/SellerDashboardView.vue';
-import SellerProductsView from './views/SellerProductsView.vue';
-import SellerOrdersView from './views/SellerOrdersView.vue';
+const SellerLoginView = () => import('./views/SellerLoginView.vue');
+const SellerApplyView = () => import('./views/SellerApplyView.vue');
+const SellerDashboardView = () => import('./views/SellerDashboardView.vue');
+const SellerProductsView = () => import('./views/SellerProductsView.vue');
+const SellerOrdersView = () => import('./views/SellerOrdersView.vue');
 
 /** Маршруты области продавца; композицию выполняет shell/router. */
 export const sellerRoutes: RouteRecordRaw[] = sellerEnabled

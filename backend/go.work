@@ -9,7 +9,9 @@ use (
 	./services/files
 	./services/gateway-in
 	./services/gateway-out
+	./services/staff
 	./services/user
+	./tools/staff-local
 	./tools/account-local
 	./tools/e2e-topology
 )

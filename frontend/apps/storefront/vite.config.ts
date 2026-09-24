@@ -13,5 +13,5 @@ export default defineConfig({
   plugins: [vue()],
   server: { https, strictPort: true },
   preview: { https, strictPort: true },
-  build: { sourcemap: false, target: 'es2022' },
+  build: { sourcemap: false, manifest: true, target: 'es2022' },
 });

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '../style.css';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
 import SellerNav from '../components/SellerNav.vue';

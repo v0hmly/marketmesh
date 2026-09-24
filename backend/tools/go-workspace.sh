@@ -15,7 +15,9 @@ readonly MODULES=(
   "services/files|${REPOSITORY_MODULE_PREFIX}/services/files"
   "services/gateway-in|${REPOSITORY_MODULE_PREFIX}/services/gateway-in"
   "services/gateway-out|${REPOSITORY_MODULE_PREFIX}/services/gateway-out"
+  "services/staff|${REPOSITORY_MODULE_PREFIX}/services/staff"
   "services/user|${REPOSITORY_MODULE_PREFIX}/services/user"
+  "tools/staff-local|${REPOSITORY_MODULE_PREFIX}/tools/staff-local"
   "tools/account-local|${REPOSITORY_MODULE_PREFIX}/tools/account-local"
   "tools/e2e-topology|${REPOSITORY_MODULE_PREFIX}/tools/e2e-topology"
 )

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { PublicApi, Profile, AddressBook } from '../../shared/api/types';
+import type { PublicApi, Profile, AddressBook } from '../../testing/session';
 import {
   createSessionController,
   GuardMismatchError,
@@ -8,7 +8,7 @@ import {
   type SessionEnvironment,
   type SessionJournal,
   type SessionNotice,
-} from './index';
+} from '../../testing/session';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -823,5 +823,21 @@ describe('anonymous challenge coordination across tabs', () => {
     expect(backend.refresh).not.toHaveBeenCalled();
     a.dispose();
     b.dispose();
+  });
+});
+
+describe('identity probe rejection across ownership changes', () => {
+  it('discards a late 401 after disposal without refreshing cookies', async () => {
+    const backend = api();
+    const delayed = deferred<Profile>();
+    vi.mocked(backend.getProfile).mockReturnValue(delayed.promise);
+    const environment = tabs();
+    const controller = createSessionController(backend, { environment: environment.environment() });
+    const boot = controller.bootstrap();
+    await vi.waitFor(() => expect(backend.getProfile).toHaveBeenCalled());
+    controller.dispose();
+    delayed.reject(denied());
+    await boot;
+    expect(backend.refresh).not.toHaveBeenCalled();
   });
 });

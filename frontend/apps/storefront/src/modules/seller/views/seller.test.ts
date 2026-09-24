@@ -1,11 +1,13 @@
+import { accountKey } from '../../account/api/controller';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { shallowRef } from 'vue';
 import { createMemoryHistory } from 'vue-router';
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { Shop, SellerApi } from '../../../shared/api/seller';
-import type { SessionController, SessionState } from '../../../shell/session';
-import { sellerApiKey, sessionKey } from '../../../shell/context';
+import type { Shop, SellerApi } from '../api';
+import type { SessionController, SessionState } from '../../../testing/session';
+import { sellerApiKey } from '../context';
+import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 
 vi.mock('../../../shared/features', () => ({
@@ -75,6 +77,8 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
       generation: state.value.generation,
       subjectId: state.value.subjectId,
     })),
+    readOwned: vi.fn(async (action) => action()),
+    writeOwned: vi.fn(async (action) => action()),
     readProfile: vi.fn(),
     updateProfile: vi.fn(),
     readSettings: vi.fn(),
@@ -108,7 +112,11 @@ async function open(session: SessionController, sellerApi: SellerApi, path: stri
     {
       global: {
         plugins: [router],
-        provide: { [sessionKey as symbol]: session, [sellerApiKey as symbol]: sellerApi },
+        provide: {
+          [sessionKey as symbol]: session,
+          [accountKey as symbol]: session,
+          [sellerApiKey as symbol]: sellerApi,
+        },
       },
     },
   );
@@ -177,7 +185,7 @@ describe('seller login', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(sellerApi.getMyShop).toHaveBeenCalledTimes(1);
-    expect(router.currentRoute.value.path).toBe('/seller');
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/seller'));
   });
 
   it('treats an unimplemented GetMyShop as the transitional approved state', async () => {
@@ -197,7 +205,7 @@ describe('seller login', () => {
     await wrapper.find('#seller-code').setValue('482913');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
-    expect(router.currentRoute.value.path).toBe('/seller');
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/seller'));
   });
 
   it.each([

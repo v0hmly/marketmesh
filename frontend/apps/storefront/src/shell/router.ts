@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router';
+import { authRoutes } from '../modules/auth/routes';
 import { accountRoutes } from '../modules/account/routes';
 import { sellerRoutes } from '../modules/seller/routes';
-import { staffRoutes } from '../modules/staff/routes';
 
 /**
  * Композиция маршрутов продуктовых областей (ADR-0010): shell собирает
@@ -13,9 +13,9 @@ export function createStorefrontRouter(history: RouterHistory = createWebHistory
     history,
     routes: [
       { path: '/', redirect: '/account' },
+      ...authRoutes,
       ...accountRoutes,
       ...sellerRoutes,
-      ...staffRoutes,
       { path: '/:pathMatch(.*)*', redirect: '/account' },
     ],
     // Якорь-идентификатор (например, /account/id#security) ведёт к разделу, если он уже

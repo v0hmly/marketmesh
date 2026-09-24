@@ -5,8 +5,8 @@ import { ErrorInfoSchema } from '@marketmesh/api/google/rpc/error_details_pb';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
 import { createClient } from '@connectrpc/connect';
 import { describe, expect, it } from 'vitest';
-import { createPublicTransport } from './transport';
-import { authErrorReason } from './errors';
+import { createPublicTransport } from '@marketmesh/browser-client/transport';
+import { authErrorReason } from '../../modules/auth/errors';
 
 describe('wire ErrorInfo', () => {
   it('parses CODE_MISMATCH details from a JSON connect error', async () => {

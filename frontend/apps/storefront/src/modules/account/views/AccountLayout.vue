@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import '../style.css';
 import { computed, inject, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useSession, themeKey } from '../../../shell/context';
+import { useSession } from '../../../shell/context';
+import { themeKey } from '../settings/context';
 import { favoritesEnabled, ordersEnabled, reviewsEnabled } from '../../../shared/features';
 import AccountNav from '../components/AccountNav.vue';
-import ThemeSetting from '../components/ThemeSetting.vue';
+import ThemeSetting from '../settings/ThemeSetting.vue';
 import { provideAccountCounts, type CountedSection } from '../counts';
-import { loadSampleFavorites, loadSampleOrders, loadSampleReviews } from '../sample-data';
+import { loadSampleFavorites } from '../favorites/sample-data';
+import { loadSampleOrders } from '../orders/sample-data';
+import { loadSampleReviews } from '../reviews/sample-data';
 
 /**
  * Каркас кабинета покупателя: слева панель (разделы, тема, выход), справа экран раздела.

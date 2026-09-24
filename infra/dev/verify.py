@@ -67,7 +67,7 @@ def check(mode):
             secret = files[role] if prefix == 'files' else pg_env[role.upper() + '_PASSWORD']
             own = pg(role, secret, database, 'SELECT count(*) FROM ' + table, replica=suffix == 'ro')
             require(own.returncode == 0, 'Нет собственного TLS/RW/RO доступа ' + role)
-            for other in ('auth', 'user', 'files', 'analytics'):
+            for other in ('auth', 'user', 'files', 'analytics', 'staff'):
                 if other != database:
                     denied = pg(role, secret, other, 'SELECT 1')
                     require(denied.returncode != 0 and ('pg_hba.conf' in denied.stderr or 'permission denied for database' in denied.stderr), 'Межбазовая изоляция ' + role)

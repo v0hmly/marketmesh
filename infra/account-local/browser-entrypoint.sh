@@ -11,6 +11,12 @@ if [ -n "${PUBLIC_FILES_CA:-}" ]; then
   test -r "$PUBLIC_FILES_CA"
   certutil -A -d "sql:$HOME/.pki/nssdb" -n marketmesh-files -t 'C,,' -i "$PUBLIC_FILES_CA"
 fi
+if [ "${BROWSER_APP:-storefront}" = staff ]; then
+  : "${PUBLIC_STAFF_CA:?staff CA required}"
+  certutil -A -d "sql:$HOME/.pki/nssdb" -n marketmesh-staff -t 'C,,' -i "$PUBLIC_STAFF_CA"
+  : "${PUBLIC_COMBINED_CA:?combined staff CA required}"
+  cd /app/frontend/apps/staff
+fi
 # Playwright route.fetch uses Node TLS, which needs the same public test CA.
 export NODE_EXTRA_CA_CERTS="${PUBLIC_COMBINED_CA:-$PUBLIC_CA}"
 exec pnpm exec playwright test --config playwright.real.config.ts "$@"

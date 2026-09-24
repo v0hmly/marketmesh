@@ -14,16 +14,7 @@ GRANT SELECT, INSERT ON files.audit TO files_rw, files_worker;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA files TO files_rw, files_worker;
 GRANT SELECT ON files.uploads, files.audit TO files_ro;
 SQL
-cat > "$PGDATA/pg_hba.conf" <<'HBA'
-local all all trust
-hostssl replication replicator all scram-sha-256
-hostssl auth auth_rw,auth_ro all scram-sha-256
-hostssl user user_rw,user_ro all scram-sha-256
-hostssl files files_rw,files_worker,files_ro all scram-sha-256
-hostssl analytics rybbit all scram-sha-256
-hostssl all fixture_admin all scram-sha-256
-host all all all reject
-HBA
+cp /scripts/pg_hba.conf "$PGDATA/pg_hba.conf"
 psql --username "$POSTGRES_USER" --dbname postgres --set=ON_ERROR_STOP=1 <<'SQL' >/dev/null
 SELECT pg_create_physical_replication_slot('marketmesh_sync');
 ALTER SYSTEM SET synchronous_commit = 'remote_apply';

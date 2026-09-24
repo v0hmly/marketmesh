@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAccount } from '../api/controller';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
 
@@ -9,6 +10,7 @@ import { useSession } from '../../../shell/context';
  */
 defineProps<{ title: string; text: string }>();
 const session = useSession();
+const account = useAccount();
 const status = computed(() => session.state.value.status);
 const checking = ref(false);
 const attempts = ref(0);
@@ -25,7 +27,7 @@ async function check() {
   stop();
   checking.value = true;
   try {
-    await session.readProfile();
+    await account.readProfile();
   } catch {
     /* Pending state stays visible; the shell presents other failures. */
   } finally {

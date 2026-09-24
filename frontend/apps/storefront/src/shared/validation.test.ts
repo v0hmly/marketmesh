@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { trimDisplayName } from './validation';
 import {
   formatCodeTtl,
   normalizeCodeInput,
   passwordChecks,
-  trimDisplayName,
   validateEmail,
   validateLoginCode,
   validatePasswordRepeat,
   validatePasswordStrength,
-} from './validation';
+} from '../modules/auth/validation';
 
 describe('email as the login identifier', () => {
   it('accepts trimmed plain addresses and rejects everything else', () => {

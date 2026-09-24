@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import '../../auth/forms';
+import '../style.css';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { useSellerApi, useSession } from '../../../shell/context';
-import { authErrorReason, sellerErrorReason } from '../../../shared/api/errors';
-import type { Shop } from '../../../shared/api/seller';
-import type { LoginChallenge } from '../../../shared/api/types';
+import { useSellerApi } from '../context';
+import { useSession } from '../../../shell/context';
+import { authErrorReason } from '../../auth/public';
+import { sellerErrorReason } from '../errors';
+import type { Shop } from '../api';
+import type { LoginChallenge } from '../../../shell/session/contracts';
 import {
   formatCodeTtl,
   normalizeCodeInput,
   validateEmail,
   validateLoginCode,
-} from '../../../shared/validation';
+} from '../../auth/public';
 
 const session = useSession();
 const sellerApi = useSellerApi();

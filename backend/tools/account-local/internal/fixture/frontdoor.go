@@ -104,7 +104,7 @@ func frontdoorWithPolicy(files fs.FS, proxy http.Handler, policy string) http.Ha
 		}
 		// Only known client-side routes fall back to index; private/unknown RPC paths never do.
 		switch r.URL.Path {
-		case "/account/security", "/account/security/verify", "/account/security/reset", "/account/security/change_email", "/account/security/cancel_email", "/account/security/cancel_deletion", "/", "/account", "/account/id", "/account/addresses", "/account/settings", "/login", "/register":
+		case "/account/security", "/account/security/verify", "/account/security/reset", "/account/security/change_email", "/account/security/cancel_email", "/account/security/cancel_deletion", "/", "/account", "/account/id", "/account/addresses", "/account/settings", "/account/orders", "/account/favorites", "/account/reviews", "/seller", "/seller/login", "/seller/apply", "/seller/products", "/seller/orders", "/login", "/register":
 			clone := r.Clone(r.Context())
 			u := *r.URL
 			clone.URL = &u
@@ -115,6 +115,11 @@ func frontdoorWithPolicy(files fs.FS, proxy http.Handler, policy string) http.Ha
 				http.NotFound(w, r)
 				return
 			}
+			if info, err := fs.Stat(files, strings.TrimPrefix(r.URL.Path, "/")); err != nil || !info.Mode().IsRegular() {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 			static.ServeHTTP(w, r)
 		}
 	})

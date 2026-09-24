@@ -21,7 +21,7 @@ task dev:up
 
 ```sh
 task dev:up                              # основной состав + все панели
-task dev:up -- --profile core            # кабинет, Auth, User, Files и Mailpit
+task dev:up -- --profile core            # кабинет, Staff/SSO, Auth, User, Files и Mailpit
 task dev:up -- --profile observability   # основной состав + Grafana Stack
 task dev:up -- --profile analytics       # основной состав + Rybbit
 task dev:up -- --profile infrastructure # только общие PG, Redis, NATS, ClickHouse
@@ -60,6 +60,8 @@ docker compose --env-file .cache/dev-stack/compose.env --profile '*' down
 | Интерфейс | Адрес |
 | --- | --- |
 | Кабинет | https://localhost:18443 |
+| Сотрудники | https://staff.localhost:18444 |
+| Тестовый OIDC | https://oidc.localhost:18445 |
 | Mailpit | http://localhost:18025 |
 | Grafana | http://localhost:3000 |
 | Rybbit | http://localhost:8310 |
@@ -185,3 +187,24 @@ task dev:browser -- --persistence check
 на каждый PR не добавляется (GitHub Free).
 
 Результаты MM-99, состав до/после, CVE и откат — в [отчёте проверки](../../docs/testing/shared-dev.md).
+
+## Staff и локальный OIDC
+
+`task dev:up` включает staff; выборочно — `task dev:up -- staff`. Отдельной базы
+PostgreSQL в контейнере нет: добавляется БД staff и RW/RO-роли общего кластера.
+Существующие данные сохраняются; reset при переходе на MM-87 не нужен.
+Схему применяет provision после готовности синхронной replica.
+
+Публичный CA — `.cache/dev-stack/staff/ca.crt`; тестовые учётные данные и команды
+приглашения описаны в [staff](../../frontend/apps/staff/README.md). Проверка:
+`task staff:browser`. Отдельный bridge `172.31.87.0/24` содержит staff/IdP, порты привязаны к loopback.
+Staff требует корпоративный clientAuth-сертификат до HTTP: импортируйте локальный
+`.cache/dev-stack/staff/browser.p12` с пустым паролем вместе с публичным CA.
+Один IP allowlist не защищает от SNAT OrbStack между bridge. `task staff:perimeter`
+проверяет TLS-отказ извне без пропуска по IP и через `host.docker.internal`, с
+правильным серверным CA и поддельными forwarded-заголовками. Положительный
+`task staff:browser` использует client certificate, настоящий SSO и приглашение.
+Это локальная модель периметра; корпоративный ingress сохраняет VPN/ACL и свою PKI.
+
+PKI staff обновляется с маркером возобновления, без замены постоянных паролей.
+Не импортируйте `ca.key` и не публикуйте файлы `.cache/dev-stack`.
