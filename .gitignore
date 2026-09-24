@@ -63,3 +63,7 @@ __pycache__/
 /docs/design/design-system/tokens.css
 
 /frontend/packages/design-system/tokens.css
+
+# Browser reports for every workspace application
+/frontend/apps/*/test-results/
+/frontend/apps/*/playwright-report/
