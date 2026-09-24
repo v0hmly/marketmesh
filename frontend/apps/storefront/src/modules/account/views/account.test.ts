@@ -351,8 +351,9 @@ describe('account forms', () => {
     vi.mocked(session.completeLogin).mockResolvedValue(undefined);
     await wrapper.find('form').trigger('submit');
     await flushPromises();
+    // Lazy-компонент загружается асинхронно; flushPromises не ждёт завершения import.
     // Без MarketMesh ID и заказов первый раздел кабинета — вход и безопасность.
-    expect(router.currentRoute.value.path).toBe('/account/security');
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/account/security'));
   });
 });
 
