@@ -49,6 +49,7 @@ const denied = () => new ConnectError('authentication failed', Code.Unauthentica
 function api(): PublicApi {
   return {
     register: vi.fn(async () => {}),
+    confirmEmail: vi.fn(async () => profile().subjectId),
     startLogin: vi.fn(async () => ({
       challengeId: new Uint8Array(16).fill(9),
       codeExpiresInSeconds: 600n,
@@ -737,5 +738,90 @@ describe('email authentication session transitions', () => {
     expect(staleWrite).not.toHaveBeenCalled();
     expect(write).toHaveBeenCalledTimes(1);
     controller.dispose();
+  });
+});
+
+describe('registration confirmation session transitions', () => {
+  it('establishes and broadcasts first login without requesting another email code', async () => {
+    const backend = api();
+    const shared = tabs();
+    const a = createSessionController(backend, { environment: shared.environment() });
+    const b = createSessionController(backend, { environment: shared.environment() });
+    vi.mocked(backend.getProfile).mockRejectedValue(denied());
+    vi.mocked(backend.refresh).mockRejectedValue(denied());
+    await Promise.all([a.bootstrap(), b.bootstrap()]);
+    vi.mocked(backend.getProfile).mockResolvedValue(profile());
+    await expect(a.confirmEmail('one-use-link')).resolves.toBe(true);
+    await settle();
+    expect(a.state.value.status).toBe('authenticated');
+    expect(b.state.value.status).toBe('authenticated');
+    expect(a.capture()).toEqual(b.capture());
+    expect(backend.startLogin).not.toHaveBeenCalled();
+    expect(backend.completeLogin).not.toHaveBeenCalled();
+    a.dispose();
+    b.dispose();
+  });
+  it.each([true, false])(
+    'preserves the existing session for confirmation-only: %s',
+    async (authenticated) => {
+      const backend = api();
+      const shared = tabs();
+      if (!authenticated) {
+        vi.mocked(backend.getProfile).mockRejectedValue(denied());
+        vi.mocked(backend.refresh).mockRejectedValue(denied());
+      }
+      vi.mocked(backend.confirmEmail).mockResolvedValue(null);
+      const controller = createSessionController(backend, { environment: shared.environment() });
+      await controller.bootstrap();
+      await expect(controller.confirmEmail('link')).resolves.toBe(false);
+      expect(controller.state.value.status).toBe(authenticated ? 'authenticated' : 'anonymous');
+      expect(backend.logout).not.toHaveBeenCalled();
+      controller.dispose();
+    },
+  );
+  it('keeps a lost confirmation reply uncertain and never automatically retries', async () => {
+    const backend = api();
+    const shared = tabs();
+    const controller = createSessionController(backend, { environment: shared.environment() });
+    await controller.bootstrap();
+    vi.mocked(backend.confirmEmail).mockRejectedValue(
+      new ConnectError('lost reply', Code.Unavailable),
+    );
+    await expect(controller.confirmEmail('link')).rejects.toMatchObject({ code: Code.Unavailable });
+    await controller.bootstrap();
+    expect(controller.state.value.status).toBe('uncertain');
+    expect(backend.confirmEmail).toHaveBeenCalledTimes(1);
+    controller.dispose();
+  });
+});
+
+describe('anonymous challenge coordination across tabs', () => {
+  it('does not rotate the code-step generation by refreshing an anonymous sibling tab', async () => {
+    const backend = api();
+    vi.mocked(backend.getProfile).mockRejectedValue(denied());
+    vi.mocked(backend.refresh).mockRejectedValue(denied());
+    const shared = tabs();
+    const a = createSessionController(backend, { environment: shared.environment() });
+    const b = createSessionController(backend, { environment: shared.environment() });
+    await Promise.all([a.bootstrap(), b.bootstrap()]);
+    vi.mocked(backend.refresh).mockClear();
+    await a.startLogin('buyer@example.test', new Uint8Array());
+    const generation = a.state.value.generation;
+    await settle();
+    expect(a.state.value.generation).toBe(generation);
+    expect(b.state.value.generation).toBe(generation);
+    expect(backend.refresh).not.toHaveBeenCalled();
+    vi.mocked(backend.confirmEmail).mockRejectedValue(
+      new ConnectError('used', Code.FailedPrecondition),
+    );
+    await expect(a.confirmEmail('used-link')).rejects.toMatchObject({
+      code: Code.FailedPrecondition,
+    });
+    const rejectedGeneration = a.state.value.generation;
+    await settle();
+    expect(a.state.value.generation).toBe(rejectedGeneration);
+    expect(backend.refresh).not.toHaveBeenCalled();
+    a.dispose();
+    b.dispose();
   });
 });

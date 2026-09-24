@@ -4,6 +4,14 @@ package migrations
 import _ "embed"
 
 var (
+	// RegistrationLoginUp binds first login to its registration browser.
+	//go:embed 000005_registration_login.up.sql
+	RegistrationLoginUp string
+
+	// RegistrationLoginDown drops pending browser bindings without changing accounts.
+	//go:embed 000005_registration_login.down.sql
+	RegistrationLoginDown string
+
 	// SecurityUp adds email challenges and the encrypted transactional mail queue.
 	//go:embed 000004_security.up.sql
 	SecurityUp string

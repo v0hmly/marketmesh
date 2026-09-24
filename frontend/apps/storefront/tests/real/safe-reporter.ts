@@ -13,7 +13,7 @@ export default class SafeReporter implements Reporter {
     const locations = new Set<string>();
     for (const error of result.errors) {
       for (const location of error.stack?.match(
-        /(?:account|security|mail|avatar)\.(?:spec\.)?ts:\d+:\d+/g,
+        /(?:account|security|mail|avatar|registration)\.(?:spec\.)?ts:\d+:\d+/g,
       ) ?? []) {
         if (locations.size < 5) locations.add(location);
       }

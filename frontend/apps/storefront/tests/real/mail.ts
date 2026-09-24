@@ -62,6 +62,22 @@ export async function verifyEmail(page: Page, email: string) {
   const mail = await letter(email, 'Подтвердите почту в MarketMesh');
   await page.goto(letterLink(mail, 'verify'));
   await expect.poll(() => new URL(page.url()).hash).toBe('');
-  await page.getByRole('button', { name: 'Подтвердить действие', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Почта подтверждена');
+  await page.getByRole('button', { name: 'Подтвердить почту', exact: true }).click();
+  await expect(page).toHaveURL(/\/account(?:\/id)?$/);
+}
+
+/** Each login reads only the newly requested code, never a previous Mailpit letter. */
+export async function submitLogin(page: Page, email: string) {
+  const base = process.env.MAILPIT_URL;
+  if (!['http://mailpit:8025', 'http://localhost:18025'].includes(base ?? ''))
+    throw new Error('Local Mailpit fixture required');
+  const response = await fetch(`${base}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`);
+  if (!response.ok) throw new Error('Cannot inspect local mail');
+  const list = (await response.json()) as { messages: { ID: string }[] };
+  const seen = new Set(list.messages.map((message) => message.ID));
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByLabel('Код из письма', { exact: true })).toBeVisible();
+  const mail = await letter(email, 'Код для входа в MarketMesh', seen);
+  await page.getByLabel('Код из письма', { exact: true }).fill(letterCode(mail));
+  await page.getByRole('button', { name: 'Подтвердить вход', exact: true }).click();
 }

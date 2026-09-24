@@ -24,6 +24,7 @@ function fixture() {
       generation: state.value.generation,
       subjectId: state.value.subjectId,
     })),
+    confirmEmail: vi.fn(async () => false),
     register: vi.fn(),
     startLogin: vi.fn(),
     completeLogin: vi.fn(),

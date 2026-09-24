@@ -71,6 +71,7 @@ describe('public browser API boundary', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(Object.keys(api).sort()).toEqual([
       'completeLogin',
+      'confirmEmail',
       'createAddress',
       'deleteAddress',
       'getProfile',

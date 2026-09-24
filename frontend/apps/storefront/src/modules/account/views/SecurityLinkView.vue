@@ -112,8 +112,16 @@ async function submit() {
     if (request) {
       if (selected === 'verify') await api.requestEmailVerification({ email: address });
       else await api.requestPasswordReset({ email: address });
-    } else if (selected === 'verify') await api.confirmEmail({ token: secret });
-    else if (selected === 'reset')
+    } else if (selected === 'verify') {
+      const signedIn = await session.confirmEmail(secret);
+      if (!active || attempt !== revision) return;
+      if (signedIn) {
+        token.value = '';
+        succeeded.value = true;
+        await router.replace('/account');
+        return;
+      }
+    } else if (selected === 'reset')
       await session.endSession(() =>
         api.confirmPasswordReset({ token: secret, newPassword: bytes }),
       );
@@ -132,10 +140,12 @@ async function submit() {
           ? 'Смена почты отменена. Прежний адрес сохранён.'
           : selected === 'change_email'
             ? 'Почта изменена. Войдите с новым адресом.'
-            : 'Почта подтверждена. Теперь можно войти.';
+            : 'Почта подтверждена. Для входа в этом браузере введите почту, пароль и код из письма.';
   } catch (error) {
     if (active && attempt === revision) {
-      expired.value = authErrorReason(error, Code.FailedPrecondition, 'TOKEN_EXPIRED');
+      expired.value =
+        authErrorReason(error, Code.FailedPrecondition, 'TOKEN_EXPIRED') ||
+        authErrorReason(error, Code.FailedPrecondition, 'TOKEN_USED');
       failure.value = expired.value
         ? 'Ссылка недействительна или срок её действия истёк. Запросите новую ссылку.'
         : securityError(error);
@@ -156,7 +166,11 @@ async function submit() {
       <p class="eyebrow">Безопасность аккаунта</p>
       <h1>{{ title }}</h1>
       <p class="lede">
-        Ссылка из письма действует один раз. Подтвердите действие на этой странице.
+        {{
+          action === 'verify' && token
+            ? 'Подтвердите почту — в браузере регистрации мы сразу откроем ваш аккаунт.'
+            : 'Ссылка из письма действует один раз. Подтвердите действие на этой странице.'
+        }}
       </p>
     </div>
     <form class="card auth-card" novalidate :aria-busy="busy" @submit.prevent="submit">
@@ -218,7 +232,9 @@ async function submit() {
                 ? 'Отправить письмо'
                 : action === 'reset'
                   ? 'Сохранить новый пароль'
-                  : 'Подтвердить действие'
+                  : action === 'verify'
+                    ? 'Подтвердить почту'
+                    : 'Подтвердить действие'
           }}
         </button>
       </fieldset>

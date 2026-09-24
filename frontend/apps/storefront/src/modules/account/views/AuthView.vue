@@ -186,6 +186,13 @@ watch(
   },
   { flush: 'sync' },
 );
+watch(
+  () => session.state.value.status,
+  (status) => {
+    if (registered.value && ['authenticated', 'profilePending'].includes(status))
+      void router.replace('/account');
+  },
+);
 onBeforeUnmount(() => {
   active = false;
   requestSequence++;
@@ -366,8 +373,9 @@ function submit() {
         <h1 id="auth-title" class="state-title">Аккаунт создан.</h1>
         <template v-if="verificationSent">
           <p>
-            Мы отправили письмо для подтверждения на {{ email.trim() }}. Перейдите по ссылке в
-            письме, чтобы войти.
+            Мы отправили письмо для подтверждения на {{ email.trim() }}. Откройте ссылку в этом
+            браузере и подтвердите почту — мы сразу откроем ваш аккаунт. При следующих входах после
+            пароля потребуется код из письма.
           </p>
           <p v-if="verificationResent" class="notice success" role="status">
             Письмо отправлено повторно.

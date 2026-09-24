@@ -62,6 +62,8 @@ export interface SessionController {
   readonly state: Readonly<Ref<SessionState>>;
   bootstrap(): Promise<void>;
   register(identifier: string, password: Uint8Array): Promise<void>;
+  /** Confirms registration and coordinates an optional first login across tabs. */
+  confirmEmail(token: string): Promise<boolean>;
   login(identifier: string, password: Uint8Array): Promise<void>;
   /** Starts login under the cookie mutation lock; may establish a session directly. */
   startLogin(identifier: string, password: Uint8Array): Promise<LoginStart>;
@@ -443,20 +445,26 @@ export function createSessionController(
     }
   }
   /** Journals a login-kind operation, then probes the fresh session identity. */
-  async function establish(verify: () => Promise<Uint8Array | null>) {
+  async function establish(verify: () => Promise<Uint8Array | null | undefined>) {
     intent('login');
     await available().lock('exclusive', async () => {
       const operation = begin('login');
+      let id: Uint8Array | null | undefined;
       try {
-        const id = await verify();
-        finish(operation, 'settled');
+        id = await verify();
         if (id === null) {
+          // No session was issued. Other tabs must not try refresh and rotate
+          // the generation while this tab is waiting for its emailed code.
+          operation.kind = 'expired';
+          finish(operation, 'settled');
           set('anonymous', operation.generation, null);
           return;
         }
-        rememberIdentity(operation.generation, subject(id));
-        set('checking', operation.generation, subject(id));
+        if (id !== undefined) finish(operation, 'settled');
+        if (id) rememberIdentity(operation.generation, subject(id));
+        set('checking', operation.generation, id ? subject(id) : null);
       } catch (error) {
+        if (definitive(error)) operation.kind = 'expired';
         finish(operation, definitive(error) ? 'settled' : 'uncertain');
         // A definitive rejection (wrong credentials or code) means "still
         // anonymous", not a broken session check.
@@ -465,7 +473,16 @@ export function createSessionController(
       }
       try {
         await probe(operation.generation);
+        if (id === undefined) finish(operation, 'settled');
       } catch (error) {
+        // A confirmation-only response leaves the existing cookie session intact.
+        if (id === undefined && unauthenticated(error)) {
+          operation.kind = 'expired';
+          finish(operation, 'settled');
+          set('anonymous', operation.generation, null);
+          return;
+        }
+        if (id === undefined) finish(operation, 'uncertain');
         if (!(error instanceof GuardMismatchError)) set('unavailable', operation.generation, null);
         throw error;
       }
@@ -639,6 +656,15 @@ export function createSessionController(
     bootstrap,
     login,
     completeLogin,
+    async confirmEmail(token) {
+      let signedIn = false;
+      await establish(async () => {
+        const id = await api.confirmEmail(token);
+        signedIn = id !== null;
+        return id ?? undefined;
+      });
+      return signedIn;
+    },
     async startLogin(identifier, password) {
       let result: LoginStart | undefined;
       await establish(async () => {
@@ -688,8 +714,9 @@ export function createSessionController(
       });
     },
     async register(identifier, password) {
-      available();
-      await api.register(identifier, password);
+      // Registration writes a pending browser cookie; serialize it with logins
+      // and confirmations without changing the current session generation.
+      await available().lock('exclusive', () => api.register(identifier, password));
     },
     async readProfile(guard) {
       if (!guard && current.value.status !== 'authenticated') await bootstrap();

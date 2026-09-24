@@ -27,6 +27,7 @@ const (
 	internalErrorMessage      = "internal error"
 	accessCookieName          = "__Host-mm-access"
 	refreshCookieName         = "__Host-mm-refresh"
+	registrationCookieName    = "__Host-mm-registration"
 	maxCookieHeaderBytes      = 8192
 )
 
@@ -124,11 +125,15 @@ func (handler *Handler) RegisterCredentials(
 	}
 	if handler.security != nil {
 		ctx = mailContext(ctx, request.Header())
-		if err := handler.security.Register(ctx, request.Msg.GetIdentifier(), password); err != nil {
+		secret, err := handler.security.RegisterBrowser(ctx, request.Msg.GetIdentifier(), password)
+		if err != nil {
 			return nil, securityFailure(err)
 		}
 		response := connect.NewResponse(&authv1.RegisterCredentialsResponse{})
 		response.Header().Set("Cache-Control", "no-store")
+		cookie := secureCookie(registrationCookieName, secret, handler.clock().Add(24*time.Hour))
+		cookie.MaxAge = 24 * 60 * 60
+		response.Header().Add("Set-Cookie", cookie.String())
 		return response, nil
 	}
 	if err := handler.registration.Execute(ctx, request.Msg.GetIdentifier(), password); err != nil {

@@ -61,15 +61,18 @@ type Account struct {
 }
 
 type Challenge struct {
-	ID                ID
-	Subject           credential.SubjectID
-	Purpose           Purpose
-	Digest            Digest
-	Revision          int64
-	Email             string
-	ExpiresAt, SentAt time.Time
-	Attempts, Sends   int
-	UsedAt            *time.Time
+	ID      ID
+	Subject credential.SubjectID
+	Purpose Purpose
+	Digest  Digest
+	// RegistrationDigest binds verification to the browser that created the account.
+	// Zero means confirmation-only, including challenges created by older versions.
+	RegistrationDigest Digest
+	Revision           int64
+	Email              string
+	ExpiresAt, SentAt  time.Time
+	Attempts, Sends    int
+	UsedAt             *time.Time
 }
 
 func (c Challenge) Check(account Account, purpose Purpose, now time.Time) error {

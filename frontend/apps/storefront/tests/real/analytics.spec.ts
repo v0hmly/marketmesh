@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { verifyEmail } from './mail';
+import { verifyEmail, submitLogin } from './mail';
 
 test('analytics sends bounded fields once per page and an outage does not block login', async ({
   page,
@@ -57,6 +57,6 @@ test('analytics sends bounded fields once per page and an outage does not block 
   await page.goto('/login');
   await page.getByLabel('Почта', { exact: true }).fill(identifier);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await submitLogin(page, identifier);
   await expect(page).toHaveURL(/\/account\/id$/);
 });

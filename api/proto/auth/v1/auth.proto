@@ -309,9 +309,13 @@ message ConfirmEmailRequest {
   string token = 1;
 }
 
-// ConfirmEmailResponse is empty; expired or used tokens yield FailedPrecondition
+// ConfirmEmailResponse optionally identifies the newly established browser session.
+// Expired or used tokens yield FailedPrecondition
 // with ErrorInfo reasons "TOKEN_EXPIRED" or "TOKEN_USED".
-message ConfirmEmailResponse {}
+message ConfirmEmailResponse {
+  // Present only when the registration browser binding matches. Tokens are HttpOnly cookies.
+  bytes subject_id = 1;
+}
 
 // RequestPasswordResetRequest selects the account by email without confirming it exists.
 message RequestPasswordResetRequest {

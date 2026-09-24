@@ -57,6 +57,7 @@ export interface PublicApi {
   completeLogin(challengeId: Uint8Array, code: string): Promise<Uint8Array>;
   resendLoginCode(challengeId: Uint8Array): Promise<LoginChallenge>;
   requestEmailVerification(email: string): Promise<void>;
+  confirmEmail(token: string): Promise<Uint8Array | null>;
   refresh(): Promise<void>;
   logout(): Promise<void>;
   logoutAll(): Promise<void>;

@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	applicationsession "github.com/v0hmly/marketmesh/services/auth/internal/application/session"
 	"github.com/v0hmly/marketmesh/services/auth/internal/domain/credential"
 	domain "github.com/v0hmly/marketmesh/services/auth/internal/domain/security"
 	"github.com/v0hmly/marketmesh/services/auth/internal/domain/session"
@@ -31,6 +32,10 @@ func (s *Service) RequestToken(ctx context.Context, email string, purpose domain
 		if found && s.now().Sub(latest.SentAt) < resendDelay {
 			return nil
 		}
+		var registrationDigest domain.Digest
+		if found && purpose == domain.VerifyEmail && latest.Check(*account, purpose, s.now()) == nil {
+			registrationDigest = latest.RegistrationDigest
+		}
 		if found {
 			now := s.now()
 			latest.UsedAt = &now
@@ -46,6 +51,11 @@ func (s *Service) RequestToken(ctx context.Context, email string, purpose domain
 		if err != nil {
 			return err
 		}
+		c.RegistrationDigest = registrationDigest
+		if registrationDigest != (domain.Digest{}) {
+			c.ExpiresAt = latest.ExpiresAt
+			m.ExpiresAt = c.ExpiresAt
+		}
 		if err := tx.SaveChallenge(ctx, c); err != nil {
 			return err
 		}
@@ -54,13 +64,37 @@ func (s *Service) RequestToken(ctx context.Context, email string, purpose domain
 }
 
 func (s *Service) ConfirmEmail(ctx context.Context, value string) error {
-	return s.confirmToken(ctx, value, domain.VerifyEmail, func(tx Unit, c *domain.Challenge) error {
-		if tx.Account().Email != c.Email || tx.Account().DeletionAt != nil {
+	_, err := s.ConfirmRegistration(ctx, value, "")
+	return err
+}
+
+// ConfirmRegistration consumes the email link atomically with verification and
+// optional session creation. Possession of the link alone never grants a session.
+func (s *Service) ConfirmRegistration(ctx context.Context, value, browserSecret string) (applicationsession.Tokens, error) {
+	var tokens applicationsession.Tokens
+	err := s.confirmToken(ctx, value, domain.VerifyEmail, func(tx Unit, c *domain.Challenge) error {
+		account := tx.Account()
+		if account.Email != c.Email || account.DeletionAt != nil || account.Verified {
 			return domain.TokenExpired
 		}
-		tx.Account().Verified = true
+		account.Verified = true
+		if len(browserSecret) == 43 && c.RegistrationDigest != (domain.Digest{}) {
+			digest := s.digest("registration-browser", domain.ID(account.Subject), browserSecret)
+			if subtle.ConstantTimeCompare(digest[:], c.RegistrationDigest[:]) == 1 {
+				var err error
+				tokens, err = s.issue(ctx, tx)
+				return err
+			}
+		}
 		return nil
 	})
+	if err != nil {
+		return applicationsession.Tokens{}, err
+	}
+	if tokens.Record.ID == (session.ID{}) {
+		return tokens, nil
+	}
+	return s.sessions.Activate(ctx, tokens)
 }
 func (s *Service) ResetPassword(ctx context.Context, value string, raw []byte) error {
 	password, err := domain.NewPassword(raw)
