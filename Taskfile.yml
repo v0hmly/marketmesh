@@ -176,8 +176,20 @@ tasks:
       - sh: "! pgrep -f '[t]askboard --db .*[.]taskboard/taskboard[.]db' >/dev/null 2>&1"
         msg: Остановите процессы Taskboard (web UI, MCP), использующие .taskboard/taskboard.db
     cmds:
-      - sqlite3 .taskboard/taskboard.db "PRAGMA wal_checkpoint(TRUNCATE);"
-      - sqlite3 .taskboard/taskboard.db "PRAGMA integrity_check;"
+      - |
+        result="$(sqlite3 .taskboard/taskboard.db "PRAGMA wal_checkpoint(TRUNCATE);")"
+        echo "${result}"
+        if [ "$(echo "${result}" | cut -d'|' -f1)" != "0" ]; then
+          printf '%s\n' 'checkpoint не завершён: база занята другим соединением.' >&2
+          exit 1
+        fi
+      - |
+        integrity="$(sqlite3 .taskboard/taskboard.db "PRAGMA integrity_check;")"
+        echo "${integrity}"
+        if [ "${integrity}" != "ok" ]; then
+          printf '%s\n' 'Целостность базы Taskboard нарушена, коммитить её нельзя.' >&2
+          exit 1
+        fi
 
   api:bootstrap:
     desc: Установить зафиксированные protobuf-инструменты в корневой bin
