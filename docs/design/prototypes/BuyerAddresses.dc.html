@@ -17,7 +17,7 @@
   a.button, a.side-link { text-decoration: none; }
 </style>
 </helmet>
-<div style="width: 1440px; height: 1240px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; gap: 40px; padding: 44px 56px;">
+<div style="position: relative; width: 1440px; height: 1240px; box-sizing: border-box; overflow-y: auto; background: var(--surface-page); font-family: var(--font-sans); color: var(--text-primary); display: flex; gap: 40px; padding: 44px 56px;">
 
   <aside style="width: 268px; flex-shrink: 0; display: flex; flex-direction: column; gap: 28px;">
     <span class="brand"><span class="brand-mark" aria-hidden="true"><span>m</span></span><span>MarketMesh<span class="brand-dot">.</span></span></span>
@@ -91,20 +91,6 @@
       </sc-for>
     </ul>
 
-    <sc-if value="{{isDeleting}}" hint-placeholder-val="{{false}}">
-      <div class="reconcile-panel" aria-labelledby="delete-address-title">
-        <h2 id="delete-address-title" style="margin: 0; font-size: 1.15rem; font-weight: 600;">Удалить адрес?</h2>
-        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7;">{{deletingSummary}}</p>
-        <sc-if value="{{deletingIsDefault}}" hint-placeholder-val="{{false}}">
-          <p style="margin: 0; font-size: 0.875rem; line-height: 1.7;">Другой основной адрес не будет выбран автоматически.</p>
-        </sc-if>
-        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
-          <button type="button" class="button secondary" onClick="{{onCancelDelete}}">Отменить удаление</button>
-          <button type="button" class="button primary" onClick="{{onConfirmDelete}}">Подтвердить удаление</button>
-        </div>
-      </div>
-    </sc-if>
-
     <sc-if value="{{isEditing}}" hint-placeholder-val="{{false}}">
       <div class="card" style="padding: 32px; display: flex; flex-direction: column; gap: 24px;">
         <div>
@@ -173,6 +159,23 @@
     </sc-if>
 
   </main>
+
+  <sc-if value="{{isDeleting}}" hint-placeholder-val="{{false}}">
+    <div class="dialog-scrim">
+      <div class="card dialog" role="dialog" aria-modal="true" aria-labelledby="delete-address-title">
+        <h2 id="delete-address-title">{{deletingTitle}}</h2>
+        <p>{{deletingSummary}}</p>
+        <sc-if value="{{deletingIsDefault}}" hint-placeholder-val="{{false}}">
+          <p>Другой основной адрес не будет выбран автоматически.</p>
+        </sc-if>
+        <div class="dialog-actions">
+          <button type="button" class="button text-button" onClick="{{onCancelDelete}}">Оставить адрес</button>
+          <button type="button" class="button primary" onClick="{{onConfirmDelete}}">Удалить адрес</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
@@ -322,7 +325,8 @@ class Component extends DCLogic {
 
       isDeleting: !!deleting,
       deletingIsDefault: deleting ? deleting.isDefault : false,
-      deletingSummary: deleting ? deleting.recipient + ' — ' + deleting.city + ', ' + deleting.street : '',
+      deletingTitle: deleting ? 'Удалить адрес «' + deleting.recipient + '»?' : '',
+      deletingSummary: deleting ? deleting.city + ', ' + deleting.street + '. Остальные адреса останутся без изменений.' : '',
       onCancelDelete: this.onCancelDelete,
       onConfirmDelete: this.onConfirmDelete,
 

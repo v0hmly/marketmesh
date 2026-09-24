@@ -18,6 +18,20 @@ vi.mock('../../../shared/features', () => ({
   sellerEnabled: false,
   staffEnabled: false,
 }));
+const security = vi.hoisted(() => ({
+  getCredentials: vi.fn(),
+  listSessions: vi.fn(),
+  changePassword: vi.fn(),
+  startEmailChange: vi.fn(),
+  startLoginCodeChange: vi.fn(),
+  completeLoginCodeChange: vi.fn(),
+  revokeSession: vi.fn(),
+  logoutAll: vi.fn(),
+}));
+vi.mock('../security/api', async (original) => ({
+  ...(await original<object>()),
+  createSecurityApi: () => security,
+}));
 
 const profile = (overrides: Partial<Profile> = {}): Profile => ({
   $typeName: 'user.v1.Profile',
@@ -71,14 +85,23 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
   return { session, state };
 }
 const mounted: VueWrapper[] = [];
-beforeEach(() => vi.spyOn(window, 'scrollTo').mockImplementation(() => {}));
+beforeEach(() => {
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  security.getCredentials.mockResolvedValue({
+    email: 'vera@example.com',
+    emailVerified: true,
+    loginCodeEnabled: false,
+    newDeviceCooldownUntilUnix: 0n,
+  });
+  security.listSessions.mockResolvedValue({ sessions: [] });
+});
 afterEach(() => {
   for (const wrapper of mounted.splice(0)) wrapper.unmount();
   vi.useRealTimers();
 });
-async function open(session: SessionController) {
+async function open(session: SessionController, path = '/account/id') {
   const router = createStorefrontRouter(createMemoryHistory());
-  await router.push('/account/id');
+  await router.push(path);
   await router.isReady();
   const wrapper = mount(
     { template: '<RouterView />' },
@@ -102,7 +125,13 @@ describe('MarketMesh ID', () => {
     expect(wrapper.text()).toContain('12 марта 1989 года');
     expect(wrapper.text()).toContain('Женский');
     expect(wrapper.text()).toContain('Вы с нами с');
-    expect(wrapper.text()).not.toContain('Сеансы и устройства');
+    expect(wrapper.find('.id-email').text()).toBe('vera@example.comПодтверждён');
+    expect(wrapper.find('.privacy-note').text()).toContain(
+      'Данные этого раздела доступны только вам.',
+    );
+    expect(wrapper.find('h1').text()).toBe('MarketMesh ID');
+    expect(wrapper.find('#security-title').text()).toBe('Вход и безопасность');
+    expect(wrapper.find('#sessions-title').text()).toBe('Сеансы и устройства');
     expect(wrapper.text()).not.toContain('Удаление аккаунта');
     await button(wrapper, 'Изменить данные').trigger('click');
     expect((wrapper.find('#id-first').element as HTMLInputElement).value).toBe('Вера');
@@ -209,5 +238,196 @@ describe('MarketMesh ID', () => {
     await button(wrapper, 'Проверить готовность').trigger('click');
     await flushPromises();
     expect(session.readProfile).toHaveBeenCalledTimes(1);
+  });
+  it('does not retry an unknown mutation and permits explicit acceptance of current server data', async () => {
+    const { session } = fixture();
+    vi.mocked(session.updateProfile).mockRejectedValue(new TypeError('network private'));
+    const { wrapper } = await open(session);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-city').setValue('Новый черновик');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(session.updateProfile).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[role="alert"]').text()).toContain('Сохранение не подтверждено');
+    expect(wrapper.text()).not.toContain('network private');
+    expect((wrapper.find('#id-city').element as HTMLInputElement).value).toBe('Новый черновик');
+    await wrapper.find('form').trigger('submit');
+    expect(session.updateProfile).toHaveBeenCalledTimes(1);
+    vi.mocked(session.readProfile).mockResolvedValueOnce(
+      profile({ city: 'Актуальный город', version: 10n }),
+    );
+    await button(wrapper, 'Перечитать актуальные').trigger('click');
+    await flushPromises();
+    await button(wrapper, 'Принять актуальные данные').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#id-city').exists()).toBe(false);
+    expect(wrapper.find('.id-rows').text()).toContain('Актуальный город');
+    expect(session.updateProfile).toHaveBeenCalledTimes(1);
+  });
+  it('renders server values literally and blocks oversized names', async () => {
+    const { session } = fixture();
+    vi.mocked(session.readProfile).mockResolvedValue(
+      profile({ displayName: '<img src=x onerror=alert(1)>', city: '<script>alert(1)</script>' }),
+    );
+    const { wrapper } = await open(session);
+    expect(wrapper.find('.id-hero h2').text()).toBe('<img src=x onerror=alert(1)> Ильина');
+    expect(wrapper.find('img').exists()).toBe(false);
+    expect(wrapper.find('script').exists()).toBe(false);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-first').setValue('😀'.repeat(81));
+    await wrapper.find('form').trigger('submit');
+    expect(wrapper.find('#id-first').attributes('aria-invalid')).toBe('true');
+    expect(wrapper.find('#id-first-error').text()).toContain('80 символов');
+    expect(session.updateProfile).not.toHaveBeenCalled();
+  });
+  it('warns before losing dirty data and forgets the private draft on generation change', async () => {
+    const { session, state } = fixture();
+    const { wrapper, router } = await open(session);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-city').setValue('Private draft');
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    await router.push('/login');
+    expect(confirm).toHaveBeenCalled();
+    expect(router.currentRoute.value.path).toBe('/account/id');
+    state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
+    await flushPromises();
+    expect(wrapper.find('#id-city').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Private draft');
+    expect(wrapper.text()).not.toContain('Вера');
+    expect(wrapper.text()).not.toContain('vera@example.com');
+    const after = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(after);
+    expect(after.defaultPrevented).toBe(false);
+  });
+  it('discards late profile responses from a previous generation', async () => {
+    const { session, state } = fixture();
+    let resolve: ((value: Profile) => void) | undefined;
+    vi.mocked(session.readProfile).mockImplementation(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const { wrapper } = await open(session);
+    state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
+    resolve?.(profile({ displayName: 'Private old account' }));
+    await flushPromises();
+    expect(wrapper.text()).not.toContain('Private old account');
+    expect(wrapper.find('.id-rows').exists()).toBe(false);
+  });
+  it('bounds pending polling, keeps manual retry, and cancels timers on navigation', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { session } = fixture('profilePending');
+    vi.mocked(session.readProfile).mockRejectedValue(new ConnectError('not yet', Code.NotFound));
+    const { wrapper, router } = await open(session);
+    for (const delay of [1500, 3000, 6000, 12000]) {
+      await vi.advanceTimersByTimeAsync(delay);
+      await flushPromises();
+    }
+    expect(session.readProfile).toHaveBeenCalledTimes(4);
+    expect(wrapper.text()).toContain('Автоматическая проверка приостановлена');
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(session.readProfile).toHaveBeenCalledTimes(4);
+    await button(wrapper, 'Проверить готовность').trigger('click');
+    await flushPromises();
+    expect(session.readProfile).toHaveBeenCalledTimes(5);
+    await router.push('/login');
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(session.readProfile).toHaveBeenCalledTimes(5);
+  });
+  it('does not interpret a generic NotFound as profile provisioning', async () => {
+    const { session } = fixture();
+    vi.mocked(session.readProfile).mockRejectedValue(
+      new ConnectError('PROFILE_NOT_READY', Code.NotFound),
+    );
+    const { wrapper } = await open(session);
+    expect(wrapper.text()).not.toContain('Готовим ваш профиль');
+    expect(wrapper.text()).toContain('Данные пока недоступны');
+  });
+  it('keeps a draft across a same-owner refresh and clears it on unsupported coordination', async () => {
+    const { session, state } = fixture();
+    const { wrapper } = await open(session);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-city').setValue('Private draft during refresh');
+    state.value = { ...state.value, status: 'checking' };
+    await flushPromises();
+    state.value = { ...state.value, status: 'authenticated' };
+    await flushPromises();
+    expect((wrapper.find('#id-city').element as HTMLInputElement).value).toBe(
+      'Private draft during refresh',
+    );
+    state.value = { status: 'unsupported', generation: 'g1', subjectId: null };
+    await flushPromises();
+    state.value = { status: 'authenticated', generation: 'g1', subjectId: '01'.repeat(16) };
+    await flushPromises();
+    expect(wrapper.find('#id-city').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Private draft during refresh');
+    expect(wrapper.find('.id-rows').text()).toContain('Санкт-Петербург');
+  });
+  it('clears the previous owner even when recovery reports another subject in the same generation', async () => {
+    const { session, state } = fixture();
+    const { wrapper } = await open(session);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-city').setValue('Private Vera draft');
+    state.value = { status: 'unavailable', generation: 'g1', subjectId: null };
+    await flushPromises();
+    vi.mocked(session.readProfile).mockResolvedValueOnce(
+      profile({ subjectId: new Uint8Array(16).fill(2), displayName: 'Борис', city: 'Тверь' }),
+    );
+    security.getCredentials.mockResolvedValueOnce({
+      email: 'boris@example.com',
+      emailVerified: false,
+      loginCodeEnabled: false,
+      newDeviceCooldownUntilUnix: 0n,
+    });
+    state.value = { status: 'authenticated', generation: 'g1', subjectId: '02'.repeat(16) };
+    await flushPromises();
+    expect(wrapper.text()).not.toContain('Вера');
+    expect(wrapper.text()).not.toContain('Private Vera draft');
+    expect(wrapper.text()).not.toContain('vera@example.com');
+    expect(wrapper.find('.id-hero h2').text()).toBe('Борис Ильина');
+    expect(wrapper.find('.id-email').text()).toBe('boris@example.comНе подтверждён');
+  });
+  it('keeps one open form: sign-in changes wait for the personal draft and back', async () => {
+    const { session } = fixture();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { wrapper } = await open(session);
+    expect(wrapper.findAll('.button.primary')).toHaveLength(0);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-city').setValue('Тверь');
+    // Смена пароля, кода и выход везде закрывают сеанс и стёрли бы черновик.
+    expect(wrapper.find('#security-locked').text()).toBe(
+      'Сначала сохраните или отмените изменения личных данных.',
+    );
+    for (const name of ['Сменить почту', 'Сменить пароль', 'Включить', 'Выйти на всех']) {
+      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
+      expect(button(wrapper, name).attributes('aria-describedby')).toContain('security-locked');
+    }
+    expect(wrapper.findAll('.button.primary')).toHaveLength(1);
+    await button(wrapper, 'Отменить').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#security-locked').exists()).toBe(false);
+    expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await flushPromises();
+    const edit = button(wrapper, 'Изменить данные');
+    expect(edit.attributes('disabled')).toBeDefined();
+    expect(edit.attributes('aria-describedby')).toBe('id-edit-locked');
+    expect(wrapper.find('#id-edit-locked').text()).toContain('«Вход и безопасность»');
+    expect(wrapper.findAll('.button.primary')).toHaveLength(1);
+    await button(wrapper, 'Отменить').trigger('click');
+    await flushPromises();
+    expect(button(wrapper, 'Изменить данные').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('#id-edit-locked').exists()).toBe(false);
+  });
+  it('opens the security section from the old security address', async () => {
+    const { session } = fixture();
+    const { wrapper, router } = await open(session, '/account/security');
+    expect(router.currentRoute.value.fullPath).toBe('/account/id#security');
+    expect(wrapper.find('#security').exists()).toBe(true);
+    expect(wrapper.findAll('.account-nav a').map((link) => link.text())).toEqual(['MarketMesh ID']);
   });
 });

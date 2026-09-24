@@ -1,24 +1,37 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
-import { onBeforeRouteLeave } from 'vue-router';
+import { onBeforeRouteLeave, useRoute } from 'vue-router';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { Gender, type Profile } from '../../../shared/api/types';
 import { isProfilePending } from '../../../shared/api/errors';
 import { useSession } from '../../../shell/context';
 import { GuardMismatchError, type SessionGuard } from '../../../shell/session';
 import { accountError } from '../errors';
+import type { GetCredentialsResponse } from '../../../shared/api/security';
 import {
   ageOf,
   birthLabel,
+  publicLineOf,
   validateIdentity,
   yearWord,
   type IdentityDraft,
   type IdentityErrors,
 } from '../validation';
-import AccountNav from '../components/AccountNav.vue';
+import AccountSecurity from '../components/AccountSecurity.vue';
 import AvatarEditor from '../components/AvatarEditor.vue';
 import { avatarEnabled } from '../../../shared/features';
 const avatarURL = ref('');
+/** Почта для входа приходит из раздела безопасности (Auth), а не из профиля User. */
+const credentials = shallowRef<GetCredentialsResponse | null>(null);
+const route = useRoute();
+let jumpedToSecurity = false;
+/**
+ * На экране открыта одна форма: правка личных данных или действие во входе и сеансах.
+ * Смена пароля, кода и выход на всех устройствах закрывают сеанс и стёрли бы черновик
+ * личных данных, поэтому они ждут, пока правку сохранят или отменят.
+ */
+const securityActive = ref(false);
+const securityLock = 'Сначала сохраните или отмените изменения личных данных.';
 
 const session = useSession();
 const current = shallowRef<Profile | null>(null);
@@ -77,11 +90,7 @@ const ageText = computed(() =>
   shownAge.value === null ? null : `${shownAge.value} ${yearWord(shownAge.value)}`,
 );
 const showAge = computed(() => current.value?.showAge ?? false);
-const publicLine = computed(() => {
-  const parts = [shown.value.displayName.trim(), shown.value.city.trim()];
-  if (showAge.value && ageText.value !== null) parts.push(ageText.value);
-  return parts.filter(Boolean).join(', ') || 'Покупатель MarketMesh';
-});
+const publicLine = computed(() => publicLineOf({ ...shown.value, showAge: showAge.value }));
 const initials = computed(() => {
   const source = `${shown.value.displayName.trim()} ${shown.value.lastName.trim()}`.trim();
   return (
@@ -206,7 +215,7 @@ async function readProfile(compare = false) {
   }
 }
 function startEditing() {
-  if (!current.value || busy.value || reconcile.value) return;
+  if (!current.value || busy.value || reconcile.value || securityActive.value) return;
   draft.value = {
     displayName: current.value.displayName,
     lastName: current.value.lastName,
@@ -365,6 +374,17 @@ watch(
   },
   { deep: true },
 );
+// /account/security ведёт сюда с #security: раздел ниже личных данных, поэтому переходим к нему,
+// когда карточки над ним уже отрисованы, и переводим туда фокус.
+watch(current, async (value) => {
+  if (!value || jumpedToSecurity || route.hash !== '#security') return;
+  jumpedToSecurity = true;
+  await nextTick();
+  const target = document.getElementById('security');
+  if (!target) return;
+  if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ block: 'start' });
+  target.focus({ preventScroll: true });
+});
 function beforeUnload(event: BeforeUnloadEvent) {
   if (dirty.value) {
     event.preventDefault();
@@ -385,17 +405,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section aria-labelledby="id-title">
-    <AccountNav />
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
-        <h1 id="id-title">MarketMesh ID</h1>
-        <p class="lede">
-          Один аккаунт для покупок, магазина и поддержки. Здесь ваши личные и публичные данные.
-        </p>
-      </div>
-      <span class="section-number" aria-hidden="true">07 / MARKETMESH ID</span>
+  <section class="account-section" aria-labelledby="id-title">
+    <div class="account-heading">
+      <h1 id="id-title">MarketMesh ID</h1>
+      <p class="lede">
+        Один аккаунт для покупок, магазина и поддержки. Здесь ваши данные, вход и устройства, с
+        которых вы заходили.
+      </p>
     </div>
     <div v-if="pending || session.state.value.status === 'profilePending'" class="card state-card">
       <span class="loading-dot" aria-hidden="true"></span>
@@ -447,7 +463,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="privacy-note">
           <span aria-hidden="true">↳</span>
-          <p>Личные данные видите только вы. Публичными делитесь сами.</p>
+          <p>Данные этого раздела доступны только вам.</p>
         </div>
       </div>
       <AvatarEditor v-if="avatarEnabled" :initials="initials" @image="avatarURL = $event" />
@@ -489,14 +505,27 @@ onBeforeUnmount(() => {
             v-if="!editing"
             id="edit-identity"
             class="button secondary"
-            :disabled="busy || reconcile"
+            :disabled="busy || reconcile || securityActive"
+            :aria-describedby="securityActive ? 'id-edit-locked' : undefined"
             @click="startEditing"
           >
             Изменить данные
           </button>
           <span v-else-if="dirty" class="draft-badge">Есть изменения</span>
         </div>
+        <p v-if="securityActive && !editing" id="id-edit-locked" class="field-help">
+          Сначала завершите или отмените действие в разделе «Вход и безопасность».
+        </p>
         <dl v-if="!editing" class="id-rows">
+          <div v-if="credentials" class="id-row">
+            <dt>ПОЧТА</dt>
+            <dd class="id-email">
+              <span>{{ credentials.email }}</span
+              ><span class="draft-badge">{{
+                credentials.emailVerified ? 'Подтверждён' : 'Не подтверждён'
+              }}</span>
+            </dd>
+          </div>
           <div class="id-row">
             <dt>ИМЯ</dt>
             <dd :class="{ subtle: !current.displayName }">
@@ -727,5 +756,10 @@ onBeforeUnmount(() => {
       </section>
     </div>
     <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
+    <AccountSecurity
+      :locked="editing ? securityLock : ''"
+      @credentials="credentials = $event"
+      @active="securityActive = $event"
+    />
   </section>
 </template>

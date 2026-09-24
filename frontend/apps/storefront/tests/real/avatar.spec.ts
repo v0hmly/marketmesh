@@ -9,9 +9,8 @@ async function login(page: Page, email: string) {
   await page.getByLabel('Почта', { exact: true }).fill(email);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
-  await expect(page).toHaveURL(/\/account$/);
-  await expect(page.getByRole('textbox', { name: 'О себе', exact: true })).toBeVisible();
-  await page.goto('/account/id');
+  await expect(page).toHaveURL(/\/account\/id$/);
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeVisible();
   await expect(page.getByLabel('Изображение для аватара')).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Обновить состояние', exact: true })).toBeEnabled();
 }
@@ -176,7 +175,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await secondTab.getByRole('button', { name: 'Обновить состояние', exact: true }).click();
   await expect(secondTab.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();
   await secondTab.close();
-  await page.getByRole('button', { name: 'Выйти', exact: true }).click();
+  await page.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await login(page, email);
   await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();

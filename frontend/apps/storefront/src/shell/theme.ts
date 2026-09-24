@@ -1,10 +1,18 @@
-import { readonly, ref, watch, type Ref } from 'vue';
+import { readonly, ref, shallowRef, watch, type Ref, type ShallowRef } from 'vue';
 import type { AccountSettings, ThemePreference } from '../shared/api/types';
 import type { SessionController, SessionGuard } from './session';
+
+/** Последние подтверждённые сервером настройки и владелец, для которого они прочитаны. */
+export interface ConfirmedSettings {
+  readonly settings: AccountSettings;
+  readonly guard: SessionGuard;
+}
 
 export interface ThemeController {
   readonly preference: Readonly<Ref<ThemePreference>>;
   readonly failed: Readonly<Ref<boolean>>;
+  /** Версия для CAS при сохранении темы; null, пока настройки не подтверждены. */
+  readonly confirmed: Readonly<ShallowRef<ConfirmedSettings | null>>;
   load(): Promise<void>;
   accept(settings: AccountSettings, guard: SessionGuard): void;
   dispose(): void;
@@ -16,6 +24,7 @@ export function createThemeController(
 ): ThemeController {
   const preference = ref<ThemePreference>('system');
   const failed = ref(false);
+  const confirmed = shallowRef<ConfirmedSettings | null>(null);
   let owner: SessionGuard | null = null;
   let version = 0n;
   let revision = 0;
@@ -45,6 +54,7 @@ export function createThemeController(
     owner = null;
     version = 0n;
     failed.value = false;
+    confirmed.value = null;
     flight = null;
     preference.value = 'system';
     apply();
@@ -60,6 +70,7 @@ export function createThemeController(
     owner = { ...guard };
     version = settings.version;
     preference.value = settings.theme;
+    confirmed.value = { settings, guard: { ...guard } };
     failed.value = false;
     apply();
   }
@@ -103,6 +114,7 @@ export function createThemeController(
   return {
     preference: readonly(preference),
     failed: readonly(failed),
+    confirmed,
     load,
     accept,
     dispose() {

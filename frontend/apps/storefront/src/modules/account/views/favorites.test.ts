@@ -86,6 +86,9 @@ describe('favorites section', () => {
     const { wrapper } = await open(session);
     expect(wrapper.findAll('.favorite-card')).toHaveLength(6);
     expect(wrapper.text()).toContain('6 изделий в избранном');
+    expect(wrapper.findAll('.favorite-card .button.primary')).toHaveLength(0);
+    expect(button(wrapper, 'В корзину').classes()).toContain('secondary');
+    expect(wrapper.find('.stock-out').text()).toBe('Партия закончилась');
     await button(wrapper, 'Закончились').trigger('click');
     expect(wrapper.findAll('.favorite-card')).toHaveLength(2);
     await button(wrapper, 'Сообщить о пополнении: Свеча «Хвоя и дым», 200 мл').trigger('click');

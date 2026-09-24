@@ -14,7 +14,7 @@ import {
   validateAddress,
   type AddressErrors,
 } from '../address-validation';
-import AccountNav from '../components/AccountNav.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 
 const session = useSession();
 const book = shallowRef<AddressBook | null>(null);
@@ -25,6 +25,8 @@ const initialDraft = ref<AddressInput>(emptyAddress());
 const editing = ref(false);
 const editingId = shallowRef<Uint8Array | null>(null);
 const deleting = shallowRef<Address | null>(null);
+/** Кнопка «Удалить», к которой диалог вернёт фокус. */
+const deleteTrigger = shallowRef<HTMLElement | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const reconcile = ref(false);
@@ -236,6 +238,8 @@ async function mutate(kind: 'save' | 'delete' | 'default', address?: Address) {
       await recover();
       return;
     }
+    // Диалог закрывается, чтобы сообщение об ошибке не осталось за подложкой.
+    if (kind === 'delete') deleting.value = null;
     if (error instanceof ConnectError && error.code === Code.InvalidArgument)
       failure.value = 'Проверьте поля адреса. Сервер не принял введённые данные.';
     else if (error instanceof ConnectError && error.code === Code.PermissionDenied)
@@ -285,12 +289,12 @@ function keepDraft() {
   feedback.value =
     'Черновик сохранён. Проверьте поля и нажмите «Сохранить адрес», чтобы отправить его с актуальной версией книги.';
 }
-function requestDelete(address: Address) {
+function requestDelete(address: Address, event?: Event) {
   if (busy.value || editing.value || reconcile.value || !permitted.value) return;
   deleting.value = address;
+  deleteTrigger.value = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
   failure.value = '';
   feedback.value = '';
-  void nextTick(() => document.getElementById('cancel-delete')?.focus());
 }
 watch(() => session.state.value.generation, clear, { flush: 'sync' });
 watch(
@@ -339,15 +343,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section aria-labelledby="addresses-title">
-    <AccountNav />
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
-        <h1 id="addresses-title">Адреса доставки</h1>
-        <p class="lede">Сохраните удобные адреса, чтобы они были под рукой.</p>
-      </div>
-      <span class="section-number" aria-hidden="true">02 / АДРЕСА</span>
+  <section class="account-section" aria-labelledby="addresses-title">
+    <div class="account-heading">
+      <h1 id="addresses-title">Адреса доставки</h1>
+      <p class="lede">Сохраните удобные адреса, чтобы они были под рукой при оформлении заказа.</p>
     </div>
     <div v-if="pending || session.state.value.status === 'profilePending'" class="card state-card">
       <h2>Готовим вашу адресную книгу</h2>
@@ -422,25 +421,20 @@ onBeforeUnmount(() => {
           "
           @click="start()"
         >
-          Добавить адрес
+          Добавить адрес <span aria-hidden="true">↗</span>
         </button>
       </div>
       <p v-if="!shown?.addresses.length" class="card address-empty">
         Пока нет сохранённых адресов. Первый адрес станет основным.
       </p>
       <ul v-else class="address-list" aria-label="Сохранённые адреса">
-        <li
-          v-for="address in shown.addresses"
-          :key="idKey(address.addressId)"
-          class="card address-card"
-        >
-          <div class="card-heading">
+        <li v-for="address in shown.addresses" :key="idKey(address.addressId)" class="address-row">
+          <div class="address-head">
             <h2>{{ address.fields?.recipient }}</h2>
             <span v-if="address.isDefault" class="draft-badge">По умолчанию</span>
           </div>
-          <p>{{ address.fields?.phone }}</p>
-          <p>
-            {{
+          <address>
+            {{ address.fields?.phone }}<br />{{
               [
                 address.fields?.country,
                 address.fields?.postalCode,
@@ -451,9 +445,11 @@ onBeforeUnmount(() => {
                 .filter(Boolean)
                 .join(', ')
             }}
+          </address>
+          <p v-if="address.fields?.comment" class="plain-text address-comment">
+            {{ address.fields.comment }}
           </p>
-          <p v-if="address.fields?.comment" class="plain-text">{{ address.fields.comment }}</p>
-          <div class="button-row">
+          <div class="address-actions">
             <button
               class="button secondary"
               :disabled="busy || editing || Boolean(deleting) || reconcile"
@@ -474,37 +470,29 @@ onBeforeUnmount(() => {
             ><button
               class="button text-button"
               :disabled="busy || editing || Boolean(deleting) || reconcile"
-              @click="requestDelete(address)"
+              @click="requestDelete(address, $event)"
             >
               Удалить<span class="visually-hidden"> адрес {{ address.fields?.recipient }}</span>
             </button>
           </div>
         </li>
       </ul>
-      <div
+      <ConfirmDialog
         v-if="deleting && !reconcile"
-        class="reconcile-panel"
-        aria-labelledby="delete-address-title"
+        :title="`Удалить адрес «${deleting.fields?.recipient ?? ''}»?`"
+        cancel-label="Оставить адрес"
+        confirm-label="Удалить адрес"
+        :busy="busy"
+        :return-focus="deleteTrigger"
+        @cancel="deleting = null"
+        @confirm="mutate('delete', deleting)"
       >
-        <h2 id="delete-address-title">Удалить адрес?</h2>
         <p>
-          {{ deleting.fields?.recipient }} — {{ deleting.fields?.city }},
-          {{ deleting.fields?.streetHouse }}
+          {{ deleting.fields?.city }}, {{ deleting.fields?.streetHouse }}. Остальные адреса
+          останутся без изменений.
         </p>
         <p v-if="deleting.isDefault">Другой основной адрес не будет выбран автоматически.</p>
-        <div class="button-row">
-          <button
-            id="cancel-delete"
-            class="button secondary"
-            :disabled="busy"
-            @click="deleting = null"
-          >
-            Отменить удаление</button
-          ><button class="button primary" :disabled="busy" @click="mutate('delete', deleting)">
-            Подтвердить удаление
-          </button>
-        </div>
-      </div>
+      </ConfirmDialog>
       <div v-if="editing" class="card profile-card address-editor">
         <h2>{{ editingId ? 'Изменить адрес' : 'Новый адрес' }}</h2>
         <p class="subtle">

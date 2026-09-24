@@ -9,6 +9,21 @@ import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import App from '../../../App.vue';
 
+const security = vi.hoisted(() => ({
+  getCredentials: vi.fn(),
+  listSessions: vi.fn(),
+  changePassword: vi.fn(),
+  startEmailChange: vi.fn(),
+  startLoginCodeChange: vi.fn(),
+  completeLoginCodeChange: vi.fn(),
+  revokeSession: vi.fn(),
+  logoutAll: vi.fn(),
+}));
+vi.mock('../security/api', async (original) => ({
+  ...(await original<object>()),
+  createSecurityApi: () => security,
+}));
+
 const profile = (overrides: Partial<Profile> = {}): Profile => ({
   $typeName: 'user.v1.Profile',
   subjectId: new Uint8Array(16).fill(1),
@@ -60,8 +75,33 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
   };
   return { session, state };
 }
+const credentials = (overrides: Record<string, unknown> = {}) => ({
+  email: 'alisa@example.com',
+  emailVerified: true,
+  loginCodeEnabled: false,
+  newDeviceCooldownUntilUnix: 0n,
+  ...overrides,
+});
+const sessionInfo = (id: number, overrides: Record<string, unknown> = {}) => ({
+  sessionId: new Uint8Array(16).fill(id),
+  device: 'MacBook Air, macOS',
+  browser: 'Safari',
+  ip: '192.0.2.1',
+  location: 'Санкт-Петербург, Россия',
+  createdAtUnix: 1790000000n,
+  lastSeenAtUnix: 1790003600n,
+  current: false,
+  ...overrides,
+});
 beforeEach(() => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  security.getCredentials.mockResolvedValue(credentials());
+  security.listSessions.mockResolvedValue({
+    sessions: [
+      sessionInfo(1, { current: true }),
+      sessionInfo(2, { device: 'Pixel 8, Android', browser: 'Chrome', location: '' }),
+    ],
+  });
 });
 const mounted: VueWrapper[] = [];
 afterEach(() => {
@@ -84,6 +124,21 @@ function button(wrapper: VueWrapper, text: string) {
   const found = wrapper.findAll('button').find((candidate) => candidate.text().includes(text));
   if (!found) throw new Error(`Missing button ${text}`);
   return found;
+}
+/** ConnectError с ErrorInfo Auth, как его разбирает authErrorReason. */
+function authError(code: Code, reason: string) {
+  const text = (field: number, value: string) => {
+    const bytes = new TextEncoder().encode(value);
+    return [(field << 3) | 2, bytes.length, ...bytes];
+  };
+  const error = new ConnectError('untrusted message', code);
+  error.details = [
+    {
+      type: 'google.rpc.ErrorInfo',
+      value: new Uint8Array([...text(1, reason), ...text(2, 'marketmesh.auth')]),
+    },
+  ];
+  return error;
 }
 
 describe('account forms', () => {
@@ -284,227 +339,258 @@ describe('account forms', () => {
     vi.mocked(session.completeLogin).mockResolvedValue(undefined);
     await wrapper.find('form').trigger('submit');
     await flushPromises();
-    expect(router.currentRoute.value.path).toBe('/account');
+    // Без MarketMesh ID и заказов первый раздел кабинета — вход и безопасность.
+    expect(router.currentRoute.value.path).toBe('/account/security');
   });
+});
 
-  it('keeps a dirty draft and original CAS until explicit conflict reconciliation', async () => {
+describe('cabinet without MarketMesh ID', () => {
+  it('lands on sign-in security and keeps it as the only section', async () => {
     const { session } = fixture();
-    vi.mocked(session.updateProfile).mockRejectedValueOnce(
-      new ConnectError('private', Code.Aborted),
-    );
-    const { wrapper } = await open(session, '/account');
-    expect(wrapper.find('label[for="display-name"]').text()).toBe('Имя');
-    expect(wrapper.find('label[for="bio"]').text()).toBe('О себе');
-    await wrapper.find('#display-name').setValue('Мой черновик');
-    await wrapper.find('form').trigger('submit');
-    await flushPromises();
-    expect(session.updateProfile).toHaveBeenCalledWith(
-      {
-        displayName: 'Мой черновик',
-        bio: 'Люблю керамику',
-        expectedVersion: 7n,
-        lastName: '',
-        birthDate: '',
-        gender: 0,
-        phone: '',
-        city: '',
-        showAge: false,
-      },
-      { generation: 'g1', subjectId: '01'.repeat(16) },
-    );
-    expect((wrapper.find('#display-name').element as HTMLInputElement).value).toBe('Мой черновик');
-    expect(button(wrapper, 'Сохранить изменения').attributes('disabled')).toBeDefined();
-    vi.mocked(session.readProfile).mockResolvedValueOnce(
-      profile({ displayName: 'В другом окне', version: 9n }),
-    );
-    await button(wrapper, 'Перечитать актуальные').trigger('click');
-    await flushPromises();
-    expect(wrapper.find('.latest-profile').text()).toContain('В другом окне');
-    expect((wrapper.find('#display-name').element as HTMLInputElement).value).toBe('Мой черновик');
-    expect(button(wrapper, 'Сохранить изменения').attributes('disabled')).toBeDefined();
-    await button(wrapper, 'Оставить мой черновик').trigger('click');
-    await wrapper.find('form').trigger('submit');
-    await flushPromises();
-    expect(vi.mocked(session.updateProfile).mock.calls[1]?.[0].expectedVersion).toBe(9n);
-  });
-
-  it('does not retry an unknown mutation and permits explicit acceptance of current server data', async () => {
-    const { session } = fixture();
-    vi.mocked(session.updateProfile).mockRejectedValue(new TypeError('network private'));
-    const { wrapper } = await open(session, '/account');
-    await wrapper.find('#bio').setValue('Новый черновик');
-    await wrapper.find('form').trigger('submit');
-    await flushPromises();
-    expect(session.updateProfile).toHaveBeenCalledTimes(1);
-    expect(wrapper.find('[role="alert"]').text()).toContain('Сохранение не подтверждено');
-    expect((wrapper.find('#bio').element as HTMLTextAreaElement).value).toBe('Новый черновик');
-    await wrapper.find('form').trigger('submit');
-    expect(session.updateProfile).toHaveBeenCalledTimes(1);
-    vi.mocked(session.readProfile).mockResolvedValueOnce(
-      profile({ bio: 'Актуальный текст', version: 10n }),
-    );
-    await button(wrapper, 'Перечитать актуальные').trigger('click');
-    await flushPromises();
-    await button(wrapper, 'Принять актуальный').trigger('click');
-    expect((wrapper.find('#bio').element as HTMLTextAreaElement).value).toBe('Актуальный текст');
-    expect(button(wrapper, 'Сохранить изменения').attributes('disabled')).toBeDefined();
-  });
-
-  it('blocks invalid UTF-8 bounds and renders server values literally', async () => {
-    const { session } = fixture();
-    vi.mocked(session.readProfile).mockResolvedValue(
-      profile({ displayName: '<img src=x onerror=alert(1)>', bio: '<script>alert(1)</script>' }),
-    );
-    const { wrapper } = await open(session, '/account');
-    expect(wrapper.find('.identity-card h2').text()).toBe('<img src=x onerror=alert(1)>');
-    expect(wrapper.find('img').exists()).toBe(false);
-    expect(wrapper.find('script').exists()).toBe(false);
-    await wrapper.find('#display-name').setValue('😀'.repeat(81));
-    await wrapper.find('form').trigger('submit');
-    expect(wrapper.find('#display-name').attributes('aria-invalid')).toBe('true');
-    expect(wrapper.find('#name-error').text()).toContain('80 символов');
-    expect(session.updateProfile).not.toHaveBeenCalled();
-  });
-
-  it('warns before losing dirty data and forgets all private draft on generation change', async () => {
-    const { session, state } = fixture();
     const { wrapper, router } = await open(session, '/account');
-    await wrapper.find('#bio').setValue('Private draft');
-    const event = new Event('beforeunload', { cancelable: true });
-    window.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    await router.push('/login');
-    expect(confirm).toHaveBeenCalled();
-    expect(router.currentRoute.value.path).toBe('/account');
-    state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
-    await flushPromises();
-    expect(wrapper.find('#bio').exists()).toBe(false);
-    expect(wrapper.text()).not.toContain('Private draft');
-    expect(wrapper.text()).not.toContain('Алиса');
-    const after = new Event('beforeunload', { cancelable: true });
-    window.dispatchEvent(after);
-    expect(after.defaultPrevented).toBe(false);
+    expect(router.currentRoute.value.path).toBe('/account/security');
+    expect(wrapper.findAll('.account-nav a').map((link) => link.text())).toEqual([
+      'Вход и безопасность',
+    ]);
+    expect(wrapper.find('.account-nav a').attributes('aria-current')).toBe('page');
+    expect(wrapper.find('h1').text()).toBe('Вход и безопасность');
+    expect(wrapper.find('#theme-pick').exists()).toBe(false);
+    expect(wrapper.text()).toContain('alisa@example.com');
+    await router.push('/account/settings');
+    expect(router.currentRoute.value.path).toBe('/account/security');
   });
-
-  it('discards late profile responses from a previous generation', async () => {
-    const { session, state } = fixture();
-    let resolve: ((value: Profile) => void) | undefined;
-    vi.mocked(session.readProfile).mockImplementation(
-      () =>
-        new Promise((done) => {
-          resolve = done;
-        }),
+  it('refreshes an expired session once before rereading sign-in data', async () => {
+    const { session } = fixture();
+    security.getCredentials.mockRejectedValueOnce(
+      new ConnectError('expired', Code.Unauthenticated),
     );
-    const { wrapper } = await open(session, '/account');
-    state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
-    resolve?.(profile({ displayName: 'Private old account' }));
-    await flushPromises();
-    expect(wrapper.text()).not.toContain('Private old account');
-    expect(wrapper.find('#display-name').exists()).toBe(false);
+    const { wrapper } = await open(session, '/account/security');
+    expect(session.bootstrap).toHaveBeenCalledTimes(1);
+    expect(security.getCredentials).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('alisa@example.com');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
   });
-
-  it('shows pending only from the session state and retries a guarded profile read', async () => {
+  it('shows sessions with device, place and the current mark, and ends another one', async () => {
+    const { session } = fixture();
+    security.revokeSession.mockResolvedValue({});
+    const { wrapper } = await open(session, '/account/security');
+    const rows = wrapper.findAll('.session-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.text()).toContain('MacBook Air, macOS, Safari');
+    expect(rows[0]!.text()).toContain('Текущий сеанс');
+    expect(rows[0]!.text()).toContain('Санкт-Петербург, Россия');
+    expect(rows[0]!.find('button').exists()).toBe(false);
+    expect(rows[1]!.text()).toContain('Место не определено');
+    expect(wrapper.text()).toContain('Город определяется по IP и может быть неточным.');
+    await rows[1]!.find('button').trigger('click');
+    await flushPromises();
+    expect(security.revokeSession).toHaveBeenCalledWith({
+      sessionId: new Uint8Array(16).fill(2),
+    });
+    expect(session.endSession).not.toHaveBeenCalled();
+    expect(wrapper.find('[role="status"]').text()).toContain('Pixel 8, Android, Chrome');
+    expect(security.listSessions).toHaveBeenCalledTimes(2);
+  });
+  it('says honestly that signing out everywhere also ends this session', async () => {
+    const { session, state } = fixture();
+    security.logoutAll.mockImplementation(async () => {
+      state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
+      return {};
+    });
+    const { wrapper } = await open(session, '/account/security');
+    expect(wrapper.find('#logout-all-help').text()).toContain('включая этот');
+    await button(wrapper, 'Выйти на всех устройствах').trigger('click');
+    await flushPromises();
+    expect(session.endSession).toHaveBeenCalledTimes(1);
+    expect(security.logoutAll).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain('Все сеансы закрыты, включая этот.');
+    expect(wrapper.text()).not.toContain('alisa@example.com');
+    expect(wrapper.find('.account-sidebar').exists()).toBe(false);
+  });
+  it('blocks ending other sessions during the new-device cooldown', async () => {
+    const { session } = fixture();
+    security.getCredentials.mockResolvedValue(
+      credentials({ newDeviceCooldownUntilUnix: BigInt(Math.floor(Date.now() / 1000) + 3600) }),
+    );
+    const { wrapper } = await open(session, '/account/security');
+    // Auth считает защиту от входа в этом сеансе, а не от нового устройства.
+    expect(wrapper.find('#sessions-cooldown').text()).toContain(
+      'Вход в этом сеансе выполнен меньше суток назад.',
+    );
+    expect(wrapper.text()).not.toContain('нового устройства');
+    expect(wrapper.find('#sessions-cooldown').classes()).not.toContain('error');
+    const revoke = wrapper.findAll('.session-row')[1]!.find('button');
+    expect(revoke.attributes('disabled')).toBeDefined();
+    expect(revoke.attributes('aria-describedby')).toBe('sessions-cooldown');
+    const everywhere = button(wrapper, 'Выйти на всех устройствах');
+    expect(everywhere.attributes('disabled')).toBeDefined();
+    expect(everywhere.attributes('aria-describedby')).toBe('logout-all-help sessions-cooldown');
+  });
+  it('opens one form at a time with a single primary action and wipes secrets on switch', async () => {
+    const { session } = fixture();
+    const { wrapper } = await open(session, '/account/security');
+    expect(wrapper.findAll('.security-sections .button.primary')).toHaveLength(0);
+    expect(button(wrapper, 'Сменить почту').classes()).toContain('secondary');
+    expect(wrapper.find('fieldset').exists()).toBe(false);
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await wrapper.find('#security-password-first').setValue('old secret');
+    expect(wrapper.findAll('.security-sections .button.primary')).toHaveLength(1);
+    await button(wrapper, 'Сменить почту').trigger('click');
+    expect(wrapper.find('#security-password-first').exists()).toBe(false);
+    expect(wrapper.findAll('.security-sections .button.primary')).toHaveLength(1);
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    expect((wrapper.find('#security-password-first').element as HTMLInputElement).value).toBe('');
+    expect(wrapper.text()).not.toContain('Обновить данные');
+    expect(wrapper.findAll('h2').map((heading) => heading.text())).not.toContainEqual(
+      expect.stringMatching(/\.$/),
+    );
+  });
+  it('starts an email change with the current password and closes the form', async () => {
+    const { session } = fixture();
+    security.startEmailChange.mockResolvedValue({});
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Сменить почту').trigger('click');
+    await wrapper.find('#security-email-first').setValue('new@example.com');
+    await wrapper.find('#email-password').setValue('Secret123!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(security.startEmailChange).toHaveBeenCalledTimes(1);
+    const request = security.startEmailChange.mock.calls[0]![0];
+    expect(request.newEmail).toBe('new@example.com');
+    // Пароль передан байтами и стёрт сразу после запроса.
+    expect(request.password).toHaveLength('Secret123!'.length);
+    expect(Array.from(request.password as Uint8Array).every((byte) => byte === 0)).toBe(true);
+    expect(wrapper.find('#security-email-first').exists()).toBe(false);
+    expect(wrapper.find('[role="status"]').text()).toContain('Письмо подтверждения отправлено');
+  });
+  it('changes the password through the session end and wipes both passwords', async () => {
+    const { session, state } = fixture();
+    security.changePassword.mockImplementation(async () => {
+      state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
+      return {};
+    });
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await wrapper.find('#security-password-first').setValue('OldSecret1!');
+    await wrapper.find('#new-password').setValue('NewSecret2!');
+    await wrapper.find('#repeat-password').setValue('NewSecret2!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(session.endSession).toHaveBeenCalledTimes(1);
+    const request = security.changePassword.mock.calls[0]![0];
+    expect(request.currentPassword).toHaveLength('OldSecret1!'.length);
+    expect(Array.from(request.currentPassword as Uint8Array).every((byte) => byte === 0)).toBe(
+      true,
+    );
+    expect(Array.from(request.newPassword as Uint8Array).every((byte) => byte === 0)).toBe(true);
+    expect(wrapper.text()).toContain('Пароль изменён. Все сеансы закрыты.');
+  });
+  it('keeps the rejection visible after a wrong current password restores the session', async () => {
+    const { session, state } = fixture();
+    vi.mocked(session.endSession).mockImplementation(async (action) => {
+      state.value = { status: 'signingOut', generation: 'g2', subjectId: null };
+      try {
+        return await action();
+      } finally {
+        state.value = { status: 'authenticated', generation: 'g3', subjectId: '01'.repeat(16) };
+      }
+    });
+    security.changePassword.mockRejectedValue(new ConnectError('wrong', Code.Unauthenticated));
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await wrapper.find('#security-password-first').setValue('WrongSecret1!');
+    await wrapper.find('#new-password').setValue('NewSecret2!');
+    await wrapper.find('#repeat-password').setValue('NewSecret2!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').text()).toContain('Сеанс или пароль не подтверждён.');
+    // Сеанс восстановлен под новым поколением: данные перечитаны, форма закрыта и пуста.
+    expect(security.getCredentials).toHaveBeenCalledTimes(2);
+    expect(wrapper.find('#security-password-first').exists()).toBe(false);
+    expect(wrapper.text()).toContain('alisa@example.com');
+  });
+  it('switches the login code with an emailed code and keeps the challenge after a wrong code', async () => {
+    const { session } = fixture();
+    const challengeId = new Uint8Array(16).fill(5);
+    security.startLoginCodeChange.mockResolvedValue({ challengeId, codeExpiresInSeconds: 600n });
+    security.completeLoginCodeChange
+      .mockRejectedValueOnce(authError(Code.InvalidArgument, 'CODE_MISMATCH'))
+      .mockRejectedValueOnce(authError(Code.FailedPrecondition, 'CODE_REISSUED'))
+      .mockResolvedValueOnce({});
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Включить').trigger('click');
+    await wrapper.find('#security-code-first').setValue('Secret123!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(security.startLoginCodeChange.mock.calls[0]![0].enabled).toBe(true);
+    expect(wrapper.text()).toContain('Код отправлен на вашу почту.');
+    // Пока код не подтверждён, почту и пароль не сменить — и это сказано рядом.
+    for (const name of ['Сменить почту', 'Сменить пароль']) {
+      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
+      expect(button(wrapper, name).attributes('aria-describedby')).toBe('security-code-pending');
+    }
+    expect(wrapper.find('#security-code-pending').exists()).toBe(true);
+    for (const reply of ['111111', '222222']) {
+      await wrapper.find('#security-code').setValue(reply);
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+      expect(wrapper.find('#security-code').exists()).toBe(true);
+      expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    }
+    await wrapper.find('#security-code').setValue('333333');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(security.completeLoginCodeChange).toHaveBeenCalledTimes(3);
+    expect(security.completeLoginCodeChange.mock.calls[2]![0]).toMatchObject({
+      challengeId,
+      enabled: true,
+      code: '333333',
+    });
+    expect(session.endSession).toHaveBeenCalledTimes(3);
+    expect(wrapper.text()).toContain('Настройка входа изменена.');
+  });
+  it('cancels a pending code change and frees the other forms', async () => {
+    const { session } = fixture();
+    security.startLoginCodeChange.mockResolvedValue({
+      challengeId: new Uint8Array(16).fill(5),
+      codeExpiresInSeconds: 600n,
+    });
+    const { wrapper } = await open(session, '/account/security');
+    document.body.append(wrapper.element);
+    await button(wrapper, 'Включить').trigger('click');
+    await wrapper.find('#security-code-first').setValue('Secret123!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    await wrapper.find('#security-code').setValue('12');
+    const cancel = wrapper
+      .findAll('form button')
+      .find((candidate) => candidate.text() === 'Отменить');
+    await cancel!.trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#security-code').exists()).toBe(false);
+    expect(button(wrapper, 'Сменить почту').attributes('disabled')).toBeUndefined();
+    expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
+    expect(document.activeElement?.id).toBe('security-code-toggle');
+    expect(security.completeLoginCodeChange).not.toHaveBeenCalled();
+    wrapper.element.remove();
+  });
+  it('reports a failed session end without rereading the list over the message', async () => {
+    const { session } = fixture();
+    security.revokeSession.mockRejectedValue(new ConnectError('gone', Code.NotFound));
+    const { wrapper } = await open(session, '/account/security');
+    await wrapper.findAll('.session-row')[1]!.find('button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').text()).toContain('Запись уже недоступна.');
+    expect(security.listSessions).toHaveBeenCalledTimes(1);
+    expect(wrapper.findAll('.session-row')).toHaveLength(2);
+  });
+  it('shows the provisioning state while the profile is pending', async () => {
     const { session } = fixture('profilePending');
-    const { wrapper } = await open(session, '/account');
-    expect(wrapper.text()).toContain('Готовим ваш профиль');
-    expect(session.readProfile).not.toHaveBeenCalled();
+    const { wrapper } = await open(session, '/account/security');
+    expect(wrapper.text()).toContain('Готовим ваш аккаунт');
+    expect(security.getCredentials).not.toHaveBeenCalled();
     await button(wrapper, 'Проверить готовность').trigger('click');
     await flushPromises();
     expect(session.readProfile).toHaveBeenCalledTimes(1);
-  });
-
-  it('bounds pending polling, keeps manual retry, and cancels timers on navigation', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const { session } = fixture('profilePending');
-    vi.mocked(session.readProfile).mockRejectedValue(new ConnectError('not yet', Code.NotFound));
-    const { wrapper, router } = await open(session, '/account');
-    for (const delay of [1500, 3000, 6000, 12000]) {
-      await vi.advanceTimersByTimeAsync(delay);
-      await flushPromises();
-    }
-    expect(session.readProfile).toHaveBeenCalledTimes(4);
-    expect(wrapper.text()).toContain('Автоматическая проверка приостановлена');
-    await vi.advanceTimersByTimeAsync(60000);
-    expect(session.readProfile).toHaveBeenCalledTimes(4);
-    await button(wrapper, 'Проверить готовность').trigger('click');
-    await flushPromises();
-    expect(session.readProfile).toHaveBeenCalledTimes(5);
-    await router.push('/login');
-    await vi.advanceTimersByTimeAsync(60000);
-    expect(session.readProfile).toHaveBeenCalledTimes(5);
-  });
-
-  it('does not interpret a generic NotFound as profile provisioning', async () => {
-    const { session } = fixture();
-    vi.mocked(session.readProfile).mockRejectedValue(
-      new ConnectError('PROFILE_NOT_READY', Code.NotFound),
-    );
-    const { wrapper } = await open(session, '/account');
-    expect(wrapper.text()).not.toContain('Готовим ваш профиль');
-    expect(wrapper.text()).toContain('Профиль пока недоступен');
-  });
-
-  it('keeps a draft across a same-owner session refresh and clears it on unsupported coordination', async () => {
-    const { session, state } = fixture();
-    const { wrapper } = await open(session, '/account');
-    await wrapper.find('#bio').setValue('Private draft during refresh');
-    state.value = { ...state.value, status: 'checking' };
-    await flushPromises();
-    state.value = { ...state.value, status: 'authenticated' };
-    await flushPromises();
-    expect((wrapper.find('#bio').element as HTMLTextAreaElement).value).toBe(
-      'Private draft during refresh',
-    );
-    state.value = { status: 'unsupported', generation: 'g1', subjectId: null };
-    await flushPromises();
-    state.value = { status: 'authenticated', generation: 'g1', subjectId: '01'.repeat(16) };
-    await flushPromises();
-    expect((wrapper.find('#bio').element as HTMLTextAreaElement).value).toBe('Люблю керамику');
-  });
-
-  it('hides private state on logout and never claims that failed revocation succeeded', async () => {
-    const { session, state } = fixture();
-    const router = createStorefrontRouter(createMemoryHistory());
-    await router.push('/account');
-    await router.isReady();
-    vi.mocked(session.logout).mockImplementation(async () => {
-      state.value = { status: 'signingOut', generation: 'g2', subjectId: null };
-      await Promise.resolve();
-      state.value = { status: 'unavailable', generation: 'g2', subjectId: null };
-      throw new ConnectError('private network diagnostic', Code.Unavailable);
-    });
-    const wrapper = mount(App, {
-      global: { plugins: [router], provide: { [sessionKey as symbol]: session } },
-    });
-    mounted.push(wrapper);
-    await flushPromises();
-    expect(wrapper.text()).toContain('Алиса');
-    await button(wrapper, 'Выйти на всех устройствах').trigger('click');
-    await flushPromises();
-    expect(session.logout).toHaveBeenCalledWith(true);
-    expect(wrapper.text()).not.toContain('Алиса');
-    expect(wrapper.text()).toContain('Сервер не подтвердил выход');
-    expect(wrapper.text()).not.toContain('private network diagnostic');
-  });
-
-  it('clears the previous owner even when recovery reports another subject in the same generation', async () => {
-    const { session, state } = fixture();
-    const { wrapper } = await open(session, '/account');
-    await wrapper.find('#bio').setValue('Private Alice draft');
-    state.value = { status: 'unavailable', generation: 'g1', subjectId: null };
-    await flushPromises();
-    vi.mocked(session.readProfile).mockResolvedValueOnce(
-      profile({
-        subjectId: new Uint8Array(16).fill(2),
-        displayName: 'Борис',
-        bio: 'Другой профиль',
-      }),
-    );
-    state.value = { status: 'authenticated', generation: 'g1', subjectId: '02'.repeat(16) };
-    await flushPromises();
-    expect(wrapper.text()).not.toContain('Алиса');
-    expect((wrapper.find('#bio').element as HTMLTextAreaElement).value).toBe('Другой профиль');
-    expect(wrapper.text()).toContain('Борис');
   });
 });

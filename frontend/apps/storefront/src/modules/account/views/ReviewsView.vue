@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
-import AccountNav from '../components/AccountNav.vue';
+import ProfilePending from '../components/ProfilePending.vue';
+import { useAccountCounts } from '../counts';
+import { idEnabled } from '../../../shared/features';
+import { publicLineOf } from '../validation';
 import { loadSampleReviews, type SampleReview, type SampleWaitingReview } from '../sample-data';
 
 const session = useSession();
+const counts = useAccountCounts();
+/** Фактическая публичная строка из MarketMesh ID; null — пока не прочитана или без ID. */
+const publicLine = ref<string | null>(null);
 const waiting = ref<SampleWaitingReview[] | null>(null);
 const mine = ref<SampleReview[] | null>(null);
 const loading = ref(false);
@@ -17,6 +23,8 @@ const text = ref('');
 const attempted = ref(false);
 let revision = 0;
 let active = true;
+/** Владелец, для которого прочитаны отзывы и публичная строка. */
+let owner: string | null = null;
 const permitted = computed(() => session.state.value.status === 'authenticated');
 
 const ratingHints = [
@@ -27,6 +35,13 @@ const ratingHints = [
   'Хорошо',
   'Отлично',
 ];
+const publicHint = computed(() =>
+  publicLine.value
+    ? `Рядом с отзывом покажем: ${publicLine.value}.`
+    : idEnabled
+      ? 'Рядом с отзывом покажем ваше имя и город.'
+      : 'Рядом с отзывом покажем ваше имя.',
+);
 const textCount = computed(() => Array.from(text.value).length);
 const errors = computed<{ rating?: string; text?: string }>(() => {
   if (!attempted.value) return {};
@@ -44,15 +59,29 @@ function clear() {
   failure.value = '';
   feedback.value = '';
   tab.value = 'waiting';
+  publicLine.value = null;
   openId.value = null;
   rating.value = 0;
   text.value = '';
   attempted.value = false;
   loading.value = false;
 }
+/** Подсказку под формой строим из MarketMesh ID; без него остаётся общая формулировка. */
+async function readPublicLine() {
+  if (!idEnabled || !permitted.value || !active) return;
+  const attempt = revision;
+  try {
+    const profile = await session.readProfile(session.capture());
+    if (attempt === revision && active) publicLine.value = publicLineOf(profile);
+  } catch {
+    /* The generic hint stays; the review form does not depend on the profile. */
+  }
+}
 async function read() {
   if (loading.value || !permitted.value || !active) return;
   const attempt = revision;
+  owner = session.state.value.subjectId;
+  if (publicLine.value === null) void readPublicLine();
   loading.value = true;
   failure.value = '';
   feedback.value = '';
@@ -61,6 +90,7 @@ async function read() {
     if (attempt !== revision || !active) return;
     waiting.value = value.waiting;
     mine.value = value.mine;
+    if (counts) counts.reviews = value.waiting.length;
   } catch {
     if (attempt !== revision) return;
     failure.value =
@@ -102,6 +132,7 @@ async function submit(item: SampleWaitingReview) {
     reply: '',
   };
   waiting.value = waiting.value?.filter((candidate) => candidate.id !== item.id) ?? [];
+  if (counts) counts.reviews = waiting.value.length;
   mine.value = [review, ...(mine.value ?? [])];
   openId.value = null;
   rating.value = 0;
@@ -117,6 +148,15 @@ function remove(review: SampleReview) {
   feedback.value = 'Отзыв удалён.';
 }
 watch(() => session.state.value.generation, clear, { flush: 'sync' });
+// Смена владельца в том же поколении (восстановление сессии другим аккаунтом) тоже стирает
+// данные прежнего: публичная строка — его имя и город.
+watch(
+  () => session.state.value.subjectId,
+  (subject) => {
+    if (subject && owner && subject !== owner) clear();
+  },
+  { flush: 'sync' },
+);
 watch(
   () => session.state.value.status,
   (status) => {
@@ -139,19 +179,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section aria-labelledby="reviews-title">
-    <AccountNav />
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
-        <h1 id="reviews-title">Отзывы</h1>
-        <p class="lede">
-          Мастеру важно услышать вас, а другим покупателям — увидеть настоящий опыт.
-        </p>
-      </div>
-      <span class="section-number" aria-hidden="true">06 / ОТЗЫВЫ</span>
+  <section class="account-section" aria-labelledby="reviews-title">
+    <div class="account-heading">
+      <h1 id="reviews-title">Отзывы</h1>
+      <p class="lede">Мастеру важно услышать вас, а другим покупателям — увидеть настоящий опыт.</p>
     </div>
-    <div v-if="!permitted" class="card state-card">
+    <ProfilePending
+      v-if="session.state.value.status === 'profilePending'"
+      title="Готовим ваш аккаунт"
+      text="Вход выполнен. Отзывы появятся после подготовки профиля."
+    />
+    <div v-else-if="!permitted" class="card state-card">
       <p v-if="['unknown', 'checking'].includes(session.state.value.status)" role="status">
         Проверяем сессию…
       </p>
@@ -279,8 +317,10 @@ onBeforeUnmount(() => {
               </div>
               <div class="form-footer">
                 <span class="field-help"
-                  >Рядом с отзывом покажем ваше имя и город. Изменить — в разделе MarketMesh
-                  ID.</span
+                  >{{ publicHint
+                  }}<template v-if="idEnabled">
+                    Изменить — <RouterLink to="/account/id">в MarketMesh ID</RouterLink>.</template
+                  ></span
                 >
                 <div class="button-row">
                   <button class="button secondary" type="button" @click="cancel">Отменить</button

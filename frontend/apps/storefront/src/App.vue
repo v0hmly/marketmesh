@@ -2,15 +2,17 @@
 import { Code } from '@connectrpc/connect';
 import { authErrorReason } from './shared/api/errors';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { settingsEnabled } from './shared/features';
 import { createThemeController } from './shell/theme';
+import { areaTitle } from './shell/areas';
 import { useSession, themeKey } from './shell/context';
 
 const session = useSession();
 const theme = settingsEnabled ? createThemeController(session) : null;
 if (theme) provide(themeKey, theme);
 onBeforeUnmount(() => theme?.dispose());
+const route = useRoute();
 const router = useRouter();
 const logoutFailure = ref('');
 const busy = ref(false);
@@ -19,6 +21,12 @@ watch(
   () => {
     logoutFailure.value = '';
   },
+);
+/** Кабинет покупателя выводит выход в своей боковой панели (MM-97). */
+const inAccountLayout = computed(() => route.matched[0]?.path === '/account');
+/** Подвал называет текущее место: раздел маршрута или его область. */
+const footerSection = computed(
+  () => route.meta.section ?? (route.meta.area ? areaTitle[route.meta.area] : 'MarketMesh'),
 );
 const signedIn = computed(() =>
   ['authenticated', 'profilePending'].includes(session.state.value.status),
@@ -46,6 +54,7 @@ async function bootstrap() {
     busy.value = false;
   }
 }
+// Общие кнопки выхода остаются для областей без своего каркаса (портал продавца).
 async function logout(all: boolean) {
   if (busy.value) return;
   busy.value = true;
@@ -72,11 +81,11 @@ onMounted(() => {
     <header class="site-header">
       <RouterLink class="brand" to="/account" aria-label="MarketMesh — личный кабинет"
         ><span class="brand-mark" aria-hidden="true"><span>m</span></span
-        ><span>marketmesh<span class="brand-dot">.</span></span></RouterLink
+        ><span>MarketMesh<span class="brand-dot">.</span></span></RouterLink
       >
       <span class="brand-caption">Изделия мастеров. Личные истории.</span>
       <nav class="header-nav" aria-label="Основная навигация">
-        <RouterLink v-if="signedIn" class="nav-link" to="/account">Мой профиль</RouterLink>
+        <RouterLink v-if="signedIn" class="nav-link" to="/account">Личный кабинет</RouterLink>
         <template v-else
           ><RouterLink class="nav-link" to="/login">Вход</RouterLink
           ><RouterLink class="nav-link" to="/register">Регистрация</RouterLink></template
@@ -107,19 +116,29 @@ onMounted(() => {
         </button>
       </div>
       <RouterView />
-      <section v-if="signedIn" class="session-controls" aria-label="Управление сессией">
+      <section
+        v-if="signedIn && !inAccountLayout"
+        class="session-controls"
+        aria-label="Управление сессией"
+      >
         <p>Закончили на этом устройстве?</p>
         <div class="button-row">
           <button class="button text-button" :disabled="busy" @click="logout(false)">Выйти</button
-          ><button class="button text-button" :disabled="busy" @click="logout(true)">
+          ><button
+            class="button text-button"
+            :disabled="busy"
+            aria-describedby="session-controls-all-help"
+            @click="logout(true)"
+          >
             Выйти на всех устройствах
           </button>
         </div>
+        <p id="session-controls-all-help">Выход на всех устройствах закроет и этот сеанс.</p>
       </section>
     </main>
     <footer class="site-footer">
       <span>MarketMesh</span><span>Сделано людьми. Для людей.</span
-      ><span class="footer-meta">Личный кабинет</span>
+      ><span class="footer-meta">{{ footerSection }}</span>
     </footer>
   </div>
 </template>
