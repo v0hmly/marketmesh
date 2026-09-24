@@ -231,7 +231,7 @@
       </div>
 
       <sc-if value="{{cooldown}}" hint-placeholder-val="{{false}}">
-        <div class="notice error" role="alert">Вы вошли с нового устройства. До 22 сентября, 11:54 чужие сеансы завершать нельзя — так мы защищаем аккаунт, если устройство не ваше.</div>
+        <p style="margin: 0; font-size: 0.875rem; line-height: 1.7; color: var(--text-secondary);">Вход в этом сеансе выполнен меньше суток назад. До 22 сентября, 11:54 другие сеансы завершать нельзя — так мы защищаем аккаунт, если вошёл не владелец.</p>
       </sc-if>
 
       <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px;">
@@ -259,7 +259,7 @@
       <p style="margin: 0; font-size: 0.875rem; line-height: 1.8; color: var(--on-surface-error);">Заказы, избранное, отзывы и адреса будут удалены без возможности восстановления. У вас будет 30 дней, чтобы передумать: всё это время аккаунт заморожен, а войти в него нельзя.</p>
       <button type="button" class="button secondary" style="align-self: flex-start;" onClick="{{onAskDelete}}" disabled="{{deleteDisabled}}">Удалить аккаунт</button>
       <sc-if value="{{cooldown}}" hint-placeholder-val="{{false}}">
-        <p style="margin: 0; font-size: 0.73rem; line-height: 1.6; color: var(--on-surface-error);">Пока действует защита нового устройства, удалить аккаунт нельзя.</p>
+        <p style="margin: 0; font-size: 0.73rem; line-height: 1.6; color: var(--on-surface-error);">В первые сутки после входа удалить аккаунт нельзя.</p>
       </sc-if>
     </section>
 
@@ -285,7 +285,7 @@
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"cooldown":{"editor":"boolean","default":false,"section":"Демо: защита нового устройства"},"$preview":{"width":1440,"height":1900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"cooldown":{"editor":"boolean","default":false,"section":"Демо: защита в первые сутки после входа"},"$preview":{"width":1440,"height":1900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);

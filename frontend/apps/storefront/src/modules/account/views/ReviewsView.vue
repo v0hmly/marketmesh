@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
+import ProfilePending from '../components/ProfilePending.vue';
 import { useAccountCounts } from '../counts';
 import { idEnabled } from '../../../shared/features';
 import { publicLineOf } from '../validation';
@@ -183,7 +184,12 @@ onBeforeUnmount(() => {
       <h1 id="reviews-title">Отзывы</h1>
       <p class="lede">Мастеру важно услышать вас, а другим покупателям — увидеть настоящий опыт.</p>
     </div>
-    <div v-if="!permitted" class="card state-card">
+    <ProfilePending
+      v-if="session.state.value.status === 'profilePending'"
+      title="Готовим ваш аккаунт"
+      text="Вход выполнен. Отзывы появятся после подготовки профиля."
+    />
+    <div v-else-if="!permitted" class="card state-card">
       <p v-if="['unknown', 'checking'].includes(session.state.value.status)" role="status">
         Проверяем сессию…
       </p>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
+import ProfilePending from '../components/ProfilePending.vue';
 import { useAccountCounts } from '../counts';
 import { loadSampleFavorites, type SampleFavorite } from '../sample-data';
 
@@ -114,7 +115,12 @@ onBeforeUnmount(() => {
         Изделия, к которым вы хотите вернуться. Мы предупредим, когда мастер пополнит партию.
       </p>
     </div>
-    <div v-if="!permitted" class="card state-card">
+    <ProfilePending
+      v-if="session.state.value.status === 'profilePending'"
+      title="Готовим ваш аккаунт"
+      text="Вход выполнен. Избранное появится после подготовки профиля."
+    />
+    <div v-else-if="!permitted" class="card state-card">
       <p v-if="['unknown', 'checking'].includes(session.state.value.status)" role="status">
         Проверяем сессию…
       </p>

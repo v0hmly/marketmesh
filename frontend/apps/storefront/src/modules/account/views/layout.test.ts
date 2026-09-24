@@ -213,6 +213,34 @@ describe('account layout', () => {
     expect(wrapper.find('.account-sidebar').exists()).toBe(false);
     expect(wrapper.find('.session-controls').exists()).toBe(true);
     expect(wrapper.find('.footer-meta').text()).toBe('Безопасность аккаунта');
+    // Выход везде закрывает и этот сеанс — подпись говорит об этом прямо.
+    expect(button(wrapper, 'Выйти на всех устройствах').attributes('aria-describedby')).toBe(
+      'session-controls-all-help',
+    );
+    expect(wrapper.find('#session-controls-all-help').text()).toBe(
+      'Выход на всех устройствах закроет и этот сеанс.',
+    );
+  });
+  it.each([
+    ['/account/orders', 'Заказы появятся'],
+    ['/account/favorites', 'Избранное появится'],
+    ['/account/reviews', 'Отзывы появятся'],
+  ])('waits for a pending profile on %s instead of asking to sign in', async (path, text) => {
+    const { session, state } = fixture('profilePending');
+    vi.mocked(session.readProfile).mockImplementation(async () => {
+      state.value = { status: 'authenticated', generation: 'g1', subjectId: '01'.repeat(16) };
+      return profile();
+    });
+    const { wrapper } = await open(session, path);
+    expect(wrapper.find('.account-sidebar').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Готовим ваш аккаунт');
+    expect(wrapper.text()).toContain(text);
+    expect(wrapper.text()).not.toContain('Личное начинается со входа');
+    await button(wrapper, 'Проверить готовность').trigger('click');
+    await flushPromises();
+    expect(session.readProfile).toHaveBeenCalled();
+    expect(wrapper.text()).not.toContain('Готовим ваш аккаунт');
+    expect(wrapper.text()).not.toContain('Личное начинается со входа');
   });
   it('shows the actual public line from MarketMesh ID under the review form', async () => {
     const { session } = fixture();
@@ -349,6 +377,59 @@ describe('theme picker in the sidebar', () => {
     expect(picker(wrapper).element.value).toBe('system');
     expect(wrapper.find('#theme-pick-error').text()).toContain('Слишком много запросов');
     expect(session.readSettings).toHaveBeenCalledTimes(1);
+  });
+  it('keeps a reply that arrives after leaving the cabinet', async () => {
+    const { session } = fixture();
+    let resolve!: (value: AccountSettings) => void;
+    vi.mocked(session.updateSettings).mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    const { wrapper, router } = await open(session);
+    await choose(wrapper, 'dark');
+    await router.push('/account/security/verify');
+    await flushPromises();
+    expect(wrapper.find('#theme-pick').exists()).toBe(false);
+    resolve(settings('dark', 2n));
+    await flushPromises();
+    // Сервер сохранил тему: shell применяет её и знает новую версию для следующей смены.
+    expect(document.documentElement.dataset.themePreference).toBe('dark');
+    await router.push('/account/orders');
+    await flushPromises();
+    expect(picker(wrapper).element.value).toBe('dark');
+    vi.mocked(session.updateSettings).mockResolvedValue(settings('light', 3n));
+    await choose(wrapper, 'light');
+    expect(vi.mocked(session.updateSettings).mock.calls[1]![0]).toEqual({
+      theme: 'light',
+      expectedVersion: 2n,
+    });
+  });
+  it('returns focus to the list once an unknown write is checked', async () => {
+    const { session } = fixture();
+    vi.mocked(session.updateSettings).mockRejectedValueOnce(new TypeError('private network'));
+    vi.mocked(session.readSettings)
+      .mockResolvedValueOnce(settings())
+      .mockRejectedValueOnce(new TypeError('offline'));
+    const router = createStorefrontRouter(createMemoryHistory());
+    await router.push('/account/orders');
+    await router.isReady();
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: { plugins: [router], provide: { [sessionKey as symbol]: session } },
+    });
+    mounted.push(wrapper);
+    await flushPromises();
+    picker(wrapper).element.focus();
+    // A dispatched blur saves at once but leaves focus on the list, as after a keyboard choice.
+    await choose(wrapper, 'dark');
+    const retry = button(wrapper, 'Проверить тему');
+    expect(document.activeElement).toBe(retry.element);
+    vi.mocked(session.readSettings).mockResolvedValueOnce(settings('dark', 2n));
+    await retry.trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#theme-pick-result').text()).toContain('Тема сохранена');
+    expect(document.activeElement).toBe(picker(wrapper).element);
   });
   it('drops a late write after an owner change', async () => {
     const { session, state } = fixture();

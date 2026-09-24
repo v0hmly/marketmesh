@@ -124,10 +124,16 @@ onMounted(() => {
         <p>Закончили на этом устройстве?</p>
         <div class="button-row">
           <button class="button text-button" :disabled="busy" @click="logout(false)">Выйти</button
-          ><button class="button text-button" :disabled="busy" @click="logout(true)">
+          ><button
+            class="button text-button"
+            :disabled="busy"
+            aria-describedby="session-controls-all-help"
+            @click="logout(true)"
+          >
             Выйти на всех устройствах
           </button>
         </div>
+        <p id="session-controls-all-help">Выход на всех устройствах закроет и этот сеанс.</p>
       </section>
     </main>
     <footer class="site-footer">

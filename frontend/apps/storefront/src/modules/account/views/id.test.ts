@@ -391,6 +391,38 @@ describe('MarketMesh ID', () => {
     expect(wrapper.find('.id-hero h2').text()).toBe('Борис Ильина');
     expect(wrapper.find('.id-email').text()).toBe('boris@example.comНе подтверждён');
   });
+  it('keeps one open form: sign-in changes wait for the personal draft and back', async () => {
+    const { session } = fixture();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { wrapper } = await open(session);
+    expect(wrapper.findAll('.button.primary')).toHaveLength(0);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    await wrapper.find('#id-city').setValue('Тверь');
+    // Смена пароля, кода и выход везде закрывают сеанс и стёрли бы черновик.
+    expect(wrapper.find('#security-locked').text()).toBe(
+      'Сначала сохраните или отмените изменения личных данных.',
+    );
+    for (const name of ['Сменить почту', 'Сменить пароль', 'Включить', 'Выйти на всех']) {
+      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
+      expect(button(wrapper, name).attributes('aria-describedby')).toContain('security-locked');
+    }
+    expect(wrapper.findAll('.button.primary')).toHaveLength(1);
+    await button(wrapper, 'Отменить').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#security-locked').exists()).toBe(false);
+    expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await flushPromises();
+    const edit = button(wrapper, 'Изменить данные');
+    expect(edit.attributes('disabled')).toBeDefined();
+    expect(edit.attributes('aria-describedby')).toBe('id-edit-locked');
+    expect(wrapper.find('#id-edit-locked').text()).toContain('«Вход и безопасность»');
+    expect(wrapper.findAll('.button.primary')).toHaveLength(1);
+    await button(wrapper, 'Отменить').trigger('click');
+    await flushPromises();
+    expect(button(wrapper, 'Изменить данные').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('#id-edit-locked').exists()).toBe(false);
+  });
   it('opens the security section from the old security address', async () => {
     const { session } = fixture();
     const { wrapper, router } = await open(session, '/account/security');

@@ -363,7 +363,9 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   await ready(parallelPage);
   // After a new sign-in the other sessions are protected: the UI blocks the action and
   // the server rejects it regardless.
-  await expect(page.getByText('Вы вошли с нового устройства.', { exact: false })).toBeVisible();
+  await expect(
+    page.getByText('Вход в этом сеансе выполнен меньше суток назад.', { exact: false }),
+  ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Выйти на всех устройствах', exact: true }),
   ).toBeDisabled();

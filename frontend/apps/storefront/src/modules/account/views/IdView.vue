@@ -25,6 +25,13 @@ const avatarURL = ref('');
 const credentials = shallowRef<GetCredentialsResponse | null>(null);
 const route = useRoute();
 let jumpedToSecurity = false;
+/**
+ * На экране открыта одна форма: правка личных данных или действие во входе и сеансах.
+ * Смена пароля, кода и выход на всех устройствах закрывают сеанс и стёрли бы черновик
+ * личных данных, поэтому они ждут, пока правку сохранят или отменят.
+ */
+const securityActive = ref(false);
+const securityLock = 'Сначала сохраните или отмените изменения личных данных.';
 
 const session = useSession();
 const current = shallowRef<Profile | null>(null);
@@ -208,7 +215,7 @@ async function readProfile(compare = false) {
   }
 }
 function startEditing() {
-  if (!current.value || busy.value || reconcile.value) return;
+  if (!current.value || busy.value || reconcile.value || securityActive.value) return;
   draft.value = {
     displayName: current.value.displayName,
     lastName: current.value.lastName,
@@ -498,13 +505,17 @@ onBeforeUnmount(() => {
             v-if="!editing"
             id="edit-identity"
             class="button secondary"
-            :disabled="busy || reconcile"
+            :disabled="busy || reconcile || securityActive"
+            :aria-describedby="securityActive ? 'id-edit-locked' : undefined"
             @click="startEditing"
           >
             Изменить данные
           </button>
           <span v-else-if="dirty" class="draft-badge">Есть изменения</span>
         </div>
+        <p v-if="securityActive && !editing" id="id-edit-locked" class="field-help">
+          Сначала завершите или отмените действие в разделе «Вход и безопасность».
+        </p>
         <dl v-if="!editing" class="id-rows">
           <div v-if="credentials" class="id-row">
             <dt>ПОЧТА</dt>
@@ -745,6 +756,10 @@ onBeforeUnmount(() => {
       </section>
     </div>
     <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
-    <AccountSecurity @credentials="credentials = $event" />
+    <AccountSecurity
+      :locked="editing ? securityLock : ''"
+      @credentials="credentials = $event"
+      @active="securityActive = $event"
+    />
   </section>
 </template>

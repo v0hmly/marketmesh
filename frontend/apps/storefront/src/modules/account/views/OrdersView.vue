@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useSession } from '../../../shell/context';
+import ProfilePending from '../components/ProfilePending.vue';
 import { useAccountCounts } from '../counts';
 import { loadSampleOrders, type SampleOrder, type SampleOrderStatus } from '../sample-data';
 
@@ -117,7 +118,12 @@ onBeforeUnmount(() => {
       <h1 id="orders-title">Заказы</h1>
       <p class="lede">Всё, что вы заказали: состав, получение и следующий шаг по каждому заказу.</p>
     </div>
-    <div v-if="!permitted" class="card state-card">
+    <ProfilePending
+      v-if="session.state.value.status === 'profilePending'"
+      title="Готовим ваш аккаунт"
+      text="Вход выполнен. Заказы появятся после подготовки профиля."
+    />
+    <div v-else-if="!permitted" class="card state-card">
       <p v-if="['unknown', 'checking'].includes(session.state.value.status)" role="status">
         Проверяем сессию…
       </p>

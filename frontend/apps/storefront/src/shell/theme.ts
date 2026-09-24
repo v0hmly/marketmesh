@@ -11,8 +11,6 @@ export interface ConfirmedSettings {
 export interface ThemeController {
   readonly preference: Readonly<Ref<ThemePreference>>;
   readonly failed: Readonly<Ref<boolean>>;
-  /** Чтение настроек в полёте. */
-  readonly loading: Readonly<Ref<boolean>>;
   /** Версия для CAS при сохранении темы; null, пока настройки не подтверждены. */
   readonly confirmed: Readonly<ShallowRef<ConfirmedSettings | null>>;
   load(): Promise<void>;
@@ -26,7 +24,6 @@ export function createThemeController(
 ): ThemeController {
   const preference = ref<ThemePreference>('system');
   const failed = ref(false);
-  const loading = ref(false);
   const confirmed = shallowRef<ConfirmedSettings | null>(null);
   let owner: SessionGuard | null = null;
   let version = 0n;
@@ -57,7 +54,6 @@ export function createThemeController(
     owner = null;
     version = 0n;
     failed.value = false;
-    loading.value = false;
     confirmed.value = null;
     flight = null;
     preference.value = 'system';
@@ -85,7 +81,6 @@ export function createThemeController(
     owner = { ...guard };
     const attempt = revision;
     const requestedVersion = version;
-    loading.value = true;
     const promise = session
       .readSettings(guard)
       .then((settings) => {
@@ -96,10 +91,7 @@ export function createThemeController(
           failed.value = true;
       })
       .finally(() => {
-        if (flight?.revision === attempt) {
-          flight = null;
-          loading.value = false;
-        }
+        if (flight?.revision === attempt) flight = null;
       });
     flight = { revision: attempt, promise };
     return promise;
@@ -122,7 +114,6 @@ export function createThemeController(
   return {
     preference: readonly(preference),
     failed: readonly(failed),
-    loading: readonly(loading),
     confirmed,
     load,
     accept,

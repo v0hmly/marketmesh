@@ -147,11 +147,9 @@ describe('shell confirmed account theme', () => {
       }),
     );
     const controller = theme(session);
-    expect(controller.loading.value).toBe(true);
     expect(controller.confirmed.value).toBeNull();
     resolve(settings('dark', 5n));
     await flushPromises();
-    expect(controller.loading.value).toBe(false);
     expect(controller.confirmed.value?.settings.version).toBe(5n);
     expect(controller.confirmed.value?.guard).toEqual({
       generation: 'g1',
@@ -161,6 +159,5 @@ describe('shell confirmed account theme', () => {
     expect(controller.confirmed.value?.settings.theme).toBe('light');
     state.value = { status: 'signingOut', generation: 'g2', subjectId: null };
     expect(controller.confirmed.value).toBeNull();
-    expect(controller.loading.value).toBe(false);
   });
 });

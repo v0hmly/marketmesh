@@ -125,6 +125,21 @@ function button(wrapper: VueWrapper, text: string) {
   if (!found) throw new Error(`Missing button ${text}`);
   return found;
 }
+/** ConnectError с ErrorInfo Auth, как его разбирает authErrorReason. */
+function authError(code: Code, reason: string) {
+  const text = (field: number, value: string) => {
+    const bytes = new TextEncoder().encode(value);
+    return [(field << 3) | 2, bytes.length, ...bytes];
+  };
+  const error = new ConnectError('untrusted message', code);
+  error.details = [
+    {
+      type: 'google.rpc.ErrorInfo',
+      value: new Uint8Array([...text(1, reason), ...text(2, 'marketmesh.auth')]),
+    },
+  ];
+  return error;
+}
 
 describe('account forms', () => {
   it.each(['/login', '/register'])('enforces the password policy on %s', async (path) => {
@@ -398,9 +413,18 @@ describe('cabinet without MarketMesh ID', () => {
       credentials({ newDeviceCooldownUntilUnix: BigInt(Math.floor(Date.now() / 1000) + 3600) }),
     );
     const { wrapper } = await open(session, '/account/security');
-    expect(wrapper.text()).toContain('Вы вошли с нового устройства.');
-    expect(wrapper.findAll('.session-row')[1]!.find('button').attributes('disabled')).toBeDefined();
-    expect(button(wrapper, 'Выйти на всех устройствах').attributes('disabled')).toBeDefined();
+    // Auth считает защиту от входа в этом сеансе, а не от нового устройства.
+    expect(wrapper.find('#sessions-cooldown').text()).toContain(
+      'Вход в этом сеансе выполнен меньше суток назад.',
+    );
+    expect(wrapper.text()).not.toContain('нового устройства');
+    expect(wrapper.find('#sessions-cooldown').classes()).not.toContain('error');
+    const revoke = wrapper.findAll('.session-row')[1]!.find('button');
+    expect(revoke.attributes('disabled')).toBeDefined();
+    expect(revoke.attributes('aria-describedby')).toBe('sessions-cooldown');
+    const everywhere = button(wrapper, 'Выйти на всех устройствах');
+    expect(everywhere.attributes('disabled')).toBeDefined();
+    expect(everywhere.attributes('aria-describedby')).toBe('logout-all-help sessions-cooldown');
   });
   it('opens one form at a time with a single primary action and wipes secrets on switch', async () => {
     const { session } = fixture();
@@ -438,6 +462,127 @@ describe('cabinet without MarketMesh ID', () => {
     expect(Array.from(request.password as Uint8Array).every((byte) => byte === 0)).toBe(true);
     expect(wrapper.find('#security-email-first').exists()).toBe(false);
     expect(wrapper.find('[role="status"]').text()).toContain('Письмо подтверждения отправлено');
+  });
+  it('changes the password through the session end and wipes both passwords', async () => {
+    const { session, state } = fixture();
+    security.changePassword.mockImplementation(async () => {
+      state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
+      return {};
+    });
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await wrapper.find('#security-password-first').setValue('OldSecret1!');
+    await wrapper.find('#new-password').setValue('NewSecret2!');
+    await wrapper.find('#repeat-password').setValue('NewSecret2!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(session.endSession).toHaveBeenCalledTimes(1);
+    const request = security.changePassword.mock.calls[0]![0];
+    expect(request.currentPassword).toHaveLength('OldSecret1!'.length);
+    expect(Array.from(request.currentPassword as Uint8Array).every((byte) => byte === 0)).toBe(
+      true,
+    );
+    expect(Array.from(request.newPassword as Uint8Array).every((byte) => byte === 0)).toBe(true);
+    expect(wrapper.text()).toContain('Пароль изменён. Все сеансы закрыты.');
+  });
+  it('keeps the rejection visible after a wrong current password restores the session', async () => {
+    const { session, state } = fixture();
+    vi.mocked(session.endSession).mockImplementation(async (action) => {
+      state.value = { status: 'signingOut', generation: 'g2', subjectId: null };
+      try {
+        return await action();
+      } finally {
+        state.value = { status: 'authenticated', generation: 'g3', subjectId: '01'.repeat(16) };
+      }
+    });
+    security.changePassword.mockRejectedValue(new ConnectError('wrong', Code.Unauthenticated));
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Сменить пароль').trigger('click');
+    await wrapper.find('#security-password-first').setValue('WrongSecret1!');
+    await wrapper.find('#new-password').setValue('NewSecret2!');
+    await wrapper.find('#repeat-password').setValue('NewSecret2!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').text()).toContain('Сеанс или пароль не подтверждён.');
+    // Сеанс восстановлен под новым поколением: данные перечитаны, форма закрыта и пуста.
+    expect(security.getCredentials).toHaveBeenCalledTimes(2);
+    expect(wrapper.find('#security-password-first').exists()).toBe(false);
+    expect(wrapper.text()).toContain('alisa@example.com');
+  });
+  it('switches the login code with an emailed code and keeps the challenge after a wrong code', async () => {
+    const { session } = fixture();
+    const challengeId = new Uint8Array(16).fill(5);
+    security.startLoginCodeChange.mockResolvedValue({ challengeId, codeExpiresInSeconds: 600n });
+    security.completeLoginCodeChange
+      .mockRejectedValueOnce(authError(Code.InvalidArgument, 'CODE_MISMATCH'))
+      .mockRejectedValueOnce(authError(Code.FailedPrecondition, 'CODE_REISSUED'))
+      .mockResolvedValueOnce({});
+    const { wrapper } = await open(session, '/account/security');
+    await button(wrapper, 'Включить').trigger('click');
+    await wrapper.find('#security-code-first').setValue('Secret123!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(security.startLoginCodeChange.mock.calls[0]![0].enabled).toBe(true);
+    expect(wrapper.text()).toContain('Код отправлен на вашу почту.');
+    // Пока код не подтверждён, почту и пароль не сменить — и это сказано рядом.
+    for (const name of ['Сменить почту', 'Сменить пароль']) {
+      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
+      expect(button(wrapper, name).attributes('aria-describedby')).toBe('security-code-pending');
+    }
+    expect(wrapper.find('#security-code-pending').exists()).toBe(true);
+    for (const reply of ['111111', '222222']) {
+      await wrapper.find('#security-code').setValue(reply);
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+      expect(wrapper.find('#security-code').exists()).toBe(true);
+      expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    }
+    await wrapper.find('#security-code').setValue('333333');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(security.completeLoginCodeChange).toHaveBeenCalledTimes(3);
+    expect(security.completeLoginCodeChange.mock.calls[2]![0]).toMatchObject({
+      challengeId,
+      enabled: true,
+      code: '333333',
+    });
+    expect(session.endSession).toHaveBeenCalledTimes(3);
+    expect(wrapper.text()).toContain('Настройка входа изменена.');
+  });
+  it('cancels a pending code change and frees the other forms', async () => {
+    const { session } = fixture();
+    security.startLoginCodeChange.mockResolvedValue({
+      challengeId: new Uint8Array(16).fill(5),
+      codeExpiresInSeconds: 600n,
+    });
+    const { wrapper } = await open(session, '/account/security');
+    document.body.append(wrapper.element);
+    await button(wrapper, 'Включить').trigger('click');
+    await wrapper.find('#security-code-first').setValue('Secret123!');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    await wrapper.find('#security-code').setValue('12');
+    const cancel = wrapper
+      .findAll('form button')
+      .find((candidate) => candidate.text() === 'Отменить');
+    await cancel!.trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#security-code').exists()).toBe(false);
+    expect(button(wrapper, 'Сменить почту').attributes('disabled')).toBeUndefined();
+    expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
+    expect(document.activeElement?.id).toBe('security-code-toggle');
+    expect(security.completeLoginCodeChange).not.toHaveBeenCalled();
+    wrapper.element.remove();
+  });
+  it('reports a failed session end without rereading the list over the message', async () => {
+    const { session } = fixture();
+    security.revokeSession.mockRejectedValue(new ConnectError('gone', Code.NotFound));
+    const { wrapper } = await open(session, '/account/security');
+    await wrapper.findAll('.session-row')[1]!.find('button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').text()).toContain('Запись уже недоступна.');
+    expect(security.listSessions).toHaveBeenCalledTimes(1);
+    expect(wrapper.findAll('.session-row')).toHaveLength(2);
   });
   it('shows the provisioning state while the profile is pending', async () => {
     const { session } = fixture('profilePending');

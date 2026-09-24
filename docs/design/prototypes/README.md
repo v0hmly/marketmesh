@@ -53,7 +53,7 @@
 | `SellerApply` | `demoOutcome` | `success`, `emailTaken`, `pendingAlready`, `innTaken`, `nameTaken`, `serverError` |
 | `StaffLogin` | `demoOutcome`, `sessionExpired`, `outsideNetwork` | ответ SSO, истёкшая сессия, запрос вне корпоративной сети |
 | `StaffInvite` | `inviteState` | `active`, `expired`, `used`, `wrongAccount` |
-| `MarketMeshId` | `cooldown` | защита после входа с нового устройства |
+| `MarketMeshId` | `cooldown` | защита в первые сутки после входа |
 | `EmailSellerDecision` | `decision` | `approved`, `rejected` |
 | `SecurityVerify`, `SecurityReset`, `SecurityChangeEmail`, `SecurityCancelEmail` | `linkState` | `valid`, `damaged`, `missing` — ссылка рабочая, повреждена или страница открыта без неё |
 | те же | `demoOutcome` | `success`, `linkInvalid`, `rateLimited`, `serviceDown`, `noResponse` |
@@ -86,8 +86,9 @@
   город) и публичные (имя, город, возраст). Возраст считается из даты рождения, его показ
   включается переключателем; рядом — живой пример того, как подпись выглядит в отзыве.
 - Фамилия, телефон, почта и пол в отзывах не показываются никогда.
-- После входа с нового устройства действует защита: чужие сеансы завершать и аккаунт удалять
-  нельзя. Удаление требует ввести слово «удалить» и даёт 30 дней на отмену.
+- В первые сутки после входа действует защита: другие сеансы завершать и аккаунт удалять нельзя.
+  Она считается от входа в текущем сеансе, а не от нового устройства: Auth не знает, чьё
+  устройство, поэтому текст не говорит «вы вошли с нового устройства». Удаление требует ввести слово «удалить» и даёт 30 дней на отмену.
 
 ### Страницы ссылок из писем
 

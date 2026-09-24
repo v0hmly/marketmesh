@@ -11,7 +11,8 @@ import { accountError } from '../errors';
  * подтверждённой shell. Запись уходит после короткой паузы: стрелки на закрытом списке
  * меняют значение по шагу, и промежуточные темы не сохраняются. Конфликт и неизвестный
  * исход не повторяются вслепую: настройки перечитываются, и список показывает
- * действующую тему.
+ * действующую тему. Пока исход сверяется, список недоступен; фокус, который он при этом
+ * потерял, возвращается к нему после сверки.
  */
 const SAVE_DELAY = 500;
 const session = useSession();
@@ -38,8 +39,11 @@ const unverified = shallowRef<{
 const failure = ref('');
 const feedback = ref('');
 const retryButton = ref<HTMLButtonElement | null>(null);
+const picker = ref<HTMLSelectElement | null>(null);
 let revision = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
+/** Фокус был на списке или «Проверить тему», когда они исчезли или стали недоступны. */
+let returnFocus = false;
 
 const current = computed(() => theme.confirmed.value);
 const permitted = computed(() => session.state.value.status === 'authenticated');
@@ -64,7 +68,20 @@ function reset() {
   unverified.value = null;
   failure.value = '';
   feedback.value = '';
+  returnFocus = false;
   selected.value = current.value?.settings.theme ?? 'system';
+}
+function holdsFocus() {
+  const active = document.activeElement;
+  return !!active && (active === picker.value || active === retryButton.value);
+}
+/** После сверки список снова доступен: возвращаем ему фокус, если его никто не забрал. */
+async function restoreFocus() {
+  if (!returnFocus) return;
+  returnFocus = false;
+  await nextTick();
+  const active = document.activeElement;
+  if (!active || active === document.body) picker.value?.focus();
 }
 async function recover() {
   try {
@@ -79,6 +96,7 @@ function settle(after: ConfirmedSettings) {
   if (!pending) return;
   unverified.value = null;
   selected.value = after.settings.theme;
+  void restoreFocus();
   if (after.settings.theme === pending.wanted) {
     failure.value = '';
     feedback.value = 'Тема сохранена и применится на всех ваших устройствах.';
@@ -93,6 +111,7 @@ async function verify() {
   const pending = unverified.value;
   if (!pending) return;
   const attempt = revision;
+  if (holdsFocus()) returnFocus = true;
   checking.value = true;
   failure.value = '';
   try {
@@ -109,7 +128,7 @@ async function verify() {
   failure.value =
     'Не удалось проверить, сохранилась ли тема. Проверьте ещё раз, прежде чем выбирать другую.';
   await nextTick();
-  retryButton.value?.focus();
+  if (returnFocus && attempt === revision) retryButton.value?.focus();
 }
 async function save() {
   timer = undefined;
@@ -129,8 +148,9 @@ async function save() {
       { theme: value, expectedVersion: base.settings.version },
       base.guard,
     );
-    if (attempt !== revision) return;
+    // Shell learns the saved version even if the panel is gone: accept checks owner and version.
     theme.accept(settings, base.guard);
+    if (attempt !== revision) return;
     const confirmed = current.value;
     if (confirmed?.settings !== settings) {
       // Shell kept a newer version (for example, read in the meantime): show what applies.
@@ -155,6 +175,7 @@ async function save() {
       failure.value = accountError(error);
       return;
     }
+    if (holdsFocus()) returnFocus = true;
     unverified.value = {
       wanted: value,
       conflict: error instanceof ConnectError && error.code === Code.Aborted,
@@ -218,6 +239,7 @@ onBeforeUnmount(() => {
     <span class="select-wrap">
       <select
         id="theme-pick"
+        ref="picker"
         :value="selected"
         :disabled="disabled"
         :aria-busy="busy"

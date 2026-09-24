@@ -368,7 +368,8 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="button-row">
-        <button class="button primary" type="submit" :disabled="!canUpload">
+        <!-- Вторичная: основное действие экрана MarketMesh ID — сохранить открытую форму. -->
+        <button class="button secondary" type="submit" :disabled="!canUpload">
           {{ busy ? 'Обрабатываем…' : candidate ? 'Продолжить загрузку' : 'Загрузить аватар' }}
         </button>
         <button class="button secondary" type="button" :disabled="busy" @click="checkCandidate">

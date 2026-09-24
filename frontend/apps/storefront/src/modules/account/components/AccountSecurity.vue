@@ -16,9 +16,16 @@ import PasswordRules from './PasswordRules.vue';
 
 /**
  * Вход и безопасность, сеансы и устройства. Разделы экрана MarketMesh ID; без ID —
- * содержимое отдельного экрана. Родитель получает почту и её статус через `credentials`.
+ * содержимое отдельного экрана. Родитель получает почту и её статус через `credentials`,
+ * а через `active` — открыта ли здесь форма. `locked` — причина, по которой родитель
+ * сейчас не даёт менять вход и сеансы (например, открыта правка его данных): смена
+ * пароля, кода и выход на всех устройствах закрывают сеанс и стёрли бы черновик.
  */
-const emit = defineEmits<{ credentials: [value: GetCredentialsResponse | null] }>();
+const props = defineProps<{ locked?: string }>();
+const emit = defineEmits<{
+  credentials: [value: GetCredentialsResponse | null];
+  active: [value: boolean];
+}>();
 const session = useSession();
 const api = createSecurityApi();
 const credentials = shallowRef<GetCredentialsResponse | null>(null);
@@ -37,6 +44,11 @@ const code = ref('');
 const challenge = shallowRef<{ id: Uint8Array; enabled: boolean } | null>(null);
 const attempted = ref('');
 const authenticated = computed(() => session.state.value.status === 'authenticated');
+const locked = computed(() => props.locked ?? '');
+/** Почему недоступны смена почты и пароля. */
+const blockedBy = computed(() =>
+  challenge.value ? 'security-code-pending' : locked.value ? 'security-locked' : undefined,
+);
 const passwordError = computed(() =>
   attempted.value === 'password'
     ? (validatePasswordStrength(newPassword.value) ??
@@ -107,6 +119,11 @@ async function open(form: 'email' | 'password' | 'code' | null) {
 }
 watch(credentials, (value) => emit('credentials', value));
 watch(
+  () => opened.value !== null || challenge.value !== null,
+  (value) => emit('active', value),
+  { immediate: true },
+);
+watch(
   () => [session.state.value.generation, session.state.value.status],
   () => {
     if (!authenticated.value) erase();
@@ -159,7 +176,8 @@ async function run<T>(
   success: string,
   endsSession = false,
 ): Promise<T | undefined> {
-  if (!authenticated.value || busy.value) return;
+  // Parent's draft would not survive the session change: such actions wait for it.
+  if (!authenticated.value || busy.value || (endsSession && locked.value)) return;
   const owner = session.capture();
   busy.value = true;
   failure.value = feedback.value = '';
@@ -285,6 +303,15 @@ async function confirmCode() {
       challenge.value = pending;
   }
 }
+/** Отказ от настройки кода: код из письма просто не используется и истечёт сам. */
+async function cancelCode() {
+  if (busy.value || !challenge.value) return;
+  challenge.value = null;
+  clearSecrets();
+  failure.value = feedback.value = '';
+  await nextTick();
+  document.getElementById('security-code-toggle')?.focus();
+}
 async function revoke(item: SessionInfo) {
   const result = await run(
     () => api.revokeSession({ sessionId: item.sessionId }),
@@ -313,6 +340,9 @@ void read();
   >
     <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
     <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
+    <p v-if="locked && authenticated && credentials" id="security-locked" class="field-help">
+      {{ locked }}
+    </p>
     <template v-if="authenticated">
       <div v-if="!credentials" class="card state-card" :aria-busy="busy">
         <p v-if="busy" role="status">Загружаем вход и сеансы…</p>
@@ -339,7 +369,8 @@ void read();
               v-if="opened !== 'email'"
               id="security-email-toggle"
               class="button secondary"
-              :disabled="busy || Boolean(challenge)"
+              :disabled="busy || Boolean(challenge) || Boolean(locked)"
+              :aria-describedby="blockedBy"
               @click="open('email')"
             >
               Сменить почту
@@ -398,7 +429,8 @@ void read();
               v-if="opened !== 'password'"
               id="security-password-toggle"
               class="button secondary"
-              :disabled="busy || Boolean(challenge)"
+              :disabled="busy || Boolean(challenge) || Boolean(locked)"
+              :aria-describedby="blockedBy"
               @click="open('password')"
             >
               Сменить пароль
@@ -480,7 +512,8 @@ void read();
               v-if="opened !== 'code' && !challenge"
               id="security-code-toggle"
               class="button secondary"
-              :disabled="busy"
+              :disabled="busy || Boolean(locked)"
+              :aria-describedby="locked ? 'security-locked' : undefined"
               @click="open('code')"
             >
               {{ credentials.loginCodeEnabled ? 'Отключить' : 'Включить' }}
@@ -549,9 +582,16 @@ void read();
                   codeError
                 }}</span>
               </div>
-              <button class="button primary" :disabled="busy">
-                Подтвердить настройку <span aria-hidden="true">↗</span>
-              </button>
+              <p id="security-code-pending" class="field-help">
+                Пока настройка не подтверждена или не отменена, почту и пароль сменить нельзя.
+              </p>
+              <div class="button-row">
+                <button type="button" class="button text-button" @click="cancelCode">
+                  Отменить</button
+                ><button class="button primary" :disabled="busy">
+                  Подтвердить настройку <span aria-hidden="true">↗</span>
+                </button>
+              </div>
             </fieldset>
           </form>
         </section>
@@ -563,9 +603,10 @@ void read();
               неточным.
             </p>
           </div>
-          <p v-if="cooldown" class="notice error">
-            Вы вошли с нового устройства. До {{ date(credentials.newDeviceCooldownUntilUnix) }}
-            другие сеансы завершать нельзя — так мы защищаем аккаунт, если устройство не ваше.
+          <p v-if="cooldown" id="sessions-cooldown" class="field-help">
+            Вход в этом сеансе выполнен меньше суток назад. До
+            {{ date(credentials.newDeviceCooldownUntilUnix) }} другие сеансы завершать нельзя — так
+            мы защищаем аккаунт, если вошёл не владелец.
           </p>
           <ul class="session-list" aria-label="Сеансы">
             <li
@@ -584,6 +625,7 @@ void read();
                 v-if="!item.current"
                 class="button text-button"
                 :disabled="busy || !!cooldown"
+                :aria-describedby="cooldown ? 'sessions-cooldown' : undefined"
                 @click="revoke(item)"
               >
                 Завершить<span class="visually-hidden"> сеанс «{{ deviceName(item) }}»</span>
@@ -596,8 +638,12 @@ void read();
             </p>
             <button
               class="button secondary"
-              :disabled="busy || !!cooldown"
-              aria-describedby="logout-all-help"
+              :disabled="busy || !!cooldown || Boolean(locked)"
+              :aria-describedby="
+                ['logout-all-help', cooldown && 'sessions-cooldown', locked && 'security-locked']
+                  .filter(Boolean)
+                  .join(' ')
+              "
               @click="logoutAll"
             >
               Выйти на всех устройствах
