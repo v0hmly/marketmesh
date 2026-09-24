@@ -63,6 +63,7 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
     endSession: vi.fn(async (action) => action()),
     state,
     bootstrap: vi.fn().mockResolvedValue(undefined),
+    confirmEmail: vi.fn(async () => false),
     register: vi.fn(),
     startLogin: vi.fn(),
     completeLogin: vi.fn(),

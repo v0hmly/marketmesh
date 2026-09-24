@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:https';
-import { verifyEmail } from './mail';
+import { verifyEmail, submitLogin } from './mail';
 import AxeBuilder from '@axe-core/playwright';
 
 const run = process.env.ACCOUNT_E2E_RUN_ID!;
@@ -79,7 +79,7 @@ async function login(page: Page, who: typeof a, stage: AccountStage = 'profile')
   step(stage, 'login', 'start');
   await page.goto('/login');
   await credentials(page, who);
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await submitLogin(page, who.identifier);
   step(stage, 'login', 'done');
 }
 async function ready(page: Page, stage: AccountStage = 'profile') {

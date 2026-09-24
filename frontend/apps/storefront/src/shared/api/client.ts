@@ -73,6 +73,12 @@ export function createPublicApi(
     async register(identifier, password) {
       await auth.registerCredentials({ identifier, password });
     },
+    async confirmEmail(token) {
+      const result = await auth.confirmEmail({ token });
+      if (result.subjectId.length === 0) return null;
+      if (result.subjectId.length !== 16) throw new Error('Invalid confirmation response');
+      return result.subjectId;
+    },
     async login(identifier, password) {
       const result = await auth.login({ identifier, password });
       if (result.subjectId.length !== 16 || result.subjectId.every((v) => v === 0)) {

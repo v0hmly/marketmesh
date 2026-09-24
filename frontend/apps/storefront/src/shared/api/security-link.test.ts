@@ -36,6 +36,7 @@ async function open(action: string) {
     routes: [
       { path: '/account/security/:action', component: SecurityLinkView },
       { path: '/account/security', component: { template: '<p>Security</p>' } },
+      { path: '/account', component: { template: '<p>Account</p>' } },
       { path: '/login', component: { template: '<p>Login</p>' } },
     ],
   });
@@ -45,7 +46,10 @@ async function open(action: string) {
     global: {
       plugins: [router],
       provide: {
-        [sessionKey as symbol]: { endSession: async (run: () => Promise<unknown>) => run() },
+        [sessionKey as symbol]: {
+          endSession: async (run: () => Promise<unknown>) => run(),
+          confirmEmail: api.confirmEmail,
+        },
       },
     },
   });
@@ -54,6 +58,26 @@ async function open(action: string) {
   expect(router.currentRoute.value.hash).toBe('');
   return wrapper;
 }
+
+describe('registration confirmation', () => {
+  it('opens the account after confirmation in the registration browser', async () => {
+    api.confirmEmail.mockResolvedValue(true);
+    const wrapper = await open('verify');
+    expect(api.confirmEmail).not.toHaveBeenCalled();
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(api.confirmEmail).toHaveBeenCalledExactlyOnceWith(`${'a'.repeat(32)}.${'b'.repeat(43)}`);
+    expect(wrapper.vm.$router.currentRoute.value.path).toBe('/account');
+  });
+  it('offers login when confirmation did not establish a session', async () => {
+    api.confirmEmail.mockResolvedValue(false);
+    const wrapper = await open('verify');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.get('[role="status"]').text()).toContain('Для входа в этом браузере');
+    expect(wrapper.vm.$router.currentRoute.value.path).toBe('/account/security/verify');
+  });
+});
 
 describe('expired security links', () => {
   it.each(['verify', 'reset'])(

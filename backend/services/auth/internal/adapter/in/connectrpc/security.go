@@ -152,9 +152,34 @@ func (h *Handler) RequestEmailVerification(ctx context.Context, r *connect.Reque
 	})
 }
 func (h *Handler) ConfirmEmail(ctx context.Context, r *connect.Request[authv1.ConfirmEmailRequest]) (*connect.Response[authv1.ConfirmEmailResponse], error) {
-	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ConfirmEmailRequest) (*authv1.ConfirmEmailResponse, error) {
-		return &authv1.ConfirmEmailResponse{}, h.security.ConfirmEmail(ctx, m.Token)
+	var header http.Header
+	response, err := securityCall(h, ctx, r, func(ctx context.Context, m *authv1.ConfirmEmailRequest) (*authv1.ConfirmEmailResponse, error) {
+		// Missing, malformed or ambiguous cookies permit confirmation only.
+		secret, cookieErr := cookieValue(r.Header(), registrationCookieName)
+		if cookieErr != nil {
+			secret = ""
+		}
+		tokens, err := h.security.ConfirmRegistration(ctx, m.Token, secret)
+		if err != nil {
+			return nil, err
+		}
+		result := &authv1.ConfirmEmailResponse{}
+		if tokens.Record.ID != (session.ID{}) {
+			header = make(http.Header)
+			h.setCookies(header, tokens)
+			cookie := secureCookie(registrationCookieName, "", time.Unix(1, 0))
+			cookie.MaxAge = -1
+			header.Add("Set-Cookie", cookie.String())
+			result.SubjectId = tokens.Record.SubjectID.Bytes()
+		}
+		return result, nil
 	})
+	if err == nil {
+		for _, cookie := range header.Values("Set-Cookie") {
+			response.Header().Add("Set-Cookie", cookie)
+		}
+	}
+	return response, err
 }
 func (h *Handler) RequestPasswordReset(ctx context.Context, r *connect.Request[authv1.RequestPasswordResetRequest]) (*connect.Response[authv1.RequestPasswordResetResponse], error) {
 	return securityCall(h, ctx, r, func(ctx context.Context, m *authv1.RequestPasswordResetRequest) (*authv1.RequestPasswordResetResponse, error) {

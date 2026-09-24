@@ -126,10 +126,10 @@ func (s *Store) Register(ctx context.Context, value credential.Credential, event
 		if _, err := ex.Exec(ctx, `INSERT INTO auth.registration_outbox(event_id,subject_id,occurred_at,payload) VALUES($1,$2,$3,$4)`, event.ID[:], event.SubjectID.Bytes(), event.OccurredAt, payload); err != nil {
 			return err
 		}
-		if _, err := ex.Exec(ctx, `INSERT INTO auth.account_security(subject_id) VALUES($1)`, value.SubjectID().Bytes()); err != nil {
+		if _, err := ex.Exec(ctx, `INSERT INTO auth.account_security(subject_id,login_code_enabled) VALUES($1,true)`, value.SubjectID().Bytes()); err != nil {
 			return err
 		}
-		u := &unit{executor: ex, store: s, account: &domain.Account{Subject: value.SubjectID(), Email: value.Identifier().String(), PasswordDigest: value.PasswordDigest(), Revision: 1}}
+		u := &unit{executor: ex, store: s, account: &domain.Account{Subject: value.SubjectID(), Email: value.Identifier().String(), PasswordDigest: value.PasswordDigest(), Revision: 1, CodeEnabled: true}}
 		if err := u.SaveChallenge(ctx, challenge); err != nil {
 			return err
 		}
@@ -151,21 +151,22 @@ func (s *Store) ChallengeSubject(ctx context.Context, id domain.ID) (credential.
 	return subject, nil
 }
 
-const challengeColumns = `challenge_id,subject_id,purpose,secret_digest,revision,email,expires_at,sent_at,attempts,sends,used_at`
+const challengeColumns = `challenge_id,subject_id,purpose,secret_digest,revision,email,expires_at,sent_at,attempts,sends,used_at,registration_digest`
 
 func scanChallenge(row pgx.Row) (domain.Challenge, error) {
 	var c domain.Challenge
-	var id, subject, digest []byte
-	err := row.Scan(&id, &subject, &c.Purpose, &digest, &c.Revision, &c.Email, &c.ExpiresAt, &c.SentAt, &c.Attempts, &c.Sends, &c.UsedAt)
+	var id, subject, digest, registrationDigest []byte
+	err := row.Scan(&id, &subject, &c.Purpose, &digest, &c.Revision, &c.Email, &c.ExpiresAt, &c.SentAt, &c.Attempts, &c.Sends, &c.UsedAt, &registrationDigest)
 	if err != nil {
 		return c, err
 	}
-	if len(id) != 16 || len(subject) != 16 || len(digest) != 32 {
+	if len(id) != 16 || len(subject) != 16 || len(digest) != 32 || (len(registrationDigest) != 0 && len(registrationDigest) != 32) {
 		return c, domain.Unavailable
 	}
 	copy(c.ID[:], id)
 	copy(c.Subject[:], subject)
 	copy(c.Digest[:], digest)
+	copy(c.RegistrationDigest[:], registrationDigest)
 	return c, nil
 }
 func (u *unit) Challenge(ctx context.Context, id domain.ID) (domain.Challenge, error) {
@@ -192,9 +193,13 @@ func (u *unit) SaveChallenge(ctx context.Context, c domain.Challenge) error {
 	if u.account == nil || c.Subject != u.account.Subject {
 		return domain.Unavailable
 	}
-	_, err := u.executor.Exec(ctx, `INSERT INTO auth.security_challenges (`+challengeColumns+`) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+	var registrationDigest []byte
+	if c.RegistrationDigest != (domain.Digest{}) {
+		registrationDigest = c.RegistrationDigest[:]
+	}
+	_, err := u.executor.Exec(ctx, `INSERT INTO auth.security_challenges (`+challengeColumns+`) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 ON CONFLICT(challenge_id) DO UPDATE SET secret_digest=EXCLUDED.secret_digest,expires_at=EXCLUDED.expires_at,sent_at=EXCLUDED.sent_at,attempts=EXCLUDED.attempts,sends=EXCLUDED.sends,used_at=EXCLUDED.used_at
-WHERE auth.security_challenges.subject_id=EXCLUDED.subject_id AND auth.security_challenges.purpose=EXCLUDED.purpose`, c.ID[:], c.Subject.Bytes(), string(c.Purpose), c.Digest[:], c.Revision, c.Email, c.ExpiresAt, c.SentAt, c.Attempts, c.Sends, c.UsedAt)
+WHERE auth.security_challenges.subject_id=EXCLUDED.subject_id AND auth.security_challenges.purpose=EXCLUDED.purpose`, c.ID[:], c.Subject.Bytes(), string(c.Purpose), c.Digest[:], c.Revision, c.Email, c.ExpiresAt, c.SentAt, c.Attempts, c.Sends, c.UsedAt, registrationDigest)
 	return err
 }
 func (u *unit) ReserveAttempt(ctx context.Context, bucket domain.Digest, now time.Time) (int, error) {

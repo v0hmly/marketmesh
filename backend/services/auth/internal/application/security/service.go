@@ -49,6 +49,23 @@ func New(store Store, hasher PasswordHasher, sessions Sessions, events Registrat
 func (s *Service) now() time.Time { return s.clock().UTC().Truncate(time.Second) }
 
 func (s *Service) Register(ctx context.Context, email string, raw []byte) error {
+	return s.register(ctx, email, raw, "")
+}
+
+// RegisterBrowser binds the first login to a separate browser secret. Duplicate
+// addresses get an indistinguishable random secret, without changing their account.
+func (s *Service) RegisterBrowser(ctx context.Context, email string, raw []byte) (string, error) {
+	secret, err := newSecret()
+	if err != nil {
+		return "", err
+	}
+	if err := s.register(ctx, email, raw, secret); err != nil {
+		return "", err
+	}
+	return secret, nil
+}
+
+func (s *Service) register(ctx context.Context, email string, raw []byte, browserSecret string) error {
 	email, err := domain.Email(email)
 	if err != nil {
 		return err
@@ -77,10 +94,13 @@ func (s *Service) Register(ctx context.Context, email string, raw []byte) error 
 	if err != nil {
 		return domain.Unavailable
 	}
-	account := domain.Account{Subject: subject, Email: email, PasswordDigest: digest, Revision: 1}
+	account := domain.Account{Subject: subject, Email: email, PasswordDigest: digest, Revision: 1, CodeEnabled: true}
 	challenge, mail, err := s.tokenChallenge(ctx, account, domain.VerifyEmail, email, 24*time.Hour)
 	if err != nil {
 		return err
+	}
+	if browserSecret != "" {
+		challenge.RegistrationDigest = s.digest("registration-browser", domain.ID(subject), browserSecret)
 	}
 	return safe(s.store.Register(ctx, credential.New(subject, identifier, digest), event, challenge, mail))
 }

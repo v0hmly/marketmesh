@@ -1,14 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
-import { verifyEmail } from './mail';
+import { verifyEmail, submitLogin } from './mail';
 
 const password = 'CorrectHorse9!';
 async function login(page: Page, email: string) {
   await page.goto('/login');
   await page.getByLabel('Почта', { exact: true }).fill(email);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await submitLogin(page, email);
   await expect(page).toHaveURL(/\/account\/id$/);
   await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeVisible();
   await expect(page.getByLabel('Изображение для аватара')).toBeEnabled();
