@@ -9,14 +9,42 @@ option go_package = "github.com/v0hmly/marketmesh/api/gen/go/staff/v1;staffv1";
 service StaffService {
   // StartSso returns the corporate identity provider URL for the sign-in redirect.
   rpc StartSso(StartSsoRequest) returns (StartSsoResponse);
+  // GetSession returns only the caller's verified corporate identity and role.
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  // Logout revokes the current staff session; buyer sessions are independent.
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
   // GetInvite reads the state of an emailed staff invite.
   rpc GetInvite(GetInviteRequest) returns (GetInviteResponse);
   // AcceptInvite consumes an active invite and links it to the caller's SSO identity.
   rpc AcceptInvite(AcceptInviteRequest) returns (AcceptInviteResponse);
 }
 
-// StartSsoRequest carries no caller-selected identity provider or redirect target.
-message StartSsoRequest {}
+// StartSsoRequest never allows a caller-selected IdP or redirect target.
+message StartSsoRequest {
+  // InviteToken is preserved server-side through the login callback, when present.
+  string invite_token = 1;
+}
+
+// GetSessionRequest selects the session using the host-only HttpOnly cookie.
+message GetSessionRequest {}
+
+// GetSessionResponse contains no OIDC or session tokens.
+message GetSessionResponse {
+  // Email is verified by the corporate IdP.
+  string email = 1;
+  // DisplayName is the corporate identity's display name.
+  string display_name = 2;
+  // Role is empty until an invitation grants membership.
+  string role = 3;
+  // ExpiresAtUnix is the earlier of the idle and absolute deadlines.
+  int64 expires_at_unix = 4;
+}
+
+// LogoutRequest revokes the caller's current session.
+message LogoutRequest {}
+
+// LogoutResponse confirms revocation.
+message LogoutResponse {}
 
 // StartSsoResponse carries the only redirect target the portal may send the browser to.
 message StartSsoResponse {
@@ -60,5 +88,5 @@ message AcceptInviteRequest {
   string invite_token = 1;
 }
 
-// AcceptInviteResponse is empty; the session is established through the browser bridge.
+// AcceptInviteResponse is empty; membership is bound to the existing staff session.
 message AcceptInviteResponse {}

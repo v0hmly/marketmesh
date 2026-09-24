@@ -6,14 +6,18 @@
 // frontend/apps/storefront/AGENTS.md: :root[data-theme='dark'] для явного
 // выбора и @media (prefers-color-scheme: dark) для системного.
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const here = join(dirname(fileURLToPath(import.meta.url)), '../../docs/design/design-system');
-const tokens = JSON.parse(readFileSync(join(here, 'tokens.json'), 'utf8'));
+const here = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../docs/design/design-system",
+);
+const tokens = JSON.parse(readFileSync(join(here, "tokens.json"), "utf8"));
 
-const lines = (pairs, indent) => pairs.map(([n, v]) => `${indent}--${n}: ${v};`).join('\n');
+const lines = (pairs, indent) =>
+  pairs.map(([n, v]) => `${indent}--${n}: ${v};`).join("\n");
 
 const light = [];
 const dark = [];
@@ -22,13 +26,16 @@ for (const t of tokens.color.tokens) {
   light.push([t.name, t.value.light]);
   dark.push([t.name, t.value.dark]);
 }
-for (const [name, stack] of Object.entries(tokens.type.families)) light.push([`font-${name}`, stack]);
+for (const [name, stack] of Object.entries(tokens.type.families))
+  light.push([`font-${name}`, stack]);
 for (const group of tokens.type.groups) {
   for (const s of group.styles) {
     light.push([`text-${s.name}-size`, s.fontSize]);
     light.push([`text-${s.name}-weight`, String(s.fontWeight)]);
-    if (s.lineHeight) light.push([`text-${s.name}-leading`, String(s.lineHeight)]);
-    if (s.letterSpacing) light.push([`text-${s.name}-tracking`, s.letterSpacing]);
+    if (s.lineHeight)
+      light.push([`text-${s.name}-leading`, String(s.lineHeight)]);
+    if (s.letterSpacing)
+      light.push([`text-${s.name}-tracking`, s.letterSpacing]);
   }
 }
 for (const t of tokens.spacing.tokens) light.push([t.name, t.value]);
@@ -45,20 +52,31 @@ const css = `/* Сгенерировано из tokens.json — не редак�
    Система:  ${tokens.name}, версия токенов ${tokens.version} */
 
 :root {
-  color-scheme: light dark;
-${lines(light, '  ')}
+  color-scheme: light;
+${lines(light, "  ")}
 }
 
 :root[data-theme='dark'] {
-${lines(dark, '  ')}
+  color-scheme: dark;
+${lines(dark, "  ")}
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-${lines(dark, '    ')}
+    color-scheme: dark;
+${lines(dark, "    ")}
   }
 }
 `;
 
-writeFileSync(join(here, 'tokens.css'), css);
-process.stdout.write(`tokens.css: ${light.length} переменных в светлой теме, ${dark.length} в тёмной\n`);
+writeFileSync(join(here, "tokens.css"), css);
+writeFileSync(
+  join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../packages/design-system/tokens.css",
+  ),
+  css,
+);
+process.stdout.write(
+  `tokens.css: ${light.length} переменных в светлой теме, ${dark.length} в тёмной\n`,
+);

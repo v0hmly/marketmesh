@@ -43,13 +43,14 @@ EasyP, `protoc` и плагины protobuf устанавливаются в и�
 task dev:up
 ```
 
-Команда собирает storefront, Auth, User и gateway, поднимает Files с AV/CDR,
+Команда собирает storefront, отдельный staff-портал с тестовым OIDC, Auth, User и gateway, поднимает Files с AV/CDR,
 общие PostgreSQL (primary + синхронная replica), Redis, ClickHouse, NATS, Mailpit, Grafana Stack и локальную аналитику Rybbit.
 Она создаёт конфигурацию, применяет миграции, ждёт готовности и при необходимости
 обновляет сертификаты. Ручные переменные окружения не нужны. Данные сохраняются
 между запусками. Короткий синоним — `task up`.
 
 - Кабинет: https://localhost:18443
+- Портал сотрудников: https://staff.localhost:18444 — [вход и приглашения](frontend/apps/staff/README.md)
 - Письма и коды подтверждения: http://localhost:18025
 - Grafana: http://localhost:3000
 - Rybbit: http://localhost:8310

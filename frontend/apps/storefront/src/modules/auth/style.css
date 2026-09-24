@@ -1,0 +1,80 @@
+@import './forms.css';
+
+.auth-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.security-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.security-sections:focus {
+  outline: none;
+}
+.security-sections > .notice {
+  margin: 0;
+}
+.security-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.security-card .subtle {
+  margin: 6px 0 0;
+}
+.security-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.security-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.security-row-text .subtle {
+  margin: 0;
+}
+.security-row-title {
+  font-weight: 600;
+}
+.security-form fieldset {
+  display: grid;
+  gap: 4px;
+  max-width: 520px;
+}
+.security-form .button-row {
+  justify-content: flex-end;
+}
+.session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.sessions-footer .subtle {
+  margin: 0;
+}
+.security-card > .notice {
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .security-row,
+  .session-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

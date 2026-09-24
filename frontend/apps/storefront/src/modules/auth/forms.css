@@ -1,0 +1,29 @@
+.auth-code-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.password-requirements {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.73rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.password-requirements li.requirement-met {
+  color: var(--success-ink);
+}

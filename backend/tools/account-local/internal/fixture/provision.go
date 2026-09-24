@@ -35,7 +35,11 @@ func clientTLS(dir, server string) (*tls.Config, error) {
 func Provision(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	for _, service := range []string{"auth", "user"} {
+	services := []string{"auth", "user"}
+	if os.Getenv("STAFF_ADMIN_DSN") != "" {
+		services = append(services, "staff")
+	}
+	for _, service := range services {
 		conn, err := pgx.Connect(ctx, os.Getenv(strings.ToUpper(service)+"_ADMIN_DSN"))
 		if err != nil {
 			return fmt.Errorf("%s database unavailable", service)
@@ -147,7 +151,7 @@ func migrate(ctx context.Context, conn *pgx.Conn, dir, schema string) error {
 		}
 	}
 	// schema is a fixed internal allowlist, never caller-controlled SQL.
-	if schema != "auth" && schema != "user" {
+	if schema != "auth" && schema != "user" && schema != "staff" {
 		return errors.New("unknown schema")
 	}
 	rw := pgx.Identifier{schema + "_rw"}.Sanitize()

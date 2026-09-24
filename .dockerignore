@@ -28,3 +28,5 @@ bin
 /backend/api/gen/go/**/*.connect.go
 /frontend/gen/**/*_pb.ts
 /docs/design/design-system/tokens.css
+
+/frontend/packages/design-system/tokens.css

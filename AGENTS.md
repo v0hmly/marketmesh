@@ -57,6 +57,12 @@
 [frontend/apps/storefront/AGENTS.md](frontend/apps/storefront/AGENTS.md): новый экран собирается
 из существующих токенов и классов, а не из новых hex-значений и размеров.
 
+Для staff и общих UI-пакетов действует тот же источник токенов. Общие примитивы
+и CSS находятся в `frontend/packages/design-system`; палитра меняется только в
+`docs/design/design-system/tokens.json`. Storefront и staff остаются отдельными
+приложениями по [ADR-0016](docs/adr/0016-frontend-application-boundaries.md).
+Staff нельзя возвращать в публичную маршрутизацию или buyer session bootstrap.
+
 ## Taskboard — источник задач
 
 Проект в Taskboard называется MarketMesh и использует префикс MM.

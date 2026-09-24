@@ -9,6 +9,9 @@ COPY backend/api/gen/go/go.mod backend/api/gen/go/go.sum backend/api/gen/go/
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/
 COPY frontend/gen/package.json frontend/gen/package.json
 COPY frontend/apps/storefront/package.json frontend/apps/storefront/package.json
+COPY frontend/apps/staff/package.json frontend/apps/staff/package.json
+COPY frontend/packages/browser-client/package.json frontend/packages/browser-client/package.json
+COPY frontend/packages/design-system/package.json frontend/packages/design-system/package.json
 RUN printf 'go 1.27.0\nuse ./api/gen/go\n' > backend/go.work && corepack enable pnpm && \
     corepack prepare "$(node -p 'require("./frontend/package.json").packageManager')" --activate
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
@@ -38,6 +41,7 @@ FROM node:24.19.0-bookworm@sha256:4196d66a565c6f195728d9952f161f4adfe2ad753052a0
 WORKDIR /workspace
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./frontend/
 COPY frontend/ frontend/
+COPY docs/design/design-system/tokens.json docs/design/design-system/tokens.json
 COPY --from=api-generated /workspace/frontend/gen/ frontend/gen/
 ARG VITE_RYBBIT_ENABLED=false
 ENV VITE_RYBBIT_ENABLED=$VITE_RYBBIT_ENABLED
@@ -51,7 +55,7 @@ ENV VITE_ACCOUNT_AVATAR_ENABLED=$VITE_ACCOUNT_AVATAR_ENABLED
 ENV VITE_FILES_UPLOAD_ORIGIN=$VITE_FILES_UPLOAD_ORIGIN
 ENV VITE_FILES_DOWNLOAD_ORIGINS=$VITE_FILES_DOWNLOAD_ORIGINS
 WORKDIR /workspace/frontend
-RUN corepack enable && pnpm install --frozen-lockfile && pnpm --filter @marketmesh/storefront build
+RUN corepack enable && pnpm install --frozen-lockfile && node tools/generate-tokens-css.mjs && pnpm --filter @marketmesh/storefront build
 
 FROM alpine:3.23.5@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40
 RUN apk add --no-cache --upgrade 'libcrypto3=3.5.8-r0' 'libssl3=3.5.8-r0'
@@ -59,5 +63,6 @@ COPY --from=go-build /out/ /usr/local/bin/
 COPY --from=frontend-build /workspace/frontend/apps/storefront/dist/ /site/
 COPY backend/services/auth/migrations/*.up.sql /migrations/auth/
 COPY backend/services/user/migrations/*.up.sql /migrations/user/
+COPY backend/services/staff/migrations/*.up.sql /migrations/staff/
 COPY infra/account-local/launch.sh /usr/local/bin/launch
 ENTRYPOINT ["/usr/local/bin/launch"]

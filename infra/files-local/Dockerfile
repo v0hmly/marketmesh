@@ -9,6 +9,9 @@ COPY backend/api/gen/go/go.mod backend/api/gen/go/go.sum backend/api/gen/go/
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/
 COPY frontend/gen/package.json frontend/gen/package.json
 COPY frontend/apps/storefront/package.json frontend/apps/storefront/package.json
+COPY frontend/apps/staff/package.json frontend/apps/staff/package.json
+COPY frontend/packages/browser-client/package.json frontend/packages/browser-client/package.json
+COPY frontend/packages/design-system/package.json frontend/packages/design-system/package.json
 RUN printf 'go 1.27.0\nuse ./api/gen/go\n' > backend/go.work && corepack enable pnpm && \
     corepack prepare "$(node -p 'require("./frontend/package.json").packageManager')" --activate
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \

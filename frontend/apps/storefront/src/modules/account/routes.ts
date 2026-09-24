@@ -1,13 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router';
-import AuthView from './views/AuthView.vue';
-import AccountLayout from './views/AccountLayout.vue';
-import SecurityView from './views/SecurityView.vue';
-import SecurityLinkView from './views/SecurityLinkView.vue';
-import AddressesView from './views/AddressesView.vue';
-import OrdersView from './views/OrdersView.vue';
-import FavoritesView from './views/FavoritesView.vue';
-import ReviewsView from './views/ReviewsView.vue';
-import IdView from './views/IdView.vue';
+const AccountLayout = () => import('./views/AccountLayout.vue');
+const SecurityView = () => import('./views/SecurityView.vue');
+const AddressesView = () => import('./addresses/AddressesView.vue');
+const OrdersView = () => import('./orders/views/OrdersView.vue');
+const FavoritesView = () => import('./favorites/views/FavoritesView.vue');
+const ReviewsView = () => import('./reviews/views/ReviewsView.vue');
+const IdView = () => import('./profile/IdView.vue');
 import {
   addressesEnabled,
   favoritesEnabled,
@@ -46,26 +44,6 @@ const sections: RouteRecordRaw[] = [
 
 /** Маршруты области покупателя; композицию выполняет shell/router. */
 export const accountRoutes: RouteRecordRaw[] = [
-  {
-    path: '/account/security/:action(verify|reset|change_email|cancel_email)',
-    name: 'security-link',
-    component: SecurityLinkView,
-    meta: { area: 'buyer', section: 'Безопасность аккаунта' },
-  },
-  {
-    path: '/login',
-    name: 'login',
-    component: AuthView,
-    props: { mode: 'login' },
-    meta: { area: 'buyer', section: 'Вход' },
-  },
-  {
-    path: '/register',
-    name: 'register',
-    component: AuthView,
-    props: { mode: 'register' },
-    meta: { area: 'buyer', section: 'Регистрация' },
-  },
   {
     path: '/account',
     component: AccountLayout,

@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import { useRouteRecovery } from './recovery';
+const recovery = useRouteRecovery();
+import BrandMark from '@marketmesh/design-system/BrandMark.vue';
+import { useAccount } from './modules/account/api/controller';
 import { Code } from '@connectrpc/connect';
-import { authErrorReason } from './shared/api/errors';
+import { authErrorReason } from './modules/auth/public';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { settingsEnabled } from './shared/features';
-import { createThemeController } from './shell/theme';
+import { createThemeController } from './modules/account/settings/theme';
 import { areaTitle } from './shell/areas';
-import { useSession, themeKey } from './shell/context';
+import { useSession } from './shell/context';
+import { themeKey } from './modules/account/settings/context';
 
 const session = useSession();
-const theme = settingsEnabled ? createThemeController(session) : null;
+const theme = settingsEnabled ? createThemeController(session, useAccount()) : null;
 if (theme) provide(themeKey, theme);
 onBeforeUnmount(() => theme?.dispose());
 const route = useRoute();
@@ -80,8 +85,7 @@ onMounted(() => {
   <div class="site-wrap">
     <header class="site-header">
       <RouterLink class="brand" to="/account" aria-label="MarketMesh — личный кабинет"
-        ><span class="brand-mark" aria-hidden="true"><span>m</span></span
-        ><span>MarketMesh<span class="brand-dot">.</span></span></RouterLink
+        ><BrandMark /><span>MarketMesh<span class="brand-dot">.</span></span></RouterLink
       >
       <span class="brand-caption">Изделия мастеров. Личные истории.</span>
       <nav class="header-nav" aria-label="Основная навигация">
@@ -115,7 +119,15 @@ onMounted(() => {
           Повторить загрузку оформления
         </button>
       </div>
-      <RouterView />
+      <section v-if="recovery?.failedPath.value" class="card state-card" role="alert">
+        <h1 class="state-title">Не удалось открыть раздел.</h1>
+        <p>
+          Возможно, сайт обновился или пропало соединение. Обновите страницу, чтобы продолжить.
+          Несохранённые изменения будут потеряны.
+        </p>
+        <button class="button secondary" @click="recovery.reload()">Обновить страницу</button>
+      </section>
+      <RouterView v-else />
       <section
         v-if="signedIn && !inAccountLayout"
         class="session-controls"

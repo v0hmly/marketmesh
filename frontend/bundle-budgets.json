@@ -1,0 +1,10 @@
+{
+  "storefront": {
+    "initial": { "js": 294912, "css": 24576 },
+    "route": { "js": 360448, "css": 36864 }
+  },
+  "staff": {
+    "initial": { "js": 229376, "css": 24576 },
+    "route": { "js": 229376, "css": 24576 }
+  }
+}

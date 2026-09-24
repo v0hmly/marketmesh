@@ -11,9 +11,10 @@
 
 ## design-system
 
-Система извлечена из `frontend/apps/storefront/src/style.css` и его Vue-представлений кабинета,
-поэтому источником истины для уже написанного кода остаётся сам `style.css`. Для нового кода
-источник истины — `tokens.json`: любые новые значения сначала появляются там.
+Единственный источник значений — `design-system/tokens.json`. Генератор создаёт CSS
+для документации и `frontend/packages/design-system`; результаты не коммитятся.
+Storefront и staff используют этот пакет. Общие примитивы живут в нём, доменные
+стили — у модулей; старые CSS-имена сохранены через алиасы без второй палитры.
 
 | Файл | Назначение |
 | --- | --- |
@@ -31,7 +32,7 @@
 
 ### Знак `.brand-mark`
 
-Класс починен в `components/bundle.css` и в `frontend/apps/storefront/src/style.css`
+Класс починен в `components/bundle.css` и в `frontend/packages/design-system/style.css`
 (MM-82): коробка 35×35 в `border-box`, без `letter-spacing`, `padding-right` и
 `overflow`; буква центрируется флексом и `translateY(-0.06em)`. Бывший слой-поправка
 `.brand > .brand-mark` из `prototypes/tokens-vars.css` удалён — новые поправки поверх

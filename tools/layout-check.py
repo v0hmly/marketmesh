@@ -12,7 +12,7 @@ files = set(subprocess.check_output(
 ).decode().split("\0")) - {""}
 errors = []
 for name in sorted(files):
-    if (name.startswith("backend/api/gen/go/") and name.endswith((".pb.go", ".connect.go"))) or (name.startswith("frontend/gen/") and name.endswith("_pb.ts")) or name == "docs/design/design-system/tokens.css":
+    if (name.startswith("backend/api/gen/go/") and name.endswith((".pb.go", ".connect.go"))) or (name.startswith("frontend/gen/") and name.endswith("_pb.ts")) or name in {"docs/design/design-system/tokens.css", "frontend/packages/design-system/tokens.css"}:
         errors.append(f"{name}: generated artifacts must be ignored, not tracked")
     path = ROOT / name
     if not path.is_file():

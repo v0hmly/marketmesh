@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc --noEmit && vite build && node ../../tools/bundles.mjs storefront --check",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "vue-tsc --noEmit",
     "lint": "prettier --check src scripts tests *.ts *.js *.json *.html README.md && eslint . --max-warnings 0",
@@ -18,7 +18,9 @@
     "@connectrpc/connect-web": "2.2.0",
     "@marketmesh/api": "workspace:*",
     "vue": "3.5.42",
-    "vue-router": "4.6.4"
+    "vue-router": "4.6.4",
+    "@marketmesh/browser-client": "workspace:*",
+    "@marketmesh/design-system": "workspace:*"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

@@ -1,19 +1,6 @@
 import { shallowRef, readonly, type Ref } from 'vue';
 import { Code, ConnectError } from '@connectrpc/connect';
-import type {
-  PublicApi,
-  Profile,
-  ProfileInput,
-  AddressBook,
-  AddressWrite,
-  AddressSelection,
-  AccountSettings,
-  SettingsInput,
-  LoginChallenge,
-  LoginStart,
-} from '../../shared/api/types';
-import { isProfilePending } from '../../shared/api/errors';
-
+import type { SessionApi, LoginChallenge, LoginStart } from './contracts';
 export type SessionStatus =
   | 'unknown'
   | 'checking'
@@ -78,15 +65,16 @@ export interface SessionController {
   withSession<T>(guard: SessionGuard, action: () => Promise<T>): Promise<T>;
   /** Serializes a confirmed security mutation that ends the current session. */
   endSession<T>(action: () => Promise<T>, guard?: SessionGuard): Promise<T>;
-  readProfile(guard?: SessionGuard): Promise<Profile>;
-  updateProfile(input: ProfileInput, guard: SessionGuard): Promise<Profile>;
-  readSettings(guard: SessionGuard): Promise<AccountSettings>;
-  updateSettings(input: SettingsInput, guard: SessionGuard): Promise<AccountSettings>;
-  readAddresses(guard: SessionGuard): Promise<AddressBook>;
-  createAddress(input: AddressWrite, guard: SessionGuard): Promise<AddressBook>;
-  updateAddress(input: AddressWrite & AddressSelection, guard: SessionGuard): Promise<AddressBook>;
-  deleteAddress(input: AddressSelection, guard: SessionGuard): Promise<AddressBook>;
-  setDefaultAddress(input: AddressSelection, guard: SessionGuard): Promise<AddressBook>;
+  /** Reads data bound to the verified owner; retries only after a definitive expired access session. */
+  readOwned<T extends { subjectId: Uint8Array }>(
+    action: () => Promise<T>,
+    guard?: SessionGuard,
+  ): Promise<T>;
+  /** Writes once, under the shared lock, then validates the response owner. */
+  writeOwned<T extends { subjectId: Uint8Array }>(
+    action: () => Promise<T>,
+    guard: SessionGuard,
+  ): Promise<T>;
   dispose(): void;
 }
 export class GuardMismatchError extends Error {
@@ -180,7 +168,7 @@ const definitive = (error: unknown): boolean =>
   ].includes(error.code);
 
 export function createSessionController(
-  api: PublicApi,
+  api: SessionApi,
   options: { environment?: SessionEnvironment | null } = {},
 ): SessionController {
   const env = options.environment === undefined ? browserSessionEnvironment() : options.environment;
@@ -278,15 +266,11 @@ export function createSessionController(
       rejectIdentity(generation);
     knownIdentity = { generation, subjectId: id };
   }
-  async function probe(
-    generation: string,
-    apply = true,
-    propagatePending = false,
-  ): Promise<Profile | undefined> {
+  async function probe(generation: string, apply = true): Promise<void> {
     if (current.value.generation !== generation) throw new GuardMismatchError();
     const attempt = revision;
     try {
-      const profile = await api.getProfile();
+      const identity = await api.getIdentity();
       if (
         disposed ||
         attempt !== revision ||
@@ -294,17 +278,22 @@ export function createSessionController(
         readJournal()?.generation !== generation
       )
         throw new GuardMismatchError();
-      rememberIdentity(generation, subject(profile.subjectId));
-      if (apply) set('authenticated', generation, subject(profile.subjectId));
-      return profile;
-    } catch (error) {
-      if (disposed || attempt !== revision || error instanceof GuardMismatchError)
-        throw new GuardMismatchError();
-      if (isProfilePending(error)) {
+      if (!identity) {
         if (apply) set('profilePending', generation);
-        if (propagatePending) throw error;
         return;
       }
+      rememberIdentity(generation, subject(identity.subjectId));
+      if (apply) set('authenticated', generation, subject(identity.subjectId));
+    } catch (error) {
+      // A rejected request belongs to the same generation as a successful response.
+      // Never turn a late 401 from the previous owner into a refresh of the new owner.
+      if (
+        disposed ||
+        attempt !== revision ||
+        current.value.generation !== generation ||
+        error instanceof GuardMismatchError
+      )
+        throw new GuardMismatchError();
       throw error;
     }
   }
@@ -560,22 +549,16 @@ export function createSessionController(
       return result;
     });
   }
-  function guardedBook(guard: SessionGuard, action: () => Promise<AddressBook>) {
+  function owned<T extends { subjectId: Uint8Array }>(
+    guard: SessionGuard,
+    action: () => Promise<T>,
+  ) {
     return guarded(guard, async () => {
-      const book = await action();
+      const result = await action();
       assertGuard(guard, readJournal());
-      if (subject(book.subjectId) !== guard.subjectId) rejectIdentity(guard.generation);
-      rememberIdentity(guard.generation, subject(book.subjectId));
-      return book;
-    });
-  }
-  function guardedSettings(guard: SessionGuard, action: () => Promise<AccountSettings>) {
-    return guarded(guard, async () => {
-      const settings = await action();
-      assertGuard(guard, readJournal());
-      if (subject(settings.subjectId) !== guard.subjectId) rejectIdentity(guard.generation);
-      rememberIdentity(guard.generation, subject(settings.subjectId));
-      return settings;
+      if (subject(result.subjectId) !== guard.subjectId) rejectIdentity(guard.generation);
+      rememberIdentity(guard.generation, subject(result.subjectId));
+      return result;
     });
   }
   const unsubscribe =
@@ -718,7 +701,7 @@ export function createSessionController(
       // and confirmations without changing the current session generation.
       await available().lock('exclusive', () => api.register(identifier, password));
     },
-    async readProfile(guard) {
+    async readOwned(action, guard) {
       if (!guard && current.value.status !== 'authenticated') await bootstrap();
       if (!guard && current.value.status === 'profilePending') {
         const generation = current.value.generation;
@@ -726,31 +709,22 @@ export function createSessionController(
           const journal = readJournal();
           if (journal?.phase !== 'settled' || journal.generation !== generation)
             throw new GuardMismatchError();
-          const profile = await probe(generation, true, true);
-          if (!profile) throw new GuardMismatchError();
-          return profile;
+          const attempt = revision;
+          const result = await action();
+          if (
+            disposed ||
+            attempt !== revision ||
+            current.value.generation !== generation ||
+            readJournal()?.generation !== generation
+          )
+            throw new GuardMismatchError();
+          rememberIdentity(generation, subject(result.subjectId));
+          set('authenticated', generation, subject(result.subjectId));
+          return result;
         });
       }
       const selected = guard ?? capture();
-      const read = () =>
-        guarded(selected, async () => {
-          const profile = await api.getProfile();
-          if (subject(profile.subjectId) !== selected.subjectId)
-            rejectIdentity(selected.generation);
-          rememberIdentity(selected.generation, subject(profile.subjectId));
-          return profile;
-        });
-      try {
-        return await read();
-      } catch (error) {
-        if (!unauthenticated(error)) throw error;
-        // The shared lock has been released before bootstrap can request exclusive access.
-        await bootstrap();
-        return read();
-      }
-    },
-    async readSettings(guard) {
-      const read = () => guardedSettings(guard, () => api.getSettings());
+      const read = () => owned(selected, action);
       try {
         return await read();
       } catch (error) {
@@ -759,28 +733,7 @@ export function createSessionController(
         return read();
       }
     },
-    updateSettings: (input, guard) => guardedSettings(guard, () => api.updateSettings(input)),
-    async readAddresses(guard) {
-      const read = () => guardedBook(guard, () => api.listAddresses());
-      try {
-        return await read();
-      } catch (error) {
-        if (!unauthenticated(error)) throw error;
-        await bootstrap();
-        return read();
-      }
-    },
-    createAddress: (input, guard) => guardedBook(guard, () => api.createAddress(input)),
-    updateAddress: (input, guard) => guardedBook(guard, () => api.updateAddress(input)),
-    deleteAddress: (input, guard) => guardedBook(guard, () => api.deleteAddress(input)),
-    setDefaultAddress: (input, guard) => guardedBook(guard, () => api.setDefaultAddress(input)),
-    updateProfile: (input, guard) =>
-      guarded(guard, async () => {
-        const profile = await api.updateProfile(input);
-        if (subject(profile.subjectId) !== guard.subjectId) rejectIdentity(guard.generation);
-        rememberIdentity(guard.generation, subject(profile.subjectId));
-        return profile;
-      }),
+    writeOwned: (action, guard) => owned(guard, action),
     dispose() {
       disposed = true;
       revision++;

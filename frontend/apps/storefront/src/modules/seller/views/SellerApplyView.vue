@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import '../../auth/forms';
+import '../style.css';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { useSellerApi, useSession } from '../../../shell/context';
-import { sellerErrorReason } from '../../../shared/api/errors';
+import { useSellerApi } from '../context';
+import { useSession } from '../../../shell/context';
+import { sellerErrorReason } from '../errors';
+import { trimDisplayName } from '../../../shared/validation';
 import {
   passwordChecks,
-  trimDisplayName,
   validateEmail,
   validatePasswordRepeat,
   validatePasswordStrength,
-} from '../../../shared/validation';
+} from '../../auth/public';
 
 const session = useSession();
 const sellerApi = useSellerApi();

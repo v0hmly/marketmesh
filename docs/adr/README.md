@@ -32,6 +32,8 @@ ADR фиксирует одно значимое архитектурное ре
 | 0014 | [E2E topology на OrbStack VM с k3s вместо kind](0014-orbstack-vm-k3s-e2e-topology.md) | Принято | 2026-09-03 |
 | 0015 | [Приватный файловый data plane](0015-private-file-data-plane.md) | Принято для dev | 2026-09-22 |
 
+| 0016 | [Границы frontend-приложений](0016-frontend-application-boundaries.md) | Принято | 2026-09-24 |
+
 ## Как добавить решение
 
 1. Скопировать [шаблон](template.md).

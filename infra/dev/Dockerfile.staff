@@ -1,0 +1,49 @@
+# API generation stage: keep identical across Dockerfiles for BuildKit cache reuse.
+FROM node:24.19.0-bookworm@sha256:4196d66a565c6f195728d9952f161f4adfe2ad753052a08b7ec7f1c5a6bda42b AS api-node
+FROM golang:1.27.0-bookworm@sha256:ded31c68586d2e49e760acc2e65a884b23d032e9bbbed0ae0c55abd3fcaf4452 AS api-generated
+COPY --from=api-node /usr/local/ /usr/local/
+RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
+WORKDIR /workspace
+COPY api/ api/
+COPY backend/api/gen/go/go.mod backend/api/gen/go/go.sum backend/api/gen/go/
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml frontend/
+COPY frontend/gen/package.json frontend/gen/package.json
+COPY frontend/apps/storefront/package.json frontend/apps/storefront/package.json
+COPY frontend/apps/staff/package.json frontend/apps/staff/package.json
+COPY frontend/packages/browser-client/package.json frontend/packages/browser-client/package.json
+COPY frontend/packages/design-system/package.json frontend/packages/design-system/package.json
+RUN printf 'go 1.27.0\nuse ./api/gen/go\n' > backend/go.work && corepack enable pnpm && \
+    corepack prepare "$(node -p 'require("./frontend/package.json").packageManager')" --activate
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/workspace/.cache/protobuf \
+    bash api/tools/protobuf.sh generate
+
+FROM golang:1.27.0-bookworm@sha256:ded31c68586d2e49e760acc2e65a884b23d032e9bbbed0ae0c55abd3fcaf4452 AS go-build
+WORKDIR /workspace
+COPY --from=api-generated /workspace/backend/api/gen/go/ backend/api/gen/go/
+COPY backend/services/staff/ backend/services/staff/
+COPY backend/tools/staff-local/ backend/tools/staff-local/
+RUN printf 'go 1.27.0\nuse (\n ./api/gen/go\n ./services/staff\n ./tools/staff-local\n)\n' > backend/go.work
+ENV GOWORK=/workspace/backend/go.work
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -trimpath -o /out/staff ./backend/services/staff/cmd/staff && \
+    CGO_ENABLED=0 go build -trimpath -o /out/staff-local ./backend/tools/staff-local/cmd/staff-local
+
+FROM api-node AS frontend-build
+WORKDIR /workspace
+COPY frontend/ frontend/
+COPY --from=api-generated /workspace/frontend/gen/ frontend/gen/
+COPY docs/design/design-system/tokens.json docs/design/design-system/tokens.json
+WORKDIR /workspace/frontend
+RUN corepack enable && pnpm install --frozen-lockfile && node tools/generate-tokens-css.mjs && pnpm --filter @marketmesh/staff build
+
+FROM alpine:3.23.5@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40 AS runtime
+RUN apk add --no-cache --upgrade 'libcrypto3=3.5.8-r0' 'libssl3=3.5.8-r0'
+
+FROM runtime AS oidc-runtime
+COPY --from=go-build /out/staff-local /usr/local/bin/staff-local
+ENTRYPOINT ["/usr/local/bin/staff-local"]
+
+FROM runtime AS staff-runtime
+COPY --from=go-build /out/staff /usr/local/bin/staff
+COPY --from=frontend-build /workspace/frontend/apps/staff/dist/ /site/
+ENTRYPOINT ["/usr/local/bin/staff"]

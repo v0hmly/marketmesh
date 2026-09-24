@@ -9,9 +9,9 @@
   "scripts": {
     "build": "pnpm run generate && pnpm --recursive --if-present run build",
     "lint": "pnpm run generate && pnpm --recursive --if-present run lint",
-    "test": "pnpm run generate && pnpm --recursive --if-present run test",
+    "test": "pnpm run generate && node --test tools/architecture/*.test.mjs && pnpm --recursive --if-present run test",
     "typecheck": "pnpm run generate && pnpm --recursive --if-present run typecheck",
-    "generate": "bash ../api/tools/protobuf.sh generate"
+    "generate": "node tools/generate-tokens-css.mjs && bash ../api/tools/protobuf.sh generate"
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-es": "2.14.0"

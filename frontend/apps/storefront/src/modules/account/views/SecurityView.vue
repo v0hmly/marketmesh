@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import '../style.css';
 import { computed } from 'vue';
 import { useSession } from '../../../shell/context';
-import AccountSecurity from '../components/AccountSecurity.vue';
+import { AccountSecurity } from '../../auth/ui';
 import ProfilePending from '../components/ProfilePending.vue';
 
 /** Отдельный раздел безопасности — только в сборке без MarketMesh ID. */

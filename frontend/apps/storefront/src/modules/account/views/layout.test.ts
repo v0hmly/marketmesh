@@ -1,10 +1,11 @@
+import { accountKey } from '../api/controller';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { shallowRef } from 'vue';
 import { createMemoryHistory } from 'vue-router';
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { AccountSettings, Profile, ThemePreference } from '../../../shared/api/types';
-import type { SessionController, SessionState } from '../../../shell/session';
+import type { AccountSettings, Profile, ThemePreference } from '../../../testing/session';
+import type { SessionController, SessionState } from '../../../testing/session';
 import { sessionKey } from '../../../shell/context';
 import { createStorefrontRouter } from '../../../shell/router';
 import App from '../../../App.vue';
@@ -29,7 +30,7 @@ const security = vi.hoisted(() => ({
   revokeSession: vi.fn(),
   logoutAll: vi.fn(),
 }));
-vi.mock('../security/api', async (original) => ({
+vi.mock('../../auth/security/api', async (original) => ({
   ...(await original<object>()),
   createSecurityApi: () => security,
 }));
@@ -78,6 +79,8 @@ function fixture(initial: SessionState['status'] = 'authenticated') {
       generation: state.value.generation,
       subjectId: state.value.subjectId,
     })),
+    readOwned: vi.fn(async (action) => action()),
+    writeOwned: vi.fn(async (action) => action()),
     readProfile: vi.fn().mockResolvedValue(profile()),
     updateProfile: vi.fn(),
     readAddresses: vi.fn(),
@@ -110,7 +113,10 @@ async function open(session: SessionController, path = '/account/orders') {
   await router.push(path);
   await router.isReady();
   const wrapper = mount(App, {
-    global: { plugins: [router], provide: { [sessionKey as symbol]: session } },
+    global: {
+      plugins: [router],
+      provide: { [sessionKey as symbol]: session, [accountKey as symbol]: session },
+    },
   });
   mounted.push(wrapper);
   await flushPromises();
@@ -417,7 +423,10 @@ describe('theme picker in the sidebar', () => {
     await router.isReady();
     const wrapper = mount(App, {
       attachTo: document.body,
-      global: { plugins: [router], provide: { [sessionKey as symbol]: session } },
+      global: {
+        plugins: [router],
+        provide: { [sessionKey as symbol]: session, [accountKey as symbol]: session },
+      },
     });
     mounted.push(wrapper);
     await flushPromises();

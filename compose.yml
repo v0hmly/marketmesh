@@ -21,9 +21,12 @@ services:
       internal: {aliases: [pg-primary]}
       files-internal: {aliases: [pg-primary]}
       storage: {aliases: [pg-primary]}
+      staff-storage: {aliases: [pg-primary]}
     volumes:
       - postgres-primary:/var/lib/postgresql
       - ./infra/dev/postgres/primary.sh:/scripts/primary.sh:ro
+      - ./infra/dev/postgres/pg_hba.conf:/scripts/pg_hba.conf:ro
+      - ${MM_SHARED_STATE}/staff-init.sql:/run/staff-init.sql:ro
       - ./infra/dev/postgres/init.sh:/docker-entrypoint-initdb.d/10-shared.sh:ro
       - ./backend/services/files/migrations:/migrations/files:ro
       - ${MM_SHARED_STATE}/postgres-init.sql:/run/shared-init.sql:ro
@@ -42,9 +45,11 @@ services:
       internal: {aliases: [pg-replica]}
       files-internal: {aliases: [pg-replica]}
       storage: {aliases: [pg-replica]}
+      staff-storage: {aliases: [pg-replica]}
     volumes:
       - postgres-replica:/var/lib/postgresql
       - ./infra/dev/postgres/replica.sh:/scripts/replica.sh:ro
+      - ./infra/dev/postgres/pg_hba.conf:/scripts/pg_hba.conf:ro
       - ${MM_SHARED_STATE}/replication.pgpass:/run/replication.pgpass:ro
       - ${MM_FILES_STATE}/pki/ca.crt:/pki/ca.crt:ro
       - ${MM_FILES_STATE}/pki/pg-replica.crt:/pki/server.crt:ro
@@ -174,11 +179,51 @@ services:
     logging: {driver: json-file, options: {max-size: 1m, max-file: "1"}}
 
 
+  staff-oidc:
+    image: marketmesh-dev-staff-oidc:local
+    build: {context: ., dockerfile: infra/dev/Dockerfile.staff, target: oidc-runtime}
+    user: "${MM_FILES_UID}:${MM_FILES_GID}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment: {OIDC_CONFIG_FILE: /secrets/config.json}
+    volumes: ["${MM_DEV_ROOT}/.cache/dev-stack/staff/idp:/secrets:ro"]
+    ports: ["127.0.0.1:18445:18445"]
+    networks:
+      staff-corporate: {aliases: [oidc.localhost]}
+    healthcheck:
+      test: [CMD, staff-local, health]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  staff:
+    image: marketmesh-dev-staff:local
+    build: {context: ., dockerfile: infra/dev/Dockerfile.staff, target: staff-runtime}
+    user: "${MM_FILES_UID}:${MM_FILES_GID}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment: {STAFF_CONFIG_FILE: /secrets/config.json}
+    volumes: ["${MM_DEV_ROOT}/.cache/dev-stack/staff/service:/secrets:ro"]
+    ports: ["127.0.0.1:18444:18444"]
+    networks:
+      staff-corporate: {aliases: [staff.localhost]}
+      staff-storage: {}
+    depends_on:
+      provision: {condition: service_completed_successfully}
+      staff-oidc: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, staff, health]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   browser:
     extends: {file: infra/account-local/compose.yml, service: browser}
     profiles: [test]
     networks: !reset []
     network_mode: host
+    extra_hosts: ["staff.localhost:127.0.0.1", "oidc.localhost:127.0.0.1"]
     environment:
       BASE_URL: https://localhost:18443
       MAILPIT_URL: http://localhost:18025
@@ -187,6 +232,8 @@ services:
       ACCOUNT_E2E_ANALYTICS: ${ACCOUNT_RYBBIT_ENABLED:-false}
       PUBLIC_FILES_CA: /certs/files-ca.pem
       PUBLIC_COMBINED_CA: /certs/combined-ca.pem
+    volumes:
+      - ${MM_DEV_ROOT}/.cache/dev-stack/staff/browser:/staff-fixture:ro
 
   clickhouse:
     image: clickhouse/clickhouse-server:26.3.17.4
@@ -263,6 +310,15 @@ services:
     profiles: [observability, full]
 
 networks:
+  staff-corporate:
+    # Bridge gateway is required for loopback port publication in OrbStack.
+    # Staff also enforces this source subnet, since OrbStack routes published ports across bridges.
+    internal: false
+    ipam: {config: [{subnet: 172.31.87.0/24}]}
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
+  staff-storage:
+    internal: true
+    labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
   internal:
     internal: true
     labels: {marketmesh.dev.workspace: "${MM_DEV_ROOT}"}
