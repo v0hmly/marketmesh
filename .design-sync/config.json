@@ -1,0 +1,13 @@
+{
+  "projectId": "2ee5d061-7b0a-43e2-8462-caf59665cb2b",
+  "shape": "package",
+  "pkg": "@marketmesh/design-system",
+  "globalName": "MarketMesh",
+  "buildCmd": "node frontend/tools/generate-tokens-css.mjs && echo 'export {};' > frontend/packages/design-system/node_modules/.ds-empty-entry.mjs && .ds-sync/node_modules/.bin/esbuild frontend/packages/design-system/style.css --bundle --outfile=frontend/packages/design-system/node_modules/.ds-style.css --log-level=warning",
+  "cssEntry": "node_modules/.ds-style.css",
+  "guidelinesGlob": [
+    "../../../docs/design/design-system/README.md",
+    "../../../docs/design/design-system/components/*.md"
+  ],
+  "readmeHeader": ".design-sync/conventions.md"
+}
