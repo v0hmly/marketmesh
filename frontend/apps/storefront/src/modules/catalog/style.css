@@ -1,0 +1,270 @@
+/* Витрина (MM-125): шапка с поиском и корзиной, лента партий, подвал с обратной связью.
+   Только токены и классы общей дизайн-системы; прототип — docs/design/prototypes (GuestHome). */
+
+.site-header.storefront-header {
+  height: auto;
+  min-height: 116px;
+  flex-wrap: wrap;
+  row-gap: 16px;
+  padding: 24px 0;
+}
+.storefront-search {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.storefront-search input {
+  min-width: 0;
+}
+.storefront-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.storefront-cart {
+  min-height: 45px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.storefront-cart:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.storefront-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.storefront {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.storefront-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.storefront-feed:focus {
+  outline: none;
+}
+.storefront-feed-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.storefront-feed-heading .subtle,
+.storefront-feedback .subtle {
+  margin: 8px 0 0;
+}
+.storefront-feed-heading .text-button {
+  min-height: 0;
+  padding: 0 4px;
+}
+.storefront-sort {
+  width: 232px;
+  margin-bottom: 0;
+}
+.storefront-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+.storefront-tile {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.storefront-photo {
+  position: relative;
+}
+.storefront-photo .sample-photo {
+  height: 240px;
+}
+.storefront-favorite {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--input-border);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--muted);
+  cursor: pointer;
+}
+.storefront-favorite:hover {
+  border-color: var(--input-hover);
+}
+.storefront-favorite[aria-pressed='true'] {
+  color: var(--green);
+}
+.storefront-tile-text {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.storefront-tile h3 {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.55;
+}
+.storefront-price {
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.storefront-meta {
+  font-size: 0.73rem;
+  color: var(--muted);
+}
+.storefront-more {
+  align-self: center;
+}
+
+.storefront-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+  gap: 64px;
+  align-items: start;
+  padding-top: 56px;
+  border-top: 1px solid var(--line);
+}
+.storefront-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+.storefront-links .eyebrow {
+  margin-bottom: 16px;
+}
+.storefront-links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.875rem;
+}
+.storefront-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.storefront-feedback > div,
+.storefront-feedback form {
+  align-self: stretch;
+}
+.storefront-feedback h2 {
+  font-size: 1.15rem;
+}
+.storefront-feedback .field {
+  margin-bottom: 20px;
+}
+.storefront-feedback-sent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.storefront-cart-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.storefront-cart-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+.storefront-cart-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.storefront-cart-amount .text-button {
+  min-height: 0;
+  padding: 4px;
+  font-size: 0.73rem;
+}
+.storefront-cart-note {
+  margin: 0;
+  font-size: 0.73rem;
+}
+.storefront-cart-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 1000px) {
+  .storefront-search {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .storefront-nav {
+    margin-left: auto;
+  }
+  .storefront-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .storefront-footer {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-header.storefront-header {
+    min-height: 87px;
+    padding: 16px 0;
+  }
+  .storefront-catalog {
+    display: none;
+  }
+  .storefront-nav {
+    gap: 12px;
+  }
+  .storefront-grid,
+  .storefront-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .storefront-sort {
+    width: 100%;
+  }
+  .storefront-feedback {
+    padding: 16px;
+  }
+}
