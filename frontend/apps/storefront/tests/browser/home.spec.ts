@@ -20,10 +20,13 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
 }) => {
   await guestApi(context);
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Новые партии' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Новые партии от мастеров.' })).toBeVisible();
   const tiles = page.getByRole('list', { name: 'Партии' }).getByRole('listitem');
   await expect(tiles).toHaveCount(8);
   await expect(page.getByText('В партии 8 из 10')).toBeVisible();
+  // Бирка партии: полная партия и малый остаток называются по-разному.
+  await expect(page.getByText('Вся партия: 7')).toBeVisible();
+  await expect(page.getByText('Осталось 2 из 6')).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole('button', { name: 'Показать ещё партии' }).click();
@@ -76,7 +79,7 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await page.getByRole('button', { name: 'Найти' }).click();
   await expect(page.getByRole('heading', { name: 'Ничего не нашли' })).toBeVisible();
   await page.getByRole('button', { name: 'Сбросить поиск' }).click();
-  await expect(page.getByRole('heading', { name: 'Новые партии' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Поиск:/ })).toBeHidden();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

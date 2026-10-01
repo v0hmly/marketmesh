@@ -91,5 +91,6 @@ export function money(value: number) {
 export function stockText(left: number, batch: number) {
   if (left === 0) return 'Партия распродана';
   if (left <= 2) return `Осталось ${left} из ${batch}`;
+  if (left === batch) return `Вся партия: ${batch}`;
   return `В партии ${left} из ${batch}`;
 }
