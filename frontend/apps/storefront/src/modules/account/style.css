@@ -215,7 +215,7 @@
 }
 .account-nav .account-link-active {
   font-weight: 600;
-  color: var(--green);
+  color: var(--link);
   background: var(--identity-bg);
 }
 .account-nav-count {

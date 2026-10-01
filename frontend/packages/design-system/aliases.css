@@ -1,5 +1,6 @@
 :root {
   --green: var(--action-primary);
+  --link: var(--text-link);
   --ink: var(--text-primary);
   --muted: var(--text-secondary);
   --line: var(--border-subtle);
