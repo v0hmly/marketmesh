@@ -23,6 +23,7 @@ frontend/
     modules/account/       # каркас кабинета и возможности покупателя
       profile/ addresses/ settings/ avatar/ orders/ favorites/ reviews/
     modules/seller/        # заявка, вход, кабинет продавца
+    modules/catalog/       # витрина: главная, поиск, корзина (MM-125)
     shared/                # технические утилиты без доменных фасадов
   apps/staff/src/           # корпоративные SSO и приглашения, без buyer bootstrap
   packages/browser-client/ # общий транспорт HTTPS/Connect, без хранения токенов

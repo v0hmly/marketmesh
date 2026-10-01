@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useSession } from '../../../shell/context';
 import { sampleOrders, sendSampleFeedback } from '../sample-data';
 import { useStorefront } from '../store';
 
 const props = defineProps<{ signedIn: boolean }>();
 const store = useStorefront();
+const session = useSession();
 const limit = 2000;
 const topic = ref<'idea' | 'bug' | 'order' | 'other'>('idea');
 const order = ref('');
@@ -55,6 +57,8 @@ function again() {
   attempted.value = false;
   ticket.value = '';
 }
+// Черновик и номер обращения принадлежат сеансу: смена аккаунта начинает форму заново.
+watch(() => session.state.value.generation, again);
 onBeforeUnmount(() => {
   active = false;
 });

@@ -33,13 +33,7 @@ let active = true;
 const signedIn = computed(() =>
   ['authenticated', 'profilePending'].includes(session.state.value.status),
 );
-const categories = computed(() => [
-  { value: 'all' as const, label: 'Все', count: items.value?.length ?? 0 },
-  ...sampleCategories.map((item) => ({
-    ...item,
-    count: items.value?.filter((batch) => batch.category === item.value).length ?? 0,
-  })),
-]);
+const categories = [{ value: 'all' as const, label: 'Все' }, ...sampleCategories];
 const matching = computed(() => {
   const query = store.state.query.toLocaleLowerCase('ru-RU');
   const list = (items.value ?? []).filter(
@@ -67,7 +61,9 @@ async function read() {
   failure.value = '';
   try {
     const value = await loadSampleBatches();
-    if (active) items.value = value;
+    if (!active) return;
+    items.value = value;
+    store.retainInCart(value.map((item) => item.id));
   } catch {
     if (active)
       failure.value = 'Не удалось загрузить витрину. Мы ничего не меняли. Повторите загрузку.';
@@ -134,6 +130,13 @@ watch(
   () => {
     favorites.value = [];
     notified.value = [];
+    store.closeDialog();
+  },
+);
+watch(
+  () => store.state.query,
+  () => {
+    more.value = false;
   },
 );
 void read();
@@ -208,7 +211,7 @@ onBeforeUnmount(() => {
         <p>
           {{
             store.state.query
-              ? 'Проверьте написание или поищите по мастерской и материалу.'
+              ? 'Проверьте написание или поищите по названию мастерской.'
               : 'Загляните позже или посмотрите другие категории.'
           }}
         </p>
@@ -294,6 +297,7 @@ onBeforeUnmount(() => {
     <ConfirmDialog
       v-if="dialog?.kind === 'signIn'"
       title="Вход в MarketMesh ID"
+      :return-focus="store.state.returnFocus"
       confirm-label="Войти"
       cancel-label="Не сейчас"
       @cancel="store.closeDialog()"
@@ -308,6 +312,7 @@ onBeforeUnmount(() => {
     <ConfirmDialog
       v-else-if="dialog?.kind === 'cart'"
       title="Корзина"
+      :return-focus="store.state.returnFocus"
       :confirm-label="cartItems.length ? 'Оформить заказ' : 'Выбрать изделия'"
       cancel-label="Продолжить покупки"
       @cancel="store.closeDialog()"

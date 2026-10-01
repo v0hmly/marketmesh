@@ -1,4 +1,4 @@
-import { reactive } from 'vue';
+import { markRaw, reactive } from 'vue';
 
 /**
  * Общее состояние витрины: шапка (поиск, корзина) и лента — соседние виды
@@ -33,7 +33,15 @@ const state = reactive({
   notice: '',
   cart: readCart(),
   dialog: null as StorefrontDialog,
+  /** Куда вернуть фокус после диалогов: окно входа из корзины возвращает к кнопке корзины. */
+  returnFocus: null as HTMLElement | null,
 });
+
+function rememberTrigger() {
+  if (state.dialog) return;
+  state.returnFocus =
+    document.activeElement instanceof HTMLElement ? markRaw(document.activeElement) : null;
+}
 
 export function useStorefront() {
   return {
@@ -48,14 +56,23 @@ export function useStorefront() {
       writeCart(state.cart);
       return true;
     },
+    /** Убирает из корзины изделия, которых больше нет на витрине. */
+    retainInCart(known: string[]) {
+      const kept = state.cart.filter((id) => known.includes(id));
+      if (kept.length === state.cart.length) return;
+      state.cart = kept;
+      writeCart(kept);
+    },
     removeFromCart(id: string) {
       state.cart = state.cart.filter((item) => item !== id);
       writeCart(state.cart);
     },
     openCart() {
+      rememberTrigger();
       state.dialog = { kind: 'cart' };
     },
     askToSignIn(reason: string) {
+      rememberTrigger();
       state.dialog = { kind: 'signIn', reason };
     },
     closeDialog() {

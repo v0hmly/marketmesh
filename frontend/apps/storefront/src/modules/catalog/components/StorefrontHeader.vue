@@ -23,15 +23,10 @@ watch(
   <a class="button secondary storefront-catalog" href="#catalog">Каталог</a>
   <form class="storefront-search" role="search" @submit.prevent="store.search(draft)">
     <label for="storefront-query" class="visually-hidden">Поиск по изделиям и мастерским</label>
-    <input
-      id="storefront-query"
-      v-model="draft"
-      type="search"
-      placeholder="Изделия, мастерские, материалы"
-    />
+    <input id="storefront-query" v-model="draft" type="search" placeholder="Изделия и мастерские" />
     <button type="submit" class="button secondary">Найти</button>
   </form>
-  <nav class="storefront-nav" aria-label="Ваше">
+  <nav class="storefront-nav" aria-label="Покупки и аккаунт">
     <template v-if="signedIn"
       ><RouterLink v-if="favoritesEnabled" class="nav-link" to="/account/favorites"
         >Избранное</RouterLink

@@ -45,8 +45,11 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await cart.getByRole('button', { name: 'Оформить заказ' }).click();
   const signIn = page.getByRole('dialog', { name: 'Вход в MarketMesh ID' });
   await expect(signIn).toContainText('Войдите, чтобы оформить заказ.');
+  await expect(signIn.getByRole('button', { name: 'Не сейчас' })).toBeFocused();
   await signIn.getByRole('button', { name: 'Не сейчас' }).click();
   await expect(signIn).toBeHidden();
+  // Окно входа открыто из корзины: фокус возвращается к кнопке корзины в шапке.
+  await expect(page.getByRole('button', { name: /^Корзина/ })).toBeFocused();
 
   await page.reload();
   await expect(page.getByRole('button', { name: /^Корзина/ })).toContainText('1');
