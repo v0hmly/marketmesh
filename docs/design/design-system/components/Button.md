@@ -10,4 +10,4 @@ The secondary button's fill sits within 1.02:1 of the page ground on purpose, so
 
 Disabled buttons drop to 55% opacity and switch their label to a present-tense progressive form ("Сохраняем…"), never a spinner or a separate loading component.
 
-Focus is the system-wide two-tone ring: 3px `ring-focus` outside, 3px `ring-focus-inner` hugging the control. Both halves are required — the olive alone clears 3:1 by only a tenth of a point on light grounds. Never remove or restyle it.
+Focus is the system-wide two-tone ring: 3px `ring-focus` outside, 3px `ring-focus-inner` hugging the control. Both halves are required — the light-mode ochre alone reads only about 2.2:1 on pale grounds. Never remove or restyle it.
