@@ -17,6 +17,8 @@ export interface SampleBatch {
   /** Размер партии. */
   batch: number;
   category: SampleCategory;
+  /** Дата публикации партии, ISO. */
+  published: string;
 }
 
 export const sampleCategories: { value: SampleCategory; label: string }[] = [
@@ -37,6 +39,7 @@ const batches: SampleBatch[] = [
     left: 8,
     batch: 10,
     category: 'clothes',
+    published: '2026-09-30',
   },
   {
     id: 'p2',
@@ -46,6 +49,7 @@ const batches: SampleBatch[] = [
     left: 5,
     batch: 12,
     category: 'ceramics',
+    published: '2026-09-30',
   },
   {
     id: 'p3',
@@ -55,6 +59,7 @@ const batches: SampleBatch[] = [
     left: 2,
     batch: 6,
     category: 'clothes',
+    published: '2026-09-29',
   },
   {
     id: 'p4',
@@ -64,6 +69,7 @@ const batches: SampleBatch[] = [
     left: 7,
     batch: 7,
     category: 'textile',
+    published: '2026-09-29',
   },
   {
     id: 'p5',
@@ -73,6 +79,7 @@ const batches: SampleBatch[] = [
     left: 18,
     batch: 20,
     category: 'candles',
+    published: '2026-09-28',
   },
   {
     id: 'p6',
@@ -82,6 +89,7 @@ const batches: SampleBatch[] = [
     left: 4,
     batch: 5,
     category: 'wood',
+    published: '2026-09-28',
   },
   {
     id: 'p7',
@@ -91,6 +99,7 @@ const batches: SampleBatch[] = [
     left: 30,
     batch: 40,
     category: 'paper',
+    published: '2026-09-27',
   },
   {
     id: 'p8',
@@ -100,6 +109,7 @@ const batches: SampleBatch[] = [
     left: 0,
     batch: 8,
     category: 'ceramics',
+    published: '2026-09-26',
   },
   {
     id: 'p9',
@@ -109,6 +119,7 @@ const batches: SampleBatch[] = [
     left: 6,
     batch: 6,
     category: 'clothes',
+    published: '2026-09-26',
   },
   {
     id: 'p10',
@@ -118,6 +129,7 @@ const batches: SampleBatch[] = [
     left: 9,
     batch: 10,
     category: 'ceramics',
+    published: '2026-09-25',
   },
   {
     id: 'p11',
@@ -127,6 +139,7 @@ const batches: SampleBatch[] = [
     left: 14,
     batch: 15,
     category: 'textile',
+    published: '2026-09-25',
   },
   {
     id: 'p12',
@@ -136,6 +149,7 @@ const batches: SampleBatch[] = [
     left: 3,
     batch: 8,
     category: 'wood',
+    published: '2026-09-24',
   },
 ];
 

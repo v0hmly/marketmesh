@@ -12,7 +12,7 @@ import {
   type SampleBatch,
   type SampleCategory,
 } from '../sample-data';
-import { money, stockText, useStorefront } from '../store';
+import { batchDateText, lowStock, money, stockText, useStorefront } from '../store';
 
 type Sort = 'new' | 'cheap' | 'expensive';
 const pageSize = 8;
@@ -156,8 +156,7 @@ onBeforeUnmount(() => {
         <div class="storefront-heading">
           <h1 id="feed-title">Новые партии от мастеров.</h1>
           <p class="lede">
-            Готовые изделия небольшими партиями, опубликованные за последнюю неделю. На каждой
-            карточке видно, сколько осталось.
+            Готовые изделия небольшими партиями, опубликованные за последнюю неделю.
           </p>
         </div>
         <div class="field storefront-sort">
@@ -253,9 +252,15 @@ onBeforeUnmount(() => {
           </div>
           <div
             class="storefront-tag"
-            :class="{ 'storefront-tag-low': item.left > 0 && item.left <= 2 }"
+            :class="{
+              'storefront-tag-low': item.left > 0 && item.left <= 2,
+              'storefront-tag-ending': lowStock(item.left, item.batch),
+            }"
           >
-            <span>{{ stockText(item.left, item.batch) }}</span>
+            <span
+              >{{ stockText(item.left, item.batch) }} ·
+              {{ batchDateText(item.published, stockText(item.left, item.batch)) }}</span
+            >
             <span class="storefront-tag-meter" aria-hidden="true"
               ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
             ></span>

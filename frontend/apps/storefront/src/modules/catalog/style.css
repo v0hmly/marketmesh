@@ -134,8 +134,9 @@
 .storefront-favorite[aria-pressed='true'] {
   color: var(--green);
 }
-/* Бирка партии: остаток — главный сигнал карточки (MM-126). Шкала дублирует текст и
-   декоративна: --brand-accent не держит 3:1, смысл несёт подпись. */
+/* Бирка партии: остаток — главный сигнал карточки (MM-126). Шкала графитовая; охра
+   (--low-stock) только у заканчивающейся партии. Обе держат 3:1 к карточке и дорожке,
+   но смысл несёт подпись рядом, шкала её лишь дублирует. */
 .storefront-tag {
   display: flex;
   flex-direction: column;
@@ -157,7 +158,10 @@
 .storefront-tag-meter > span {
   display: block;
   height: 100%;
-  background: var(--brand-accent);
+  background: var(--ink);
+}
+.storefront-tag-ending .storefront-tag-meter > span {
+  background: var(--low-stock);
 }
 .storefront-sold-out .sample-photo {
   background: var(--disabled-bg);

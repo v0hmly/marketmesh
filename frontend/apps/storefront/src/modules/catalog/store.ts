@@ -88,6 +88,22 @@ export function money(value: number) {
   return `${value.toLocaleString('ru-RU')} ₽`;
 }
 
+/**
+ * Партия заканчивается: два изделия или меньше и не больше трети партии, чтобы
+ * маленькая партия («2 из 3») не горела охрой всегда. Только тогда шкала охряная.
+ */
+export function lowStock(left: number, batch: number) {
+  return left > 0 && left <= 2 && left * 3 <= batch;
+}
+
+const batchDay = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
+
+/** Подпись даты партии: «партия от 24 сентября», а если остаток уже называет партию — «от 24 сентября». */
+export function batchDateText(published: string, stock: string) {
+  const day = batchDay.format(new Date(`${published}T12:00:00`));
+  return /парти/i.test(stock) ? `от ${day}` : `партия от ${day}`;
+}
+
 export function stockText(left: number, batch: number) {
   if (left === 0) return 'Партия распродана';
   if (left <= 2) return `Осталось ${left} из ${batch}`;

@@ -26,6 +26,7 @@
   --action-text-hover: #f1efe8;
   --status-danger: #a3261f;
   --status-pending: #946a12;
+  --status-low-stock: #9e7110;
   --ring-focus: #d89a1a;
   --ring-focus-inner: #111110;
   --brand-accent: #d89a1a;
@@ -92,6 +93,8 @@
     --action-text-hover: #31302d;
     --status-danger: #ffb1a6;
     --status-pending: #e0b75e;
+  --status-low-stock: #f2b43a;
+    --status-low-stock: #f2b43a;
     --ring-focus: #f2b43a;
     --ring-focus-inner: #1a1a19;
     --brand-accent: #e0a22a;

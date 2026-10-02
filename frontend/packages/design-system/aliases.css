@@ -35,6 +35,7 @@
   --success-border: var(--border-success);
   --success-ink: var(--on-surface-success);
   --pending: var(--status-pending);
+  --low-stock: var(--status-low-stock);
   --reconcile-border: var(--border-reconcile);
   --reconcile-bg: var(--surface-reconcile);
   --shadow: var(--shadow-color-card);
