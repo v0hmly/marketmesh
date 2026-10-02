@@ -138,6 +138,6 @@ export function batchDateText(published: string, stock: string) {
 export function stockText(left: number, batch: number) {
   if (left === 0) return 'Партия распродана';
   if (left <= 2) return `Осталось ${left} из ${batch}`;
-  if (left === batch) return `Вся партия: ${batch}`;
+  if (left === batch) return `Партия из ${batch}, вся в наличии`;
   return `В партии ${left} из ${batch}`;
 }

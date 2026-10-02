@@ -285,7 +285,7 @@ onBeforeUnmount(() => {
             }"
           >
             <span>{{ tagText(item) }}</span>
-            <span class="storefront-tag-meter" aria-hidden="true"
+            <span v-if="item.left < item.batch" class="storefront-tag-meter" aria-hidden="true"
               ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
             ></span>
           </div>
