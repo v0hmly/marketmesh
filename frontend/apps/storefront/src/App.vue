@@ -7,7 +7,7 @@ import { Code } from '@connectrpc/connect';
 import { authErrorReason } from './modules/auth/public';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { settingsEnabled } from './shared/features';
+import { homeEnabled, settingsEnabled } from './shared/features';
 import { createThemeController } from './modules/account/settings/theme';
 import { areaTitle } from './shell/areas';
 import { useSession } from './shell/context';
@@ -29,6 +29,8 @@ watch(
 );
 /** Кабинет покупателя выводит выход в своей боковой панели (MM-97). */
 const inAccountLayout = computed(() => route.matched[0]?.path === '/account');
+/** Витрина выводит свою шапку с поиском и корзиной; панель выхода ей не нужна (MM-125). */
+const storefront = computed(() => route.meta.storefront === true);
 /** Подвал называет текущее место: раздел маршрута или его область. */
 const footerSection = computed(
   () => route.meta.section ?? (route.meta.area ? areaTitle[route.meta.area] : 'MarketMesh'),
@@ -83,12 +85,16 @@ onMounted(() => {
 <template>
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <div class="site-wrap">
-    <header class="site-header">
-      <RouterLink class="brand" to="/account" aria-label="MarketMesh — личный кабинет"
+    <header class="site-header" :class="{ 'storefront-header': storefront }">
+      <RouterLink
+        class="brand"
+        :to="homeEnabled ? '/' : '/account'"
+        :aria-label="homeEnabled ? 'MarketMesh — витрина' : 'MarketMesh — личный кабинет'"
         ><BrandMark /><span>MarketMesh<span class="brand-dot">.</span></span></RouterLink
       >
-      <span class="brand-caption">Изделия мастеров. Личные истории.</span>
-      <nav class="header-nav" aria-label="Основная навигация">
+      <RouterView v-if="storefront" name="header" />
+      <span v-if="!storefront" class="brand-caption">Изделия мастеров. Личные истории.</span>
+      <nav v-if="!storefront" class="header-nav" aria-label="Основная навигация">
         <RouterLink v-if="signedIn" class="nav-link" to="/account">Личный кабинет</RouterLink>
         <template v-else
           ><RouterLink class="nav-link" to="/login">Вход</RouterLink
@@ -129,7 +135,7 @@ onMounted(() => {
       </section>
       <RouterView v-else />
       <section
-        v-if="signedIn && !inAccountLayout"
+        v-if="signedIn && !inAccountLayout && !storefront"
         class="session-controls"
         aria-label="Управление сессией"
       >

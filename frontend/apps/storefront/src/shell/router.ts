@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouterHistory } from 'vue-router';
 import { authRoutes } from '../modules/auth/routes';
 import { accountRoutes } from '../modules/account/routes';
 import { sellerRoutes } from '../modules/seller/routes';
+import { catalogRoutes } from '../modules/catalog/routes';
 
 /**
  * Композиция маршрутов продуктовых областей (ADR-0010): shell собирает
@@ -12,7 +13,7 @@ export function createStorefrontRouter(history: RouterHistory = createWebHistory
   return createRouter({
     history,
     routes: [
-      { path: '/', redirect: '/account' },
+      ...(catalogRoutes.length ? catalogRoutes : [{ path: '/', redirect: '/account' }]),
       ...authRoutes,
       ...accountRoutes,
       ...sellerRoutes,
