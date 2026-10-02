@@ -11,10 +11,9 @@ const draft = ref(store.state.query);
 const signedIn = computed(() =>
   ['authenticated', 'profilePending'].includes(session.state.value.status),
 );
-/** Имя кнопки для скринридера: «Корзина: 2 изделия», а не «Корзина 2». */
+/** Имя кнопки: «Корзина: 2 изделия». Видимое «Корзина 2» входит в него целиком (WCAG 2.5.3). */
 const cartLabel = computed(() => {
   const n = store.state.cart.length;
-  if (!n) return 'Корзина пуста';
   const a = n % 10;
   const b = n % 100;
   const word =

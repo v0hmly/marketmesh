@@ -312,8 +312,10 @@ onBeforeUnmount(() => {
               aria-hidden="true"
             >
               <path d="M5 12.5l4.5 4.5L19 7.5" /></svg
-            >{{ store.state.cart.includes(item.id) ? 'В корзине · открыть' : 'В корзину'
-            }}<span class="visually-hidden">: {{ item.title }}</span>
+            ><template v-if="store.state.cart.includes(item.id)"
+              >В корзине<span class="visually-hidden">, открыть корзину</span></template
+            ><template v-else>В корзину</template
+            ><span class="visually-hidden">: {{ item.title }}</span>
           </button>
           <button v-else type="button" class="button text-button" @click="notify(item)">
             {{ notified.includes(item.id) ? 'Сообщим о пополнении' : 'Сообщить о пополнении'

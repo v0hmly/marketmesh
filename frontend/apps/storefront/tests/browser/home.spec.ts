@@ -80,13 +80,13 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   const before = await pageTop();
   await page.getByRole('button', { name: /^В корзину\s*: Кружка «Пена»/ }).click();
   // Подтверждение — в самой кнопке и в live-регионе; кавычки внутри названия — „“.
-  await expect(mug.getByRole('button', { name: /^В корзине · открыть/ })).toBeVisible();
+  await expect(mug.getByRole('button', { name: /^В корзине\s*, открыть корзину/ })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('«Кружка „Пена“, 300 мл» в корзине.');
   await expect(page.getByRole('button', { name: 'Корзина: 1 изделие' })).toBeVisible();
   // Сетку ничто не раздвигает: кнопка соседней карточки на месте.
   expect(await pageTop()).toBe(before);
   // Повторное нажатие открывает корзину, а не повторяет «уже в корзине».
-  await mug.getByRole('button', { name: /^В корзине · открыть/ }).click();
+  await mug.getByRole('button', { name: /^В корзине\s*, открыть корзину/ }).click();
   await expect(page.getByRole('dialog', { name: 'Корзина' })).toBeVisible();
   await page.getByRole('button', { name: 'Продолжить покупки' }).click();
   await page.getByRole('button', { name: /^Корзина/ }).click();
@@ -167,6 +167,29 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await last.focus();
   const [lastBox, rowBox] = await Promise.all([last.boundingBox(), chips.boundingBox()]);
   expect(lastBox!.x + lastBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width);
+  // Подтверждение в кнопке не сдвигает сетку и в узкой плитке телефона.
+  const second = page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .nth(1)
+    .getByRole('button', { name: /^В корзину/ });
+  const secondTop = () =>
+    second.evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
+  const firstAction = page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .first()
+    .getByRole('button', { name: /^В корзину/ });
+  const beforeTop = await secondTop();
+  const beforeHeight = await firstAction.evaluate((node) => node.getBoundingClientRect().height);
+  await firstAction.click();
+  const inCart = page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .first()
+    .getByRole('button', { name: /^В корзине/ });
+  expect(await inCart.evaluate((node) => node.getBoundingClientRect().height)).toBe(beforeHeight);
+  expect(await secondTop()).toBe(beforeTop);
   await page.setViewportSize({ width: 320, height: 640 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

@@ -53,4 +53,16 @@ describe('корзина витрины', () => {
     await nextTick();
     expect(store.state.cartNotice).toBe('Оформление заказа пока недоступно.');
   });
+
+  it('повтор действия объявляется в live-регионе заново', async () => {
+    const { nextTick } = await import('vue');
+    const { useStorefront } = await import('./store');
+    const store = useStorefront();
+    store.announce('«Кружка» в корзине.');
+    await nextTick();
+    store.announce('«Кружка» в корзине.');
+    expect(store.state.notice).toBe('');
+    await nextTick();
+    expect(store.state.notice).toBe('«Кружка» в корзине.');
+  });
 });

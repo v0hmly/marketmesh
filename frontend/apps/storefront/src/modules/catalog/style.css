@@ -193,12 +193,18 @@
   outline-offset: 3px;
   box-shadow: 0 0 0 3px var(--focus-inner);
 }
-/* Изделие в корзине (MM-130): подтверждение живёт в самой кнопке — отметка, подпись и
-   выбранный вид, как у нажатой категории; высота кнопки не меняется, сетку ничто не сдвигает. */
+/* Изделие в корзине (MM-130): подтверждение живёт в самой кнопке — отметка, короткая
+   подпись «В корзине» и выбранный вид, как у нажатой категории. Подпись помещается в одну
+   строку даже в узкой плитке телефона: высота кнопки не меняется, сетку ничто не сдвигает. */
 .storefront-tile .button.storefront-in-cart {
   gap: 8px;
+  white-space: nowrap;
   border-color: var(--link);
   background: var(--identity-bg);
+}
+.storefront-tile .button.storefront-in-cart:hover:not(:disabled) {
+  border-color: var(--input-hover);
+  background: var(--button-hover);
 }
 .storefront-tile-text {
   flex-grow: 1;
