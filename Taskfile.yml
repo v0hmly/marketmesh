@@ -695,7 +695,6 @@ tasks:
       VITE_ACCOUNT_ID_ENABLED: 'true'
       VITE_ACCOUNT_AVATAR_ENABLED: 'true'
       VITE_SELLER_ENABLED: 'true'
-      VITE_STOREFRONT_HOME_ENABLED: 'true'
     cmds:
       - cd frontend && pnpm build
       - mkdir -p .cache/frontend-bundles

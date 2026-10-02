@@ -7,7 +7,7 @@ import { Code } from '@connectrpc/connect';
 import { authErrorReason } from './modules/auth/public';
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { homeEnabled, settingsEnabled } from './shared/features';
+import { settingsEnabled } from './shared/features';
 import { createThemeController } from './modules/account/settings/theme';
 import { areaTitle } from './shell/areas';
 import { useSession } from './shell/context';
@@ -86,10 +86,7 @@ onMounted(() => {
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <div class="site-wrap">
     <header class="site-header" :class="{ 'storefront-header': storefront }">
-      <RouterLink
-        class="brand"
-        :to="homeEnabled ? '/' : '/account'"
-        :aria-label="homeEnabled ? 'MarketMesh — витрина' : 'MarketMesh — личный кабинет'"
+      <RouterLink class="brand" to="/" aria-label="MarketMesh — витрина"
         ><BrandMark /><span>MarketMesh<span class="brand-dot">.</span></span></RouterLink
       >
       <RouterView v-if="storefront" name="header" />

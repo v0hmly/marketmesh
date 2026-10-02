@@ -17,7 +17,6 @@ vi.mock('../../../shared/features', () => ({
   reviewsEnabled: false,
   idEnabled: true,
   sellerEnabled: false,
-  homeEnabled: false,
   staffEnabled: false,
 }));
 const security = vi.hoisted(() => ({
