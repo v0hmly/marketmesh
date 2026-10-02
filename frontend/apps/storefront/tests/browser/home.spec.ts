@@ -71,21 +71,24 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await expect(tiles).toHaveCount(3);
   await expect(page.getByText('Партия распродана')).toBeVisible();
 
-  await page.getByRole('button', { name: /^В корзину\s*: Кружка «Пена»/ }).click();
-  // Подтверждение видно в самой карточке и звучит в live-регионе; кавычки внутри названия — „“.
   const mug = tiles.filter({ hasText: 'Кружка «Пена», 300 мл' });
-  await expect(mug.locator('.storefront-card-status')).toHaveText(
-    'Добавлено в корзину. Пока вы не вошли, корзина хранится в этом браузере.',
-  );
+  const neighbour = tiles.filter({ hasText: 'Миска «Туман», 600 мл' }).getByRole('button', {
+    name: /^В корзину/,
+  });
+  const pageTop = () =>
+    neighbour.evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
+  const before = await pageTop();
+  await page.getByRole('button', { name: /^В корзину\s*: Кружка «Пена»/ }).click();
+  // Подтверждение — в самой кнопке и в live-регионе; кавычки внутри названия — „“.
+  await expect(mug.getByRole('button', { name: /^В корзине\s*, открыть корзину/ })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('«Кружка „Пена“, 300 мл» в корзине.');
+  await expect(page.getByRole('button', { name: 'Корзина: 1 изделие' })).toBeVisible();
+  // Сетку ничто не раздвигает: кнопка соседней карточки на месте.
+  expect(await pageTop()).toBe(before);
   // Повторное нажатие открывает корзину, а не повторяет «уже в корзине».
-  await mug.getByRole('button', { name: /^Открыть корзину/ }).click();
+  await mug.getByRole('button', { name: /^В корзине\s*, открыть корзину/ }).click();
   await expect(page.getByRole('dialog', { name: 'Корзина' })).toBeVisible();
   await page.getByRole('button', { name: 'Продолжить покупки' }).click();
-  // Смена категории сбрасывает подтверждение в карточке.
-  await page.getByRole('button', { name: 'Одежда' }).click();
-  await page.getByRole('button', { name: 'Керамика' }).click();
-  await expect(mug.locator('.storefront-card-status')).toHaveCount(0);
   await page.getByRole('button', { name: /^Корзина/ }).click();
   const cart = page.getByRole('dialog', { name: 'Корзина' });
   await expect(cart.getByText('2 400 ₽').first()).toBeVisible();
@@ -164,6 +167,29 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await last.focus();
   const [lastBox, rowBox] = await Promise.all([last.boundingBox(), chips.boundingBox()]);
   expect(lastBox!.x + lastBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width);
+  // Подтверждение в кнопке не сдвигает сетку и в узкой плитке телефона.
+  const second = page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .nth(1)
+    .getByRole('button', { name: /^В корзину/ });
+  const secondTop = () =>
+    second.evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
+  const firstAction = page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .first()
+    .getByRole('button', { name: /^В корзину/ });
+  const beforeTop = await secondTop();
+  const beforeHeight = await firstAction.evaluate((node) => node.getBoundingClientRect().height);
+  await firstAction.click();
+  const inCart = page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .first()
+    .getByRole('button', { name: /^В корзине/ });
+  expect(await inCart.evaluate((node) => node.getBoundingClientRect().height)).toBe(beforeHeight);
+  expect(await secondTop()).toBe(beforeTop);
   await page.setViewportSize({ width: 320, height: 640 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

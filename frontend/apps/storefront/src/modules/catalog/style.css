@@ -42,6 +42,11 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+/* Непустая корзина видна в шапке: счётчик цветом текста и полужирным (MM-130). */
+.storefront-count-filled {
+  color: var(--ink);
+  font-weight: 600;
+}
 
 .storefront {
   display: flex;
@@ -188,11 +193,18 @@
   outline-offset: 3px;
   box-shadow: 0 0 0 3px var(--focus-inner);
 }
-/* Подтверждение действия там, где нажали (MM-127); скринридер слышит его из live-региона. */
-.storefront-card-status {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--success-ink);
+/* Изделие в корзине (MM-130): подтверждение живёт в самой кнопке — отметка, короткая
+   подпись «В корзине» и выбранный вид, как у нажатой категории. Подпись помещается в одну
+   строку даже в узкой плитке телефона: высота кнопки не меняется, сетку ничто не сдвигает. */
+.storefront-tile .button.storefront-in-cart {
+  gap: 8px;
+  white-space: nowrap;
+  border-color: var(--link);
+  background: var(--identity-bg);
+}
+.storefront-tile .button.storefront-in-cart:hover:not(:disabled) {
+  border-color: var(--input-hover);
+  background: var(--button-hover);
 }
 .storefront-tile-text {
   flex-grow: 1;

@@ -31,8 +31,6 @@ const state = reactive({
   query: '',
   /** Текст постоянного live-региона: последнее действие над витриной для скринридера. */
   notice: '',
-  /** Видимое подтверждение в карточке, над которой было действие (MM-127). */
-  cardStatus: null as { id: string; text: string } | null,
   /** Состояние оформления, показываемое внутри корзины, а не на странице. */
   cartNotice: '',
   cart: readCart(),
@@ -53,7 +51,6 @@ export function useStorefront() {
     search(query: string) {
       state.query = query.trim();
       state.notice = '';
-      state.cardStatus = null;
     },
     addToCart(id: string) {
       if (state.cart.includes(id)) return false;
@@ -71,8 +68,7 @@ export function useStorefront() {
     removeFromCart(id: string) {
       state.cart = state.cart.filter((item) => item !== id);
       writeCart(state.cart);
-      // Подтверждение «добавлено» в карточке больше не правда, а пустой корзине нечего оформлять.
-      if (state.cardStatus?.id === id) state.cardStatus = null;
+      // Пустой корзине нечего оформлять.
       if (!state.cart.length) state.cartNotice = '';
     },
     openCart() {
@@ -88,11 +84,10 @@ export function useStorefront() {
       state.cartNotice = '';
     },
     /**
-     * Сообщает о действии: полный текст — в live-регион для скринридера, короткий — видимо в
-     * карточке, где покупатель нажал (название там уже есть). Повтор объявляется заново.
+     * Сообщает о действии в live-регион для скринридера; видимо действие подтверждает сама
+     * кнопка карточки (MM-130), сетку ничто не раздвигает. Повтор объявляется заново.
      */
-    announce(text: string, card?: { id: string; text: string }) {
-      state.cardStatus = card && text ? card : null;
+    announce(text: string) {
       state.notice = '';
       if (text)
         void nextTick(() => {
