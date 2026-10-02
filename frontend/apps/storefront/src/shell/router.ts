@@ -13,7 +13,7 @@ export function createStorefrontRouter(history: RouterHistory = createWebHistory
   return createRouter({
     history,
     routes: [
-      ...(catalogRoutes.length ? catalogRoutes : [{ path: '/', redirect: '/account' }]),
+      ...catalogRoutes,
       ...authRoutes,
       ...accountRoutes,
       ...sellerRoutes,

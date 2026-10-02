@@ -7,5 +7,3 @@ export const idEnabled = import.meta.env.VITE_ACCOUNT_ID_ENABLED === 'true';
 export const sellerEnabled = import.meta.env.VITE_SELLER_ENABLED === 'true';
 
 export const avatarEnabled = import.meta.env.VITE_ACCOUNT_AVATAR_ENABLED === 'true';
-/** Главная витрина на образцовых данных до API каталога (MM-125, эпик MM-54). */
-export const homeEnabled = import.meta.env.VITE_STOREFRONT_HOME_ENABLED === 'true';

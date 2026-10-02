@@ -72,22 +72,13 @@ it.each([undefined, 'false', '1', 'true'])(
   },
 );
 
-it.each([undefined, 'false', '1', 'true'])(
-  'opens the storefront home at / only for the exact build flag %s',
-  async (flag) => {
-    vi.stubEnv('VITE_STOREFRONT_HOME_ENABLED', flag);
-    vi.resetModules();
-    const { homeEnabled } = await import('../shared/features');
-    const { createStorefrontRouter } = await import('./router');
-    expect(homeEnabled).toBe(flag === 'true');
-    const router = createStorefrontRouter(createMemoryHistory());
-    expect(router.hasRoute('home')).toBe(flag === 'true');
-    if (flag !== 'true') {
-      await router.push('/');
-      expect(router.currentRoute.value.path).toBe('/account/security');
-    }
-  },
-);
+it('opens the storefront home at /', async () => {
+  vi.resetModules();
+  const { createStorefrontRouter } = await import('./router');
+  const router = createStorefrontRouter(createMemoryHistory());
+  expect(router.hasRoute('home')).toBe(true);
+  expect(router.resolve('/').name).toBe('home');
+});
 
 it.each([undefined, 'false', 'true'])(
   'never exposes staff routes in storefront (%s)',

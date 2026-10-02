@@ -19,7 +19,6 @@ vi.mock('../../../shared/features', () => ({
   reviewsEnabled: false,
   idEnabled: false,
   sellerEnabled: true,
-  homeEnabled: false,
   staffEnabled: false,
 }));
 
