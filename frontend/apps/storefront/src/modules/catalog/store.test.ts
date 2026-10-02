@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { batchDateText, lowStock, stockText } from './store';
+import { batchDateText, lowStock, quoted, stockText } from './store';
 
 describe('бирка партии', () => {
   it('называет остаток словами для каждого состояния', () => {
@@ -22,5 +22,25 @@ describe('бирка партии', () => {
     expect(batchDateText('2026-09-24', 'Осталось 2 из 6')).toBe('партия от 24 сентября');
     expect(batchDateText('2026-09-24', 'В партии 8 из 10')).toBe('от 24 сентября');
     expect(batchDateText('2026-09-24', 'Партия распродана')).toBe('от 24 сентября');
+  });
+});
+
+describe('сообщения витрины', () => {
+  it('меняет вложенные кавычки на „лапки“', () => {
+    expect(quoted('Кружка «Пена», 300 мл')).toBe('«Кружка „Пена“, 300 мл»');
+    expect(quoted('Подсвечник из ясеня')).toBe('«Подсвечник из ясеня»');
+  });
+});
+
+describe('корзина витрины', () => {
+  it('убирая изделие, снимает его подтверждение и ответ пустой корзины', async () => {
+    const { useStorefront } = await import('./store');
+    const store = useStorefront();
+    store.addToCart('p1');
+    store.announce('«Футболка» в корзине.', { id: 'p1', text: 'Добавлено в корзину.' });
+    store.state.cartNotice = 'Оформление заказа пока недоступно.';
+    store.removeFromCart('p1');
+    expect(store.state.cardStatus).toBeNull();
+    expect(store.state.cartNotice).toBe('');
   });
 });
