@@ -71,6 +71,11 @@ async function read() {
     if (active) loading.value = false;
   }
 }
+/** На телефоне ряд категорий прокручивается: кнопка в фокусе показывается целиком. */
+function revealChip(event: FocusEvent) {
+  if (event.target instanceof HTMLElement)
+    event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
 /** Строка бирки: остаток и дата партии. */
 function tagText(item: SampleBatch) {
   const stock = stockText(item.left, item.batch);
@@ -191,7 +196,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="filter-row" role="group" aria-label="Категория">
+      <div class="filter-row" role="group" aria-label="Категория" @focusin="revealChip">
         <button
           v-for="item in categories"
           :key="item.value"

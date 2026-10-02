@@ -130,6 +130,29 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
     .getByRole('listitem')
     .first()
     .boundingBox();
-  expect(firstCard!.y).toBeLessThan(600);
+  // Карточка и заметная часть фото (160px) — в первом экране.
+  expect(firstCard!.y + 160).toBeLessThan(844);
+  const chips = page.getByRole('group', { name: 'Категория' });
+  const row = await chips.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      scrolls: node.scrollWidth > node.clientWidth,
+      paddingTop: parseFloat(style.paddingTop),
+      paddingBottom: parseFloat(style.paddingBottom),
+    };
+  });
+  expect(row.scrolls).toBe(true);
+  // Кольцо фокуса выходит за кнопку на 6px: ряд не должен его обрезать.
+  expect(row.paddingTop).toBeGreaterThanOrEqual(6);
+  expect(row.paddingBottom).toBeGreaterThanOrEqual(6);
+  // Кнопка в фокусе прокручивается в ряд целиком.
+  const last = chips.getByRole('button', { name: 'Бумага' });
+  await last.focus();
+  const [lastBox, rowBox] = await Promise.all([last.boundingBox(), chips.boundingBox()]);
+  expect(lastBox!.x + lastBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width);
+  await page.setViewportSize({ width: 320, height: 640 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

@@ -369,8 +369,10 @@
   .storefront-feed .filter-row {
     flex-wrap: nowrap;
     overflow-x: auto;
-    margin: 0 -22px;
-    padding: 4px 22px 8px;
+    /* Отступ по вертикали вмещает кольцо фокуса (3px на отступе 3px): прокручиваемый ряд
+       обрезает всё, что выходит за его padding-box. */
+    margin: -4px -22px 0;
+    padding: 8px 22px;
     scroll-padding-inline: 22px;
     scrollbar-width: thin;
   }
