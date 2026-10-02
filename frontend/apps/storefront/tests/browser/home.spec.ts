@@ -46,6 +46,8 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole('button', { name: 'Показать ещё партии' }).click();
+  // Фокус не теряется: он переходит к первой показанной карточке.
+  await expect(tiles.nth(8)).toBeFocused();
   await expect(tiles).toHaveCount(12);
   await page.getByRole('button', { name: 'Керамика' }).click();
   await expect(page.getByRole('button', { name: 'Керамика' })).toHaveAttribute(
@@ -56,7 +58,16 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await expect(page.getByText('Партия распродана')).toBeVisible();
 
   await page.getByRole('button', { name: /^В корзину\s*: Кружка «Пена»/ }).click();
-  await expect(page.getByRole('status')).toContainText('«Кружка «Пена», 300 мл» в корзине.');
+  // Подтверждение видно в самой карточке и звучит в live-регионе; кавычки внутри названия — „“.
+  const mug = tiles.filter({ hasText: 'Кружка «Пена», 300 мл' });
+  await expect(mug.locator('.storefront-card-status')).toHaveText(
+    'Добавлено в корзину. Пока вы не вошли, корзина хранится в этом браузере.',
+  );
+  await expect(page.getByRole('status')).toContainText('«Кружка „Пена“, 300 мл» в корзине.');
+  // Повторное нажатие открывает корзину, а не повторяет «уже в корзине».
+  await mug.getByRole('button', { name: /^Открыть корзину/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Корзина' })).toBeVisible();
+  await page.getByRole('button', { name: 'Продолжить покупки' }).click();
   await page.getByRole('button', { name: /^Корзина/ }).click();
   const cart = page.getByRole('dialog', { name: 'Корзина' });
   await expect(cart.getByText('2 400 ₽').first()).toBeVisible();

@@ -1,4 +1,4 @@
-import { markRaw, reactive } from 'vue';
+import { markRaw, nextTick, reactive } from 'vue';
 
 /**
  * Общее состояние витрины: шапка (поиск, корзина) и лента — соседние виды
@@ -29,8 +29,12 @@ function writeCart(ids: string[]) {
 const state = reactive({
   /** Применённый поисковый запрос; черновик живёт в поле шапки. */
   query: '',
-  /** Сообщение о последнем действии над витриной. */
+  /** Текст постоянного live-региона: последнее действие над витриной для скринридера. */
   notice: '',
+  /** Видимое подтверждение в карточке, над которой было действие (MM-127). */
+  cardStatus: null as { id: string; text: string } | null,
+  /** Состояние оформления, показываемое внутри корзины, а не на странице. */
+  cartNotice: '',
   cart: readCart(),
   dialog: null as StorefrontDialog,
   /** Куда вернуть фокус после диалогов: окно входа из корзины возвращает к кнопке корзины. */
@@ -49,6 +53,7 @@ export function useStorefront() {
     search(query: string) {
       state.query = query.trim();
       state.notice = '';
+      state.cardStatus = null;
     },
     addToCart(id: string) {
       if (state.cart.includes(id)) return false;
@@ -77,11 +82,29 @@ export function useStorefront() {
     },
     closeDialog() {
       state.dialog = null;
+      state.cartNotice = '';
     },
-    announce(text: string) {
-      state.notice = text;
+    /**
+     * Сообщает о действии: полный текст — в live-регион для скринридера, короткий — видимо в
+     * карточке, где покупатель нажал (название там уже есть). Повтор объявляется заново.
+     */
+    announce(text: string, card?: { id: string; text: string }) {
+      state.cardStatus = card && text ? card : null;
+      state.notice = '';
+      if (text)
+        void nextTick(() => {
+          state.notice = text;
+        });
+    },
+    setCartNotice(text: string) {
+      state.cartNotice = text;
     },
   };
+}
+
+/** Название в кавычках «…»; кавычки внутри названия становятся „…“. */
+export function quoted(title: string) {
+  return `«${title.replace(/«/g, '„').replace(/»/g, '“')}»`;
 }
 
 export function money(value: number) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import '../style.css';
 import ConfirmDialog from '@marketmesh/design-system/ConfirmDialog.vue';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ordersEnabled, sellerEnabled } from '../../../shared/features';
 import { useSession } from '../../../shell/context';
@@ -12,7 +12,7 @@ import {
   type SampleBatch,
   type SampleCategory,
 } from '../sample-data';
-import { batchDateText, lowStock, money, stockText, useStorefront } from '../store';
+import { batchDateText, lowStock, money, quoted, stockText, useStorefront } from '../store';
 
 type Sort = 'new' | 'cheap' | 'expensive';
 const pageSize = 8;
@@ -79,39 +79,51 @@ function tagText(item: SampleBatch) {
 function choose(value: 'all' | SampleCategory) {
   category.value = value;
   more.value = false;
+  store.announce('');
+}
+/** После «Показать ещё» фокус переходит к первой новой карточке, а не теряется. */
+async function showMore() {
+  more.value = true;
+  await nextTick();
+  document.querySelector<HTMLElement>(`[data-tile-index="${pageSize}"]`)?.focus();
 }
 function toggleFavorite(item: SampleBatch) {
   if (!signedIn.value) {
-    store.askToSignIn(`Войдите, чтобы сохранить «${item.title}» в избранное.`);
+    store.askToSignIn(`Войдите, чтобы сохранить ${quoted(item.title)} в избранное.`);
     return;
   }
   const saved = favorites.value.includes(item.id);
   favorites.value = saved
     ? favorites.value.filter((id) => id !== item.id)
     : [...favorites.value, item.id];
-  store.announce(saved ? `«${item.title}» убрано из избранного.` : `«${item.title}» в избранном.`);
+  store.announce(
+    saved ? `${quoted(item.title)} убрано из избранного.` : `${quoted(item.title)} в избранном.`,
+    { id: item.id, text: saved ? 'Убрано из избранного.' : 'В избранном.' },
+  );
 }
 function addToCart(item: SampleBatch) {
+  // Изделие уже в корзине: кнопка карточки открывает корзину, а не добавляет второй раз.
   if (!store.addToCart(item.id)) {
-    store.announce(`«${item.title}» уже в корзине.`);
+    store.openCart();
     return;
   }
-  store.announce(
-    signedIn.value
-      ? `«${item.title}» в корзине.`
-      : `«${item.title}» в корзине. Пока вы не вошли, корзина хранится в этом браузере.`,
-  );
+  const note = signedIn.value ? '' : ' Пока вы не вошли, корзина хранится в этом браузере.';
+  store.announce(`${quoted(item.title)} в корзине.${note}`, {
+    id: item.id,
+    text: `Добавлено в корзину.${note}`,
+  });
 }
 function notify(item: SampleBatch) {
   if (notified.value.includes(item.id)) return;
   if (!signedIn.value) {
     store.askToSignIn(
-      `Войдите, чтобы узнать о пополнении партии «${item.title}». Письмо придёт на почту вашего аккаунта.`,
+      `Войдите, чтобы узнать о пополнении партии ${quoted(item.title)}. Письмо придёт на почту вашего аккаунта.`,
     );
     return;
   }
   notified.value = [...notified.value, item.id];
-  store.announce('Напишем на почту, когда мастер пополнит партию.');
+  const text = 'Напишем на почту, когда мастер пополнит партию.';
+  store.announce(text, { id: item.id, text });
 }
 function checkout() {
   if (!cartItems.value.length) {
@@ -122,8 +134,10 @@ function checkout() {
     store.askToSignIn('Войдите, чтобы оформить заказ. Изделия останутся в корзине этого браузера.');
     return;
   }
-  store.closeDialog();
-  store.announce('Оформление заказа пока недоступно. Корзина сохранена в этом браузере.');
+  // Оформление честно отвечает внутри корзины: покупатель видит ответ там, где нажал.
+  store.setCartNotice(
+    'Оформление заказа пока недоступно: мы ещё не принимаем оплату. Корзина сохранена в этом браузере.',
+  );
 }
 async function signIn() {
   store.closeDialog();
@@ -154,7 +168,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="storefront">
-    <p v-if="store.state.notice" class="notice success" role="status">{{ store.state.notice }}</p>
+    <!-- Постоянный live-регион: объявляет действия, видимое подтверждение — в самой карточке. -->
+    <p class="visually-hidden" role="status">{{ store.state.notice }}</p>
 
     <section id="catalog" class="storefront-feed" aria-labelledby="feed-title" tabindex="-1">
       <div class="storefront-feed-heading">
@@ -225,8 +240,10 @@ onBeforeUnmount(() => {
       </div>
       <ul v-else class="storefront-grid" aria-label="Партии">
         <li
-          v-for="item in visible"
+          v-for="(item, index) in visible"
           :key="item.id"
+          :data-tile-index="index"
+          tabindex="-1"
           class="card storefront-tile"
           :class="{ 'storefront-sold-out': item.left === 0 }"
         >
@@ -278,20 +295,27 @@ onBeforeUnmount(() => {
             class="button secondary"
             @click="addToCart(item)"
           >
-            {{ store.state.cart.includes(item.id) ? 'В корзине' : 'В корзину'
+            {{ store.state.cart.includes(item.id) ? 'Открыть корзину' : 'В корзину'
             }}<span class="visually-hidden">: {{ item.title }}</span>
           </button>
           <button v-else type="button" class="button text-button" @click="notify(item)">
             {{ notified.includes(item.id) ? 'Сообщим о пополнении' : 'Сообщить о пополнении'
             }}<span class="visually-hidden">: {{ item.title }}</span>
           </button>
+          <p
+            v-if="store.state.cardStatus?.id === item.id"
+            class="storefront-card-status"
+            aria-hidden="true"
+          >
+            {{ store.state.cardStatus.text }}
+          </p>
         </li>
       </ul>
       <button
         v-if="items && !more && matching.length > pageSize"
         type="button"
         class="button secondary storefront-more"
-        @click="more = true"
+        @click="showMore"
       >
         Показать ещё партии
       </button>
@@ -341,6 +365,9 @@ onBeforeUnmount(() => {
       @cancel="store.closeDialog()"
       @confirm="checkout"
     >
+      <p v-if="store.state.cartNotice" class="storefront-cart-notice" role="status">
+        {{ store.state.cartNotice }}
+      </p>
       <p v-if="!cartItems.length">
         Корзина пуста. Добавляйте изделия из витрины — они сохранятся, даже если вы не вошли.
       </p>

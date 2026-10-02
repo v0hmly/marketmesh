@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { batchDateText, lowStock, stockText } from './store';
+import { batchDateText, lowStock, quoted, stockText } from './store';
 
 describe('бирка партии', () => {
   it('называет остаток словами для каждого состояния', () => {
@@ -22,5 +22,12 @@ describe('бирка партии', () => {
     expect(batchDateText('2026-09-24', 'Осталось 2 из 6')).toBe('партия от 24 сентября');
     expect(batchDateText('2026-09-24', 'В партии 8 из 10')).toBe('от 24 сентября');
     expect(batchDateText('2026-09-24', 'Партия распродана')).toBe('от 24 сентября');
+  });
+});
+
+describe('сообщения витрины', () => {
+  it('меняет вложенные кавычки на „лапки“', () => {
+    expect(quoted('Кружка «Пена», 300 мл')).toBe('«Кружка „Пена“, 300 мл»');
+    expect(quoted('Подсвечник из ясеня')).toBe('«Подсвечник из ясеня»');
   });
 });

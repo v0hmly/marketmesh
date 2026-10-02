@@ -169,6 +169,20 @@
 .storefront-sold-out .storefront-tag {
   color: var(--muted);
 }
+.storefront-tile:focus {
+  outline: none;
+}
+.storefront-tile:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--focus-inner);
+}
+/* Подтверждение действия там, где нажали (MM-127); скринридер слышит его из live-региона. */
+.storefront-card-status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--success-ink);
+}
 .storefront-tile-text {
   flex-grow: 1;
   display: flex;
@@ -269,6 +283,14 @@
   min-height: 0;
   padding: 4px;
   font-size: 0.73rem;
+}
+.storefront-cart-notice {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--identity-bg);
+  font-size: 0.875rem;
 }
 .storefront-cart-note {
   margin: 0;
