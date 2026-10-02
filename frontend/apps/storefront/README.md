@@ -37,7 +37,7 @@ HTTPS origin. API-клиент обращается к `/auth.v1.AuthService/*`,
 `/user.v1.UserService/*` и `/seller.v1.SellerService/*`
 на текущем origin; cross-origin base URL не настраивается.
 Статический сервер должен возвращать `index.html` для всех UI-маршрутов
-(`/login`, `/register`, `/account/*`, `/seller/*`), не перехватывая
+(`/`, `/login`, `/register`, `/account/*`, `/seller/*`), не перехватывая
 RPC-маршруты. Персональные ответы остаются `no-store`.
 
 Для Vite можно передать `STOREFRONT_TLS_CERT` и `STOREFRONT_TLS_KEY` с путями к
@@ -51,8 +51,8 @@ RPC-маршруты. Персональные ответы остаются `no
 ## Границы и сессия
 
 - Границы по [ADR-0016](../../../docs/adr/0016-frontend-application-boundaries.md):
-  Auth (`/login`, `/register`, email-ссылки), Account (`/account/*`), Seller
-  (`/seller/*`). Staff — другое приложение/origin и в этой сборке отсутствует.
+  Catalog (главная витрины `/`), Auth (`/login`, `/register`, email-ссылки), Account
+  (`/account/*`), Seller (`/seller/*`). Staff — другое приложение/origin и в этой сборке отсутствует.
 - Shell координирует поколения, Web Locks и проверенный subject. Account владеет
   профилем, адресами, настройками и их контроллером; тема живёт в account/settings.
 - Generated API используется через фасад владельца: auth/api и auth/security,
