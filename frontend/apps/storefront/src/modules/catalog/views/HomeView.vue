@@ -103,7 +103,6 @@ function toggleFavorite(item: SampleBatch) {
     : [...favorites.value, item.id];
   store.announce(
     saved ? `${quoted(item.title)} убрано из избранного.` : `${quoted(item.title)} в избранном.`,
-    { id: item.id, text: saved ? 'Убрано из избранного.' : 'В избранном.' },
   );
 }
 function addToCart(item: SampleBatch) {
@@ -112,11 +111,8 @@ function addToCart(item: SampleBatch) {
     store.openCart();
     return;
   }
-  const note = signedIn.value ? '' : ' Пока вы не вошли, корзина хранится в этом браузере.';
-  store.announce(`${quoted(item.title)} в корзине.${note}`, {
-    id: item.id,
-    text: `Добавлено в корзину.${note}`,
-  });
+  // Где хранится корзина гостя, сказано в самой корзине; здесь только факт.
+  store.announce(`${quoted(item.title)} в корзине.`);
 }
 function notify(item: SampleBatch) {
   if (notified.value.includes(item.id)) return;
@@ -127,8 +123,7 @@ function notify(item: SampleBatch) {
     return;
   }
   notified.value = [...notified.value, item.id];
-  const text = 'Напишем на почту, когда мастер пополнит партию.';
-  store.announce(text, { id: item.id, text });
+  store.announce('Напишем на почту, когда мастер пополнит партию.');
 }
 function checkout() {
   if (!cartItems.value.length) {
@@ -301,22 +296,29 @@ onBeforeUnmount(() => {
             v-if="item.left > 0"
             type="button"
             class="button secondary"
+            :class="{ 'storefront-in-cart': store.state.cart.includes(item.id) }"
             @click="addToCart(item)"
           >
-            {{ store.state.cart.includes(item.id) ? 'Открыть корзину' : 'В корзину'
+            <svg
+              v-if="store.state.cart.includes(item.id)"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12.5l4.5 4.5L19 7.5" /></svg
+            >{{ store.state.cart.includes(item.id) ? 'В корзине · открыть' : 'В корзину'
             }}<span class="visually-hidden">: {{ item.title }}</span>
           </button>
           <button v-else type="button" class="button text-button" @click="notify(item)">
             {{ notified.includes(item.id) ? 'Сообщим о пополнении' : 'Сообщить о пополнении'
             }}<span class="visually-hidden">: {{ item.title }}</span>
           </button>
-          <p
-            v-if="store.state.cardStatus?.id === item.id"
-            class="storefront-card-status"
-            aria-hidden="true"
-          >
-            {{ store.state.cardStatus.text }}
-          </p>
         </li>
       </ul>
       <button

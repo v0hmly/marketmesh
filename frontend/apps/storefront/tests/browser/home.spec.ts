@@ -71,21 +71,24 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await expect(tiles).toHaveCount(3);
   await expect(page.getByText('Партия распродана')).toBeVisible();
 
-  await page.getByRole('button', { name: /^В корзину\s*: Кружка «Пена»/ }).click();
-  // Подтверждение видно в самой карточке и звучит в live-регионе; кавычки внутри названия — „“.
   const mug = tiles.filter({ hasText: 'Кружка «Пена», 300 мл' });
-  await expect(mug.locator('.storefront-card-status')).toHaveText(
-    'Добавлено в корзину. Пока вы не вошли, корзина хранится в этом браузере.',
-  );
+  const neighbour = tiles.filter({ hasText: 'Миска «Туман», 600 мл' }).getByRole('button', {
+    name: /^В корзину/,
+  });
+  const pageTop = () =>
+    neighbour.evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
+  const before = await pageTop();
+  await page.getByRole('button', { name: /^В корзину\s*: Кружка «Пена»/ }).click();
+  // Подтверждение — в самой кнопке и в live-регионе; кавычки внутри названия — „“.
+  await expect(mug.getByRole('button', { name: /^В корзине · открыть/ })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('«Кружка „Пена“, 300 мл» в корзине.');
+  await expect(page.getByRole('button', { name: 'Корзина: 1 изделие' })).toBeVisible();
+  // Сетку ничто не раздвигает: кнопка соседней карточки на месте.
+  expect(await pageTop()).toBe(before);
   // Повторное нажатие открывает корзину, а не повторяет «уже в корзине».
-  await mug.getByRole('button', { name: /^Открыть корзину/ }).click();
+  await mug.getByRole('button', { name: /^В корзине · открыть/ }).click();
   await expect(page.getByRole('dialog', { name: 'Корзина' })).toBeVisible();
   await page.getByRole('button', { name: 'Продолжить покупки' }).click();
-  // Смена категории сбрасывает подтверждение в карточке.
-  await page.getByRole('button', { name: 'Одежда' }).click();
-  await page.getByRole('button', { name: 'Керамика' }).click();
-  await expect(mug.locator('.storefront-card-status')).toHaveCount(0);
   await page.getByRole('button', { name: /^Корзина/ }).click();
   const cart = page.getByRole('dialog', { name: 'Корзина' });
   await expect(cart.getByText('2 400 ₽').first()).toBeVisible();

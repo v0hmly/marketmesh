@@ -33,14 +33,24 @@ describe('сообщения витрины', () => {
 });
 
 describe('корзина витрины', () => {
-  it('убирая изделие, снимает его подтверждение и ответ пустой корзины', async () => {
+  it('опустевшая корзина снимает ответ об оформлении', async () => {
     const { useStorefront } = await import('./store');
     const store = useStorefront();
     store.addToCart('p1');
-    store.announce('«Футболка» в корзине.', { id: 'p1', text: 'Добавлено в корзину.' });
     store.state.cartNotice = 'Оформление заказа пока недоступно.';
     store.removeFromCart('p1');
-    expect(store.state.cardStatus).toBeNull();
     expect(store.state.cartNotice).toBe('');
+  });
+
+  it('повтор ответа в корзине объявляется заново', async () => {
+    const { nextTick } = await import('vue');
+    const { useStorefront } = await import('./store');
+    const store = useStorefront();
+    store.setCartNotice('Оформление заказа пока недоступно.');
+    await nextTick();
+    store.setCartNotice('Оформление заказа пока недоступно.');
+    expect(store.state.cartNotice).toBe('');
+    await nextTick();
+    expect(store.state.cartNotice).toBe('Оформление заказа пока недоступно.');
   });
 });
