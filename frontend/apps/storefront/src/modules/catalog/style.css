@@ -407,6 +407,14 @@
   .storefront-sort .select-wrap {
     flex-grow: 1;
   }
+  /* Пока плашка есть, прокрутка к фокусу оставляет под ней место: плашка не закрывает
+     элемент в фокусе (WCAG 2.4.11). 96px — с запасом выше плашки даже в две строки. */
+  :root:has(.storefront-cart-bar) {
+    scroll-padding-bottom: calc(var(--sp-10) + var(--sp-7) + env(safe-area-inset-bottom));
+  }
+  .storefront-cart-bar .button {
+    white-space: nowrap;
+  }
   .storefront-cart-bar {
     position: sticky;
     bottom: 0;

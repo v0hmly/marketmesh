@@ -164,6 +164,18 @@ watch(
     store.closeDialog();
   },
 );
+// Диалог закрылся, а кнопка, открывшая его, исчезла (плашка опустевшей корзины): фокус
+// переходит к ленте, а не теряется на body.
+watch(
+  () => store.state.dialog,
+  async (now, before) => {
+    if (now || !before) return;
+    await nextTick();
+    await nextTick();
+    if (document.activeElement === document.body)
+      document.getElementById('catalog')?.focus({ preventScroll: true });
+  },
+);
 watch(
   () => store.state.query,
   () => {
