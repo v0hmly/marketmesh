@@ -12,7 +12,7 @@ import {
   type SampleBatch,
   type SampleCategory,
 } from '../sample-data';
-import { money, stockText, useStorefront } from '../store';
+import { batchDateText, lowStock, money, stockText, useStorefront } from '../store';
 
 type Sort = 'new' | 'cheap' | 'expensive';
 const pageSize = 8;
@@ -70,6 +70,11 @@ async function read() {
   } finally {
     if (active) loading.value = false;
   }
+}
+/** Строка бирки: остаток и дата партии. */
+function tagText(item: SampleBatch) {
+  const stock = stockText(item.left, item.batch);
+  return `${stock} · ${batchDateText(item.published, stock)}`;
 }
 function choose(value: 'all' | SampleCategory) {
   category.value = value;
@@ -149,23 +154,15 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="storefront">
-    <h1 class="visually-hidden">Витрина MarketMesh</h1>
     <p v-if="store.state.notice" class="notice success" role="status">{{ store.state.notice }}</p>
 
     <section id="catalog" class="storefront-feed" aria-labelledby="feed-title" tabindex="-1">
       <div class="storefront-feed-heading">
-        <div v-if="store.state.query">
-          <h2 id="feed-title">Поиск: «{{ store.state.query }}»</h2>
-          <p class="subtle">
-            Найдено среди опубликованных партий: {{ matching.length }}.
-            <button type="button" class="button text-button" @click="store.search('')">
-              Сбросить поиск
-            </button>
+        <div class="storefront-heading">
+          <h1 id="feed-title">Новые партии от мастеров.</h1>
+          <p class="lede">
+            Готовые изделия небольшими партиями, опубликованные за последнюю неделю.
           </p>
-        </div>
-        <div v-else>
-          <h2 id="feed-title">Новые партии</h2>
-          <p class="subtle">Опубликованы за последнюю неделю.</p>
         </div>
         <div class="field storefront-sort">
           <label for="storefront-sort">Порядок</label>
@@ -192,6 +189,16 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
+      <div v-if="store.state.query" class="storefront-search-status">
+        <h2>Поиск: «{{ store.state.query }}»</h2>
+        <p>
+          Найдено: {{ matching.length }}.
+          <button type="button" class="button text-button" @click="store.search('')">
+            Сбросить поиск
+          </button>
+        </p>
+      </div>
+
       <div v-if="!items" class="card state-card" :aria-busy="loading">
         <template v-if="loading || !failure"
           ><span class="loading-dot" aria-hidden="true"></span>
@@ -205,9 +212,9 @@ onBeforeUnmount(() => {
         >
       </div>
       <div v-else-if="!matching.length" class="card state-card">
-        <h3>
+        <h2>
           {{ store.state.query ? 'Ничего не нашли' : 'В этой категории новых партий пока нет' }}
-        </h3>
+        </h2>
         <p>
           {{
             store.state.query
@@ -217,7 +224,12 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <ul v-else class="storefront-grid" aria-label="Партии">
-        <li v-for="item in visible" :key="item.id" class="card storefront-tile">
+        <li
+          v-for="item in visible"
+          :key="item.id"
+          class="card storefront-tile"
+          :class="{ 'storefront-sold-out': item.left === 0 }"
+        >
           <div class="storefront-photo">
             <span class="sample-photo" aria-hidden="true">ФОТО</span>
             <button
@@ -243,12 +255,23 @@ onBeforeUnmount(() => {
               </svg>
             </button>
           </div>
+          <div
+            class="storefront-tag"
+            :class="{
+              'storefront-tag-low': item.left > 0 && item.left <= 2,
+              'storefront-tag-ending': lowStock(item.left, item.batch),
+            }"
+          >
+            <span>{{ tagText(item) }}</span>
+            <span class="storefront-tag-meter" aria-hidden="true"
+              ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
+            ></span>
+          </div>
           <div class="storefront-tile-text">
             <span class="storefront-price">{{ money(item.price) }}</span>
-            <h3>{{ item.title }}</h3>
+            <h2>{{ item.title }}</h2>
             <span class="storefront-meta">{{ item.shop }}</span>
           </div>
-          <span class="storefront-meta">{{ stockText(item.left, item.batch) }}</span>
           <button
             v-if="item.left > 0"
             type="button"

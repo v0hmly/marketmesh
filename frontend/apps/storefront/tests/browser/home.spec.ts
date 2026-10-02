@@ -20,10 +20,29 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
 }) => {
   await guestApi(context);
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Новые партии' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Новые партии от мастеров.' })).toBeVisible();
   const tiles = page.getByRole('list', { name: 'Партии' }).getByRole('listitem');
   await expect(tiles).toHaveCount(8);
   await expect(page.getByText('В партии 8 из 10')).toBeVisible();
+  // Бирка партии: полная партия и малый остаток называются по-разному.
+  await expect(page.getByText('Вся партия: 7')).toBeVisible();
+  await expect(page.getByText('Осталось 2 из 6 · партия от 29 сентября')).toBeVisible();
+  // Шкала графитовая по умолчанию и охряная только у заканчивающейся партии.
+  const meterColor = (text: RegExp) =>
+    tiles
+      .filter({ hasText: text })
+      .locator('.storefront-tag-meter > span')
+      .evaluate((node) => getComputedStyle(node).backgroundColor);
+  const ink = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+  );
+  const lowStock = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--status-low-stock').trim(),
+  );
+  const rgb = (hex: string) =>
+    `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
+  expect(await meterColor(/В партии 8 из 10/)).toBe(rgb(ink));
+  expect(await meterColor(/Осталось 2 из 6/)).toBe(rgb(lowStock));
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole('button', { name: 'Показать ещё партии' }).click();
@@ -75,8 +94,11 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await page.getByLabel('Поиск по изделиям и мастерским').fill('янтарь');
   await page.getByRole('button', { name: 'Найти' }).click();
   await expect(page.getByRole('heading', { name: 'Ничего не нашли' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Поиск: «янтарь»' })).toBeVisible();
+  await expect(page.getByText('Найдено: 0.')).toBeVisible();
   await page.getByRole('button', { name: 'Сбросить поиск' }).click();
-  await expect(page.getByRole('heading', { name: 'Новые партии' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Поиск:/ })).toBeHidden();
+  await expect(page.getByRole('list', { name: 'Партии' }).getByRole('listitem')).toHaveCount(8);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
