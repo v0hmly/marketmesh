@@ -167,6 +167,15 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await last.focus();
   const [lastBox, rowBox] = await Promise.all([last.boundingBox(), chips.boundingBox()]);
   expect(lastBox!.x + lastBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width);
+  // Сортировка идёт после категорий — и на экране, и в порядке фокуса.
+  const sortTop = await page
+    .getByLabel('Порядок')
+    .evaluate((node) => node.getBoundingClientRect().top);
+  const chipsTop = await chips.evaluate((node) => node.getBoundingClientRect().top);
+  expect(sortTop).toBeGreaterThan(chipsTop);
+  // Плашки корзины нет, пока корзина пуста.
+  const bar = page.locator('.storefront-cart-bar');
+  await expect(bar).toHaveCount(0);
   // Подтверждение в кнопке не сдвигает сетку и в узкой плитке телефона.
   const second = page
     .getByRole('list', { name: 'Партии' })
@@ -190,6 +199,31 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
     .getByRole('button', { name: /^В корзине/ });
   expect(await inCart.evaluate((node) => node.getBoundingClientRect().height)).toBe(beforeHeight);
   expect(await secondTop()).toBe(beforeTop);
+  // Плашка корзины появляется с первым изделием и остаётся под рукой при прокрутке.
+  await page.evaluate(() => window.scrollTo(0, 1200));
+  await expect(bar).toContainText('В корзине 1 изделие');
+  const barBox = await bar.boundingBox();
+  expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(844);
+  // Плашка не закрывает элемент в фокусе (WCAG 2.4.11): обходим ленту с клавиатуры.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await inCart.focus();
+  for (let step = 0; step < 12; step += 1) {
+    await page.keyboard.press('Tab');
+    const [focused, barTop] = await page.evaluate(() => [
+      document.activeElement!.getBoundingClientRect().bottom,
+      document.querySelector('.storefront-cart-bar')!.getBoundingClientRect().top,
+    ]);
+    expect(focused).toBeLessThanOrEqual(barTop);
+  }
+  await bar.getByRole('button', { name: 'Открыть корзину' }).click();
+  const cartDialog = page.getByRole('dialog', { name: 'Корзина' });
+  await expect(cartDialog).toBeVisible();
+  // Опустошённая из плашки корзина: плашка уходит, фокус возвращается в ленту, а не на body.
+  await cartDialog.getByRole('button', { name: /^Убрать/ }).click();
+  await page.getByRole('button', { name: 'Продолжить покупки' }).click();
+  await expect(bar).toHaveCount(0);
+  await expect(page.locator('#catalog')).toBeFocused();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 320, height: 640 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

@@ -53,6 +53,18 @@ const cartItems = computed(() =>
 );
 const cartTotal = computed(() => money(cartItems.value.reduce((sum, item) => sum + item.price, 0)));
 const dialog = computed(() => store.state.dialog);
+const cartCountText = computed(() => {
+  const n = store.state.cart.length;
+  const a = n % 10;
+  const b = n % 100;
+  const word =
+    a === 1 && b !== 11
+      ? 'изделие'
+      : a >= 2 && a <= 4 && (b < 12 || b > 14)
+        ? 'изделия'
+        : 'изделий';
+  return `В корзине ${n} ${word}`;
+});
 const ordersPath = computed(() => (signedIn.value && ordersEnabled ? '/account/orders' : '/login'));
 
 async function read() {
@@ -152,6 +164,18 @@ watch(
     store.closeDialog();
   },
 );
+// Диалог закрылся, а кнопка, открывшая его, исчезла (плашка опустевшей корзины): фокус
+// переходит к ленте, а не теряется на body.
+watch(
+  () => store.state.dialog,
+  async (now, before) => {
+    if (now || !before) return;
+    await nextTick();
+    await nextTick();
+    if (document.activeElement === document.body)
+      document.getElementById('catalog')?.focus({ preventScroll: true });
+  },
+);
 watch(
   () => store.state.query,
   () => {
@@ -168,7 +192,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="storefront">
-    <!-- Постоянный live-регион: объявляет действия, видимое подтверждение — в самой карточке. -->
+    <!-- Постоянный live-регион: объявляет действия; видимо их подтверждает кнопка карточки. -->
     <p class="visually-hidden" role="status">{{ store.state.notice }}</p>
 
     <section id="catalog" class="storefront-feed" aria-labelledby="feed-title" tabindex="-1">
@@ -178,6 +202,22 @@ onBeforeUnmount(() => {
           <p class="lede">
             Готовые изделия небольшими партиями, опубликованные за последнюю неделю.
           </p>
+        </div>
+      </div>
+
+      <!-- Сначала «что смотреть», потом «в каком порядке» — так и в DOM, и на экране (MM-131). -->
+      <div class="storefront-controls">
+        <div class="filter-row" role="group" aria-label="Категория" @focusin="revealChip">
+          <button
+            v-for="item in categories"
+            :key="item.value"
+            type="button"
+            class="button secondary"
+            :aria-pressed="category === item.value"
+            @click="choose(item.value)"
+          >
+            {{ item.label }}
+          </button>
         </div>
         <div class="field storefront-sort">
           <label for="storefront-sort">Порядок</label>
@@ -189,19 +229,6 @@ onBeforeUnmount(() => {
             </select>
           </span>
         </div>
-      </div>
-
-      <div class="filter-row" role="group" aria-label="Категория" @focusin="revealChip">
-        <button
-          v-for="item in categories"
-          :key="item.value"
-          type="button"
-          class="button secondary"
-          :aria-pressed="category === item.value"
-          @click="choose(item.value)"
-        >
-          {{ item.label }}
-        </button>
       </div>
 
       <div v-if="store.state.query" class="storefront-search-status">
@@ -332,6 +359,15 @@ onBeforeUnmount(() => {
         Показать ещё партии
       </button>
     </section>
+
+    <!-- Телефон (MM-131): шапка с корзиной уезжает при прокрутке, плашка держит корзину под
+         рукой, пока она не пуста. Залипает внизу экрана и у конца ленты встаёт на место. -->
+    <div v-if="store.state.cart.length" class="storefront-cart-bar">
+      <span>{{ cartCountText }}</span>
+      <button type="button" class="button primary" @click="store.openCart()">
+        Открыть корзину
+      </button>
+    </div>
 
     <div class="storefront-footer">
       <div class="storefront-links">
