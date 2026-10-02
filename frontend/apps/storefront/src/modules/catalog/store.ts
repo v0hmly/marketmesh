@@ -71,6 +71,9 @@ export function useStorefront() {
     removeFromCart(id: string) {
       state.cart = state.cart.filter((item) => item !== id);
       writeCart(state.cart);
+      // Подтверждение «добавлено» в карточке больше не правда, а пустой корзине нечего оформлять.
+      if (state.cardStatus?.id === id) state.cardStatus = null;
+      if (!state.cart.length) state.cartNotice = '';
     },
     openCart() {
       rememberTrigger();
@@ -96,8 +99,13 @@ export function useStorefront() {
           state.notice = text;
         });
     },
+    /** Ответ внутри корзины; как и announce, повтор того же текста объявляется заново. */
     setCartNotice(text: string) {
-      state.cartNotice = text;
+      state.cartNotice = '';
+      if (text)
+        void nextTick(() => {
+          state.cartNotice = text;
+        });
     },
   };
 }

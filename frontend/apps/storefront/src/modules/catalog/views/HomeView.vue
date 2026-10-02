@@ -365,7 +365,12 @@ onBeforeUnmount(() => {
       @cancel="store.closeDialog()"
       @confirm="checkout"
     >
-      <p v-if="store.state.cartNotice" class="storefront-cart-notice" role="status">
+      <!-- Постоянный live-регион диалога: внешний скрыт aria-modal, а вставленный вместе
+           с текстом регион скринридеры часто не объявляют. -->
+      <p
+        role="status"
+        :class="store.state.cartNotice ? 'notice storefront-cart-notice' : 'visually-hidden'"
+      >
         {{ store.state.cartNotice }}
       </p>
       <p v-if="!cartItems.length">

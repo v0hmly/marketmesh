@@ -68,6 +68,10 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await mug.getByRole('button', { name: /^Открыть корзину/ }).click();
   await expect(page.getByRole('dialog', { name: 'Корзина' })).toBeVisible();
   await page.getByRole('button', { name: 'Продолжить покупки' }).click();
+  // Смена категории сбрасывает подтверждение в карточке.
+  await page.getByRole('button', { name: 'Одежда' }).click();
+  await page.getByRole('button', { name: 'Керамика' }).click();
+  await expect(mug.locator('.storefront-card-status')).toHaveCount(0);
   await page.getByRole('button', { name: /^Корзина/ }).click();
   const cart = page.getByRole('dialog', { name: 'Корзина' });
   await expect(cart.getByText('2 400 ₽').first()).toBeVisible();

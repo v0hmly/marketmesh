@@ -284,13 +284,12 @@
   padding: 4px;
   font-size: 0.73rem;
 }
-.storefront-cart-notice {
+/* Нейтральный вариант общего .notice: оформление недоступно — не ошибка и не успех. */
+.notice.storefront-cart-notice {
   margin: 0;
-  padding: 12px 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--identity-bg);
-  font-size: 0.875rem;
+  border-color: var(--line);
+  background: var(--page);
+  color: var(--ink);
 }
 .storefront-cart-note {
   margin: 0;

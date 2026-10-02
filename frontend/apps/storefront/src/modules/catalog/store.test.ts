@@ -31,3 +31,16 @@ describe('сообщения витрины', () => {
     expect(quoted('Подсвечник из ясеня')).toBe('«Подсвечник из ясеня»');
   });
 });
+
+describe('корзина витрины', () => {
+  it('убирая изделие, снимает его подтверждение и ответ пустой корзины', async () => {
+    const { useStorefront } = await import('./store');
+    const store = useStorefront();
+    store.addToCart('p1');
+    store.announce('«Футболка» в корзине.', { id: 'p1', text: 'Добавлено в корзину.' });
+    store.state.cartNotice = 'Оформление заказа пока недоступно.';
+    store.removeFromCart('p1');
+    expect(store.state.cardStatus).toBeNull();
+    expect(store.state.cartNotice).toBe('');
+  });
+});
