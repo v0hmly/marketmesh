@@ -118,5 +118,18 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  // Телефон: категории — одна строка, первая карточка начинается в первом экране.
+  const chipTops = await page
+    .getByRole('group', { name: 'Категория' })
+    .getByRole('button')
+    .evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().top)));
+  expect(new Set(chipTops).size).toBe(1);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const firstCard = await page
+    .getByRole('list', { name: 'Партии' })
+    .getByRole('listitem')
+    .first()
+    .boundingBox();
+  expect(firstCard!.y).toBeLessThan(600);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

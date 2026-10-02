@@ -224,6 +224,11 @@
 .storefront-links .eyebrow {
   margin-bottom: 16px;
 }
+.storefront-links a {
+  /* Цель касания не меньше 24px по высоте (WCAG 2.5.8). */
+  display: inline-block;
+  padding: 4px 0;
+}
 .storefront-links ul {
   list-style: none;
   margin: 0;
@@ -330,15 +335,61 @@
   .storefront-nav {
     gap: 12px;
   }
-  .storefront-grid,
+  /* Телефон (MM-128): лента начинается в первом экране. Категории — одна строка с
+     горизонтальной прокруткой до краёв экрана, порядок — компактной строкой, плитки — в
+     две колонки с фото ниже. */
   .storefront-links {
     grid-template-columns: minmax(0, 1fr);
   }
-  .storefront-sort {
-    width: 100%;
+  .storefront-feed {
+    gap: 16px;
+  }
+  .storefront-feed-heading {
+    gap: 16px;
   }
   .storefront-heading h1 {
     font-size: 2.2rem;
+    margin-bottom: 8px;
+  }
+  .storefront-heading .lede {
+    line-height: 1.55;
+  }
+  .storefront-sort {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .storefront-sort label {
+    flex-shrink: 0;
+  }
+  .storefront-sort .select-wrap {
+    flex-grow: 1;
+  }
+  .storefront-feed .filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -22px;
+    padding: 4px 22px 8px;
+    scroll-padding-inline: 22px;
+    scrollbar-width: thin;
+  }
+  .storefront-feed .filter-row .button {
+    flex-shrink: 0;
+  }
+  .storefront-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .storefront-tile {
+    padding: 8px;
+    gap: 8px;
+  }
+  .storefront-photo .sample-photo {
+    height: 160px;
+  }
+  .storefront-tile .button {
+    padding-inline: 8px;
   }
   .storefront-feedback {
     padding: 16px;
