@@ -152,6 +152,7 @@
 .storefront-tag-meter {
   display: block;
   height: 2px;
+  /* 1px сверху и снизу держат 4px места шкалы, как у толстой: бирки в ряду одной высоты. */
   margin-block: 1px;
   border-radius: 999px;
   background: var(--line);
@@ -161,6 +162,10 @@
   display: block;
   height: 100%;
   background: var(--muted);
+}
+/* У полной партии шкалы нет, но место остаётся: цены в ряду не скачут. */
+.storefront-tag-meter-none {
+  visibility: hidden;
 }
 .storefront-tag-ending .storefront-tag-meter {
   height: 4px;

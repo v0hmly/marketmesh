@@ -28,7 +28,7 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await expect(page.getByText('Партия из 7, вся в наличии · от 29 сентября')).toBeVisible();
   await expect(page.getByText('Осталось 2 из 6 · партия от 29 сентября')).toBeVisible();
   // Масса шкалы следует смыслу: тонкая каменная у обычной партии, охряная и толще у
-  // заканчивающейся, у полной партии шкалы нет.
+  // заканчивающейся, у полной партии шкала скрыта (место остаётся, чтобы ряд не скакал).
   const meterColor = (text: RegExp) =>
     tiles
       .filter({ hasText: text })
@@ -56,7 +56,7 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
       .filter({ hasText: /вся в наличии/ })
       .first()
       .locator('.storefront-tag-meter'),
-  ).toHaveCount(0);
+  ).toBeHidden();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole('button', { name: 'Показать ещё партии' }).click();
