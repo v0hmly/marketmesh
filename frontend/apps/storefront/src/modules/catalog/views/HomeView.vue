@@ -71,6 +71,11 @@ async function read() {
     if (active) loading.value = false;
   }
 }
+/** Строка бирки: остаток и дата партии. */
+function tagText(item: SampleBatch) {
+  const stock = stockText(item.left, item.batch);
+  return `${stock} · ${batchDateText(item.published, stock)}`;
+}
 function choose(value: 'all' | SampleCategory) {
   category.value = value;
   more.value = false;
@@ -257,10 +262,7 @@ onBeforeUnmount(() => {
               'storefront-tag-ending': lowStock(item.left, item.batch),
             }"
           >
-            <span
-              >{{ stockText(item.left, item.batch) }} ·
-              {{ batchDateText(item.published, stockText(item.left, item.batch)) }}</span
-            >
+            <span>{{ tagText(item) }}</span>
             <span class="storefront-tag-meter" aria-hidden="true"
               ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
             ></span>
