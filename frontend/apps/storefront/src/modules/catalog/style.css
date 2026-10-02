@@ -134,8 +134,9 @@
 .storefront-favorite[aria-pressed='true'] {
   color: var(--green);
 }
-/* Бирка партии: остаток — главный сигнал карточки (MM-126). Шкала графитовая; охра
-   (--low-stock) только у заканчивающейся партии. Обе держат 3:1 к карточке и дорожке,
+/* Бирка партии: остаток — главный сигнал карточки (MM-126). Масса шкалы следует смыслу
+   (MM-129): у обычной партии — тонкая 2px цветом камня, у заканчивающейся — 4px охрой
+   (--low-stock), у полной партии шкалы нет. Обе заливки держат 3:1 к карточке и дорожке,
    но смысл несёт подпись рядом, шкала её лишь дублирует. */
 .storefront-tag {
   display: flex;
@@ -150,7 +151,9 @@
 }
 .storefront-tag-meter {
   display: block;
-  height: 4px;
+  height: 2px;
+  /* 1px сверху и снизу держат 4px места шкалы, как у толстой: бирки в ряду одной высоты. */
+  margin-block: 1px;
   border-radius: 999px;
   background: var(--line);
   overflow: hidden;
@@ -158,7 +161,15 @@
 .storefront-tag-meter > span {
   display: block;
   height: 100%;
-  background: var(--ink);
+  background: var(--muted);
+}
+/* У полной партии шкалы нет, но место остаётся: цены в ряду не скачут. */
+.storefront-tag-meter-none {
+  visibility: hidden;
+}
+.storefront-tag-ending .storefront-tag-meter {
+  height: 4px;
+  margin-block: 0;
 }
 .storefront-tag-ending .storefront-tag-meter > span {
   background: var(--low-stock);

@@ -285,7 +285,10 @@ onBeforeUnmount(() => {
             }"
           >
             <span>{{ tagText(item) }}</span>
-            <span class="storefront-tag-meter" aria-hidden="true"
+            <span
+              class="storefront-tag-meter"
+              :class="{ 'storefront-tag-meter-none': item.left === item.batch }"
+              aria-hidden="true"
               ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
             ></span>
           </div>

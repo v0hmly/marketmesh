@@ -25,24 +25,38 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await expect(tiles).toHaveCount(8);
   await expect(page.getByText('В партии 8 из 10')).toBeVisible();
   // Бирка партии: полная партия и малый остаток называются по-разному.
-  await expect(page.getByText('Вся партия: 7')).toBeVisible();
+  await expect(page.getByText('Партия из 7, вся в наличии · от 29 сентября')).toBeVisible();
   await expect(page.getByText('Осталось 2 из 6 · партия от 29 сентября')).toBeVisible();
-  // Шкала графитовая по умолчанию и охряная только у заканчивающейся партии.
+  // Масса шкалы следует смыслу: тонкая каменная у обычной партии, охряная и толще у
+  // заканчивающейся, у полной партии шкала скрыта (место остаётся, чтобы ряд не скакал).
   const meterColor = (text: RegExp) =>
     tiles
       .filter({ hasText: text })
       .locator('.storefront-tag-meter > span')
       .evaluate((node) => getComputedStyle(node).backgroundColor);
-  const ink = await page.evaluate(() =>
-    getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+  const stone = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
   );
   const lowStock = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--status-low-stock').trim(),
   );
   const rgb = (hex: string) =>
     `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
-  expect(await meterColor(/В партии 8 из 10/)).toBe(rgb(ink));
+  expect(await meterColor(/В партии 8 из 10/)).toBe(rgb(stone));
   expect(await meterColor(/Осталось 2 из 6/)).toBe(rgb(lowStock));
+  const meterHeight = (text: RegExp) =>
+    tiles
+      .filter({ hasText: text })
+      .locator('.storefront-tag-meter')
+      .evaluate((node) => node.getBoundingClientRect().height);
+  expect(await meterHeight(/В партии 8 из 10/)).toBe(2);
+  expect(await meterHeight(/Осталось 2 из 6/)).toBe(4);
+  await expect(
+    tiles
+      .filter({ hasText: /вся в наличии/ })
+      .first()
+      .locator('.storefront-tag-meter'),
+  ).toBeHidden();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole('button', { name: 'Показать ещё партии' }).click();

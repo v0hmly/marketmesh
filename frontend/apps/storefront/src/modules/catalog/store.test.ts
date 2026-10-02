@@ -6,7 +6,7 @@ describe('бирка партии', () => {
     expect(stockText(0, 8)).toBe('Партия распродана');
     expect(stockText(2, 6)).toBe('Осталось 2 из 6');
     expect(stockText(2, 2)).toBe('Осталось 2 из 2');
-    expect(stockText(7, 7)).toBe('Вся партия: 7');
+    expect(stockText(7, 7)).toBe('Партия из 7, вся в наличии');
     expect(stockText(8, 10)).toBe('В партии 8 из 10');
   });
 
