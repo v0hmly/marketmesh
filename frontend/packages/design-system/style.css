@@ -52,7 +52,7 @@ button:disabled {
 }
 
 a {
-  color: var(--green);
+  color: var(--link);
   text-underline-offset: 4px;
 }
 
@@ -62,7 +62,8 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid var(--focus);
-  outline-offset: 4px;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--focus-inner);
 }
 
 p,
@@ -123,7 +124,7 @@ textarea:hover {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--green);
+  border-color: var(--link);
 }
 select {
   appearance: none;
@@ -238,7 +239,7 @@ textarea:disabled {
 }
 
 .nav-link.router-link-active {
-  border-bottom-color: var(--green);
+  border-bottom-color: var(--link);
 }
 
 main {
@@ -391,7 +392,7 @@ main:focus {
 
 .secondary {
   background: var(--button-secondary);
-  color: var(--green);
+  color: var(--link);
   border-color: var(--button-border);
 }
 
@@ -402,7 +403,7 @@ main:focus {
 
 .text-button {
   background: none;
-  color: var(--green);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -793,7 +794,7 @@ main:focus {
   cursor: pointer;
 }
 .theme-choice:has(input:checked) {
-  border-color: var(--green);
+  border-color: var(--link);
   background: var(--identity-bg);
 }
 .theme-choice input {
@@ -803,7 +804,7 @@ main:focus {
   flex-shrink: 0;
   margin: 3px 0 0;
   padding: 0;
-  accent-color: var(--green);
+  accent-color: var(--link);
 }
 .theme-choice small {
   display: block;
@@ -822,7 +823,7 @@ main:focus {
   gap: 8px;
 }
 .filter-row .button[aria-pressed="true"] {
-  border-color: var(--green);
+  border-color: var(--link);
   background: var(--identity-bg);
 }
 .sample-list {

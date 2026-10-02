@@ -6,8 +6,8 @@ The trailing `↗` belongs to `.primary` and nothing else. The older rule ("arro
 
 Heights come from tokens: `button-h` (45px) by default, `button-h-compact` (42px) with `.compact`, which exists for session controls and nothing else. 42px is the floor for anything interactive in this system. Add `.wide` inside a narrow container — an auth card, a form footer — to fill the row and push a trailing icon to the far edge.
 
-The secondary button's fill sits within 1.02:1 of the page ground on purpose, so its `border-control` boundary is the only thing that says "button" — that border must never be softened below the 3:1 it now holds. Hover darkens both fill and border together.
+The secondary button's fill sits within 1.04:1 of the page ground on purpose, so its `border-control` boundary is the only thing that says "button" — that border must never be softened below the 3:1 it now holds. Hover darkens both fill and border together.
 
 Disabled buttons drop to 55% opacity and switch their label to a present-tense progressive form ("Сохраняем…"), never a spinner or a separate loading component.
 
-Focus is the system-wide two-tone ring: 3px `ring-focus` outside, 3px `ring-focus-inner` hugging the control. Both halves are required — the olive alone clears 3:1 by only a tenth of a point on light grounds. Never remove or restyle it.
+Focus is the system-wide two-tone ring: 3px `ring-focus` outside, 3px `ring-focus-inner` hugging the control. Both halves are required — the light-mode ochre alone reads only about 2.2:1 on pale grounds. Never remove or restyle it.

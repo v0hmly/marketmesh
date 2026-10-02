@@ -215,7 +215,7 @@
 }
 .account-nav .account-link-active {
   font-weight: 600;
-  color: var(--green);
+  color: var(--link);
   background: var(--identity-bg);
 }
 .account-nav-count {
@@ -504,10 +504,12 @@
 }
 .star-option input:focus-visible + label {
   outline: 3px solid var(--focus);
-  outline-offset: 4px;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--focus-inner);
 }
+/* Звезда — состояние оценки, а не украшение: --brand-accent не держит 3:1. */
 .star-icon {
-  color: var(--brand-accent);
+  color: var(--text-link);
 }
 .star-icon.star-off {
   color: var(--muted);

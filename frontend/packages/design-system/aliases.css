@@ -1,5 +1,6 @@
 :root {
   --green: var(--action-primary);
+  --link: var(--text-link);
   --ink: var(--text-primary);
   --muted: var(--text-secondary);
   --line: var(--border-subtle);
@@ -8,6 +9,7 @@
   --danger: var(--status-danger);
   --page: var(--surface-page);
   --focus: var(--ring-focus);
+  --focus-inner: var(--ring-focus-inner);
   --input-border: var(--border-control);
   --input-bg: var(--surface-control);
   --input-hover: var(--border-hover);

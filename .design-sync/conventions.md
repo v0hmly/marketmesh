@@ -26,7 +26,7 @@
 `var(--border-subtle|control|hover)`, `var(--action-primary)` + `var(--on-action-primary)`,
 `var(--status-danger|pending)`, `var(--brand-accent)`. Отступы: `var(--sp-1)`…`var(--sp-10)`.
 Радиусы: `var(--r-xs|sm|md|lg|pill|round)`. Тень одна: `var(--elevation-card)`.
-Высоты: `var(--control-h)`, `var(--button-h)`. Палитру (`--moss-*`, `--sage-*`, `--clay-*`)
+Высоты: `var(--control-h)`, `var(--button-h)`. Палитру (`--graphite-*`, `--stone-*`, `--amber-*`, `--clay-*`)
 не используйте напрямую.
 
 ## Классы
