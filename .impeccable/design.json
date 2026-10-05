@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-01T12:14:56.204903+00:00",
+  "title": "Design System: MarketMesh",
+  "extensions": {
+    "colorMeta": {
+      "graphite-core": {
+        "role": "primary",
+        "displayName": "Графитовый стержень",
+        "canonical": "#2b2b2a",
+        "dark": "#ecebe7",
+        "tonalRamp": [
+          "#111110",
+          "#232322",
+          "#2b2b2a",
+          "#3f3d39",
+          "#62605b",
+          "#85817a",
+          "#e3e0d8",
+          "#faf9f5"
+        ]
+      },
+      "ochre-link": {
+        "role": "primary",
+        "displayName": "Жжёная охра",
+        "canonical": "#7a5200",
+        "dark": "#f2c46a",
+        "tonalRamp": [
+          "#5c4000",
+          "#7a5200",
+          "#946a12",
+          "#d89a1a",
+          "#ecdcb5",
+          "#efe2c4",
+          "#f3efe3",
+          "#f8f0dc"
+        ]
+      },
+      "ochre-tag": {
+        "role": "secondary",
+        "displayName": "Пчелиный воск",
+        "canonical": "#d89a1a",
+        "dark": "#e0a22a"
+      },
+      "ochre-pending": {
+        "role": "secondary",
+        "displayName": "Тёмный мёд",
+        "canonical": "#946a12",
+        "dark": "#e0b75e"
+      },
+      "moss-success": {
+        "role": "tertiary",
+        "displayName": "Мох",
+        "canonical": "#eff3e8",
+        "dark": "#25341f"
+      },
+      "clay-danger": {
+        "role": "tertiary",
+        "displayName": "Обожжённая глина",
+        "canonical": "#a3261f",
+        "dark": "#ffb1a6"
+      },
+      "graphite-ink": {
+        "role": "neutral",
+        "displayName": "Графитовые чернила",
+        "canonical": "#232322",
+        "dark": "#ecebe7"
+      },
+      "stone-muted": {
+        "role": "neutral",
+        "displayName": "Камень",
+        "canonical": "#62605b",
+        "dark": "#b9b6ae"
+      },
+      "stone-control": {
+        "role": "neutral",
+        "displayName": "Камень контрола",
+        "canonical": "#85817a",
+        "dark": "#85827a"
+      },
+      "paper-page": {
+        "role": "neutral",
+        "displayName": "Небелёная бумага",
+        "canonical": "#f6f4ef",
+        "dark": "#161615"
+      },
+      "paper-raised": {
+        "role": "neutral",
+        "displayName": "Лист",
+        "canonical": "#fffffd",
+        "dark": "#1f1f1d"
+      },
+      "wax-tint": {
+        "role": "neutral",
+        "displayName": "Восковая подложка",
+        "canonical": "#f3efe3",
+        "dark": "#2a2822"
+      },
+      "stone-hairline": {
+        "role": "neutral",
+        "displayName": "Волосяная линия",
+        "canonical": "#e3e0d8",
+        "dark": "#45443f"
+      },
+      "ochre-low-stock": {
+        "role": "secondary",
+        "displayName": "Охра остатка",
+        "canonical": "#9e7110",
+        "dark": "#f2b43a"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Заглавие страницы h1, законченное предложение с точкой."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "h2 разделов."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Основной текст."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Подсказки, метаданные, остаток партии."
+      }
+    },
+    "shadows": [
+      {
+        "name": "elevation-card",
+        "value": "0 5px 18px #29432c03",
+        "purpose": "Единственная тень, только у карточки; в тёмной теме 0 5px 18px #00000030."
+      }
+    ],
+    "motion": [
+      {
+        "name": "field-border",
+        "value": "border-color 150ms",
+        "purpose": "Единственный transition — рамка поля; отключается prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "720px"
+      },
+      {
+        "name": "tablet",
+        "value": "1000px"
+      },
+      {
+        "name": "wide",
+        "value": "1400px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Единственное основное действие экрана.",
+      "html": "<button class=\"ds-btn-primary\">Оформить заказ <span aria-hidden=\"true\">↗</span></button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:20px;min-height:45px;padding:11px 19px;border-radius:8px;border:1px solid transparent;background:var(--action-primary,#2b2b2a);color:var(--on-action-primary,#fffdf6);font:550 0.79rem/1.4 Inter,'Segoe UI',Arial,sans-serif;cursor:pointer}.ds-btn-primary span{font-size:1.15rem;font-weight:400}.ds-btn-primary:hover{background:var(--action-primary-hover,#111110)}.ds-btn-primary:focus-visible{outline:3px solid var(--ring-focus,#d89a1a);outline-offset:3px;box-shadow:0 0 0 3px var(--ring-focus-inner,#111110)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Остальные действия экрана.",
+      "html": "<button class=\"ds-btn-secondary\">В корзину</button>",
+      "css": ".ds-btn-secondary{min-height:45px;padding:11px 19px;border-radius:8px;border:1px solid var(--border-control,#85817a);background:var(--action-secondary,#faf9f5);color:var(--text-link,#7a5200);font:550 0.79rem/1.4 Inter,'Segoe UI',Arial,sans-serif;cursor:pointer}.ds-btn-secondary:hover{background:var(--action-secondary-hover,#eeece5);border-color:var(--border-hover,#3f3d39)}.ds-btn-secondary:focus-visible{outline:3px solid var(--ring-focus,#d89a1a);outline-offset:3px;box-shadow:0 0 0 3px var(--ring-focus-inner,#111110)}"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "Низкорисковые действия.",
+      "html": "<button class=\"ds-btn-text\">Сообщить о пополнении</button>",
+      "css": ".ds-btn-text{min-height:45px;padding:11px 19px;border:0;border-radius:8px;background:none;color:var(--text-link,#7a5200);text-decoration:underline;text-underline-offset:4px;font:550 0.79rem/1.4 Inter,'Segoe UI',Arial,sans-serif;cursor:pointer}.ds-btn-text:hover{background:var(--action-text-hover,#f1efe8)}.ds-btn-text:focus-visible{outline:3px solid var(--ring-focus,#d89a1a);outline-offset:3px;box-shadow:0 0 0 3px var(--ring-focus-inner,#111110)}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Поле с подписью и подсказкой.",
+      "html": "<label class=\"ds-field\"><span>Имя</span><input class=\"ds-input\" value=\"Вера\"><small>Как к вам обращаться.</small></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:8px;font-family:Inter,'Segoe UI',Arial,sans-serif;color:var(--text-primary,#232322)}.ds-field span{font-size:0.875rem;font-weight:600}.ds-field small{font-size:0.73rem;line-height:1.6;color:var(--text-secondary,#62605b)}.ds-input{min-height:48px;padding:13px 15px;border:1px solid var(--border-control,#85817a);border-radius:9px;background:var(--surface-raised,#fffffd);color:inherit;font:inherit;transition:border-color .15s}.ds-input:hover{border-color:var(--border-hover,#3f3d39)}.ds-input:focus{border-color:var(--text-link,#7a5200)}.ds-input:focus-visible{outline:3px solid var(--ring-focus,#d89a1a);outline-offset:3px;box-shadow:0 0 0 3px var(--ring-focus-inner,#111110)}"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter-selected",
+      "description": "Фильтр категорий с aria-pressed.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">Все</button><button class=\"ds-chip\" aria-pressed=\"false\">Керамика</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px}.ds-chip{min-height:45px;padding:11px 19px;border-radius:8px;border:1px solid var(--border-control,#85817a);background:var(--action-secondary,#faf9f5);color:var(--text-link,#7a5200);font:550 0.79rem/1.4 Inter,'Segoe UI',Arial,sans-serif;cursor:pointer}.ds-chip[aria-pressed=true]{background:var(--surface-tint,#f3efe3);border-color:var(--text-link,#7a5200)}"
+    },
+    {
+      "name": "Batch Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Карточка партии: остаток, шкала и дата отдельными строками, затем цена, название и мастерская.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-photo\">ФОТО</div><span class=\"ds-stock\">В партии 5 из 12</span><span class=\"ds-meter\"><span></span></span><small>партия от 30 сентября</small><strong>2 400 ₽</strong><span>Кружка «Пена», 300&nbsp;мл</span><small>Глина и соль</small></article>",
+      "css": ".ds-card{display:flex;flex-direction:column;gap:6px;width:240px;padding:16px;border:1px solid var(--border-subtle,#e3e0d8);border-radius:18px;background:var(--surface-raised,#fffffd);box-shadow:0 5px 18px #29432c03;font-family:Inter,'Segoe UI',Arial,sans-serif;color:var(--text-primary,#232322)}.ds-photo{display:grid;place-items:center;aspect-ratio:1;margin-bottom:6px;border:1px solid var(--border-subtle,#e3e0d8);border-radius:10px;background:var(--surface-tint,#f3efe3);font-size:0.73rem;letter-spacing:0.14em;color:var(--text-secondary,#62605b)}.ds-card strong{font-size:1.15rem;font-variant-numeric:tabular-nums}.ds-card span{font-size:0.875rem}.ds-card small{font-size:0.73rem;color:var(--text-secondary,#62605b)}.ds-stock{font-size:0.875rem;font-variant-numeric:tabular-nums}.ds-meter{display:block;height:2px;margin:4px 0;border-radius:999px;background:var(--border-subtle,#e3e0d8)}.ds-meter span{display:block;width:42%;height:100%;background:var(--text-secondary,#62605b)}"
+    },
+    {
+      "name": "Brand Mark",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "Монограмма «m» Georgia в графитовом круге и словесный знак с охряной точкой.",
+      "html": "<span class=\"ds-brand\"><span class=\"ds-mark\"><span>m</span></span>MarketMesh<span class=\"ds-dot\">.</span></span>",
+      "css": ".ds-brand{display:inline-flex;align-items:center;gap:11px;font:650 1.55rem Inter,'Segoe UI',Arial,sans-serif;letter-spacing:-1px;color:var(--text-primary,#232322)}.ds-mark{display:flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:50%;background:var(--action-primary,#2b2b2a);color:var(--on-action-primary,#fffdf6);font:400 25px/1 Georgia,serif;letter-spacing:0}.ds-mark span{transform:translateY(-0.06em)}.ds-dot{color:var(--brand-accent,#d89a1a)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Мастерская с биркой",
+    "overview": "Интерфейс — это учётная тетрадь мастерской: графитовый карандаш на плотной тёплой бумаге и\nодна охряная бирка, привязанная к тому, что можно взять в руки. Графит пишет текст и главное\nдействие; охра отмечает всё, по чему можно перейти или что держит фокус. Ничего не\nкричит: изделие, мастер и остаток партии говорят сами, интерфейс их записывает.\n\nПлотность умеренная, ритм спокойный. Поверхности почти плоские — бумага на бумаге, разделённая\nволосяной линией, и единственная едва заметная тень у карточки. Типографика рабочая: Inter во\nвсём интерфейсе и Georgia только в заглавии страницы и в инициалах — как подпись от руки на\nтитуле. Состояния названы словами, а не только цветом: ожидание, конфликт, распроданная партия\nвсегда подписаны.\n\nКомпоненты сдержанные и точные: на экране одна залитая кнопка, остальные действия — контур\nили текст. Контраст не обсуждается: текст не ниже 4.5:1, всё значимое нетекстовое — не ниже 3:1\nв обеих темах.",
+    "keyCharacteristics": [
+      "Тёплый графит на небелёной бумаге, одна охра для ссылок, фокуса и знака.",
+      "Одна залитая кнопка на экран; остальное — контур или подчёркнутый текст.",
+      "Почти плоская бумага: волосяные линии и одна тень только у карточки.",
+      "Georgia — только заглавие страницы и инициалы; всё остальное Inter.",
+      "Состояния всегда подписаны словами; цвет их лишь усиливает."
+    ],
+    "rules": [
+      {
+        "name": "The One Tag Rule",
+        "body": "Охра — бирка, а не краска: ссылки, фокус, выбранное и знак. Охра также отмечает малый остаток партии — и больше ничего вне ссылок, фокуса, выбранного и знака. Никаких охряных заливок крупных площадей, фонов секций или заголовков.",
+        "section": "colors"
+      },
+      {
+        "name": "The Decorative Wax Rule",
+        "body": "Пчелиный воск (#d89a1a) никогда не несёт состояние и не бывает текстом. Если элемент значимый — он в жжёной охре или графите.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status Outside Rule",
+        "body": "Вне графита и охры живут только статусы: глина для ошибок, мох для успеха. Распроданность и избранное — не ошибки и не используют глину.",
+        "section": "colors"
+      },
+      {
+        "name": "The Signature Serif Rule",
+        "body": "Georgia — только заглавие страницы и инициалы аватара. Ни в кнопках, ни в ценах, ни в заголовках карточек.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Scale Rule",
+        "body": "Размеры только из шкалы 0.65 / 0.73 / 0.8 / 0.875 / 1 / 1.15 / 1.55 rem; промежуточных значений не вводится. Цифры остатка, цен и счётчиков — `tabular-nums`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Single Shadow Rule",
+        "body": "Других теней нет. Диалог отделяется затемняющей подложкой, а не тенью; фокус — кольцом, а не свечением.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do собирать экраны из CSS-переменных дизайн-системы (`--ink`, `--muted`, `--link`, `--green`, `--focus` и др.) — новые значения только через `tokens.json` с парой light/dark.",
+      "Do держать одну основную кнопку на экран; остальные действия — вторичные или текстовые.",
+      "Do подписывать каждое состояние словами: ожидание точкой и фразой, конфликт — панелью reconcile с двумя путями.",
+      "Do проверять контраст в обеих темах: текст ≥ 4.5:1, значимые нетекстовые элементы ≥ 3:1."
+    ],
+    "donts": [
+      "Don't вписывать hex прямо в компоненты.",
+      "Don't использовать пчелиный воск (#d89a1a) для текста, шкал или как единственный признак состояния.",
+      "Don't добавлять тени кроме тени карточки, градиенты и охряные заливки секций.",
+      "Don't ставить Georgia куда-либо кроме заглавия страницы и инициалов.",
+      "Don't вводить отступы и размеры шрифта вне шкал (11, 13, 17, 27px и т. п.).",
+      "Don't использовать глину для распроданных партий или избранного."
+    ]
+  }
+}
