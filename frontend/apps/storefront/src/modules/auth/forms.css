@@ -4,6 +4,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  /* Дополнительные действия отделены от основной кнопки (MM-136). */
+  margin-top: 12px;
 }
 
 .password-requirements {

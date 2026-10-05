@@ -336,7 +336,7 @@ async function submit() {
           <span v-if="innError" id="apply-inn-error" class="field-error">{{ innError }}</span>
         </div>
         <button class="button primary wide" type="submit" :disabled="fieldsDisabled">
-          <span>{{ submitLabel }}</span>
+          {{ submitLabel }}
           <span v-if="!submitting" aria-hidden="true">↗</span>
         </button>
       </form>

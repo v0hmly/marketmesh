@@ -527,7 +527,7 @@ function submit() {
             }}</span>
           </div>
           <button class="button primary wide" type="submit" :disabled="fieldsDisabled">
-            <span>{{ submitLabel }}</span>
+            {{ submitLabel }}
             <span v-if="!submitting && !locked" aria-hidden="true">↗</span>
           </button>
         </template>
@@ -573,7 +573,7 @@ function submit() {
             }}</span>
           </div>
           <button class="button primary wide" type="submit" :disabled="codeFieldsDisabled">
-            <span>{{ codeSubmitLabel }}</span>
+            {{ codeSubmitLabel }}
             <span v-if="!codeSubmitting" aria-hidden="true">↗</span>
           </button>
           <div class="auth-code-actions">
