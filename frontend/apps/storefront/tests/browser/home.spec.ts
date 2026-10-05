@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type BrowserContext, type Route } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page, type Route } from '@playwright/test';
 
 // Витрина пока на образцовых данных (MM-125): API нужен только для гостевой сессии.
 async function guestApi(context: BrowserContext) {
@@ -14,6 +14,25 @@ async function guestApi(context: BrowserContext) {
   await context.route('**/user.v1.UserService/**', unauthenticated);
 }
 
+/** Расстояние между первыми двумя рядами карточек и лишний запас после последнего ряда. */
+function rowSpacing(page: Page) {
+  return page.evaluate(() => {
+    const tiles = [...document.querySelectorAll('.storefront-tile')].map((tile) =>
+      tile.getBoundingClientRect(),
+    );
+    const first = tiles[0]!;
+    const second = tiles.find((tile) => tile.top > first.bottom)!;
+    const grid = document.querySelector('.storefront-grid')!;
+    const next = grid.nextElementSibling!.getBoundingClientRect();
+    const feedGap = parseFloat(getComputedStyle(grid.parentElement!).rowGap);
+    // После последнего ряда — только обычный зазор ленты до следующего элемента.
+    return {
+      between: Math.round(second.top - first.bottom),
+      after: Math.round(next.top - Math.max(...tiles.map((tile) => tile.bottom)) - feedGap),
+    };
+  });
+}
+
 test('guest home lists new batches, filters, keeps the cart and stays accessible', async ({
   page,
   context,
@@ -25,8 +44,38 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   await expect(tiles).toHaveCount(8);
   await expect(page.getByText('В партии 8 из 10')).toBeVisible();
   // Бирка партии: полная партия и малый остаток называются по-разному.
-  await expect(page.getByText('Партия из 7, вся в наличии · от 29 сентября')).toBeVisible();
-  await expect(page.getByText('Осталось 2 из 6 · партия от 29 сентября')).toBeVisible();
+  await expect(page.getByText('В партии 7 из 7', { exact: true })).toBeVisible();
+  await expect(page.getByText('Осталось 2 из 6', { exact: true })).toBeVisible();
+  // Слоты каждой карточки стоят на одной горизонтали со слотами соседей по ряду (MM-133).
+  const slotsAligned = (slots: string[]) =>
+    page.evaluate((selectors) => {
+      const rows = new Map<number, Element[]>();
+      for (const tile of document.querySelectorAll('.storefront-tile')) {
+        const top = Math.round(tile.getBoundingClientRect().top);
+        rows.set(top, [...(rows.get(top) ?? []), tile]);
+      }
+      return [...rows.values()].every((tiles) =>
+        selectors.every(
+          (slot) =>
+            new Set(
+              tiles.map((tile) =>
+                Math.round(tile.querySelector(slot)!.getBoundingClientRect().top),
+              ),
+            ).size === 1,
+        ),
+      );
+    }, slots);
+  const allSlots = [
+    '.storefront-stock',
+    '.storefront-batch-date',
+    '.storefront-price',
+    '.storefront-title',
+    '.storefront-shop',
+    '.storefront-tile > .button',
+  ];
+  expect(await slotsAligned(allSlots)).toBe(true);
+  // Между рядами карточек — 20px (на телефоне 12px), и после последнего ряда лишнего нет.
+  expect(await rowSpacing(page)).toEqual({ between: 20, after: 0 });
   // Масса шкалы следует смыслу: тонкая каменная у обычной партии, охряная и толще у
   // заканчивающейся, у полной партии шкала скрыта (место остаётся, чтобы ряд не скакал).
   const meterColor = (text: RegExp) =>
@@ -52,10 +101,7 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
   expect(await meterHeight(/В партии 8 из 10/)).toBe(2);
   expect(await meterHeight(/Осталось 2 из 6/)).toBe(4);
   await expect(
-    tiles
-      .filter({ hasText: /вся в наличии/ })
-      .first()
-      .locator('.storefront-tag-meter'),
+    tiles.filter({ hasText: 'В партии 7 из 7' }).first().locator('.storefront-tag-meter'),
   ).toBeHidden();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
@@ -224,7 +270,28 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await expect(bar).toHaveCount(0);
   await expect(page.locator('#catalog')).toBeFocused();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await rowSpacing(page)).toEqual({ between: 12, after: 0 });
   await page.setViewportSize({ width: 320, height: 640 });
+  // На узком телефоне слоты по-прежнему выровнены по ряду.
+  expect(
+    await page.evaluate(() => {
+      const rows = new Map<number, Element[]>();
+      for (const tile of document.querySelectorAll('.storefront-tile')) {
+        const top = Math.round(tile.getBoundingClientRect().top);
+        rows.set(top, [...(rows.get(top) ?? []), tile]);
+      }
+      return [...rows.values()].every((tiles) =>
+        ['.storefront-price', '.storefront-shop', '.storefront-tile > .button'].every(
+          (slot) =>
+            new Set(
+              tiles.map((tile) =>
+                Math.round(tile.querySelector(slot)!.getBoundingClientRect().top),
+              ),
+            ).size === 1,
+        ),
+      );
+    }),
+  ).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

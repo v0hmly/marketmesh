@@ -124,15 +124,25 @@ export function lowStock(left: number, batch: number) {
 
 const batchDay = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
 
-/** Подпись даты партии: «партия от 24 сентября», а если остаток уже называет партию — «от 24 сентября». */
-export function batchDateText(published: string, stock: string) {
-  const day = batchDay.format(new Date(`${published}T12:00:00`));
-  return /парти/i.test(stock) ? `от ${day}` : `партия от ${day}`;
+/** Дата партии — отдельная строка бирки под шкалой (MM-133): «партия от 24 сентября». */
+export function batchDateText(published: string) {
+  return `партия от ${batchDay.format(new Date(`${published}T12:00:00`))}`;
+}
+
+/** Мастерская на плитке — только имя: «Мастерская «Слой»» → «Слой». */
+export function shopName(shop: string) {
+  return shop.replace(/^Мастерская\s+/, '').replace(/^«(.*)»$/, '$1');
+}
+
+/** Неразрывные пробелы, чтобы единицы не отрывались от чисел: «300 мл», «140 × 220». */
+export function keepUnits(title: string) {
+  return title
+    .replace(/(\d)\s+×\s+(\d)/g, '$1\u00a0×\u00a0$2')
+    .replace(/(\d)\s+(?=(мл|л|шт\.?|см|мм|г|кг)(?![а-яё]))/gi, '$1\u00a0');
 }
 
 export function stockText(left: number, batch: number) {
   if (left === 0) return 'Партия распродана';
   if (left <= 2) return `Осталось ${left} из ${batch}`;
-  if (left === batch) return `Партия из ${batch}, вся в наличии`;
   return `В партии ${left} из ${batch}`;
 }
