@@ -13,8 +13,9 @@ import {
   type PreparedUpload,
 } from './api';
 
-const props = defineProps<{ initials: string }>();
-const emit = defineEmits<{ image: [url: string] }>();
+const props = defineProps<{ initials: string; locked?: string }>();
+const expanded = ref(false);
+const emit = defineEmits<{ image: [url: string]; active: [value: boolean] }>();
 const api = inject(avatarApiKey, null) ?? createAvatarApi();
 const session = useSession();
 const current = shallowRef<Avatar | null>(null);
@@ -54,6 +55,7 @@ function valid(guard: SessionGuard, token: number) {
 }
 function clearState() {
   revision++;
+  expanded.value = false;
   controller.abort();
   controller = new AbortController();
   replaceImage('');
@@ -141,6 +143,10 @@ async function read() {
     if (valid(guard, token)) busy.value = false;
   }
 }
+function toggle(event: Event) {
+  expanded.value = (event.target as HTMLDetailsElement).open;
+}
+watch(expanded, (value) => emit('active', value), { immediate: true });
 function select(event: Event) {
   selected.value = (event.target as HTMLInputElement).files?.[0] ?? null;
   prepared.value = null;
@@ -285,7 +291,7 @@ async function remove() {
     current.value = a;
     replaceImage('');
     uncertain.value = false;
-    feedback.value = 'Аватар удалён. Очистка файла выполняется в фоне.';
+    feedback.value = 'Аватар удалён. Вместо него показываем ваши инициалы.';
   } catch (error) {
     if (valid(guard, token)) failure.value = describe(error);
   } finally {
@@ -335,77 +341,101 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="card profile-card" aria-labelledby="avatar-title" :aria-busy="busy">
-    <h2 id="avatar-title">Ваш аватар.</h2>
-    <div class="initials">
-      <img v-if="imageURL" :src="imageURL" alt="Ваш сохранённый аватар" /><span
-        v-else
-        aria-hidden="true"
-        >{{ props.initials }}</span
+  <div>
+    <details
+      class="card profile-card avatar-editor"
+      :open="expanded"
+      :aria-busy="busy"
+      @toggle="toggle"
+    >
+      <summary
+        :aria-disabled="
+          Boolean(props.locked) || (expanded && (busy || Boolean(candidate) || uncertain))
+        "
+        :aria-describedby="props.locked ? 'avatar-locked' : undefined"
+        @click="
+          (props.locked || (expanded && (busy || candidate || uncertain))) &&
+          $event.preventDefault()
+        "
       >
-    </div>
-    <p class="field-help">
-      PNG или JPEG до 5 МиБ. Изображение появится после проверки и обработки.
-    </p>
-    <p v-if="stage" role="status">{{ stage }}</p>
-    <p v-if="failure" id="avatar-error" class="notice error" role="alert">{{ failure }}</p>
-    <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
-    <form novalidate @submit.prevent="upload">
-      <div class="field">
-        <label for="avatar-file">Изображение для аватара</label
-        ><input
-          id="avatar-file"
-          ref="field"
-          type="file"
-          accept="image/png,image/jpeg"
-          :disabled="busy || !!candidate || uncertain"
-          :aria-describedby="failure ? 'avatar-help avatar-error' : 'avatar-help'"
-          :aria-invalid="!!failure"
-          @change="select"
-        />
-        <p id="avatar-help" class="field-help">
-          Исходный файл не показывается. Сохраняется проверенная производная.
+        Изменить аватар
+      </summary>
+      <div class="avatar-editor-content">
+        <div class="initials">
+          <img v-if="imageURL" :src="imageURL" alt="Ваш сохранённый аватар" /><span
+            v-else
+            aria-hidden="true"
+            >{{ props.initials }}</span
+          >
+        </div>
+        <p v-if="stage" role="status">{{ stage }}</p>
+        <p v-if="failure" id="avatar-error" class="notice error" role="alert">{{ failure }}</p>
+        <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
+        <form novalidate @submit.prevent="upload">
+          <div class="field">
+            <label for="avatar-file">Изображение для аватара</label
+            ><input
+              id="avatar-file"
+              ref="field"
+              type="file"
+              accept="image/png,image/jpeg"
+              :disabled="busy || !!candidate || uncertain"
+              :aria-describedby="failure ? 'avatar-help avatar-error' : 'avatar-help'"
+              :aria-invalid="!!failure"
+              @change="select"
+            />
+            <p id="avatar-help" class="field-help">
+              PNG или JPEG до 5 МиБ. Проверим изображение и сохраним аватар. Исходный файл другим
+              покупателям не показывается.
+            </p>
+          </div>
+          <div class="button-row">
+            <!-- Вторичная: основное действие экрана MarketMesh ID — сохранить открытую форму. -->
+            <button class="button secondary" type="submit" :disabled="!canUpload">
+              {{ busy ? 'Обрабатываем…' : candidate ? 'Продолжить загрузку' : 'Загрузить аватар' }}
+            </button>
+            <button
+              class="button text-button"
+              type="button"
+              :disabled="busy"
+              @click="checkCandidate"
+            >
+              Проверить аватар
+            </button>
+            <button
+              v-if="candidate && candidateReady && !processing && !uncertain"
+              class="button secondary"
+              type="button"
+              :disabled="busy"
+              @click="saveCandidate"
+            >
+              Сохранить выбранный аватар
+            </button>
+            <button
+              v-if="candidate"
+              class="button text-button"
+              type="button"
+              :disabled="busy || uncertain"
+              @click="cancelCandidate"
+            >
+              Отменить загрузку
+            </button>
+            <button
+              v-if="current?.fileId.length"
+              class="button text-button"
+              type="button"
+              :disabled="busy || uncertain || !!candidate"
+              @click="remove"
+            >
+              Удалить аватар
+            </button>
+          </div>
+        </form>
+        <p v-if="uncertain" class="reconcile-panel" role="status">
+          Запись могла выполниться. Нажмите «Проверить аватар», чтобы сверить сохранённый аватар.
         </p>
       </div>
-      <div class="button-row">
-        <!-- Вторичная: основное действие экрана MarketMesh ID — сохранить открытую форму. -->
-        <button class="button secondary" type="submit" :disabled="!canUpload">
-          {{ busy ? 'Обрабатываем…' : candidate ? 'Продолжить загрузку' : 'Загрузить аватар' }}
-        </button>
-        <button class="button secondary" type="button" :disabled="busy" @click="checkCandidate">
-          Обновить состояние
-        </button>
-        <button
-          v-if="candidate && candidateReady && !processing && !uncertain"
-          class="button secondary"
-          type="button"
-          :disabled="busy"
-          @click="saveCandidate"
-        >
-          Сохранить выбранный аватар
-        </button>
-        <button
-          v-if="candidate"
-          class="button text-button"
-          type="button"
-          :disabled="busy || uncertain"
-          @click="cancelCandidate"
-        >
-          Отменить загрузку
-        </button>
-        <button
-          v-if="current?.fileId.length"
-          class="button text-button"
-          type="button"
-          :disabled="busy || uncertain || !!candidate"
-          @click="remove"
-        >
-          Удалить аватар
-        </button>
-      </div>
-    </form>
-    <p v-if="uncertain" class="reconcile-panel" role="status">
-      Запись могла выполниться. Нажмите «Обновить состояние», чтобы сверить сохранённый аватар.
-    </p>
-  </section>
+    </details>
+    <p v-if="props.locked" id="avatar-locked" class="field-help">{{ props.locked }}</p>
+  </div>
 </template>

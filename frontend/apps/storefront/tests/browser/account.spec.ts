@@ -197,6 +197,20 @@ async function browserApi(context: BrowserContext) {
       return;
     }
     const method = new URL(route.request().url()).pathname.split('/').at(-1);
+    if (method === 'GetAvatar') {
+      await route.fulfill({
+        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+        body: Buffer.from(
+          toBinary(
+            UserService.method.getAvatar.output,
+            create(UserService.method.getAvatar.output, {
+              avatar: { subjectId: profile.subjectId, version: 1n },
+            }),
+          ),
+        ),
+      });
+      return;
+    }
     if (method === 'GetSettings' || method === 'UpdateSettings') {
       if (method === 'UpdateSettings') {
         settingsWrites++;
@@ -340,6 +354,9 @@ async function browserApi(context: BrowserContext) {
     },
     addressWrites: () => addressWrites,
     updates: () => updates,
+    replaceProfile(values: Partial<typeof profile>) {
+      profile = create(ProfileSchema, { ...profile, ...values, version: profile.version + 1n });
+    },
     refreshes: () => refreshes,
     expireAndHoldRefresh() {
       accessLive = false;
@@ -406,14 +423,14 @@ test('registration, cabinet layout, MarketMesh ID editing, reload and accessible
   await expect(page.getByRole('button', { name: 'Выйти из аккаунта', exact: true })).toBeVisible();
   await sections.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
   await expect(page.locator('.id-email')).toContainText('anna@example.ru');
-  await expect(page.locator('.id-email')).toContainText('Подтверждён');
+  await expect(page.locator('.id-email')).toContainText('Подтверждена');
   await expect(
     page.getByRole('heading', { name: 'Сеансы и устройства', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Изменить данные' }).click();
   await expect(page.getByRole('textbox', { name: 'Имя', exact: true })).toHaveValue('Анна');
   await page.getByLabel('Город проживания', { exact: true }).fill('<script>не HTML</script>');
-  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
   await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
   expect(api.updates()).toBe(1);
   await page.reload();
@@ -811,26 +828,86 @@ test('MarketMesh ID edits personal data with CAS and hides private fields from t
   context,
 }) => {
   const api = await browserApi(context);
+  api.replaceProfile({ birthDate: '1989-03-12' });
   await buyerLogin(page);
   await page.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Личные данные', exact: true })).toBeVisible();
   await expect(page.locator('.id-rows').first()).toContainText('Не указана');
   await page.getByRole('button', { name: 'Изменить данные' }).click();
   await page.getByLabel('Телефон', { exact: true }).fill('123');
-  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
   await expect(page.getByText('Номер: от 7 до 15 цифр', { exact: false })).toBeVisible();
   expect(api.updates()).toBe(0);
   await page.getByLabel('Телефон', { exact: true }).fill('+7 999 1234567');
   await page.getByLabel('Город проживания', { exact: true }).fill('Москва');
-  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
   await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
   expect(api.updates()).toBe(1);
   await expect(page.locator('.id-rows').first()).toContainText('Москва');
   await expect(page.locator('.review-preview')).toContainText('Анна, Москва');
   await expect(page.locator('.review-preview')).not.toContainText('+7 999 1234567');
+  await page.getByRole('checkbox', { name: 'Показывать возраст в отзывах' }).check();
+  await expect(page.locator('.age-feedback [role="status"]')).toContainText('Возраст теперь виден');
+  expect(api.updates()).toBe(2);
+
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+});
+
+test('ID discloses avatar editing, protects the draft and compares all conflicting fields', async ({
+  page,
+  context,
+}, testInfo) => {
+  const api = await browserApi(context);
+  await buyerLogin(page);
+  await page.goto('/account/id');
+  const avatar = page.locator('.avatar-editor');
+  const summary = avatar.locator('summary');
+  await expect(page.getByLabel('Изображение для аватара')).toBeHidden();
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Изображение для аватара')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Сменить пароль', exact: true })).toBeDisabled();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await summary.click();
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Изменить данные', exact: true }).click();
+  await page.getByLabel('Город проживания', { exact: true }).fill('Тверь');
+  await page.getByRole('button', { name: 'Отменить', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Продолжить редактирование' })).toBeFocused();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(page.getByLabel('Город проживания', { exact: true })).toHaveValue('Тверь');
+  api.replaceProfile({ birthDate: '1990-04-01', gender: 1, showAge: true, city: 'Москва' });
+  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('изменились в другом окне');
+  await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
+  const comparison = page.getByRole('region', { name: 'Сравнение версий' });
+  await expect(comparison).toContainText('1 апреля 1990 года');
+  await expect(comparison).toContainText('Возраст в отзывах');
+  await expect(comparison).toContainText('Показывается');
+  await expect(comparison).toContainText('Тверь');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('id-conflict-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: testInfo.outputPath('id-conflict-mobile.png'), fullPage: true });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({
+    path: testInfo.outputPath('id-conflict-mobile-dark.png'),
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Продолжить с черновиком' }).click();
+  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+  await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
+  expect(api.updates()).toBe(2);
 });

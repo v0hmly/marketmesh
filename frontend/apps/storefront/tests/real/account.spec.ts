@@ -154,7 +154,7 @@ async function save(page: Page, name: string, city: string) {
   const response = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === '/user.v1.UserService/UpdateMe',
   );
-  await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await page.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
   expect((await response).status()).toBe(200);
   await expect(page.getByText('Данные сохранены.', { exact: true })).toBeVisible();
 }
@@ -286,15 +286,15 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   await save(page, 'Мастер А', 'Сохранено первой вкладкой');
   await second.getByRole('button', { name: 'Изменить данные', exact: true }).click();
   await second.getByRole('textbox', { name: 'Город проживания', exact: true }).fill('Мой черновик');
-  await second.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await second.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
   await expect(second.getByRole('button', { name: 'Перечитать актуальные данные' })).toBeVisible();
   await expect(second.getByRole('textbox', { name: 'Город проживания', exact: true })).toHaveValue(
     'Мой черновик',
   );
   await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
   await expect(second.locator('.latest-profile')).toContainText('Сохранено первой вкладкой');
-  await second.getByRole('button', { name: 'Оставить мой черновик для сохранения' }).click();
-  await second.getByRole('button', { name: 'Сохранить', exact: true }).click();
+  await second.getByRole('button', { name: 'Продолжить с черновиком' }).click();
+  await second.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
   await expect(second.getByText('Данные сохранены.', { exact: true })).toBeVisible();
   await second.close();
   const other = await browser.newContext({
@@ -865,7 +865,7 @@ test('real identity fields persist with CAS, owner isolation and an ambiguous co
   await expect(second.locator('#id-city')).toHaveValue('Казань');
   await second.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
   await expect(second.locator('.latest-profile')).toContainText('Москва');
-  await second.getByRole('button', { name: 'Оставить мой черновик для сохранения' }).click();
+  await second.getByRole('button', { name: 'Продолжить с черновиком' }).click();
   await submit(second).click();
   await expect(edit(second)).toBeVisible();
   await second.close();
@@ -884,7 +884,7 @@ test('real identity fields persist with CAS, owner isolation and an ambiguous co
   await page.unroute('**/user.v1.UserService/UpdateMe');
   await page.getByRole('button', { name: 'Перечитать актуальные данные' }).click();
   await expect(page.locator('.latest-profile')).toContainText('Сохранено при потере ответа');
-  await page.getByRole('button', { name: 'Принять актуальные данные', exact: true }).click();
+  await page.getByRole('button', { name: 'Принять сохранённые данные', exact: true }).click();
   await expect(edit(page)).toBeVisible();
   const other = await browser.newContext({
     baseURL: process.env.BASE_URL,

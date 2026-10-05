@@ -60,6 +60,20 @@ export function useIdentityEditor() {
   const guard = shallowRef<SessionGuard | null>(null);
 
   const editing = ref(false);
+  const discardRequest = ref<'cancel' | 'leave' | null>(null);
+  let resolveDiscard: ((discard: boolean) => void) | null = null;
+  function settleDiscard(discard: boolean) {
+    discardRequest.value = null;
+    resolveDiscard?.(discard);
+    resolveDiscard = null;
+  }
+  function askDiscard(action: 'cancel' | 'leave') {
+    if (resolveDiscard) return Promise.resolve(false);
+    discardRequest.value = action;
+    return new Promise<boolean>((resolve) => {
+      resolveDiscard = resolve;
+    });
+  }
 
   const draft = ref<IdentityDraft>({
     displayName: '',
@@ -78,6 +92,7 @@ export function useIdentityEditor() {
   const failure = ref('');
 
   const feedback = ref('');
+  const feedbackScope = ref<'profile' | 'age'>('profile');
 
   const pending = ref(false);
 
@@ -174,6 +189,37 @@ export function useIdentityEditor() {
     genderChoices.find((choice) => choice.value === value && value !== Gender.UNSPECIFIED)?.label ??
     'Не указан';
 
+  const comparisonRows = computed(() => {
+    if (!latest.value) return [];
+    const local = { ...shown.value, showAge: showAge.value };
+    const saved = latest.value;
+    return [
+      {
+        label: 'Имя',
+        draft: local.displayName || 'Не указано',
+        saved: saved.displayName || 'Не указано',
+      },
+      {
+        label: 'Фамилия',
+        draft: local.lastName || 'Не указана',
+        saved: saved.lastName || 'Не указана',
+      },
+      { label: 'Город', draft: local.city || 'Не указан', saved: saved.city || 'Не указан' },
+      { label: 'Телефон', draft: local.phone || 'Не указан', saved: saved.phone || 'Не указан' },
+      {
+        label: 'Дата рождения',
+        draft: birthLabel(local.birthDate),
+        saved: birthLabel(saved.birthDate),
+      },
+      { label: 'Пол', draft: genderLabel(local.gender), saved: genderLabel(saved.gender) },
+      {
+        label: 'Возраст в отзывах',
+        draft: local.showAge ? 'Показывается' : 'Скрыт',
+        saved: saved.showAge ? 'Показывается' : 'Скрыт',
+      },
+    ].map((row) => ({ ...row, changed: row.draft !== row.saved }));
+  });
+
   const dirty = computed(
     () =>
       editing.value &&
@@ -210,6 +256,7 @@ export function useIdentityEditor() {
 
   function clearPrivateState() {
     revision++;
+    settleDiscard(false);
     stopPendingTimer();
     pollAttempts.value = 0;
     current.value = null;
@@ -222,6 +269,7 @@ export function useIdentityEditor() {
     attempted.value = false;
     failure.value = '';
     feedback.value = '';
+    feedbackScope.value = 'profile';
     reconcile.value = false;
     pending.value = false;
     loading.value = false;
@@ -242,6 +290,7 @@ export function useIdentityEditor() {
     if (busy.value || !permitted.value) return;
     const attempt = revision;
     loading.value = true;
+    feedbackScope.value = 'profile';
     failure.value = '';
     feedback.value = '';
     try {
@@ -285,12 +334,13 @@ export function useIdentityEditor() {
     errors.value = {};
     failure.value = '';
     feedback.value = '';
+    feedbackScope.value = 'profile';
     void nextTick(() => document.getElementById('id-first')?.focus());
   }
 
   async function cancelEditing() {
     if (busy.value) return;
-    if (dirty.value && !window.confirm('Удалить несохранённые изменения личных данных?')) return;
+    if (dirty.value && !(await askDiscard('cancel'))) return;
     editing.value = false;
     attempted.value = false;
     errors.value = {};
@@ -368,6 +418,7 @@ export function useIdentityEditor() {
   async function toggleAge(event: Event) {
     const next = (event.target as HTMLInputElement).checked;
     if (!current.value || editing.value || reconcile.value || busy.value) return;
+    feedbackScope.value = 'age';
     await mutate(profileInput({ showAge: next }));
     if (!failure.value)
       feedback.value = next
@@ -390,7 +441,7 @@ export function useIdentityEditor() {
     reconcile.value = false;
     failure.value = '';
     feedback.value =
-      'Черновик подготовлен к сохранению поверх прочитанной версии. Проверьте поля и нажмите «Сохранить».';
+      'Черновик подготовлен к сохранению поверх прочитанной версии. Проверьте поля и нажмите «Сохранить изменения».';
   }
 
   async function recoverSession() {
@@ -466,11 +517,7 @@ export function useIdentityEditor() {
 
   window.addEventListener('beforeunload', beforeUnload);
 
-  onBeforeRouteLeave(
-    () =>
-      !dirty.value ||
-      window.confirm('Есть несохранённые изменения. Покинуть страницу и удалить черновик?'),
-  );
+  onBeforeRouteLeave(() => !dirty.value || askDiscard('leave'));
 
   onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', beforeUnload);
@@ -479,6 +526,8 @@ export function useIdentityEditor() {
   });
   return {
     avatarURL,
+    discardRequest,
+    settleDiscard,
     credentials,
     securityActive,
     securityLock,
@@ -493,6 +542,7 @@ export function useIdentityEditor() {
     saving,
     failure,
     feedback,
+    feedbackScope,
     pending,
     reconcile,
     errors,
@@ -523,5 +573,6 @@ export function useIdentityEditor() {
     Gender,
     birthLabel,
     avatarEnabled,
+    comparisonRows,
   };
 }

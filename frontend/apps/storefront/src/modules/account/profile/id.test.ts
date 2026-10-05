@@ -134,10 +134,8 @@ describe('MarketMesh ID', () => {
     expect(wrapper.text()).toContain('12 марта 1989 года');
     expect(wrapper.text()).toContain('Женский');
     expect(wrapper.text()).toContain('Вы с нами с');
-    expect(wrapper.find('.id-email').text()).toBe('vera@example.comПодтверждён');
-    expect(wrapper.find('.privacy-note').text()).toContain(
-      'Данные этого раздела доступны только вам.',
-    );
+    expect(wrapper.find('.id-email').text()).toBe('vera@example.comПодтверждена');
+    expect(wrapper.find('.privacy-note').text()).toContain('Управлять аккаунтом можете только вы.');
     expect(wrapper.find('h1').text()).toBe('MarketMesh ID');
     expect(wrapper.find('#security-title').text()).toBe('Вход и безопасность');
     expect(wrapper.find('#sessions-title').text()).toBe('Сеансы и устройства');
@@ -191,9 +189,24 @@ describe('MarketMesh ID', () => {
       expect.objectContaining({ showAge: true, expectedVersion: 7n, bio: 'Люблю керамику' }),
       expect.anything(),
     );
-    expect(wrapper.find('[role="status"]').text()).toContain('Возраст теперь виден');
+    expect(wrapper.find('.age-feedback [role="status"]').text()).toContain('Возраст теперь виден');
     expect(preview()).toMatch(/Вера, Санкт-Петербург, \d+ (лет|года|год)/);
     expect(wrapper.text()).not.toContain('1989-03-12');
+  });
+  it('keeps age save failures next to the switch without retrying the write', async () => {
+    const { session } = fixture();
+    vi.mocked(session.updateProfile).mockRejectedValueOnce(
+      new ConnectError('network', Code.Unavailable),
+    );
+    const { wrapper } = await open(session);
+    await wrapper.find('.age-choice input').setValue(true);
+    await flushPromises();
+    expect(wrapper.find('.age-feedback [role="alert"]').text()).toContain(
+      'Сохранение не подтверждено',
+    );
+    expect(wrapper.find('.age-feedback a').attributes('href')).toBe('#id-reconcile-title');
+    expect(session.updateProfile).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('.age-choice input').attributes('disabled')).toBeDefined();
   });
   it('disables the age toggle without a birth date', async () => {
     const { session } = fixture();
@@ -214,17 +227,39 @@ describe('MarketMesh ID', () => {
     await flushPromises();
     expect(wrapper.text()).not.toContain('private');
     expect(wrapper.text()).toContain('изменились в другом окне');
+    expect(button(wrapper, 'Сохранить изменения').attributes('disabled')).toBeDefined();
+    expect(button(wrapper, 'Сохранить изменения').attributes('aria-describedby')).toBe(
+      'id-save-reconcile',
+    );
     vi.mocked(session.readProfile).mockResolvedValueOnce(
-      profile({ city: 'В другом окне', version: 9n }),
+      profile({
+        city: 'В другом окне',
+        birthDate: '1990-04-01',
+        gender: Gender.MALE,
+        showAge: true,
+        bio: 'Актуальное скрытое значение',
+        version: 9n,
+      }),
     );
     await button(wrapper, 'Перечитать актуальные').trigger('click');
     await flushPromises();
     expect(wrapper.find('.latest-profile').text()).toContain('В другом окне');
+    expect(wrapper.find('.id-comparison').text()).toContain('1 апреля 1990 года');
+    expect(wrapper.find('.id-comparison').text()).toContain('12 марта 1989 года');
+    expect(wrapper.find('.id-comparison').text()).toContain('Мужской');
+    expect(wrapper.find('.id-comparison').text()).toContain('Возраст в отзывах');
+    expect(wrapper.find('.id-comparison').text()).toContain('Показывается');
     expect((wrapper.find('#id-city').element as HTMLInputElement).value).toBe('Мой черновик');
-    await button(wrapper, 'Оставить мой черновик').trigger('click');
+    await button(wrapper, 'Продолжить с черновиком').trigger('click');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
-    expect(vi.mocked(session.updateProfile).mock.calls[1]?.[0].expectedVersion).toBe(9n);
+    expect(vi.mocked(session.updateProfile).mock.calls[1]?.[0]).toMatchObject({
+      expectedVersion: 9n,
+      birthDate: '1989-03-12',
+      gender: Gender.FEMALE,
+      showAge: true,
+      bio: 'Актуальное скрытое значение',
+    });
   });
   it('clears private data on owner change and requires authentication', async () => {
     const anonymous = fixture('anonymous');
@@ -267,7 +302,7 @@ describe('MarketMesh ID', () => {
     );
     await button(wrapper, 'Перечитать актуальные').trigger('click');
     await flushPromises();
-    await button(wrapper, 'Принять актуальные данные').trigger('click');
+    await button(wrapper, 'Принять сохранённые данные').trigger('click');
     await flushPromises();
     expect(wrapper.find('#id-city').exists()).toBe(false);
     expect(wrapper.find('.id-rows').text()).toContain('Актуальный город');
@@ -297,9 +332,13 @@ describe('MarketMesh ID', () => {
     const event = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    await router.push('/login');
-    expect(confirm).toHaveBeenCalled();
+    const navigation = router.push('/login');
+    await flushPromises();
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      'Удалить несохранённые изменения',
+    );
+    (document.querySelector('[data-autofocus]') as HTMLButtonElement).click();
+    await navigation;
     expect(router.currentRoute.value.path).toBe('/account/id');
     state.value = { status: 'anonymous', generation: 'g2', subjectId: null };
     await flushPromises();
@@ -398,11 +437,10 @@ describe('MarketMesh ID', () => {
     expect(wrapper.text()).not.toContain('Private Vera draft');
     expect(wrapper.text()).not.toContain('vera@example.com');
     expect(wrapper.find('.id-hero h2').text()).toBe('Борис Ильина');
-    expect(wrapper.find('.id-email').text()).toBe('boris@example.comНе подтверждён');
+    expect(wrapper.find('.id-email').text()).toBe('boris@example.comНе подтверждена');
   });
   it('keeps one open form: sign-in changes wait for the personal draft and back', async () => {
     const { session } = fixture();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const { wrapper } = await open(session);
     expect(wrapper.findAll('.button.primary')).toHaveLength(0);
     await button(wrapper, 'Изменить данные').trigger('click');
@@ -418,6 +456,8 @@ describe('MarketMesh ID', () => {
     expect(wrapper.findAll('.button.primary')).toHaveLength(1);
     await button(wrapper, 'Отменить').trigger('click');
     await flushPromises();
+    (document.querySelector('[role="dialog"] .primary') as HTMLButtonElement).click();
+    await flushPromises();
     expect(wrapper.find('#security-locked').exists()).toBe(false);
     expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
     await button(wrapper, 'Сменить пароль').trigger('click');
@@ -431,6 +471,20 @@ describe('MarketMesh ID', () => {
     await flushPromises();
     expect(button(wrapper, 'Изменить данные').attributes('disabled')).toBeUndefined();
     expect(wrapper.find('#id-edit-locked').exists()).toBe(false);
+  });
+  it('does not offer or send a request to disable an enabled login code', async () => {
+    const { session } = fixture();
+    security.getCredentials.mockResolvedValueOnce({
+      email: 'vera@example.com',
+      emailVerified: true,
+      loginCodeEnabled: true,
+      newDeviceCooldownUntilUnix: 0n,
+    });
+    const { wrapper } = await open(session);
+    expect(wrapper.find('#security-code-toggle').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Отключить его нельзя.');
+    expect(wrapper.find('input#security-code-first').exists()).toBe(false);
+    expect(security.startLoginCodeChange).not.toHaveBeenCalled();
   });
   it('opens the security section from the old security address', async () => {
     const { session } = fixture();
