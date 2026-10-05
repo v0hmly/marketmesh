@@ -118,17 +118,48 @@
   gap: 20px;
 }
 .storefront-tile {
+  --tile-step: 12px;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  overflow-wrap: anywhere;
+  gap: var(--tile-step);
+  overflow-wrap: break-word;
+}
+/* Ряды карточек (MM-133): плитка занимает 8 рядов сетки и делит их с соседями по ряду —
+   остаток, шкала, дата, цена, название, мастерская и действие каждой карточки стоят на одной
+   горизонтали; высота слота — по самой длинной карточке ряда. Без subgrid — колонка выше. */
+@supports (grid-template-rows: subgrid) {
+  .storefront-tile {
+    display: grid;
+    grid-row: span 8;
+    grid-template-rows: subgrid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .storefront-tile > * {
+    align-self: start;
+  }
+  .storefront-stock,
+  .storefront-price,
+  .storefront-tile > .button {
+    margin-top: var(--tile-step);
+  }
+  .storefront-tile > .storefront-tag-meter {
+    margin-top: 8px;
+  }
+  .storefront-title,
+  .storefront-shop {
+    margin-top: 4px;
+  }
 }
 .storefront-photo {
   position: relative;
 }
 .storefront-photo .sample-photo {
-  height: 240px;
+  /* Одна пропорция на всех ширинах: настоящие фото будут кадрироваться одинаково. */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
 }
 .storefront-favorite {
   position: absolute;
@@ -156,16 +187,18 @@
    (MM-129): у обычной партии — тонкая 2px цветом камня, у заканчивающейся — 4px охрой
    (--low-stock), у полной партии шкалы нет. Обе заливки держат 3:1 к карточке и дорожке,
    но смысл несёт подпись рядом, шкала её лишь дублирует. */
-.storefront-tag {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.storefront-stock {
   font-size: 0.875rem;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.storefront-tag-low {
+.storefront-stock-low {
   font-weight: 600;
+}
+.storefront-batch-date {
+  font-size: 0.73rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 .storefront-tag-meter {
   display: block;
@@ -185,17 +218,17 @@
 .storefront-tag-meter-none {
   visibility: hidden;
 }
-.storefront-tag-ending .storefront-tag-meter {
+.storefront-tag-meter-ending {
   height: 4px;
   margin-block: 0;
 }
-.storefront-tag-ending .storefront-tag-meter > span {
+.storefront-tag-meter-ending > span {
   background: var(--low-stock);
 }
 .storefront-sold-out .sample-photo {
   background: var(--disabled-bg);
 }
-.storefront-sold-out .storefront-tag {
+.storefront-sold-out .storefront-stock {
   color: var(--muted);
 }
 .storefront-tile:focus {
@@ -219,26 +252,30 @@
   border-color: var(--input-hover);
   background: var(--button-hover);
 }
-.storefront-tile-text {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.storefront-tile h2 {
+.storefront-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   font-size: 0.875rem;
   font-weight: 400;
   letter-spacing: normal;
   line-height: 1.55;
+  text-wrap: pretty;
+}
+/* Мастерская — только имя, одна строка; полное имя остаётся в DOM для скринридера. */
+.storefront-shop {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.73rem;
+  color: var(--muted);
 }
 .storefront-price {
   font-size: 1.15rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-.storefront-meta {
-  font-size: 0.73rem;
-  color: var(--muted);
 }
 .storefront-more {
   align-self: center;
@@ -448,11 +485,12 @@
     gap: 12px;
   }
   .storefront-tile {
+    --tile-step: 8px;
     padding: 8px;
-    gap: 8px;
   }
-  .storefront-photo .sample-photo {
-    height: 160px;
+  .storefront-title {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
   .storefront-tile .button {
     padding-inline: 8px;

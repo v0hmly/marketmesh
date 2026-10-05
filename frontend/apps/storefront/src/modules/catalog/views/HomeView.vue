@@ -12,7 +12,16 @@ import {
   type SampleBatch,
   type SampleCategory,
 } from '../sample-data';
-import { batchDateText, lowStock, money, quoted, stockText, useStorefront } from '../store';
+import {
+  batchDateText,
+  keepUnits,
+  lowStock,
+  money,
+  quoted,
+  shopName,
+  stockText,
+  useStorefront,
+} from '../store';
 
 type Sort = 'new' | 'cheap' | 'expensive';
 const pageSize = 8;
@@ -87,11 +96,6 @@ async function read() {
 function revealChip(event: FocusEvent) {
   if (event.target instanceof HTMLElement)
     event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-}
-/** Строка бирки: остаток и дата партии. */
-function tagText(item: SampleBatch) {
-  const stock = stockText(item.left, item.batch);
-  return `${stock} · ${batchDateText(item.published, stock)}`;
 }
 function choose(value: 'all' | SampleCategory) {
   category.value = value;
@@ -299,26 +303,27 @@ onBeforeUnmount(() => {
               </svg>
             </button>
           </div>
-          <div
-            class="storefront-tag"
-            :class="{
-              'storefront-tag-low': item.left > 0 && item.left <= 2,
-              'storefront-tag-ending': lowStock(item.left, item.batch),
-            }"
+          <!-- Слоты плитки — прямые потомки: subgrid выравнивает их по ряду (MM-133). -->
+          <span
+            class="storefront-stock"
+            :class="{ 'storefront-stock-low': item.left > 0 && item.left <= 2 }"
+            >{{ stockText(item.left, item.batch) }}</span
           >
-            <span>{{ tagText(item) }}</span>
-            <span
-              class="storefront-tag-meter"
-              :class="{ 'storefront-tag-meter-none': item.left === item.batch }"
-              aria-hidden="true"
-              ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
-            ></span>
-          </div>
-          <div class="storefront-tile-text">
-            <span class="storefront-price">{{ money(item.price) }}</span>
-            <h2>{{ item.title }}</h2>
-            <span class="storefront-meta">{{ item.shop }}</span>
-          </div>
+          <span
+            class="storefront-tag-meter"
+            :class="{
+              'storefront-tag-meter-none': item.left === item.batch,
+              'storefront-tag-meter-ending': lowStock(item.left, item.batch),
+            }"
+            aria-hidden="true"
+            ><span :style="{ width: `${(item.left / item.batch) * 100}%` }"></span
+          ></span>
+          <span class="storefront-batch-date">{{ batchDateText(item.published) }}</span>
+          <span class="storefront-price">{{ money(item.price) }}</span>
+          <h2 class="storefront-title">{{ keepUnits(item.title) }}</h2>
+          <span class="storefront-shop"
+            ><span class="visually-hidden">Мастерская </span>{{ shopName(item.shop) }}</span
+          >
           <button
             v-if="item.left > 0"
             type="button"
