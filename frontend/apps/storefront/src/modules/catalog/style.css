@@ -137,6 +137,8 @@
      плитки, а внутри плитки отступы — только из шкалы. */
   .storefront-grid {
     row-gap: 0;
+    /* Отступ плиток последнего ряда не должен отодвигать то, что идёт после сетки. */
+    margin-bottom: -20px;
   }
   .storefront-tile {
     margin-bottom: 20px;
@@ -506,6 +508,10 @@
     padding: 8px;
   }
   @supports (grid-template-rows: subgrid) {
+    .storefront-grid {
+      row-gap: 0;
+      margin-bottom: -12px;
+    }
     .storefront-tile {
       margin-bottom: 12px;
     }

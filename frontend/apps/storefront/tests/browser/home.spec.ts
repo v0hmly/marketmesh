@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type BrowserContext, type Route } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page, type Route } from '@playwright/test';
 
 // Витрина пока на образцовых данных (MM-125): API нужен только для гостевой сессии.
 async function guestApi(context: BrowserContext) {
@@ -12,6 +12,25 @@ async function guestApi(context: BrowserContext) {
   }
   await context.route('**/auth.v1.*/**', unauthenticated);
   await context.route('**/user.v1.UserService/**', unauthenticated);
+}
+
+/** Расстояние между первыми двумя рядами карточек и лишний запас после последнего ряда. */
+function rowSpacing(page: Page) {
+  return page.evaluate(() => {
+    const tiles = [...document.querySelectorAll('.storefront-tile')].map((tile) =>
+      tile.getBoundingClientRect(),
+    );
+    const first = tiles[0]!;
+    const second = tiles.find((tile) => tile.top > first.bottom)!;
+    const grid = document.querySelector('.storefront-grid')!;
+    const next = grid.nextElementSibling!.getBoundingClientRect();
+    const feedGap = parseFloat(getComputedStyle(grid.parentElement!).rowGap);
+    // После последнего ряда — только обычный зазор ленты до следующего элемента.
+    return {
+      between: Math.round(second.top - first.bottom),
+      after: Math.round(next.top - Math.max(...tiles.map((tile) => tile.bottom)) - feedGap),
+    };
+  });
 }
 
 test('guest home lists new batches, filters, keeps the cart and stays accessible', async ({
@@ -55,6 +74,8 @@ test('guest home lists new batches, filters, keeps the cart and stays accessible
     '.storefront-tile > .button',
   ];
   expect(await slotsAligned(allSlots)).toBe(true);
+  // Между рядами карточек — 20px (на телефоне 12px), и после последнего ряда лишнего нет.
+  expect(await rowSpacing(page)).toEqual({ between: 20, after: 0 });
   // Масса шкалы следует смыслу: тонкая каменная у обычной партии, охряная и толще у
   // заканчивающейся, у полной партии шкала скрыта (место остаётся, чтобы ряд не скакал).
   const meterColor = (text: RegExp) =>
@@ -249,6 +270,7 @@ test('search narrows the feed and the phone layout does not scroll sideways', as
   await expect(bar).toHaveCount(0);
   await expect(page.locator('#catalog')).toBeFocused();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await rowSpacing(page)).toEqual({ between: 12, after: 0 });
   await page.setViewportSize({ width: 320, height: 640 });
   // На узком телефоне слоты по-прежнему выровнены по ряду.
   expect(
