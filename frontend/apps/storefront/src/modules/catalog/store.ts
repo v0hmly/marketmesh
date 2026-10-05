@@ -138,7 +138,7 @@ export function shopName(shop: string) {
 export function keepUnits(title: string) {
   return title
     .replace(/(\d)\s+×\s+(\d)/g, '$1\u00a0×\u00a0$2')
-    .replace(/(\d)\s+(?=(мл|л|шт\.|см|мм|г|кг)(?![а-яё]))/gi, '$1\u00a0');
+    .replace(/(\d)\s+(?=(мл|л|шт\.?|см|мм|г|кг)(?![а-яё]))/gi, '$1\u00a0');
 }
 
 export function stockText(left: number, batch: number) {

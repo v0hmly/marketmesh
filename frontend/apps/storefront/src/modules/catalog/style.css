@@ -128,8 +128,18 @@
 /* Ряды карточек (MM-133): плитка занимает 8 рядов сетки и делит их с соседями по ряду —
    остаток, шкала, дата, цена, название, мастерская и действие каждой карточки стоят на одной
    горизонтали; высота слота — по самой длинной карточке ряда. Без subgrid — колонка выше. */
+/* Без subgrid кнопка прижата к низу колонки, как раньше. */
+.storefront-tile > .button {
+  margin-top: auto;
+}
 @supports (grid-template-rows: subgrid) {
+  /* Зазор родителя просачивается в ряды субсетки: между рядами карточек он задан отступом
+     плитки, а внутри плитки отступы — только из шкалы. */
+  .storefront-grid {
+    row-gap: 0;
+  }
   .storefront-tile {
+    margin-bottom: 20px;
     display: grid;
     grid-row: span 8;
     grid-template-rows: subgrid;
@@ -144,9 +154,16 @@
   .storefront-tile > .button {
     margin-top: var(--tile-step);
   }
+  /* Тонкая шкала по центру 4px-места толстой: 8px + 1px сверху, 1px снизу. */
   .storefront-tile > .storefront-tag-meter {
-    margin-top: 8px;
+    margin-top: 9px;
+    margin-bottom: 1px;
   }
+  .storefront-tile > .storefront-tag-meter-ending {
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+  .storefront-batch-date,
   .storefront-title,
   .storefront-shop {
     margin-top: 4px;
@@ -487,6 +504,11 @@
   .storefront-tile {
     --tile-step: 8px;
     padding: 8px;
+  }
+  @supports (grid-template-rows: subgrid) {
+    .storefront-tile {
+      margin-bottom: 12px;
+    }
   }
   .storefront-title {
     -webkit-line-clamp: 3;
