@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <button type="button" class="button primary" @click="add">
-          <span>Добавить изделие</span>
+          Добавить изделие
           <span aria-hidden="true">↗</span>
         </button>
       </div>

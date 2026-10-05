@@ -177,9 +177,7 @@ onBeforeUnmount(() => {
           :disabled="accepting"
           @click="accept"
         >
-          <span>{{
-            accepting ? "Проверяем приглашение…" : "Принять приглашение"
-          }}</span>
+          {{ accepting ? "Проверяем приглашение…" : "Принять приглашение" }}
           <span v-if="!accepting" aria-hidden="true">↗</span>
         </button>
       </div>
