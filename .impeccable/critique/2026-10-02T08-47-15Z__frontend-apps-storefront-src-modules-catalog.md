@@ -5,7 +5,7 @@ max_score: 40
 na_heuristics: 
 p0_count: 0
 p1_count: 3
-target_identity: "file:/Users/vh/projects/marketmesh/frontend/apps/storefront/src/modules/catalog"
+target_identity: "file:frontend/apps/storefront/src/modules/catalog"
 timestamp: 2026-10-02T08-47-15Z
 slug: frontend-apps-storefront-src-modules-catalog
 ---
