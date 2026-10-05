@@ -379,6 +379,8 @@ main:focus {
 .button > span {
   font-size: 1.15rem;
   font-weight: 400;
+  /* Глиф ↗ не задаёт высоту кнопки: она не меняется, когда глиф скрыт на время отправки. */
+  line-height: 1;
 }
 
 .primary {

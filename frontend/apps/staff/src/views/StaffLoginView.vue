@@ -79,9 +79,7 @@ async function startSso() {
           :disabled="submitting"
           @click="startSso"
         >
-          <span>{{
-            submitting ? "Перенаправляем…" : "Войти через рабочий аккаунт"
-          }}</span>
+          {{ submitting ? "Перенаправляем…" : "Войти через рабочий аккаунт" }}
           <span v-if="!submitting" aria-hidden="true">↗</span>
         </button>
       </div>
