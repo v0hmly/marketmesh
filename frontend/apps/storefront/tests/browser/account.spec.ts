@@ -528,6 +528,7 @@ test('registration, cabinet layout, MarketMesh ID editing, reload and accessible
     /^Отзывы/,
     'Адреса доставки',
     'MarketMesh ID',
+    'Вход и безопасность',
   ]);
   await expect(sections.getByRole('link', { name: /^Заказы/ })).toHaveAttribute(
     'aria-current',
@@ -536,12 +537,20 @@ test('registration, cabinet layout, MarketMesh ID editing, reload and accessible
   await expect(page.getByRole('heading', { level: 1, name: 'Заказы', exact: true })).toBeVisible();
   await expect(page.getByLabel('Тема оформления', { exact: true })).toHaveValue('system');
   await expect(page.getByRole('button', { name: 'Выйти из аккаунта', exact: true })).toBeVisible();
-  await sections.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
-  await expect(page.locator('.id-email')).toContainText('anna@example.ru');
-  await expect(page.locator('.id-email')).toContainText('Подтверждена');
+  // Почта для входа и сеансы — в своём разделе, а не в MarketMesh ID.
+  await sections.getByRole('link', { name: 'Вход и безопасность', exact: true }).click();
+  await expect(page.locator('.security-row').filter({ hasText: 'Почта для входа' })).toContainText(
+    'anna@example.ru',
+  );
   await expect(
     page.getByRole('heading', { name: 'Сеансы и устройства', exact: true }),
   ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('security-desktop.png'), fullPage: true });
+  await sections.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'MarketMesh ID' })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('id-desktop.png'), fullPage: true });
+  await expect(page.getByRole('heading', { name: 'Сеансы и устройства' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Изменить данные' }).click();
   await expect(page.getByRole('textbox', { name: 'Имя', exact: true })).toHaveValue('Анна');
   await page.getByLabel('Город проживания', { exact: true }).fill('<script>не HTML</script>');
@@ -1012,16 +1021,11 @@ test('ID changes the photo from the header, protects the draft and compares all 
   await expect(preview).toBeHidden();
   await expect(page.locator('.avatar-progress')).toHaveText('Проверяем фото…');
   await expect(page.getByRole('button', { name: 'Добавить фото', exact: true })).toBeFocused();
-  // Фото не мешает правке данных; ждёт только выход из сеанса, который оборвал бы запрос.
+  // Фото не мешает правке данных: у них разные версии CAS.
   await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeEnabled();
   await expect(
     page.getByRole('button', { name: 'Изменить данные', exact: true }),
   ).not.toHaveAttribute('aria-disabled', 'true');
-  const logoutAll = page.getByRole('button', { name: /^Выйти на всех/ });
-  await expect(logoutAll).toBeDisabled();
-  await expect(page.locator('#security-locked')).toHaveText(
-    'Подождите, пока мы сохраним фото: выход из сеанса прервёт его.',
-  );
   release();
   await expect(page.getByText('Фото сохранено.', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Ваше фото профиля' })).toBeVisible();
@@ -1051,6 +1055,7 @@ test('ID changes the photo from the header, protects the draft and compares all 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.id-hero').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('id-photo-mobile.png') });
+  await page.screenshot({ path: testInfo.outputPath('id-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.getByRole('button', { name: 'Изменить данные', exact: true }).click();

@@ -136,7 +136,7 @@ async function choose(wrapper: VueWrapper, theme: ThemePreference) {
 }
 
 describe('account layout', () => {
-  it('lists five sections vertically with counters and marks the active one', async () => {
+  it('lists six sections vertically with counters and marks the active one', async () => {
     const { session } = fixture();
     const { wrapper } = await open(session);
     const links = wrapper.findAll('.account-nav a');
@@ -146,6 +146,7 @@ describe('account layout', () => {
       'Отзывы',
       'Адреса доставки',
       'MarketMesh ID',
+      'Вход и безопасность',
     ]);
     expect(links[0]!.text()).toContain('4');
     expect(links[1]!.text()).toContain('6');
@@ -170,8 +171,8 @@ describe('account layout', () => {
     expect(router.currentRoute.value.fullPath).toBe('/account/orders');
     await router.push('/account/settings');
     expect(router.currentRoute.value.fullPath).toBe('/account/orders');
-    await router.push('/account/security');
-    expect(router.currentRoute.value.fullPath).toBe('/account/id#security');
+    await router.push('/account/id#security');
+    expect(router.currentRoute.value.fullPath).toBe('/account/security');
     await router.push('/account/security/verify');
     expect(router.currentRoute.value.name).toBe('security-link');
   });

@@ -318,6 +318,10 @@
   flex-direction: column;
   gap: 24px;
 }
+/* Пустой live-регион остаётся в дереве доступности, но не добавляет шаг колонки. */
+.id-content > .id-status:empty {
+  margin-top: -24px;
+}
 .order-heading {
   align-items: baseline;
   flex-wrap: wrap;
@@ -589,13 +593,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.id-email {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  overflow-wrap: anywhere;
-}
 @media (max-width: 1000px) {
   .account-layout {
     gap: 28px;
@@ -703,15 +700,6 @@
   width: 160px;
   height: 160px;
   margin: 0 auto;
-}
-.id-section-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-}
-.id-section-links a {
-  padding-block: 12px;
-  font-size: 0.875rem;
 }
 .id-comparison {
   overflow-x: auto;

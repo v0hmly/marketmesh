@@ -2,7 +2,7 @@ import { useAccount } from '../api/controller';
 
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 
-import { onBeforeRouteLeave, useRoute } from 'vue-router';
+import { onBeforeRouteLeave } from 'vue-router';
 
 import { Code, ConnectError } from '@connectrpc/connect';
 
@@ -15,8 +15,6 @@ import { useSession } from '../../../shell/context';
 import { GuardMismatchError, type SessionGuard } from '../../../shell/session';
 
 import { accountError } from '../errors';
-
-import type { GetCredentialsResponse } from '../../auth/public';
 
 import {
   ageOf,
@@ -31,22 +29,6 @@ import {
 import { avatarEnabled } from '../../../shared/features';
 /** View-scoped state: CAS, owner changes, pending projection and private draft cleanup. */
 export function useIdentityEditor() {
-  /** Почта для входа приходит из раздела безопасности (Auth), а не из профиля User. */
-  const credentials = shallowRef<GetCredentialsResponse | null>(null);
-
-  const route = useRoute();
-
-  let jumpedToSecurity = false;
-
-  /**
-   * На экране открыта одна форма: правка личных данных или действие во входе и сеансах.
-   * Смена пароля, кода и выход на всех устройствах закрывают сеанс и стёрли бы черновик
-   * личных данных, поэтому они ждут, пока правку сохранят или отменят.
-   */
-  const securityActive = ref(false);
-
-  const securityLock = 'Сначала сохраните или отмените изменения личных данных.';
-
   const session = useSession();
 
   const account = useAccount();
@@ -318,7 +300,7 @@ export function useIdentityEditor() {
   }
 
   function startEditing() {
-    if (!current.value || busy.value || reconcile.value || securityActive.value) return;
+    if (!current.value || busy.value || reconcile.value) return;
     draft.value = {
       displayName: current.value.displayName,
       lastName: current.value.lastName,
@@ -415,14 +397,7 @@ export function useIdentityEditor() {
 
   async function toggleAge(event: Event) {
     const next = (event.target as HTMLInputElement).checked;
-    if (
-      !current.value ||
-      editing.value ||
-      reconcile.value ||
-      busy.value ||
-      securityActive.value ||
-      ageText.value === null
-    )
+    if (!current.value || editing.value || reconcile.value || busy.value || ageText.value === null)
       return;
     feedbackScope.value = 'age';
     await mutate(profileInput({ showAge: next }));
@@ -502,18 +477,6 @@ export function useIdentityEditor() {
     { deep: true },
   );
 
-  // /account/security ведёт сюда с #security: раздел ниже личных данных, поэтому переходим к нему,
-  // когда карточки над ним уже отрисованы, и переводим туда фокус.
-  watch(current, async (value) => {
-    if (!value || jumpedToSecurity || route.hash !== '#security') return;
-    jumpedToSecurity = true;
-    await nextTick();
-    const target = document.getElementById('security');
-    if (!target) return;
-    if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ block: 'start' });
-    target.focus({ preventScroll: true });
-  });
-
   function beforeUnload(event: BeforeUnloadEvent) {
     if (dirty.value) {
       event.preventDefault();
@@ -533,9 +496,6 @@ export function useIdentityEditor() {
   return {
     discardRequest,
     settleDiscard,
-    credentials,
-    securityActive,
-    securityLock,
     session,
     account,
     current,

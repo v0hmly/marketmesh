@@ -18,14 +18,6 @@ vi.mock('./api', async (original) => ({
   ...(await original<object>()),
   prepareUpload: vi.fn(async (file: File) => ({ file })),
 }));
-// MarketMesh ID includes the sign-in section; its reads are not part of the avatar lifecycle.
-vi.mock('../../auth/security/api', async (original) => ({
-  ...(await original<object>()),
-  createSecurityApi: () => ({
-    getCredentials: vi.fn(() => new Promise(() => {})),
-    listSessions: vi.fn(() => new Promise(() => {})),
-  }),
-}));
 const mounted: VueWrapper[] = [];
 afterEach(() => {
   for (const wrapper of mounted.splice(0)) wrapper.unmount();
@@ -175,7 +167,6 @@ describe('profile photo', () => {
     expect(vi.mocked(api.set).mock.calls[0]?.slice(0, 2)).toEqual([next, 1n]);
     expect(wrapper.get('[role="status"]').text()).toBe('Фото сохранено.');
     expect(labels(wrapper)).toEqual(['Изменить фото', 'Удалить фото']);
-    expect(wrapper.emitted('active')).toEqual([[false], [true], [false]]);
   });
   it('renews an expired session once and repeats the upload under the same key', async () => {
     const { wrapper, api, session } = await fixture();

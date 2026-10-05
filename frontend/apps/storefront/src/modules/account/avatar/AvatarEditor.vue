@@ -21,7 +21,6 @@ import {
  * спрашивает человека, только если связь так и не вернулась.
  */
 const props = defineProps<{ initials: string }>();
-const emit = defineEmits<{ active: [value: boolean] }>();
 const api = inject(avatarApiKey, null) ?? createAvatarApi();
 const session = useSession();
 const current = shallowRef<Avatar | null>(null);
@@ -57,11 +56,6 @@ const unsureText = {
 const hasPhoto = computed(() => Boolean(current.value?.fileId.length));
 const busy = computed(() => saving.value || removing.value || reading.value);
 const canChange = computed(() => !busy.value && !unsure.value && Boolean(current.value));
-watch(
-  () => saving.value || removing.value,
-  (value) => emit('active', value),
-  { immediate: true },
-);
 
 function replaceImage(url: string) {
   if (imageURL.value) URL.revokeObjectURL(imageURL.value);

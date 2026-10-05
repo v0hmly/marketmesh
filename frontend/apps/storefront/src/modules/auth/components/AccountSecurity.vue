@@ -16,17 +16,10 @@ import { createSecurityApi, securityError } from '../security/api';
 import PasswordRules from './PasswordRules.vue';
 
 /**
- * Вход и безопасность, сеансы и устройства. Разделы экрана MarketMesh ID; без ID —
- * содержимое отдельного экрана. Родитель получает почту и её статус через `credentials`,
- * а через `active` — открыта ли здесь форма. `locked` — причина, по которой родитель
- * сейчас не даёт менять вход и сеансы (например, открыта правка его данных): смена
- * пароля, кода и выход на всех устройствах закрывают сеанс и стёрли бы черновик.
+ * Вход и безопасность, сеансы и устройства — содержимое отдельного раздела кабинета.
+ * Пока ждёт код подтверждения, почту и пароль не сменить; после нового входа сеансы
+ * защищены паузой Auth.
  */
-const props = defineProps<{ locked?: string }>();
-const emit = defineEmits<{
-  credentials: [value: GetCredentialsResponse | null];
-  active: [value: boolean];
-}>();
 const session = useSession();
 const api = createSecurityApi();
 const credentials = shallowRef<GetCredentialsResponse | null>(null);
@@ -45,11 +38,8 @@ const code = ref('');
 const challenge = shallowRef<{ id: Uint8Array; enabled: boolean } | null>(null);
 const attempted = ref('');
 const authenticated = computed(() => session.state.value.status === 'authenticated');
-const locked = computed(() => props.locked ?? '');
 /** Почему недоступны смена почты и пароля. */
-const blockedBy = computed(() =>
-  challenge.value ? 'security-code-pending' : locked.value ? 'security-locked' : undefined,
-);
+const blockedBy = computed(() => (challenge.value ? 'security-code-pending' : undefined));
 const passwordError = computed(() =>
   attempted.value === 'password'
     ? (validatePasswordStrength(newPassword.value) ??
@@ -110,7 +100,7 @@ function erase() {
 }
 async function open(form: 'email' | 'password' | 'code' | null) {
   // Заблокированные кнопки остаются в порядке Tab с `aria-disabled`: нажатие ничего не открывает.
-  if (busy.value || (form && (locked.value || (form !== 'code' && challenge.value)))) return;
+  if (busy.value || (form && form !== 'code' && challenge.value)) return;
   const previous = opened.value;
   clearSecrets();
   opened.value = form;
@@ -119,12 +109,6 @@ async function open(form: 'email' | 'password' | 'code' | null) {
   if (form) document.getElementById(`security-${form}-first`)?.focus();
   else if (previous) document.getElementById(`security-${previous}-toggle`)?.focus();
 }
-watch(credentials, (value) => emit('credentials', value));
-watch(
-  () => opened.value !== null || challenge.value !== null,
-  (value) => emit('active', value),
-  { immediate: true },
-);
 watch(
   () => [session.state.value.generation, session.state.value.status],
   () => {
@@ -178,8 +162,7 @@ async function run<T>(
   success: string,
   endsSession = false,
 ): Promise<T | undefined> {
-  // Parent's draft would not survive the session change: such actions wait for it.
-  if (!authenticated.value || busy.value || (endsSession && locked.value)) return;
+  if (!authenticated.value || busy.value) return;
   const owner = session.capture();
   busy.value = true;
   failure.value = feedback.value = '';
@@ -346,9 +329,6 @@ void read();
     <div role="status">
       <p v-if="feedback" class="notice success">{{ feedback }}</p>
     </div>
-    <p v-if="locked && authenticated && credentials" id="security-locked" class="field-help">
-      {{ locked }}
-    </p>
     <template v-if="authenticated">
       <div v-if="!credentials" class="card state-card" :aria-busy="busy">
         <p v-if="busy" role="status">Загружаем вход и сеансы…</p>
@@ -360,7 +340,7 @@ void read();
       <template v-else>
         <section class="card profile-card security-card" aria-labelledby="security-title">
           <div>
-            <h2 id="security-title">Вход и безопасность</h2>
+            <h2 id="security-title">Данные для входа</h2>
             <p class="subtle">Почта и пароль для входа, подтверждение входа кодом из письма.</p>
           </div>
           <div class="security-row">
@@ -521,8 +501,6 @@ void read();
               id="security-code-toggle"
               class="button secondary"
               :disabled="busy"
-              :aria-disabled="locked ? 'true' : undefined"
-              :aria-describedby="locked ? 'security-locked' : undefined"
               @click="open('code')"
             >
               Включить
@@ -644,11 +622,9 @@ void read();
             <button
               class="button secondary"
               :disabled="busy"
-              :aria-disabled="cooldown || locked ? 'true' : undefined"
+              :aria-disabled="cooldown ? 'true' : undefined"
               :aria-describedby="
-                ['logout-all-help', cooldown && 'sessions-cooldown', locked && 'security-locked']
-                  .filter(Boolean)
-                  .join(' ')
+                ['logout-all-help', cooldown && 'sessions-cooldown'].filter(Boolean).join(' ')
               "
               @click="logoutAll"
             >

@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import '../style.css';
 
-import { AccountSecurity } from '../../auth/ui';
-
 import AvatarEditor from '../avatar/AvatarEditor.vue';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import ConfirmDialog from '@marketmesh/design-system/ConfirmDialog.vue';
 import { useIdentityEditor } from './state';
-/** Идёт запрос фото: выход из сеанса прервал бы его, остальное на странице ему не мешает. */
-const avatarActive = ref(false);
 const {
   discardRequest,
   settleDiscard,
-  credentials,
-  securityActive,
-  securityLock,
   session,
   current,
   latest,
@@ -57,25 +50,20 @@ const {
   avatarEnabled,
   comparisonRows,
 } = useIdentityEditor();
-const securityOpen = 'Сначала завершите или отмените действие в разделе «Вход и безопасность».';
 const reconcileFirst = 'Сначала выберите версию данных в блоке сверки выше.';
 /**
- * Причина, по которой правку данных сейчас не начать. Кнопка остаётся в порядке Tab с
+ * Причина, по которой действие сейчас недоступно. Контрол остаётся в порядке Tab с
  * `aria-disabled` и ведёт к причине; `disabled` — только пока идёт запрос.
  */
-const editLock = computed(() =>
-  reconcile.value ? reconcileFirst : securityActive.value ? securityOpen : '',
-);
+const editLock = computed(() => (reconcile.value ? reconcileFirst : ''));
 const ageLock = computed(() =>
   ageText.value === null
     ? 'Пока дата рождения не указана, показывать нечего.'
     : editing.value
-      ? securityLock
+      ? 'Сначала сохраните или отмените изменения личных данных.'
       : reconcile.value
         ? reconcileFirst
-        : securityActive.value
-          ? securityOpen
-          : '',
+        : '',
 );
 </script>
 
@@ -88,8 +76,9 @@ const ageLock = computed(() =>
     <div class="account-heading">
       <h1 id="id-title">MarketMesh ID</h1>
       <p class="lede">
-        Один аккаунт для покупок, магазина и поддержки. Здесь ваши данные, вход и устройства, с
-        которых вы заходили.
+        Один аккаунт для покупок, магазина и поддержки. Здесь ваши личные данные и то, что из них
+        видят другие покупатели. Почта, пароль и устройства — в разделе
+        <RouterLink to="/account/security">«Вход и безопасность»</RouterLink>.
       </p>
     </div>
     <div v-if="pending || session.state.value.status === 'profilePending'" class="card state-card">
@@ -132,7 +121,7 @@ const ageLock = computed(() =>
     </div>
     <div v-else v-show="!recheckingOwner" class="id-content" :inert="recheckingOwner">
       <div class="card identity-card id-hero">
-        <AvatarEditor v-if="avatarEnabled" :initials="initials" @active="avatarActive = $event" />
+        <AvatarEditor v-if="avatarEnabled" :initials="initials" />
         <div v-else class="initials" aria-hidden="true">{{ initials }}</div>
         <div class="id-hero-text">
           <h2>{{ fullName }}</h2>
@@ -143,15 +132,10 @@ const ageLock = computed(() =>
           <p>Управлять аккаунтом можете только вы.</p>
         </div>
       </div>
-      <nav class="id-section-links" aria-label="Разделы MarketMesh ID">
-        <a href="#personal-title">Личные данные</a>
-        <a href="#public-title">Публичные данные</a>
-        <a href="#security">Вход и безопасность</a>
-      </nav>
       <p v-if="failure && feedbackScope !== 'age'" class="notice error" role="alert">
         {{ failure }}
       </p>
-      <div role="status">
+      <div class="id-status" role="status">
         <p v-if="feedback && feedbackScope !== 'age'" class="notice success">{{ feedback }}</p>
       </div>
       <div
@@ -213,8 +197,8 @@ const ageLock = computed(() =>
           <div>
             <h2 id="personal-title" tabindex="-1">Личные данные</h2>
             <p class="subtle">
-              Имя и город видны в отзывах. Почта, фамилия, телефон, дата рождения и пол другим
-              покупателям не показываются.
+              Имя и город видны в отзывах. Фамилия, телефон, дата рождения и пол другим покупателям
+              не показываются.
             </p>
           </div>
           <button
@@ -232,15 +216,6 @@ const ageLock = computed(() =>
         </div>
         <p v-if="editLock && !editing" id="id-edit-locked" class="field-help">{{ editLock }}</p>
         <dl v-if="!editing" class="id-rows">
-          <div v-if="credentials" class="id-row">
-            <dt>ПОЧТА</dt>
-            <dd class="id-email">
-              <span>{{ credentials.email }}</span
-              ><span class="draft-badge">{{
-                credentials.emailVerified ? 'Подтверждена' : 'Не подтверждена'
-              }}</span>
-            </dd>
-          </div>
           <div class="id-row">
             <dt>ИМЯ</dt>
             <dd :class="{ subtle: !current.displayName }">
@@ -483,17 +458,6 @@ const ageLock = computed(() =>
       </section>
     </div>
     <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
-    <AccountSecurity
-      :locked="
-        editing
-          ? securityLock
-          : avatarActive
-            ? 'Подождите, пока мы сохраним фото: выход из сеанса прервёт его.'
-            : ''
-      "
-      @credentials="credentials = $event"
-      @active="securityActive = $event"
-    />
   </section>
   <Teleport to="body">
     <ConfirmDialog
