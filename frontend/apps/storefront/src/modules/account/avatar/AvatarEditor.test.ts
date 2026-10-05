@@ -325,13 +325,23 @@ describe('profile photo', () => {
     expect(wrapper.find('img').exists()).toBe(false);
     expect(dialog()).toBeNull();
   });
-  it('makes profile editing wait while a photo is being saved', async () => {
+  it('lets personal data be edited while a photo is being saved', async () => {
     const { wrapper, api } = await fixture(undefined, true);
     vi.mocked(api.create).mockReturnValue(new Promise(() => {}));
     await saveChosen(wrapper);
-    expect(button(wrapper, 'Изменить данные').attributes('disabled')).toBeDefined();
-    expect(wrapper.text()).toContain('Подождите, пока мы закончим с фото.');
     expect(wrapper.get('.avatar-progress').text()).toBe('Сохраняем фото…');
+    const edit = button(wrapper, 'Изменить данные');
+    expect(edit.attributes('disabled')).toBeUndefined();
+    expect(edit.attributes('aria-disabled')).toBeUndefined();
+    await edit.trigger('click');
+    expect(wrapper.find('#id-city').exists()).toBe(true);
+    // Второе фото не выбрать, пока сохраняется первое.
+    expect(button(wrapper, 'Изменить фото').attributes('aria-disabled')).toBe('true');
+  });
+  it('keeps the photo available while personal data are being edited', async () => {
+    const { wrapper } = await fixture(undefined, true);
+    await button(wrapper, 'Изменить данные').trigger('click');
+    expect(button(wrapper, 'Изменить фото').attributes('aria-disabled')).toBe('false');
   });
   it('discards a late image after logout and clears all object URLs', async () => {
     let resolve!: (value: Blob) => void;

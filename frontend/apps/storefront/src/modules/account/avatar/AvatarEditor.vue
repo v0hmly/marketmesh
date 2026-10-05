@@ -20,7 +20,7 @@ import {
  * с CAS компонент проводит сам. Неизвестный исход записи он сначала перечитывает сам и
  * спрашивает человека, только если связь так и не вернулась.
  */
-const props = defineProps<{ initials: string; locked?: string }>();
+const props = defineProps<{ initials: string }>();
 const emit = defineEmits<{ active: [value: boolean] }>();
 const api = inject(avatarApiKey, null) ?? createAvatarApi();
 const session = useSession();
@@ -56,9 +56,7 @@ const unsureText = {
 };
 const hasPhoto = computed(() => Boolean(current.value?.fileId.length));
 const busy = computed(() => saving.value || removing.value || reading.value);
-const canChange = computed(
-  () => !props.locked && !busy.value && !unsure.value && Boolean(current.value),
-);
+const canChange = computed(() => !busy.value && !unsure.value && Boolean(current.value));
 watch(
   () => saving.value || removing.value,
   (value) => emit('active', value),
@@ -439,7 +437,6 @@ onBeforeUnmount(() => {
       type="button"
       class="button text-button"
       :aria-disabled="!canChange"
-      :aria-describedby="props.locked ? 'avatar-locked' : undefined"
       @click="choose"
     >
       {{ hasPhoto ? 'Изменить фото' : 'Добавить фото' }}</button
@@ -449,14 +446,12 @@ onBeforeUnmount(() => {
       type="button"
       class="button text-button"
       :aria-disabled="!canChange"
-      :aria-describedby="props.locked ? 'avatar-locked' : undefined"
       @click="askRemove"
     >
       Удалить фото
     </button>
   </div>
   <div class="avatar-feedback">
-    <p v-if="props.locked" id="avatar-locked" class="field-help">{{ props.locked }}</p>
     <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
     <div class="avatar-status" role="status">
       <p v-if="stage" class="avatar-progress">

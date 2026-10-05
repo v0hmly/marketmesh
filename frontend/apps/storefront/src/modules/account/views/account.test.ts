@@ -432,12 +432,18 @@ describe('cabinet without MarketMesh ID', () => {
     );
     expect(wrapper.text()).not.toContain('нового устройства');
     expect(wrapper.find('#sessions-cooldown').classes()).not.toContain('error');
+    // Кнопки остаются в порядке Tab и ведут к причине, но нажатие ничего не отправляет.
     const revoke = wrapper.findAll('.session-row')[1]!.find('button');
-    expect(revoke.attributes('disabled')).toBeDefined();
+    expect(revoke.attributes('aria-disabled')).toBe('true');
     expect(revoke.attributes('aria-describedby')).toBe('sessions-cooldown');
     const everywhere = button(wrapper, 'Выйти на всех устройствах');
-    expect(everywhere.attributes('disabled')).toBeDefined();
+    expect(everywhere.attributes('aria-disabled')).toBe('true');
     expect(everywhere.attributes('aria-describedby')).toBe('logout-all-help sessions-cooldown');
+    await revoke.trigger('click');
+    await everywhere.trigger('click');
+    await flushPromises();
+    expect(security.revokeSession).not.toHaveBeenCalled();
+    expect(security.logoutAll).not.toHaveBeenCalled();
   });
   it('opens one form at a time with a single primary action and wipes secrets on switch', async () => {
     const { session } = fixture();
@@ -539,8 +545,10 @@ describe('cabinet without MarketMesh ID', () => {
     expect(wrapper.text()).toContain('Код отправлен на вашу почту.');
     // Пока код не подтверждён, почту и пароль не сменить — и это сказано рядом.
     for (const name of ['Сменить почту', 'Сменить пароль']) {
-      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
+      expect(button(wrapper, name).attributes('aria-disabled')).toBe('true');
       expect(button(wrapper, name).attributes('aria-describedby')).toBe('security-code-pending');
+      await button(wrapper, name).trigger('click');
+      expect(wrapper.find('#security-email-first, #security-password-first').exists()).toBe(false);
     }
     expect(wrapper.find('#security-code-pending').exists()).toBe(true);
     for (const reply of ['111111', '222222']) {

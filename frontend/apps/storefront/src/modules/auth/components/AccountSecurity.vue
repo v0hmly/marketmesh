@@ -109,7 +109,8 @@ function erase() {
   challenge.value = null;
 }
 async function open(form: 'email' | 'password' | 'code' | null) {
-  if (busy.value) return;
+  // Заблокированные кнопки остаются в порядке Tab с `aria-disabled`: нажатие ничего не открывает.
+  if (busy.value || (form && (locked.value || (form !== 'code' && challenge.value)))) return;
   const previous = opened.value;
   clearSecrets();
   opened.value = form;
@@ -314,6 +315,7 @@ async function cancelCode() {
   document.getElementById('security-code-toggle')?.focus();
 }
 async function revoke(item: SessionInfo) {
+  if (cooldown.value) return;
   const result = await run(
     () => api.revokeSession({ sessionId: item.sessionId }),
     `Сеанс «${deviceName(item)}» завершён.`,
@@ -322,6 +324,7 @@ async function revoke(item: SessionInfo) {
   if (result !== undefined) await read();
 }
 async function logoutAll() {
+  if (cooldown.value) return;
   await run(
     () => api.logoutAll({}),
     'Все сеансы закрыты, включая этот. Войдите снова, чтобы продолжить.',
@@ -340,7 +343,9 @@ void read();
     tabindex="-1"
   >
     <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
-    <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
+    <div role="status">
+      <p v-if="feedback" class="notice success">{{ feedback }}</p>
+    </div>
     <p v-if="locked && authenticated && credentials" id="security-locked" class="field-help">
       {{ locked }}
     </p>
@@ -370,7 +375,8 @@ void read();
               v-if="opened !== 'email'"
               id="security-email-toggle"
               class="button secondary"
-              :disabled="busy || Boolean(challenge) || Boolean(locked)"
+              :disabled="busy"
+              :aria-disabled="blockedBy ? 'true' : undefined"
               :aria-describedby="blockedBy"
               @click="open('email')"
             >
@@ -430,7 +436,8 @@ void read();
               v-if="opened !== 'password'"
               id="security-password-toggle"
               class="button secondary"
-              :disabled="busy || Boolean(challenge) || Boolean(locked)"
+              :disabled="busy"
+              :aria-disabled="blockedBy ? 'true' : undefined"
               :aria-describedby="blockedBy"
               @click="open('password')"
             >
@@ -513,7 +520,8 @@ void read();
               v-if="!credentials.loginCodeEnabled && opened !== 'code' && !challenge"
               id="security-code-toggle"
               class="button secondary"
-              :disabled="busy || Boolean(locked)"
+              :disabled="busy"
+              :aria-disabled="locked ? 'true' : undefined"
               :aria-describedby="locked ? 'security-locked' : undefined"
               @click="open('code')"
             >
@@ -620,7 +628,8 @@ void read();
               <button
                 v-if="!item.current"
                 class="button text-button"
-                :disabled="busy || !!cooldown"
+                :disabled="busy"
+                :aria-disabled="cooldown ? 'true' : undefined"
                 :aria-describedby="cooldown ? 'sessions-cooldown' : undefined"
                 @click="revoke(item)"
               >
@@ -634,7 +643,8 @@ void read();
             </p>
             <button
               class="button secondary"
-              :disabled="busy || !!cooldown || Boolean(locked)"
+              :disabled="busy"
+              :aria-disabled="cooldown || locked ? 'true' : undefined"
               :aria-describedby="
                 ['logout-all-help', cooldown && 'sessions-cooldown', locked && 'security-locked']
                   .filter(Boolean)

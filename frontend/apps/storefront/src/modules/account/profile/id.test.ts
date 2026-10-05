@@ -206,14 +206,24 @@ describe('MarketMesh ID', () => {
     );
     expect(wrapper.find('.age-feedback a').attributes('href')).toBe('#id-reconcile-title');
     expect(session.updateProfile).toHaveBeenCalledTimes(1);
-    expect(wrapper.find('.age-choice input').attributes('disabled')).toBeDefined();
+    const toggle = wrapper.find('.age-choice input');
+    expect(toggle.attributes('aria-disabled')).toBe('true');
+    expect(wrapper.find('#age-switch-help').text()).toContain('блоке сверки');
   });
-  it('disables the age toggle without a birth date', async () => {
+  it('keeps the age toggle reachable without a birth date but never sends it', async () => {
     const { session } = fixture();
     vi.mocked(session.readProfile).mockResolvedValue(profile({ birthDate: '' }));
     const { wrapper } = await open(session);
-    expect(wrapper.find('.age-choice input').attributes('disabled')).toBeDefined();
-    expect(wrapper.text()).toContain('Дата рождения не указана');
+    const toggle = wrapper.find('.age-choice input');
+    expect(toggle.attributes('disabled')).toBeUndefined();
+    expect(toggle.attributes('aria-disabled')).toBe('true');
+    expect(wrapper.find('#age-switch-help').text()).toBe(
+      'Пока дата рождения не указана, показывать нечего.',
+    );
+    await toggle.trigger('click');
+    await flushPromises();
+    expect((toggle.element as HTMLInputElement).checked).toBe(false);
+    expect(session.updateProfile).not.toHaveBeenCalled();
   });
   it('keeps the draft through a conflict until reconciliation', async () => {
     const { session } = fixture();
@@ -450,7 +460,7 @@ describe('MarketMesh ID', () => {
       'Сначала сохраните или отмените изменения личных данных.',
     );
     for (const name of ['Сменить почту', 'Сменить пароль', 'Включить', 'Выйти на всех']) {
-      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
+      expect(button(wrapper, name).attributes('aria-disabled')).toBe('true');
       expect(button(wrapper, name).attributes('aria-describedby')).toContain('security-locked');
     }
     expect(wrapper.findAll('.button.primary')).toHaveLength(1);
@@ -462,14 +472,18 @@ describe('MarketMesh ID', () => {
     expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
     await button(wrapper, 'Сменить пароль').trigger('click');
     await flushPromises();
+    // Заблокированная кнопка остаётся в порядке Tab и ведёт к причине рядом с собой.
     const edit = button(wrapper, 'Изменить данные');
-    expect(edit.attributes('disabled')).toBeDefined();
+    expect(edit.attributes('disabled')).toBeUndefined();
+    expect(edit.attributes('aria-disabled')).toBe('true');
     expect(edit.attributes('aria-describedby')).toBe('id-edit-locked');
     expect(wrapper.find('#id-edit-locked').text()).toContain('«Вход и безопасность»');
+    await edit.trigger('click');
+    expect(wrapper.find('#id-city').exists()).toBe(false);
     expect(wrapper.findAll('.button.primary')).toHaveLength(1);
     await button(wrapper, 'Отменить').trigger('click');
     await flushPromises();
-    expect(button(wrapper, 'Изменить данные').attributes('disabled')).toBeUndefined();
+    expect(button(wrapper, 'Изменить данные').attributes('aria-disabled')).toBeUndefined();
     expect(wrapper.find('#id-edit-locked').exists()).toBe(false);
   });
   it('does not offer or send a request to disable an enabled login code', async () => {

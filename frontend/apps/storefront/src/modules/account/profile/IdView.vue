@@ -7,8 +7,8 @@ import AvatarEditor from '../avatar/AvatarEditor.vue';
 import { computed, ref } from 'vue';
 import ConfirmDialog from '@marketmesh/design-system/ConfirmDialog.vue';
 import { useIdentityEditor } from './state';
+/** Идёт запрос фото: выход из сеанса прервал бы его, остальное на странице ему не мешает. */
 const avatarActive = ref(false);
-const avatarWait = 'Подождите, пока мы закончим с фото.';
 const {
   discardRequest,
   settleDiscard,
@@ -57,12 +57,25 @@ const {
   avatarEnabled,
   comparisonRows,
 } = useIdentityEditor();
-const avatarLock = computed(() =>
-  editing.value
-    ? securityLock
-    : securityActive.value
-      ? 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
-      : '',
+const securityOpen = 'Сначала завершите или отмените действие в разделе «Вход и безопасность».';
+const reconcileFirst = 'Сначала выберите версию данных в блоке сверки выше.';
+/**
+ * Причина, по которой правку данных сейчас не начать. Кнопка остаётся в порядке Tab с
+ * `aria-disabled` и ведёт к причине; `disabled` — только пока идёт запрос.
+ */
+const editLock = computed(() =>
+  reconcile.value ? reconcileFirst : securityActive.value ? securityOpen : '',
+);
+const ageLock = computed(() =>
+  ageText.value === null
+    ? 'Пока дата рождения не указана, показывать нечего.'
+    : editing.value
+      ? securityLock
+      : reconcile.value
+        ? reconcileFirst
+        : securityActive.value
+          ? securityOpen
+          : '',
 );
 </script>
 
@@ -119,12 +132,7 @@ const avatarLock = computed(() =>
     </div>
     <div v-else v-show="!recheckingOwner" class="id-content" :inert="recheckingOwner">
       <div class="card identity-card id-hero">
-        <AvatarEditor
-          v-if="avatarEnabled"
-          :initials="initials"
-          :locked="avatarLock"
-          @active="avatarActive = $event"
-        />
+        <AvatarEditor v-if="avatarEnabled" :initials="initials" @active="avatarActive = $event" />
         <div v-else class="initials" aria-hidden="true">{{ initials }}</div>
         <div class="id-hero-text">
           <h2>{{ fullName }}</h2>
@@ -143,10 +151,15 @@ const avatarLock = computed(() =>
       <p v-if="failure && feedbackScope !== 'age'" class="notice error" role="alert">
         {{ failure }}
       </p>
-      <p v-if="feedback && feedbackScope !== 'age'" class="notice success" role="status">
-        {{ feedback }}
-      </p>
-      <div v-if="reconcile" class="reconcile-panel" aria-labelledby="id-reconcile-title">
+      <div role="status">
+        <p v-if="feedback && feedbackScope !== 'age'" class="notice success">{{ feedback }}</p>
+      </div>
+      <div
+        v-if="reconcile"
+        class="reconcile-panel"
+        role="group"
+        aria-labelledby="id-reconcile-title"
+      >
         <h2 id="id-reconcile-title" tabindex="-1">Сверим с сохранёнными данными</h2>
         <button class="button secondary" :disabled="busy" @click="readProfile(true)">
           {{ loading ? 'Читаем…' : 'Перечитать актуальные данные' }}
@@ -208,25 +221,16 @@ const avatarLock = computed(() =>
             v-if="!editing"
             id="edit-identity"
             class="button secondary"
-            :disabled="busy || reconcile || securityActive || avatarActive"
-            :aria-describedby="securityActive || avatarActive ? 'id-edit-locked' : undefined"
+            :disabled="busy"
+            :aria-disabled="editLock ? 'true' : undefined"
+            :aria-describedby="editLock ? 'id-edit-locked' : undefined"
             @click="startEditing"
           >
             Изменить данные
           </button>
           <span v-else-if="dirty" class="draft-badge">Есть изменения</span>
         </div>
-        <p
-          v-if="(securityActive || avatarActive) && !editing"
-          id="id-edit-locked"
-          class="field-help"
-        >
-          {{
-            avatarActive
-              ? avatarWait
-              : 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
-          }}
-        </p>
+        <p v-if="editLock && !editing" id="id-edit-locked" class="field-help">{{ editLock }}</p>
         <dl v-if="!editing" class="id-rows">
           <div v-if="credentials" class="id-row">
             <dt>ПОЧТА</dt>
@@ -449,32 +453,44 @@ const avatarLock = computed(() =>
           <input
             type="checkbox"
             :checked="showAge"
-            :disabled="
-              busy || editing || reconcile || securityActive || avatarActive || ageText === null
-            "
+            :disabled="busy"
+            :aria-disabled="ageLock ? 'true' : undefined"
             aria-describedby="age-switch-help"
+            @click="ageLock && $event.preventDefault()"
             @change="toggleAge"
           />
           <span
             >Показывать возраст в отзывах
             <small id="age-switch-help">{{
-              ageText === null
-                ? 'Пока дата рождения не указана, показывать нечего.'
-                : `Сейчас другие покупатели видят: ${showAge ? ageText : 'без возраста'}.`
+              ageLock || `Сейчас другие покупатели видят: ${showAge ? ageText : 'без возраста'}.`
             }}</small></span
           >
         </label>
-        <div v-if="feedbackScope === 'age'" class="age-feedback">
-          <p v-if="saving" role="status">Сохраняем видимость возраста…</p>
-          <p v-else-if="failure" class="notice error" role="alert">{{ failure }}</p>
-          <p v-else-if="feedback" class="notice success" role="status">{{ feedback }}</p>
-          <a v-if="reconcile" href="#id-reconcile-title">Перейти к сверке данных</a>
+        <div class="age-feedback">
+          <p v-if="feedbackScope === 'age' && !saving && failure" class="notice error" role="alert">
+            {{ failure }}
+          </p>
+          <div role="status">
+            <template v-if="feedbackScope === 'age'">
+              <p v-if="saving">Сохраняем видимость возраста…</p>
+              <p v-else-if="!failure && feedback" class="notice success">{{ feedback }}</p>
+            </template>
+          </div>
+          <a v-if="feedbackScope === 'age' && reconcile" href="#id-reconcile-title"
+            >Перейти к сверке данных</a
+          >
         </div>
       </section>
     </div>
     <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
     <AccountSecurity
-      :locked="editing ? securityLock : avatarActive ? avatarWait : ''"
+      :locked="
+        editing
+          ? securityLock
+          : avatarActive
+            ? 'Подождите, пока мы сохраним фото: выход из сеанса прервёт его.'
+            : ''
+      "
       @credentials="credentials = $event"
       @active="securityActive = $event"
     />

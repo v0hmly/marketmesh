@@ -46,7 +46,9 @@ button {
   cursor: pointer;
 }
 
-button:disabled {
+/* `aria-disabled` — заблокировано с объяснённой причиной: контрол остаётся в порядке Tab. */
+button:disabled,
+button[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.55;
 }
@@ -388,7 +390,7 @@ main:focus {
   color: var(--button-primary-ink);
 }
 
-.primary:hover:not(:disabled) {
+.primary:hover:not(:disabled, [aria-disabled="true"]) {
   background: var(--button-primary-hover);
 }
 
@@ -398,7 +400,7 @@ main:focus {
   border-color: var(--button-border);
 }
 
-.secondary:hover:not(:disabled) {
+.secondary:hover:not(:disabled, [aria-disabled="true"]) {
   background: var(--button-hover);
   border-color: var(--input-hover);
 }
@@ -410,7 +412,7 @@ main:focus {
   text-underline-offset: 4px;
 }
 
-.text-button:hover:not(:disabled) {
+.text-button:hover:not(:disabled, [aria-disabled="true"]) {
   background: var(--button-text-hover);
 }
 
@@ -807,6 +809,12 @@ main:focus {
   margin: 3px 0 0;
   padding: 0;
   accent-color: var(--link);
+}
+.theme-choice:has(input[aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+.theme-choice input[aria-disabled="true"] {
+  opacity: 0.55;
 }
 .theme-choice small {
   display: block;

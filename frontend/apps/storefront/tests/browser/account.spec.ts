@@ -1012,8 +1012,16 @@ test('ID changes the photo from the header, protects the draft and compares all 
   await expect(preview).toBeHidden();
   await expect(page.locator('.avatar-progress')).toHaveText('Проверяем фото…');
   await expect(page.getByRole('button', { name: 'Добавить фото', exact: true })).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeDisabled();
-  await expect(page.getByText('Подождите, пока мы закончим с фото.').first()).toBeVisible();
+  // Фото не мешает правке данных; ждёт только выход из сеанса, который оборвал бы запрос.
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'Изменить данные', exact: true }),
+  ).not.toHaveAttribute('aria-disabled', 'true');
+  const logoutAll = page.getByRole('button', { name: /^Выйти на всех/ });
+  await expect(logoutAll).toBeDisabled();
+  await expect(page.locator('#security-locked')).toHaveText(
+    'Подождите, пока мы сохраним фото: выход из сеанса прервёт его.',
+  );
   release();
   await expect(page.getByText('Фото сохранено.', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Ваше фото профиля' })).toBeVisible();

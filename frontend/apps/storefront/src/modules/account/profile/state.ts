@@ -415,7 +415,15 @@ export function useIdentityEditor() {
 
   async function toggleAge(event: Event) {
     const next = (event.target as HTMLInputElement).checked;
-    if (!current.value || editing.value || reconcile.value || busy.value) return;
+    if (
+      !current.value ||
+      editing.value ||
+      reconcile.value ||
+      busy.value ||
+      securityActive.value ||
+      ageText.value === null
+    )
+      return;
     feedbackScope.value = 'age';
     await mutate(profileInput({ showAge: next }));
     if (!failure.value)
