@@ -53,6 +53,9 @@
 ## Дизайн и UI
 
 Визуальный язык, токены и документация компонентов — в [docs/design](docs/design/README.md).
+Сводный продуктовый контекст — [PRODUCT.md](PRODUCT.md), визуальный язык для дизайн-агентов —
+[DESIGN.md](DESIGN.md) с дополнением `.impeccable/design.json`; отчёты `/impeccable critique`
+лежат в `.impeccable/critique/`. Источник значений остаётся `tokens.json`: при расхождении прав он.
 Обязательные правила для любой работы с UI storefront — в
 [frontend/apps/storefront/AGENTS.md](frontend/apps/storefront/AGENTS.md): новый экран собирается
 из существующих токенов и классов, а не из новых hex-значений и размеров.
