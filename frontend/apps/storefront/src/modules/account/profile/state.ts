@@ -31,8 +31,6 @@ import {
 import { avatarEnabled } from '../../../shared/features';
 /** View-scoped state: CAS, owner changes, pending projection and private draft cleanup. */
 export function useIdentityEditor() {
-  const avatarURL = ref('');
-
   /** Почта для входа приходит из раздела безопасности (Auth), а не из профиля User. */
   const credentials = shallowRef<GetCredentialsResponse | null>(null);
 
@@ -525,7 +523,6 @@ export function useIdentityEditor() {
     clearPrivateState();
   });
   return {
-    avatarURL,
     discardRequest,
     settleDiscard,
     credentials,

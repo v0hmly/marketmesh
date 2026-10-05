@@ -1,5 +1,13 @@
-import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
+import { createHash, randomBytes } from 'node:crypto';
+import {
+  create,
+  fromBinary,
+  toBinary,
+  type DescMessage,
+  type MessageInitShape,
+} from '@bufbuild/protobuf';
 import { AuthService } from '@marketmesh/api/auth/v1/auth_pb';
+import { FileService, FileState } from '@marketmesh/api/files/v1/files_pb';
 import {
   AccountSettingsSchema,
   Theme,
@@ -44,6 +52,100 @@ async function browserApi(context: BrowserContext) {
       body: JSON.stringify({ code, message: 'Request failed' }),
     });
   }
+  // Фото профиля: User хранит ссылку с версией (CAS), Files — сами байты и их проверку.
+  const hex = (id: Uint8Array) => Buffer.from(id).toString('hex');
+  const files = new Map<string, { id: Uint8Array; media: string; bytes?: Buffer }>();
+  let avatar: { version: bigint; fileId: Uint8Array } = { version: 1n, fileId: new Uint8Array() };
+  let avatarWrites = 0;
+  let rejectNextPhoto = false;
+  let photoGate: Promise<void> | undefined;
+  async function send<D extends DescMessage>(route: Route, schema: D, value: MessageInitShape<D>) {
+    await route.fulfill({
+      headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
+      body: Buffer.from(toBinary(schema, create(schema, value))),
+    });
+  }
+  const avatarReply = () => ({ avatar: { subjectId: profile.subjectId, ...avatar } });
+  await context.route('**/files.v1.FileService/**', async (route) => {
+    if (!signedIn || !accessLive) return jsonError(route, 'unauthenticated', 401);
+    const method = new URL(route.request().url()).pathname.split('/').at(-1);
+    const body = route.request().postDataBuffer() ?? Buffer.alloc(0);
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    if (method === 'CreateUpload') {
+      const input = fromBinary(FileService.method.createUpload.input, body);
+      const id = new Uint8Array(randomBytes(16));
+      id[0] = 7;
+      files.set(hex(id), { id, media: input.mediaType });
+      return send(route, FileService.method.createUpload.output, {
+        fileId: id,
+        uploadId: 'upload',
+        state: FileState.UPLOADING,
+        uploadExpiresAtUnix: now + 600n,
+        parts: [
+          {
+            partNumber: 1,
+            offsetBytes: 0n,
+            sizeBytes: input.sizeBytes,
+            url: `https://files.mm.test/put/${hex(id)}?sig=1`,
+            expiresAtUnix: now + 50n,
+            headers: [{ name: 'content-type', value: input.mediaType }],
+          },
+        ],
+      });
+    }
+    const { fileId } = fromBinary(FileService.method.getStatus.input, body);
+    const file = files.get(hex(fileId));
+    if (method === 'CompleteUpload')
+      return send(route, FileService.method.completeUpload.output, { state: FileState.SCANNING });
+    if (method === 'Delete') {
+      files.delete(hex(fileId));
+      return send(route, FileService.method.delete.output, {});
+    }
+    if (method === 'CreateDownload')
+      return send(route, FileService.method.createDownload.output, {
+        url: `https://files.mm.test/get/${hex(fileId)}?sig=1`,
+        expiresAtUnix: now + 50n,
+      });
+    if (method !== 'GetStatus') return jsonError(route, 'unimplemented', 501);
+    if (!file?.bytes)
+      return send(route, FileService.method.getStatus.output, {
+        state: file ? FileState.UPLOADING : FileState.DELETED,
+      });
+    if (photoGate)
+      return send(route, FileService.method.getStatus.output, { state: FileState.SCANNING });
+    if (rejectNextPhoto) {
+      rejectNextPhoto = false;
+      return send(route, FileService.method.getStatus.output, { state: FileState.REJECTED });
+    }
+    return send(route, FileService.method.getStatus.output, {
+      state: FileState.READY,
+      cleanMediaType: file.media,
+      cleanSizeBytes: BigInt(file.bytes.length),
+      cleanSha256: new Uint8Array(createHash('sha256').update(file.bytes).digest()),
+    });
+  });
+  await context.route('https://files.mm.test/**', async (route) => {
+    const cors = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, PUT, OPTIONS',
+      'access-control-allow-headers': '*',
+    };
+    const request = route.request();
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    const [, kind, id] = new URL(request.url()).pathname.split('/');
+    const file = files.get(id ?? '');
+    if (kind === 'put' && file) {
+      file.bytes = request.postDataBuffer() ?? Buffer.alloc(0);
+      return route.fulfill({ status: 200, headers: cors, body: '' });
+    }
+    if (kind === 'get' && file?.bytes)
+      return route.fulfill({
+        status: 200,
+        headers: { ...cors, 'content-type': file.media },
+        body: file.bytes,
+      });
+    return route.fulfill({ status: 404, headers: cors });
+  });
   await context.route('**/auth.v1.AuthService/**', async (route) => {
     const method = new URL(route.request().url()).pathname.split('/').at(-1);
     if (method === 'RegisterCredentials') {
@@ -197,19 +299,18 @@ async function browserApi(context: BrowserContext) {
       return;
     }
     const method = new URL(route.request().url()).pathname.split('/').at(-1);
-    if (method === 'GetAvatar') {
-      await route.fulfill({
-        headers: { 'content-type': 'application/proto', 'cache-control': 'no-store' },
-        body: Buffer.from(
-          toBinary(
-            UserService.method.getAvatar.output,
-            create(UserService.method.getAvatar.output, {
-              avatar: { subjectId: profile.subjectId, version: 1n },
-            }),
-          ),
-        ),
-      });
-      return;
+    if (method === 'GetAvatar')
+      return send(route, UserService.method.getAvatar.output, avatarReply());
+    if (method === 'SetAvatar' || method === 'ClearAvatar') {
+      avatarWrites++;
+      const body = route.request().postDataBuffer()!;
+      const input =
+        method === 'SetAvatar'
+          ? fromBinary(UserService.method.setAvatar.input, body)
+          : { ...fromBinary(UserService.method.clearAvatar.input, body), fileId: new Uint8Array() };
+      if (input.expectedVersion !== avatar.version) return jsonError(route, 'aborted', 409);
+      avatar = { version: avatar.version + 1n, fileId: input.fileId };
+      return send(route, UserService.method.setAvatar.output, avatarReply());
     }
     if (method === 'GetSettings' || method === 'UpdateSettings') {
       if (method === 'UpdateSettings') {
@@ -344,6 +445,20 @@ async function browserApi(context: BrowserContext) {
   return {
     enableCodeFlow() {
       codeFlow = true;
+    },
+    avatarWrites: () => avatarWrites,
+    rejectNextPhoto() {
+      rejectNextPhoto = true;
+    },
+    holdPhotoCheck() {
+      let release!: () => void;
+      photoGate = new Promise<void>((resolve) => {
+        release = () => {
+          photoGate = undefined;
+          resolve();
+        };
+      });
+      return release;
     },
     settingsWrites: () => settingsWrites,
     loseNextSettingsReply() {
@@ -857,24 +972,79 @@ test('MarketMesh ID edits personal data with CAS and hides private fields from t
   );
 });
 
-test('ID discloses avatar editing, protects the draft and compares all conflicting fields', async ({
+async function raster(page: import('@playwright/test').Page, color: string) {
+  const data = await page.evaluate((color) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 96;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = color;
+    context.fillRect(0, 0, 96, 96);
+    return canvas.toDataURL('image/png').split(',')[1]!;
+  }, color);
+  return { name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from(data, 'base64') };
+}
+async function choosePhoto(page: import('@playwright/test').Page, name: string, color: string) {
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name, exact: true }).click();
+  await (await chooser).setFiles(await raster(page, color));
+}
+
+test('ID changes the photo from the header, protects the draft and compares all conflicting fields', async ({
   page,
   context,
 }, testInfo) => {
   const api = await browserApi(context);
   await buyerLogin(page);
   await page.goto('/account/id');
-  const avatar = page.locator('.avatar-editor');
-  const summary = avatar.locator('summary');
-  await expect(page.getByLabel('Изображение для аватара')).toBeHidden();
-  await summary.focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByLabel('Изображение для аватара')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Сменить пароль', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Добавить фото', exact: true })).toHaveAttribute(
+    'aria-disabled',
+    'false',
+  );
+  await choosePhoto(page, 'Добавить фото', '#245b43');
+  const preview = page.getByRole('dialog', { name: 'Новое фото профиля' });
+  await expect(preview.getByRole('img', { name: 'Выбранное фото' })).toBeVisible();
+  await expect(preview.getByRole('button', { name: 'Отменить' })).toBeFocused();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await summary.click();
+  await page.screenshot({ path: testInfo.outputPath('id-photo-preview.png') });
+  const release = api.holdPhotoCheck();
+  await preview.getByRole('button', { name: 'Сохранить фото' }).click();
+  await expect(preview).toBeHidden();
+  await expect(page.locator('.avatar-progress')).toHaveText('Проверяем фото…');
+  await expect(page.getByRole('button', { name: 'Добавить фото', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeDisabled();
+  await expect(page.getByText('Подождите, пока мы закончим с фото.').first()).toBeVisible();
+  release();
+  await expect(page.getByText('Фото сохранено.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Ваше фото профиля' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeEnabled();
+  expect(api.avatarWrites()).toBe(1);
+  await page.screenshot({ path: testInfo.outputPath('id-photo-saved.png') });
+
+  api.rejectNextPhoto();
+  await choosePhoto(page, 'Изменить фото', '#3a5577');
+  await page.getByRole('dialog').getByRole('button', { name: 'Сохранить фото' }).click();
+  await expect(page.getByRole('alert')).toContainText('Фото не прошло проверку');
+  await expect(page.getByRole('img', { name: 'Ваше фото профиля' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Изменить фото', exact: true })).toHaveAttribute(
+    'aria-disabled',
+    'false',
+  );
+  expect(api.avatarWrites()).toBe(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  await page.getByRole('button', { name: 'Удалить фото', exact: true }).click();
+  const removal = page.getByRole('dialog', { name: 'Удалить фото профиля?' });
+  await removal.getByRole('button', { name: 'Удалить фото' }).click();
+  await expect(page.getByText('Фото удалено.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Ваше фото профиля' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Добавить фото', exact: true })).toBeFocused();
+  expect(api.avatarWrites()).toBe(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('.id-hero').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('id-photo-mobile.png') });
+  await page.setViewportSize({ width: 1280, height: 720 });
+
   await page.getByRole('button', { name: 'Изменить данные', exact: true }).click();
   await page.getByLabel('Город проживания', { exact: true }).fill('Тверь');
   await page.getByRole('button', { name: 'Отменить', exact: true }).click();

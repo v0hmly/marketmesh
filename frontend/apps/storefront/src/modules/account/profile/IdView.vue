@@ -4,12 +4,12 @@ import '../style.css';
 import { AccountSecurity } from '../../auth/ui';
 
 import AvatarEditor from '../avatar/AvatarEditor.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import ConfirmDialog from '@marketmesh/design-system/ConfirmDialog.vue';
 import { useIdentityEditor } from './state';
 const avatarActive = ref(false);
+const avatarWait = 'Подождите, пока мы закончим с фото.';
 const {
-  avatarURL,
   discardRequest,
   settleDiscard,
   credentials,
@@ -57,6 +57,13 @@ const {
   avatarEnabled,
   comparisonRows,
 } = useIdentityEditor();
+const avatarLock = computed(() =>
+  editing.value
+    ? securityLock
+    : securityActive.value
+      ? 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
+      : '',
+);
 </script>
 
 <template>
@@ -111,10 +118,14 @@ const {
       >
     </div>
     <div v-else v-show="!recheckingOwner" class="id-content" :inert="recheckingOwner">
-      <div class="card identity-card id-hero" aria-label="Ваш MarketMesh ID">
-        <div class="initials" aria-hidden="true">
-          <img v-if="avatarURL" :src="avatarURL" alt="" /><template v-else>{{ initials }}</template>
-        </div>
+      <div class="card identity-card id-hero">
+        <AvatarEditor
+          v-if="avatarEnabled"
+          :initials="initials"
+          :locked="avatarLock"
+          @active="avatarActive = $event"
+        />
+        <div v-else class="initials" aria-hidden="true">{{ initials }}</div>
         <div class="id-hero-text">
           <h2>{{ fullName }}</h2>
           <p>MarketMesh ID</p>
@@ -124,19 +135,6 @@ const {
           <p>Управлять аккаунтом можете только вы.</p>
         </div>
       </div>
-      <AvatarEditor
-        v-if="avatarEnabled"
-        :initials="initials"
-        :locked="
-          editing
-            ? securityLock
-            : securityActive
-              ? 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
-              : ''
-        "
-        @image="avatarURL = $event"
-        @active="avatarActive = $event"
-      />
       <nav class="id-section-links" aria-label="Разделы MarketMesh ID">
         <a href="#personal-title">Личные данные</a>
         <a href="#public-title">Публичные данные</a>
@@ -225,7 +223,7 @@ const {
         >
           {{
             avatarActive
-              ? 'Сначала завершите изменение аватара и закройте редактор.'
+              ? avatarWait
               : 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
           }}
         </p>
@@ -476,13 +474,7 @@ const {
     </div>
     <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
     <AccountSecurity
-      :locked="
-        editing
-          ? securityLock
-          : avatarActive
-            ? 'Сначала завершите изменение аватара и закройте редактор.'
-            : ''
-      "
+      :locked="editing ? securityLock : avatarActive ? avatarWait : ''"
       @credentials="credentials = $event"
       @active="securityActive = $event"
     />

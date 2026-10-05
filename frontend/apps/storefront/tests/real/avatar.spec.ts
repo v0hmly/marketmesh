@@ -11,10 +11,10 @@ async function login(page: Page, email: string) {
   await submitLogin(page, email);
   await expect(page).toHaveURL(/\/account\/id$/);
   await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeVisible();
-  await page.locator('.avatar-editor summary').click();
-  await expect(page.getByLabel('Изображение для аватара')).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Проверить аватар', exact: true })).toBeEnabled();
+  await expect(photoAction(page)).toHaveAttribute('aria-disabled', 'false');
 }
+const photoAction = (page: Page) =>
+  page.getByRole('button', { name: /^(Добавить|Изменить) фото$/ });
 async function register(page: Page, email: string) {
   await page.goto('/register');
   await page.getByLabel('Почта', { exact: true }).fill(email);
@@ -63,15 +63,28 @@ async function raster(page: Page, color: string) {
   }, color);
   return Buffer.from(data, 'base64');
 }
-async function upload(page: Page, bytes: Buffer) {
+async function choose(page: Page, bytes: Buffer, name = 'avatar.png') {
+  const chooser = page.waitForEvent('filechooser');
+  await photoAction(page).click();
+  await (await chooser).setFiles({ name, mimeType: 'image/png', buffer: bytes });
   await page
-    .getByLabel('Изображение для аватара')
-    .setInputFiles({ name: 'avatar.png', mimeType: 'image/png', buffer: bytes });
-  await page.getByRole('button', { name: 'Загрузить аватар', exact: true }).click();
-  await expect(page.getByText('Аватар сохранён.', { exact: true })).toBeVisible({
+    .getByRole('dialog', { name: 'Новое фото профиля' })
+    .getByRole('button', { name: 'Сохранить фото', exact: true })
+    .click();
+}
+async function upload(page: Page, bytes: Buffer) {
+  await choose(page, bytes);
+  await expect(page.getByText('Фото сохранено.', { exact: true })).toBeVisible({
     timeout: 90_000,
   });
-  await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();
+  await expect(page.getByAltText('Ваше фото профиля', { exact: true })).toBeVisible();
+}
+async function removePhoto(page: Page) {
+  await page.getByRole('button', { name: 'Удалить фото', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Удалить фото профиля?' })
+    .getByRole('button', { name: 'Удалить фото', exact: true })
+    .click();
 }
 
 test('real avatar uses direct verified Files bytes, owner isolation, CAS and durable retirement', async ({
@@ -117,7 +130,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   expect(storageCredentials).toBe(false);
   expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
   await page.reload();
-  await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();
+  await expect(page.getByAltText('Ваше фото профиля', { exact: true })).toBeVisible();
   const storageClean = await page.evaluate(
     () =>
       !/X-Amz-|Signature|avatar\.png/.test(JSON.stringify({ ...localStorage, ...sessionStorage })),
@@ -158,10 +171,9 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await other.close();
   const secondTab = await context.newPage();
   await secondTab.goto('/account/id');
-  await secondTab.locator('.avatar-editor summary').click();
   await expect(
-    secondTab.getByRole('button', { name: 'Удалить аватар', exact: true }),
-  ).toBeEnabled();
+    secondTab.getByRole('button', { name: 'Удалить фото', exact: true }),
+  ).toHaveAttribute('aria-disabled', 'false');
   await upload(page, await raster(page, '#3a5577'));
   const second = (await rpc(page, 'user', 'GetAvatar')).body.avatar!;
   expect(second.version).toBe('3');
@@ -172,15 +184,15 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
       { timeout: 20_000 },
     )
     .toBe('FILE_STATE_DELETED');
-  await secondTab.getByRole('button', { name: 'Удалить аватар', exact: true }).click();
+  // Конфликт CAS перечитывается сам: вторая вкладка показывает фото первой, удаления нет.
+  await removePhoto(secondTab);
   await expect(secondTab.getByRole('alert')).toContainText('другой вкладке');
-  await secondTab.getByRole('button', { name: 'Проверить аватар', exact: true }).click();
-  await expect(secondTab.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();
+  await expect(secondTab.getByAltText('Ваше фото профиля', { exact: true })).toBeVisible();
   await secondTab.close();
   await page.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await login(page, email);
-  await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();
+  await expect(page.getByAltText('Ваше фото профиля', { exact: true })).toBeVisible();
   let writes = 0;
   await page.route('**/user.v1.UserService/ClearAvatar', async (route) => {
     writes++;
@@ -188,14 +200,13 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
     expect(response.status()).toBe(200);
     await route.abort('failed');
   });
-  await page.getByRole('button', { name: 'Удалить аватар', exact: true }).click();
-  await expect(page.getByText('Запись могла выполниться.', { exact: false })).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText('Результат запроса не подтверждён');
+  // Ответ потерян после записи: исход перечитывается сам, удаление не повторяется.
+  await removePhoto(page);
+  await expect(page.getByText('Фото удалено.', { exact: false })).toBeVisible();
   expect(writes).toBe(1);
   await page.unroute('**/user.v1.UserService/ClearAvatar');
-  await page.getByRole('button', { name: 'Проверить аватар', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Удалить аватар', exact: true })).toHaveCount(0);
-  await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Удалить фото', exact: true })).toHaveCount(0);
+  await expect(page.getByAltText('Ваше фото профиля', { exact: true })).toHaveCount(0);
   await expect
     .poll(
       async () => (await rpc(page, 'files', 'GetStatus', { fileId: second.fileId })).body.state,
@@ -206,18 +217,16 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
     Buffer.from('89504e470d0a1a0a', 'hex'),
     Buffer.from('not an image'),
   ]);
-  await page
-    .getByLabel('Изображение для аватара')
-    .setInputFiles({ name: 'broken.png', mimeType: 'image/png', buffer: broken });
-  await page.getByRole('button', { name: 'Загрузить аватар', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Файл пока недоступен', { timeout: 90_000 });
-  await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toHaveCount(0);
-  // Simulate access expiry while retaining the refresh cookie and in-memory candidate.
+  // Отказ проверки окончателен: фото не меняется, выбрать другое можно сразу.
+  await choose(page, broken, 'broken.png');
+  await expect(page.getByRole('alert')).toContainText('Фото не прошло проверку', {
+    timeout: 90_000,
+  });
+  await expect(page.getByAltText('Ваше фото профиля', { exact: true })).toHaveCount(0);
+  await expect(photoAction(page)).toHaveAttribute('aria-disabled', 'false');
+  // Истёкший доступ при живом refresh: загрузка обновляет сессию и проходит с первого нажатия.
   await context.clearCookies({ name: '__Host-mm-access' });
-  await page.getByRole('button', { name: 'Проверить аватар', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Отменить загрузку', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: 'Отменить загрузку', exact: true }).click();
-  await expect(page.getByText('Загрузка отменена.', { exact: true })).toBeVisible();
+  await upload(page, await raster(page, '#5a3a77'));
 });
 
 test('shared dev avatar survives restart and certificate renewal', async ({ page }) => {
@@ -236,7 +245,7 @@ test('shared dev avatar survives restart and certificate renewal', async ({ page
   expect((await rpc(page, 'files', 'GetStatus', { fileId: avatar.fileId })).body.state).toBe(
     'FILE_STATE_READY',
   );
-  const preview = page.getByAltText('Ваш сохранённый аватар', { exact: true });
+  const preview = page.getByAltText('Ваше фото профиля', { exact: true });
   await expect(preview).toBeVisible();
   await expect
     .poll(() => preview.evaluate((image) => (image as HTMLImageElement).naturalWidth))
