@@ -127,7 +127,7 @@ describe('avatar editor lifecycle', () => {
     await flushPromises();
     expect(session.bootstrap).not.toHaveBeenCalled();
     vi.mocked(api.get).mockRejectedValueOnce(new ConnectError('expired', Code.Unauthenticated));
-    await button(wrapper, 'Обновить состояние').trigger('click');
+    await button(wrapper, 'Проверить аватар').trigger('click');
     await flushPromises();
     expect(session.bootstrap).toHaveBeenCalledTimes(1);
     expect(api.get).toHaveBeenCalledTimes(3);
@@ -146,7 +146,7 @@ describe('avatar editor lifecycle', () => {
       state.value = { ...state.value, status: 'authenticated' };
     });
     vi.mocked(api.get).mockRejectedValueOnce(new ConnectError('expired', Code.Unauthenticated));
-    await button(wrapper, 'Обновить состояние').trigger('click');
+    await button(wrapper, 'Проверить аватар').trigger('click');
     await flushPromises();
     expect(session.bootstrap).toHaveBeenCalledTimes(1);
     expect(wrapper.findComponent(AvatarEditor).vm.$).toBe(editor);
@@ -163,7 +163,7 @@ describe('avatar editor lifecycle', () => {
     vi.mocked(session.bootstrap).mockImplementation(async () => {
       state.value = { status: 'anonymous', generation: 'new', subjectId: null };
     });
-    await button(wrapper, 'Обновить состояние').trigger('click');
+    await button(wrapper, 'Проверить аватар').trigger('click');
     await flushPromises();
     expect(api.get).toHaveBeenCalledTimes(2);
     expect(wrapper.find('img').exists()).toBe(false);
@@ -203,7 +203,7 @@ describe('avatar editor lifecycle', () => {
       value: 'avatar.png',
     });
     vi.mocked(api.get).mockResolvedValue({ ...snapshot(2n), fileId: next });
-    await button(wrapper, 'Обновить состояние').trigger('click');
+    await button(wrapper, 'Проверить аватар').trigger('click');
     await flushPromises();
     expect(input.value).toBe('');
     vi.mocked(api.create).mockResolvedValue({
@@ -219,7 +219,7 @@ describe('avatar editor lifecycle', () => {
       ReturnType<AvatarApi['status']>
     >);
     await choose();
-    await button(wrapper, 'Обновить состояние').trigger('click');
+    await button(wrapper, 'Проверить аватар').trigger('click');
     await flushPromises();
     expect(wrapper.text()).not.toContain('Сохранить выбранный аватар');
     expect(api.set).toHaveBeenCalledTimes(1);
@@ -236,7 +236,7 @@ describe('avatar editor lifecycle', () => {
     expect(wrapper.text()).not.toContain('private upstream');
     expect(button(wrapper, 'Удалить аватар').attributes('disabled')).toBeDefined();
     vi.mocked(api.get).mockResolvedValue(snapshot(2n, false));
-    await button(wrapper, 'Обновить состояние').trigger('click');
+    await button(wrapper, 'Проверить аватар').trigger('click');
     await flushPromises();
     expect(wrapper.find('img').exists()).toBe(false);
     expect(revokeURL).toHaveBeenCalledWith('blob:verified');

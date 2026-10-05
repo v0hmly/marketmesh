@@ -628,3 +628,142 @@
     font-size: 2.2rem;
   }
 }
+
+/* MarketMesh ID: вторичные действия компактны, формы раскрываются по запросу. */
+.account-id .identity-card,
+.account-id .profile-card {
+  padding: 32px;
+}
+.account-id .identity-card h2 {
+  font-size: 1.55rem;
+}
+.account-id .initials {
+  font-size: 1.55rem;
+  flex-shrink: 0;
+}
+.account-id .privacy-note {
+  font-size: 0.875rem;
+  gap: 12px;
+}
+.avatar-editor {
+  padding: 16px 24px;
+}
+.account-id .avatar-editor {
+  padding: 16px 24px;
+}
+.avatar-editor summary {
+  min-height: 45px;
+  align-content: center;
+  cursor: pointer;
+  color: var(--link);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.avatar-editor summary[aria-disabled='true'] {
+  color: var(--muted);
+  cursor: default;
+}
+.avatar-editor-content {
+  padding-top: 24px;
+}
+.id-section-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.id-section-links a {
+  padding-block: 12px;
+  font-size: 0.875rem;
+}
+.id-comparison {
+  overflow-x: auto;
+  margin-block: 16px;
+}
+.id-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.875rem;
+}
+.id-comparison caption {
+  text-align: start;
+  font-weight: 600;
+  padding-bottom: 12px;
+}
+.id-comparison th,
+.id-comparison td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.id-comparison th .field-help {
+  display: block;
+  font-weight: 400;
+}
+.comparison-changed {
+  background: var(--paper);
+}
+.account-id .latest-profile .button,
+.account-id .id-form-grid .theme-options legend {
+  font-size: 0.875rem;
+}
+.account-id .profile-card .card-heading h2 {
+  font-size: 1.55rem;
+}
+@media (max-width: 1000px) {
+  .account-id .id-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .account-id .identity-card,
+  .account-id .profile-card {
+    padding: 24px;
+  }
+  .account-id .avatar-editor {
+    padding: 12px 24px;
+  }
+  .account-id .id-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .account-id .id-hero .privacy-note {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .id-comparison th,
+  .id-comparison td {
+    padding: 8px 4px;
+  }
+}
+
+.avatar-editor summary:focus-visible,
+.id-comparison:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--focus-inner);
+}
+.account-id .preview-name {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.account-id .draft-badge {
+  font-size: 0.875rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.account-id .public-rows {
+  display: flex;
+}
+@media (max-width: 720px) {
+  .account-id .card-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.age-feedback {
+  margin-top: 16px;
+}

@@ -11,8 +11,9 @@ async function login(page: Page, email: string) {
   await submitLogin(page, email);
   await expect(page).toHaveURL(/\/account\/id$/);
   await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeVisible();
+  await page.locator('.avatar-editor summary').click();
   await expect(page.getByLabel('Изображение для аватара')).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Обновить состояние', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Проверить аватар', exact: true })).toBeEnabled();
 }
 async function register(page: Page, email: string) {
   await page.goto('/register');
@@ -157,6 +158,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await other.close();
   const secondTab = await context.newPage();
   await secondTab.goto('/account/id');
+  await secondTab.locator('.avatar-editor summary').click();
   await expect(
     secondTab.getByRole('button', { name: 'Удалить аватар', exact: true }),
   ).toBeEnabled();
@@ -172,7 +174,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
     .toBe('FILE_STATE_DELETED');
   await secondTab.getByRole('button', { name: 'Удалить аватар', exact: true }).click();
   await expect(secondTab.getByRole('alert')).toContainText('другой вкладке');
-  await secondTab.getByRole('button', { name: 'Обновить состояние', exact: true }).click();
+  await secondTab.getByRole('button', { name: 'Проверить аватар', exact: true }).click();
   await expect(secondTab.getByAltText('Ваш сохранённый аватар', { exact: true })).toBeVisible();
   await secondTab.close();
   await page.getByRole('button', { name: 'Выйти из аккаунта', exact: true }).click();
@@ -191,7 +193,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await expect(page.getByRole('alert')).toContainText('Результат запроса не подтверждён');
   expect(writes).toBe(1);
   await page.unroute('**/user.v1.UserService/ClearAvatar');
-  await page.getByRole('button', { name: 'Обновить состояние', exact: true }).click();
+  await page.getByRole('button', { name: 'Проверить аватар', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Удалить аватар', exact: true })).toHaveCount(0);
   await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toHaveCount(0);
   await expect
@@ -212,7 +214,7 @@ test('real avatar uses direct verified Files bytes, owner isolation, CAS and dur
   await expect(page.getByAltText('Ваш сохранённый аватар', { exact: true })).toHaveCount(0);
   // Simulate access expiry while retaining the refresh cookie and in-memory candidate.
   await context.clearCookies({ name: '__Host-mm-access' });
-  await page.getByRole('button', { name: 'Обновить состояние', exact: true }).click();
+  await page.getByRole('button', { name: 'Проверить аватар', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Отменить загрузку', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Отменить загрузку', exact: true }).click();
   await expect(page.getByText('Загрузка отменена.', { exact: true })).toBeVisible();

@@ -244,9 +244,9 @@ async function changeEmail() {
   }
 }
 async function startCode() {
-  if (!credentials.value || !codePassword.value) return;
+  if (!credentials.value || credentials.value.loginCodeEnabled || !codePassword.value) return;
   const password = new TextEncoder().encode(codePassword.value);
-  const enabled = !credentials.value.loginCodeEnabled;
+  const enabled = true;
   const owner = session.capture();
   try {
     const result = await run(
@@ -505,23 +505,23 @@ void read();
               <span class="security-row-title">Код при входе</span>
               <span class="subtle">{{
                 credentials.loginCodeEnabled
-                  ? 'После пароля требуется код из письма.'
-                  : 'Вы входите с почтой и паролем.'
+                  ? 'После пароля требуется код из письма. Отключить его нельзя.'
+                  : 'Код пока не включён для вашего аккаунта. Включите его, чтобы защитить вход.'
               }}</span>
             </div>
             <button
-              v-if="opened !== 'code' && !challenge"
+              v-if="!credentials.loginCodeEnabled && opened !== 'code' && !challenge"
               id="security-code-toggle"
               class="button secondary"
               :disabled="busy || Boolean(locked)"
               :aria-describedby="locked ? 'security-locked' : undefined"
               @click="open('code')"
             >
-              {{ credentials.loginCodeEnabled ? 'Отключить' : 'Включить' }}
+              Включить
             </button>
           </div>
           <form
-            v-if="opened === 'code' && !challenge"
+            v-if="opened === 'code' && !challenge && !credentials.loginCodeEnabled"
             class="security-form"
             novalidate
             :aria-busy="busy"
@@ -545,12 +545,7 @@ void read();
                 <button type="button" class="button text-button" @click="open(null)">
                   Отменить</button
                 ><button class="button primary" :disabled="busy || !codePassword">
-                  {{
-                    credentials.loginCodeEnabled
-                      ? 'Отключить подтверждение входа'
-                      : 'Включить подтверждение входа'
-                  }}
-                  <span aria-hidden="true">↗</span>
+                  Включить подтверждение входа
                 </button>
               </div>
             </fieldset>

@@ -4,9 +4,14 @@ import '../style.css';
 import { AccountSecurity } from '../../auth/ui';
 
 import AvatarEditor from '../avatar/AvatarEditor.vue';
+import { ref } from 'vue';
+import ConfirmDialog from '@marketmesh/design-system/ConfirmDialog.vue';
 import { useIdentityEditor } from './state';
+const avatarActive = ref(false);
 const {
   avatarURL,
+  discardRequest,
+  settleDiscard,
   credentials,
   securityActive,
   securityLock,
@@ -20,6 +25,7 @@ const {
   saving,
   failure,
   feedback,
+  feedbackScope,
   pending,
   reconcile,
   errors,
@@ -49,11 +55,16 @@ const {
   Gender,
   birthLabel,
   avatarEnabled,
+  comparisonRows,
 } = useIdentityEditor();
 </script>
 
 <template>
-  <section class="account-section" aria-labelledby="id-title">
+  <section
+    class="account-section account-id"
+    aria-labelledby="id-title"
+    :inert="discardRequest !== null"
+  >
     <div class="account-heading">
       <h1 id="id-title">MarketMesh ID</h1>
       <p class="lede">
@@ -110,35 +121,78 @@ const {
           <p v-if="memberSince">Вы с нами с {{ memberSince }}</p>
         </div>
         <div class="privacy-note">
-          <span aria-hidden="true">↳</span>
-          <p>Данные этого раздела доступны только вам.</p>
+          <p>Управлять аккаунтом можете только вы.</p>
         </div>
       </div>
-      <AvatarEditor v-if="avatarEnabled" :initials="initials" @image="avatarURL = $event" />
-      <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
-      <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
+      <AvatarEditor
+        v-if="avatarEnabled"
+        :initials="initials"
+        :locked="
+          editing
+            ? securityLock
+            : securityActive
+              ? 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
+              : ''
+        "
+        @image="avatarURL = $event"
+        @active="avatarActive = $event"
+      />
+      <nav class="id-section-links" aria-label="Разделы MarketMesh ID">
+        <a href="#personal-title">Личные данные</a>
+        <a href="#public-title">Публичные данные</a>
+        <a href="#security">Вход и безопасность</a>
+      </nav>
+      <p v-if="failure && feedbackScope !== 'age'" class="notice error" role="alert">
+        {{ failure }}
+      </p>
+      <p v-if="feedback && feedbackScope !== 'age'" class="notice success" role="status">
+        {{ feedback }}
+      </p>
       <div v-if="reconcile" class="reconcile-panel" aria-labelledby="id-reconcile-title">
-        <h2 id="id-reconcile-title">Сверим с сохранёнными данными</h2>
+        <h2 id="id-reconcile-title" tabindex="-1">Сверим с сохранёнными данными</h2>
         <button class="button secondary" :disabled="busy" @click="readProfile(true)">
           {{ loading ? 'Читаем…' : 'Перечитать актуальные данные' }}
         </button>
         <div v-if="latest" class="latest-profile">
-          <h4>Сейчас на сервере</h4>
-          <dl>
-            <dt>Имя</dt>
-            <dd>{{ latest.displayName || 'Не указано' }}</dd>
-            <dt>Фамилия</dt>
-            <dd>{{ latest.lastName || 'Не указана' }}</dd>
-            <dt>Город</dt>
-            <dd>{{ latest.city || 'Не указан' }}</dd>
-            <dt>Телефон</dt>
-            <dd>{{ latest.phone || 'Не указан' }}</dd>
-          </dl>
+          <p class="field-help">
+            Сравните данные перед выбором. Новая запись выполнится только после сохранения.
+          </p>
+          <div class="id-comparison" role="region" aria-label="Сравнение версий" tabindex="0">
+            <table>
+              <caption>
+                Ваши данные и сохранённая версия
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Поле</th>
+                  <th scope="col">{{ editing ? 'Ваш черновик' : 'До сохранения' }}</th>
+                  <th scope="col">Сохранено</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in comparisonRows"
+                  :key="row.label"
+                  :class="{ 'comparison-changed': row.changed }"
+                >
+                  <th scope="row">
+                    {{ row.label }}<span v-if="row.changed" class="field-help">Отличается</span>
+                  </th>
+                  <td>{{ row.draft }}</td>
+                  <td>{{ row.saved }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="editing" class="field-help">
+            «Принять сохранённые данные» заменит ваш черновик. «Продолжить с черновиком» оставит
+            введённые вами значения; видимость возраста будет взята из сохранённой версии.
+          </p>
           <div class="button-row">
             <button class="button secondary" :disabled="busy" @click="acceptLatest">
-              Принять актуальные данные</button
+              Принять сохранённые данные</button
             ><button v-if="editing" class="button text-button" :disabled="busy" @click="keepDraft">
-              Оставить мой черновик для сохранения
+              Продолжить с черновиком
             </button>
           </div>
         </div>
@@ -146,23 +200,34 @@ const {
       <section class="card profile-card" aria-labelledby="personal-title">
         <div class="card-heading">
           <div>
-            <h2 id="personal-title">Личные данные</h2>
-            <p class="subtle">Нужны для заказов и поддержки. Другим покупателям они не видны.</p>
+            <h2 id="personal-title" tabindex="-1">Личные данные</h2>
+            <p class="subtle">
+              Имя и город видны в отзывах. Почта, фамилия, телефон, дата рождения и пол другим
+              покупателям не показываются.
+            </p>
           </div>
           <button
             v-if="!editing"
             id="edit-identity"
             class="button secondary"
-            :disabled="busy || reconcile || securityActive"
-            :aria-describedby="securityActive ? 'id-edit-locked' : undefined"
+            :disabled="busy || reconcile || securityActive || avatarActive"
+            :aria-describedby="securityActive || avatarActive ? 'id-edit-locked' : undefined"
             @click="startEditing"
           >
             Изменить данные
           </button>
           <span v-else-if="dirty" class="draft-badge">Есть изменения</span>
         </div>
-        <p v-if="securityActive && !editing" id="id-edit-locked" class="field-help">
-          Сначала завершите или отмените действие в разделе «Вход и безопасность».
+        <p
+          v-if="(securityActive || avatarActive) && !editing"
+          id="id-edit-locked"
+          class="field-help"
+        >
+          {{
+            avatarActive
+              ? 'Сначала завершите изменение аватара и закройте редактор.'
+              : 'Сначала завершите или отмените действие в разделе «Вход и безопасность».'
+          }}
         </p>
         <dl v-if="!editing" class="id-rows">
           <div v-if="credentials" class="id-row">
@@ -170,7 +235,7 @@ const {
             <dd class="id-email">
               <span>{{ credentials.email }}</span
               ><span class="draft-badge">{{
-                credentials.emailVerified ? 'Подтверждён' : 'Не подтверждён'
+                credentials.emailVerified ? 'Подтверждена' : 'Не подтверждена'
               }}</span>
             </dd>
           </div>
@@ -310,10 +375,13 @@ const {
                 /><span>{{ choice.label }}</span></label
               >
               <span id="id-gender-help" class="field-help"
-                >Необязательно. Влияет только на подборки.</span
+                >Необязательно. Другим покупателям не показывается.</span
               >
             </fieldset>
           </div>
+          <p v-if="reconcile" id="id-save-reconcile" class="field-help">
+            Сначала перечитайте сохранённые данные и выберите версию в блоке сверки выше.
+          </p>
           <div class="form-footer">
             <span class="field-help">{{
               dirty ? 'Есть несохранённые изменения' : 'Проверьте данные перед сохранением'
@@ -326,8 +394,13 @@ const {
                 @click="cancelEditing"
               >
                 Отменить</button
-              ><button class="button primary" type="submit" :disabled="busy || !dirty">
-                {{ saving ? 'Сохраняем…' : 'Сохранить' }} <span aria-hidden="true">↗</span>
+              ><button
+                class="button primary"
+                type="submit"
+                :disabled="busy || reconcile || !dirty"
+                :aria-describedby="reconcile ? 'id-save-reconcile' : undefined"
+              >
+                {{ saving ? 'Сохраняем…' : 'Сохранить изменения' }}
               </button>
             </div>
           </div>
@@ -336,7 +409,7 @@ const {
       <section class="card profile-card" aria-labelledby="public-title">
         <div class="card-heading">
           <div>
-            <h2 id="public-title">Публичные данные</h2>
+            <h2 id="public-title" tabindex="-1">Публичные данные</h2>
             <p class="subtle">
               Это видят другие покупатели рядом с вашими отзывами. Показывается только то, что
               заполнено в личных данных.
@@ -365,19 +438,9 @@ const {
             </div>
           </dl>
           <div class="public-preview">
-            <span class="eyebrow">Так вас увидят в отзыве</span>
+            <span class="field-help">Ваша подпись рядом с отзывом</span>
             <div class="review-preview">
-              <div class="preview-heading">
-                <span class="preview-avatar" aria-hidden="true">{{ initials.slice(0, 1) }}</span>
-                <span class="line-meta"
-                  ><span class="preview-name">{{ publicLine }}</span
-                  ><span class="review-date">2 СЕНТЯБРЯ</span></span
-                >
-              </div>
-              <p class="subtle preview-quote">
-                «Глазурь ровная, ручка удобно ложится в ладонь. Пришла в плотной коробке с бумагой,
-                ни одного скола.»
-              </p>
+              <p class="preview-name">{{ publicLine }}</p>
             </div>
             <p class="subtle preview-note">
               Фамилия, телефон и пол в отзывах не показываются никогда.
@@ -388,7 +451,9 @@ const {
           <input
             type="checkbox"
             :checked="showAge"
-            :disabled="busy || editing || reconcile || ageText === null"
+            :disabled="
+              busy || editing || reconcile || securityActive || avatarActive || ageText === null
+            "
             aria-describedby="age-switch-help"
             @change="toggleAge"
           />
@@ -401,13 +466,40 @@ const {
             }}</small></span
           >
         </label>
+        <div v-if="feedbackScope === 'age'" class="age-feedback">
+          <p v-if="saving" role="status">Сохраняем видимость возраста…</p>
+          <p v-else-if="failure" class="notice error" role="alert">{{ failure }}</p>
+          <p v-else-if="feedback" class="notice success" role="status">{{ feedback }}</p>
+          <a v-if="reconcile" href="#id-reconcile-title">Перейти к сверке данных</a>
+        </div>
       </section>
     </div>
     <p v-if="recheckingOwner" role="status">Проверяем сессию…</p>
     <AccountSecurity
-      :locked="editing ? securityLock : ''"
+      :locked="
+        editing
+          ? securityLock
+          : avatarActive
+            ? 'Сначала завершите изменение аватара и закройте редактор.'
+            : ''
+      "
       @credentials="credentials = $event"
       @active="securityActive = $event"
     />
   </section>
+  <Teleport to="body">
+    <ConfirmDialog
+      v-if="discardRequest"
+      title="Удалить несохранённые изменения?"
+      :confirm-label="
+        discardRequest === 'leave' ? 'Удалить черновик и перейти' : 'Удалить черновик'
+      "
+      cancel-label="Продолжить редактирование"
+      @confirm="settleDiscard(true)"
+      @cancel="settleDiscard(false)"
+      ><p>
+        Сохранённые данные останутся прежними. Введённые изменения будут потеряны.
+      </p></ConfirmDialog
+    >
+  </Teleport>
 </template>
