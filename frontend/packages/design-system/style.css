@@ -95,7 +95,7 @@ h2 {
 }
 
 h3 {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
 }
 
 h4 {
@@ -262,9 +262,9 @@ main:focus {
 
 .eyebrow {
   display: block;
-  font-size: 0.64rem;
+  font-size: 0.73rem;
   letter-spacing: 0.16em;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--muted);
   margin-bottom: 18px;
 }
