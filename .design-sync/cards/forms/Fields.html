@@ -1,0 +1,36 @@
+<!-- group: Формы; viewport: 760x900 -->
+<form class="card" style="padding:var(--sp-7);max-width:640px" novalidate>
+  <div class="card-heading" style="margin-bottom:var(--sp-6)">
+    <h2>Личные данные</h2>
+  </div>
+  <div class="field">
+    <label for="f-name">Имя</label>
+    <input id="f-name" value="Анна" autocomplete="given-name" aria-describedby="f-name-help">
+    <span id="f-name-help" class="field-help">Имя видно в ваших отзывах и нужно мастеру.</span>
+  </div>
+  <div class="field">
+    <label for="f-phone">Телефон</label>
+    <input id="f-phone" value="123" type="tel" aria-invalid="true" aria-describedby="f-phone-help f-phone-error">
+    <span id="f-phone-help" class="field-help">7–15 цифр, можно с пробелами и +.</span>
+    <span id="f-phone-error" class="field-error">Номер: от 7 до 15 цифр.</span>
+  </div>
+  <div class="field">
+    <div class="label-line"><label for="f-shop">Название мастерской</label><span id="f-shop-count" class="field-count">15 / 60</span></div>
+    <input id="f-shop" value="Керамика у Невы" aria-describedby="f-shop-count">
+  </div>
+  <div class="field">
+    <label for="f-city">Город</label>
+    <span class="select-wrap"><select id="f-city"><option>Санкт-Петербург</option><option>Москва</option></select></span>
+  </div>
+  <div class="field">
+    <label for="f-mail">Почта</label>
+    <input id="f-mail" value="anna@example.ru" disabled>
+  </div>
+  <div class="form-footer">
+    <span class="field-help">Есть несохранённые изменения</span>
+    <div class="button-row">
+      <button class="button secondary" type="button">Отменить</button>
+      <button class="button primary" type="button">Сохранить изменения</button>
+    </div>
+  </div>
+</form>

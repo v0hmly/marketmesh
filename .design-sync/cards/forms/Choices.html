@@ -1,0 +1,15 @@
+<!-- group: Формы; viewport: 760x620 -->
+<section class="card" style="padding:var(--sp-7);max-width:640px">
+  <div class="field">
+    <label for="c-theme">Тема оформления</label>
+    <span class="select-wrap"><select id="c-theme"><option>Системная</option><option>Светлая</option><option>Тёмная</option></select></span>
+  </div>
+  <fieldset class="theme-options">
+    <legend>Пол</legend>
+    <label class="theme-choice"><input type="radio" name="c-gender" checked aria-describedby="c-gender-help"><span>Не указывать</span></label>
+    <label class="theme-choice"><input type="radio" name="c-gender" aria-describedby="c-gender-help"><span>Женский</span></label>
+    <label class="theme-choice"><input type="radio" name="c-gender" aria-describedby="c-gender-help"><span>Мужской</span></label>
+    <span id="c-gender-help" class="field-help">Необязательно. Другим покупателям не показывается.</span>
+  </fieldset>
+  <label class="theme-choice" style="margin-top:var(--sp-6)"><input type="checkbox" aria-disabled="true" aria-describedby="c-age-help"><span>Показывать возраст в отзывах <small id="c-age-help">Пока дата рождения не указана, показывать нечего.</small></span></label>
+</section>
