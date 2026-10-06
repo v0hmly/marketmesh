@@ -318,6 +318,10 @@
   flex-direction: column;
   gap: 24px;
 }
+/* Пустой live-регион остаётся в дереве доступности, но не добавляет шаг колонки. */
+.id-content > .id-status:empty {
+  margin-top: -24px;
+}
 .order-heading {
   align-items: baseline;
   flex-wrap: wrap;
@@ -517,17 +521,7 @@
 .rating-hint {
   margin: 0 0 0 12px;
 }
-.id-hero {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.id-hero .initials {
-  margin-bottom: 0;
-}
 .id-hero-text {
-  flex-grow: 1;
   min-width: 0;
 }
 .id-hero-text h2 {
@@ -540,7 +534,6 @@
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
-  max-width: 280px;
 }
 .id-content .card-heading {
   margin-bottom: 24px;
@@ -600,13 +593,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.id-email {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  overflow-wrap: anywhere;
-}
 @media (max-width: 1000px) {
   .account-layout {
     gap: 28px;
@@ -645,35 +631,75 @@
   font-size: 0.875rem;
   gap: 12px;
 }
-.avatar-editor {
-  padding: 16px 24px;
+/* Шапка ID: фото слева на две строки, справа имя и под ним действия с фото. */
+.account-id .id-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 280px);
+  grid-template-areas:
+    'photo text note'
+    'photo actions note'
+    '. status status';
+  align-items: center;
+  column-gap: 24px;
 }
-.account-id .avatar-editor {
-  padding: 16px 24px;
+.account-id .id-hero > .initials {
+  grid-area: photo;
+  margin: 0;
 }
-.avatar-editor summary {
-  min-height: 45px;
-  align-content: center;
+.account-id .id-hero-text {
+  grid-area: text;
+  align-self: end;
+}
+.account-id .id-hero .privacy-note {
+  grid-area: note;
+}
+.avatar-photo-action {
   cursor: pointer;
-  color: var(--link);
-  font-size: 0.875rem;
-  font-weight: 600;
 }
-.avatar-editor summary[aria-disabled='true'] {
-  color: var(--muted);
-  cursor: default;
+.avatar-photo-action:hover {
+  filter: brightness(0.94);
 }
-.avatar-editor-content {
-  padding-top: 24px;
-}
-.id-section-links {
+/* Подписи текстовых кнопок стоят на одной вертикали с именем. */
+.avatar-actions {
+  grid-area: actions;
+  align-self: start;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 24px;
+  align-items: center;
+  column-gap: 8px;
+  margin: 8px 0 0 -12px;
 }
-.id-section-links a {
-  padding-block: 12px;
+.avatar-actions .text-button {
+  padding-inline: 12px;
+}
+.avatar-feedback {
+  grid-area: status;
+  min-width: 0;
+}
+.avatar-feedback .notice {
+  margin: 16px 0 0;
+}
+.avatar-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
   font-size: 0.875rem;
+  color: var(--muted);
+}
+.avatar-progress .loading-dot {
+  margin: 0;
+}
+.avatar-recheck {
+  margin: 16px 0 0;
+}
+.avatar-recheck p {
+  margin: 0 0 12px;
+}
+.dialog .avatar-preview {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto;
 }
 .id-comparison {
   overflow-x: auto;
@@ -716,21 +742,33 @@
   .account-id .id-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .account-id .id-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'photo text'
+      'photo actions'
+      '. status'
+      'note note';
+  }
+  .account-id .id-hero .privacy-note {
+    margin-top: 16px;
+  }
 }
 @media (max-width: 720px) {
   .account-id .identity-card,
   .account-id .profile-card {
     padding: 24px;
   }
-  .account-id .avatar-editor {
-    padding: 12px 24px;
+  .account-id .id-hero {
+    column-gap: 16px;
+    grid-template-areas:
+      'photo text'
+      'actions actions'
+      'status status'
+      'note note';
   }
   .account-id .id-form-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .account-id .id-hero .privacy-note {
-    max-width: none;
-    flex-basis: 100%;
   }
   .id-comparison th,
   .id-comparison td {
@@ -738,7 +776,6 @@
   }
 }
 
-.avatar-editor summary:focus-visible,
 .id-comparison:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
@@ -764,6 +801,8 @@
   }
 }
 
-.age-feedback {
-  margin-top: 16px;
+.age-feedback p,
+.age-feedback > a {
+  display: block;
+  margin: 16px 0 0;
 }

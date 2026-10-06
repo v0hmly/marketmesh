@@ -52,10 +52,13 @@ it.each([
   const router = createStorefrontRouter(createMemoryHistory());
   await router.push('/account');
   expect(router.currentRoute.value.path).toBe(home);
+  // Вход и безопасность — отдельный раздел при любом флаге; прежний якорь ID ведёт туда.
   await router.push('/account/security');
-  expect(router.currentRoute.value.fullPath).toBe(
-    'VITE_ACCOUNT_ID_ENABLED' in flags ? '/account/id#security' : '/account/security',
-  );
+  expect(router.currentRoute.value.fullPath).toBe('/account/security');
+  if ('VITE_ACCOUNT_ID_ENABLED' in flags) {
+    await router.push('/account/id#security');
+    expect(router.currentRoute.value.fullPath).toBe('/account/security');
+  }
 });
 
 it.each([undefined, 'false', '1', 'true'])(

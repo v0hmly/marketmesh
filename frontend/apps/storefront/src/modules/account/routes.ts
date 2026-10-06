@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router';
+import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router';
 const AccountLayout = () => import('./views/AccountLayout.vue');
 const SecurityView = () => import('./views/SecurityView.vue');
 const AddressesView = () => import('./addresses/AddressesView.vue');
@@ -14,10 +14,7 @@ import {
   reviewsEnabled,
 } from '../../shared/features';
 
-/**
- * Первый доступный раздел кабинета. Без MarketMesh ID (сборка до выкатки нового User)
- * вход и безопасность остаются отдельным разделом.
- */
+/** Первый доступный раздел кабинета: заказы, иначе MarketMesh ID, иначе вход и безопасность. */
 export const accountHomePath = ordersEnabled
   ? '/account/orders'
   : idEnabled
@@ -31,15 +28,18 @@ const sections: RouteRecordRaw[] = [
   ...(addressesEnabled ? [{ path: 'addresses', name: 'addresses', component: AddressesView }] : []),
   ...(idEnabled
     ? [
-        { path: 'id', name: 'id', component: IdView },
-        // Безопасность — раздел экрана MarketMesh ID.
         {
-          path: 'security',
-          name: 'security',
-          redirect: { path: '/account/id', hash: '#security' },
+          path: 'id',
+          name: 'id',
+          component: IdView,
+          // В MM-137 безопасность была частью ID: прежняя ссылка ведёт в отдельный раздел.
+          beforeEnter: (to: RouteLocationNormalized) =>
+            to.hash === '#security' ? { path: '/account/security' } : true,
         },
       ]
-    : [{ path: 'security', name: 'security', component: SecurityView }]),
+    : []),
+  // Вход, пароль, код и сеансы — отдельный раздел (MM-138).
+  { path: 'security', name: 'security', component: SecurityView },
 ];
 
 /** Маршруты области покупателя; композицию выполняет shell/router. */

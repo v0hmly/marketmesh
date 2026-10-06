@@ -5,7 +5,7 @@ import { useSession } from '../../../shell/context';
 import { AccountSecurity } from '../../auth/ui';
 import ProfilePending from '../components/ProfilePending.vue';
 
-/** Отдельный раздел безопасности — только в сборке без MarketMesh ID. */
+/** Вход и безопасность, сеансы и устройства — отдельный раздел кабинета (MM-138). */
 const session = useSession();
 const status = computed(() => session.state.value.status);
 </script>

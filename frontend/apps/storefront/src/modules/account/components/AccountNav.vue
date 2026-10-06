@@ -44,10 +44,8 @@ const items: NavItem[] = [
       ]
     : []),
   ...(addressesEnabled ? [{ to: '/account/addresses', label: 'Адреса доставки' }] : []),
-  // Без MarketMesh ID безопасность остаётся отдельным разделом (сборка до выкатки ID).
-  idEnabled
-    ? { to: '/account/id', label: 'MarketMesh ID' }
-    : { to: '/account/security', label: 'Вход и безопасность' },
+  ...(idEnabled ? [{ to: '/account/id', label: 'MarketMesh ID' }] : []),
+  { to: '/account/security', label: 'Вход и безопасность' },
 ];
 
 const shown = computed(() =>

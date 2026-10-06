@@ -19,7 +19,7 @@ export function createStorefrontRouter(history: RouterHistory = createWebHistory
       ...sellerRoutes,
       { path: '/:pathMatch(.*)*', redirect: '/account' },
     ],
-    // Якорь-идентификатор (например, /account/id#security) ведёт к разделу, если он уже
+    // Якорь-идентификатор (например, /account/id#personal-title) ведёт к разделу, если он уже
     // на странице; остальное — к началу. Hash ссылок из писем (#token=…) не селектор.
     scrollBehavior: (to) =>
       /^#[A-Za-z][\w-]*$/.test(to.hash) && document.getElementById(to.hash.slice(1))

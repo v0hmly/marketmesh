@@ -40,13 +40,14 @@ test('a stale direct URL with a fragment reloads only after explicit recovery', 
   await context.route('**/' + chunk, (route) =>
     fail ? route.fulfill({ status: 404, body: 'old chunk removed' }) : route.continue(),
   );
-  await page.goto('/account/id#security');
+  // Якорь раздела на самом экране ID: /account/id#security с MM-138 уводит в другой раздел.
+  await page.goto('/account/id#personal-title');
   await expect(page.getByRole('heading', { name: 'Не удалось открыть раздел.' })).toBeVisible();
   expect(documents).toBe(1);
   fail = false;
   await page.getByRole('button', { name: 'Обновить страницу' }).click();
   await expect(page.getByRole('heading', { name: 'Не удалось открыть раздел.' })).not.toBeVisible();
-  await expect(page).toHaveURL(/\/account\/id#security$/);
+  await expect(page).toHaveURL(/\/account\/id#personal-title$/);
   expect(documents).toBe(2);
 });
 

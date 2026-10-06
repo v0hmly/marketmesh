@@ -37,7 +37,7 @@ test('email verification, default code, reissued code, reset and security notifi
   await verifyEmail(page, email);
   await expect(page).toHaveURL(/\/account\/id$/);
   await page.goto('/account/security');
-  await expect(page).toHaveURL(/\/account\/id#security$/);
+  await expect(page).toHaveURL(/\/account\/security$/);
   await expect(page.locator('.security-row').filter({ hasText: 'Почта для входа' })).toContainText(
     email,
   );

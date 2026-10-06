@@ -363,6 +363,7 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
   await ready(parallelPage);
   // After a new sign-in the other sessions are protected: the UI blocks the action and
   // the server rejects it regardless.
+  await page.getByRole('link', { name: 'Вход и безопасность', exact: true }).click();
   await expect(
     page.getByText('Вход в этом сеансе выполнен меньше суток назад.', { exact: false }),
   ).toBeVisible();
@@ -382,6 +383,7 @@ test('real profile, CAS, isolated owners, cookie security and revocation', async
       ).status,
   );
   expect(logoutAll).toBe(400);
+  await page.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
   await expect(page.locator('.id-rows').first()).toBeVisible();
   expect((await rpc(parallelPage)).status).toBe(200);
   expect((await rpc(otherPage)).status).toBe(200);

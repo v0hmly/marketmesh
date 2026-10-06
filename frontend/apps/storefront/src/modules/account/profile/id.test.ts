@@ -134,11 +134,12 @@ describe('MarketMesh ID', () => {
     expect(wrapper.text()).toContain('12 марта 1989 года');
     expect(wrapper.text()).toContain('Женский');
     expect(wrapper.text()).toContain('Вы с нами с');
-    expect(wrapper.find('.id-email').text()).toBe('vera@example.comПодтверждена');
     expect(wrapper.find('.privacy-note').text()).toContain('Управлять аккаунтом можете только вы.');
     expect(wrapper.find('h1').text()).toBe('MarketMesh ID');
-    expect(wrapper.find('#security-title').text()).toBe('Вход и безопасность');
-    expect(wrapper.find('#sessions-title').text()).toBe('Сеансы и устройства');
+    // Почта, пароль и сеансы живут в своём разделе; ID ведёт туда ссылкой из подводки.
+    expect(wrapper.find('#security').exists()).toBe(false);
+    expect(wrapper.find('.lede a').attributes('href')).toBe('/account/security');
+    expect(wrapper.text()).not.toContain('vera@example.com');
     expect(wrapper.text()).not.toContain('Удаление аккаунта');
     await button(wrapper, 'Изменить данные').trigger('click');
     expect((wrapper.find('#id-first').element as HTMLInputElement).value).toBe('Вера');
@@ -206,14 +207,24 @@ describe('MarketMesh ID', () => {
     );
     expect(wrapper.find('.age-feedback a').attributes('href')).toBe('#id-reconcile-title');
     expect(session.updateProfile).toHaveBeenCalledTimes(1);
-    expect(wrapper.find('.age-choice input').attributes('disabled')).toBeDefined();
+    const toggle = wrapper.find('.age-choice input');
+    expect(toggle.attributes('aria-disabled')).toBe('true');
+    expect(wrapper.find('#age-switch-help').text()).toContain('блоке сверки');
   });
-  it('disables the age toggle without a birth date', async () => {
+  it('keeps the age toggle reachable without a birth date but never sends it', async () => {
     const { session } = fixture();
     vi.mocked(session.readProfile).mockResolvedValue(profile({ birthDate: '' }));
     const { wrapper } = await open(session);
-    expect(wrapper.find('.age-choice input').attributes('disabled')).toBeDefined();
-    expect(wrapper.text()).toContain('Дата рождения не указана');
+    const toggle = wrapper.find('.age-choice input');
+    expect(toggle.attributes('disabled')).toBeUndefined();
+    expect(toggle.attributes('aria-disabled')).toBe('true');
+    expect(wrapper.find('#age-switch-help').text()).toBe(
+      'Пока дата рождения не указана, показывать нечего.',
+    );
+    await toggle.trigger('click');
+    await flushPromises();
+    expect((toggle.element as HTMLInputElement).checked).toBe(false);
+    expect(session.updateProfile).not.toHaveBeenCalled();
   });
   it('keeps the draft through a conflict until reconciliation', async () => {
     const { session } = fixture();
@@ -425,52 +436,11 @@ describe('MarketMesh ID', () => {
     vi.mocked(session.readProfile).mockResolvedValueOnce(
       profile({ subjectId: new Uint8Array(16).fill(2), displayName: 'Борис', city: 'Тверь' }),
     );
-    security.getCredentials.mockResolvedValueOnce({
-      email: 'boris@example.com',
-      emailVerified: false,
-      loginCodeEnabled: false,
-      newDeviceCooldownUntilUnix: 0n,
-    });
     state.value = { status: 'authenticated', generation: 'g1', subjectId: '02'.repeat(16) };
     await flushPromises();
     expect(wrapper.text()).not.toContain('Вера');
     expect(wrapper.text()).not.toContain('Private Vera draft');
-    expect(wrapper.text()).not.toContain('vera@example.com');
     expect(wrapper.find('.id-hero h2').text()).toBe('Борис Ильина');
-    expect(wrapper.find('.id-email').text()).toBe('boris@example.comНе подтверждена');
-  });
-  it('keeps one open form: sign-in changes wait for the personal draft and back', async () => {
-    const { session } = fixture();
-    const { wrapper } = await open(session);
-    expect(wrapper.findAll('.button.primary')).toHaveLength(0);
-    await button(wrapper, 'Изменить данные').trigger('click');
-    await wrapper.find('#id-city').setValue('Тверь');
-    // Смена пароля, кода и выход везде закрывают сеанс и стёрли бы черновик.
-    expect(wrapper.find('#security-locked').text()).toBe(
-      'Сначала сохраните или отмените изменения личных данных.',
-    );
-    for (const name of ['Сменить почту', 'Сменить пароль', 'Включить', 'Выйти на всех']) {
-      expect(button(wrapper, name).attributes('disabled')).toBeDefined();
-      expect(button(wrapper, name).attributes('aria-describedby')).toContain('security-locked');
-    }
-    expect(wrapper.findAll('.button.primary')).toHaveLength(1);
-    await button(wrapper, 'Отменить').trigger('click');
-    await flushPromises();
-    (document.querySelector('[role="dialog"] .primary') as HTMLButtonElement).click();
-    await flushPromises();
-    expect(wrapper.find('#security-locked').exists()).toBe(false);
-    expect(button(wrapper, 'Сменить пароль').attributes('disabled')).toBeUndefined();
-    await button(wrapper, 'Сменить пароль').trigger('click');
-    await flushPromises();
-    const edit = button(wrapper, 'Изменить данные');
-    expect(edit.attributes('disabled')).toBeDefined();
-    expect(edit.attributes('aria-describedby')).toBe('id-edit-locked');
-    expect(wrapper.find('#id-edit-locked').text()).toContain('«Вход и безопасность»');
-    expect(wrapper.findAll('.button.primary')).toHaveLength(1);
-    await button(wrapper, 'Отменить').trigger('click');
-    await flushPromises();
-    expect(button(wrapper, 'Изменить данные').attributes('disabled')).toBeUndefined();
-    expect(wrapper.find('#id-edit-locked').exists()).toBe(false);
   });
   it('does not offer or send a request to disable an enabled login code', async () => {
     const { session } = fixture();
@@ -480,17 +450,22 @@ describe('MarketMesh ID', () => {
       loginCodeEnabled: true,
       newDeviceCooldownUntilUnix: 0n,
     });
-    const { wrapper } = await open(session);
+    const { wrapper } = await open(session, '/account/security');
     expect(wrapper.find('#security-code-toggle').exists()).toBe(false);
     expect(wrapper.text()).toContain('Отключить его нельзя.');
     expect(wrapper.find('input#security-code-first').exists()).toBe(false);
     expect(security.startLoginCodeChange).not.toHaveBeenCalled();
   });
-  it('opens the security section from the old security address', async () => {
+  it('keeps sign-in and sessions in their own section and redirects the old ID anchor', async () => {
     const { session } = fixture();
-    const { wrapper, router } = await open(session, '/account/security');
-    expect(router.currentRoute.value.fullPath).toBe('/account/id#security');
-    expect(wrapper.find('#security').exists()).toBe(true);
-    expect(wrapper.findAll('.account-nav a').map((link) => link.text())).toEqual(['MarketMesh ID']);
+    const { wrapper, router } = await open(session, '/account/id#security');
+    expect(router.currentRoute.value.fullPath).toBe('/account/security');
+    expect(wrapper.find('h1').text()).toBe('Вход и безопасность');
+    expect(wrapper.find('#sessions-title').text()).toBe('Сеансы и устройства');
+    expect(wrapper.find('.id-hero').exists()).toBe(false);
+    expect(wrapper.findAll('.account-nav a').map((link) => link.text())).toEqual([
+      'MarketMesh ID',
+      'Вход и безопасность',
+    ]);
   });
 });

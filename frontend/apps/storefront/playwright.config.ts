@@ -24,6 +24,8 @@ export default defineConfig({
       VITE_ACCOUNT_ID_ENABLED: 'true',
       VITE_ACCOUNT_AVATAR_ENABLED: 'true',
       VITE_SELLER_ENABLED: 'true',
+      VITE_FILES_UPLOAD_ORIGIN: 'https://files.mm.test',
+      VITE_FILES_DOWNLOAD_ORIGINS: 'https://files.mm.test',
     },
     command: 'pnpm exec vite --host 127.0.0.1 --port 4174',
     url: 'https://127.0.0.1:4174',

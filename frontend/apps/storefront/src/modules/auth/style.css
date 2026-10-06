@@ -14,8 +14,13 @@
 .security-sections:focus {
   outline: none;
 }
-.security-sections > .notice {
+.security-sections > .notice,
+.security-status .notice {
   margin: 0;
+}
+/* Пустой live-регион остаётся в дереве доступности, но не добавляет шаг колонки. */
+.security-sections > .security-status:empty {
+  margin-bottom: -24px;
 }
 .security-card {
   display: flex;
