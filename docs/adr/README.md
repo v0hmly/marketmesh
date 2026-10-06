@@ -31,8 +31,8 @@ ADR фиксирует одно значимое архитектурное ре
 | 0013 | [Доступ к PostgreSQL и границы транзакций](0013-postgresql-access-and-transactions.md) | Принято | 2026-09-01 |
 | 0014 | [E2E topology на OrbStack VM с k3s вместо kind](0014-orbstack-vm-k3s-e2e-topology.md) | Принято | 2026-09-03 |
 | 0015 | [Приватный файловый data plane](0015-private-file-data-plane.md) | Принято для dev | 2026-09-22 |
-
 | 0016 | [Границы frontend-приложений](0016-frontend-application-boundaries.md) | Принято | 2026-09-24 |
+| 0017 | [Единый MarketMesh ID и доступ к мастерским](0017-seller-identity-and-workshop-access.md) | Принято | 2026-10-06 |
 
 ## Как добавить решение
 
