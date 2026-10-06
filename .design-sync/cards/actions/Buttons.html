@@ -1,0 +1,23 @@
+<!-- group: Действия; viewport: 960x560 -->
+<section class="card" style="padding:var(--sp-7);display:grid;gap:var(--sp-6)">
+  <div>
+    <h2>Кнопки</h2>
+    <p class="subtle">Здесь собраны все виды; на настоящем экране .primary одна. ↗ — только у основной кнопки, которая ведёт дальше («Войти ↗»). Остальное — .secondary или .text-button.</p>
+  </div>
+  <div class="button-row">
+    <button class="button primary" type="button">Сохранить изменения</button>
+    <button class="button secondary" type="button">Перечитать данные</button>
+    <button class="button text-button" type="button">Выйти из аккаунта</button>
+  </div>
+  <div class="button-row">
+    <button class="button primary" type="button" disabled>Сохраняем…</button>
+    <button class="button secondary" type="button" aria-disabled="true" aria-describedby="buttons-reason">Изменить данные</button>
+  </div>
+  <p id="buttons-reason" class="field-help" style="margin:0">disabled — пока идёт запрос, подпись в форме «Сохраняем…». aria-disabled — блокировка по причине: кнопка остаётся в Tab и ссылается на причину рядом.</p>
+  <div class="filter-row" role="group" aria-label="Фильтр">
+    <button class="button secondary" type="button" aria-pressed="true">Все партии</button>
+    <button class="button secondary" type="button" aria-pressed="false">В наличии</button>
+    <button class="button secondary" type="button" aria-pressed="false">Распроданные</button>
+  </div>
+  <div style="max-width:360px"><button class="button primary wide" type="button">Войти <span aria-hidden="true">↗</span></button></div>
+</section>

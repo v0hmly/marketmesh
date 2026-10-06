@@ -1,0 +1,88 @@
+<!-- group: Основы; viewport: 960x860 -->
+<section class="card" style="padding:var(--sp-7)">
+  <span class="eyebrow">ПАЛИТРА</span>
+  <h2>Тёплый графит на бумаге с одним охряным акцентом</h2>
+  <p class="subtle">Цвета — только ролями через <code>var(--…)</code>. Светлая тема по умолчанию, тёмная следует системе или <code>data-theme="dark"</code>.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--sp-5)">
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--surface-page)"></div>
+      <code style="font-size:var(--text-caption-size)">--surface-page</code>
+      <span class="subtle" style="margin:0">Фон страницы</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--surface-raised)"></div>
+      <code style="font-size:var(--text-caption-size)">--surface-raised</code>
+      <span class="subtle" style="margin:0">Карточки и диалоги</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--surface-tint)"></div>
+      <code style="font-size:var(--text-caption-size)">--surface-tint</code>
+      <span class="subtle" style="margin:0">Активный пункт, акцентная плашка</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--surface-sunken)"></div>
+      <code style="font-size:var(--text-caption-size)">--surface-sunken</code>
+      <span class="subtle" style="margin:0">Отключённые поля</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--text-primary)"></div>
+      <code style="font-size:var(--text-caption-size)">--text-primary</code>
+      <span class="subtle" style="margin:0">Основной текст</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--text-secondary)"></div>
+      <code style="font-size:var(--text-caption-size)">--text-secondary</code>
+      <span class="subtle" style="margin:0">Подписи и подсказки</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--text-link)"></div>
+      <code style="font-size:var(--text-caption-size)">--text-link</code>
+      <span class="subtle" style="margin:0">Ссылки, вторичные кнопки, выбор</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--border-control)"></div>
+      <code style="font-size:var(--text-caption-size)">--border-control</code>
+      <span class="subtle" style="margin:0">Границы полей и кнопок</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--action-primary)"></div>
+      <code style="font-size:var(--text-caption-size)">--action-primary</code>
+      <span class="subtle" style="margin:0">Основная кнопка</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--brand-accent)"></div>
+      <code style="font-size:var(--text-caption-size)">--brand-accent</code>
+      <span class="subtle" style="margin:0">Точка в логотипе, только декор</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--status-danger)"></div>
+      <code style="font-size:var(--text-caption-size)">--status-danger</code>
+      <span class="subtle" style="margin:0">Ошибки</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--status-pending)"></div>
+      <code style="font-size:var(--text-caption-size)">--status-pending</code>
+      <span class="subtle" style="margin:0">Ожидание</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--status-low-stock)"></div>
+      <code style="font-size:var(--text-caption-size)">--status-low-stock</code>
+      <span class="subtle" style="margin:0">Заканчивающаяся партия</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--on-surface-success)"></div>
+      <code style="font-size:var(--text-caption-size)">--on-surface-success</code>
+      <span class="subtle" style="margin:0">Успех</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--border-reconcile)"></div>
+      <code style="font-size:var(--text-caption-size)">--border-reconcile</code>
+      <span class="subtle" style="margin:0">Сверка с сервером</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+      <div style="height:64px;border-radius:var(--r-md);border:1px solid var(--border-subtle);background:var(--ring-focus)"></div>
+      <code style="font-size:var(--text-caption-size)">--ring-focus</code>
+      <span class="subtle" style="margin:0">Кольцо фокуса</span>
+    </div>
+  </div>
+</section>
