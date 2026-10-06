@@ -10,6 +10,7 @@ target_fingerprint: "sha256:59ffc205a738862a97da2f54376afb75fa061802a505655a4107
 target_path: /Users/vh/projects/marketmesh/frontend/apps/storefront/src/modules/account/profile/IdView.vue
 timestamp: 2026-10-05T15-46-31Z
 slug: nt-src-modules-account-profile-idview-vue-ef90a7fe
+closed: true
 ---
 Method: dual-agent (A: дизайн-ревью · B: детектор + браузер + axe). `impeccable context` не нашёл PRODUCT.md/DESIGN.md (принял `frontend/` за корень), прочитаны напрямую.
 

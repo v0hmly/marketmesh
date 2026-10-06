@@ -304,6 +304,10 @@ main:focus {
   gap: 18px;
 }
 
+.card-heading > .button {
+  flex-shrink: 0;
+}
+
 .card-heading .eyebrow {
   margin-bottom: 11px;
 }

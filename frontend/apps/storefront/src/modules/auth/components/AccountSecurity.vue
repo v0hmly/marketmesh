@@ -326,7 +326,7 @@ void read();
     tabindex="-1"
   >
     <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
-    <div role="status">
+    <div class="security-status" role="status">
       <p v-if="feedback" class="notice success">{{ feedback }}</p>
     </div>
     <template v-if="authenticated">
@@ -339,10 +339,7 @@ void read();
       </div>
       <template v-else>
         <section class="card profile-card security-card" aria-labelledby="security-title">
-          <div>
-            <h2 id="security-title">Данные для входа</h2>
-            <p class="subtle">Почта и пароль для входа, подтверждение входа кодом из письма.</p>
-          </div>
+          <h2 id="security-title">Данные для входа</h2>
           <div class="security-row">
             <div class="security-row-text">
               <span class="security-row-title">Почта для входа</span>

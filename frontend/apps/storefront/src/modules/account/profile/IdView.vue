@@ -125,7 +125,6 @@ const ageLock = computed(() =>
         <div v-else class="initials" aria-hidden="true">{{ initials }}</div>
         <div class="id-hero-text">
           <h2>{{ fullName }}</h2>
-          <p>MarketMesh ID</p>
           <p v-if="memberSince">Вы с нами с {{ memberSince }}</p>
         </div>
         <div class="privacy-note">

@@ -547,6 +547,12 @@ test('registration, cabinet layout, MarketMesh ID editing, reload and accessible
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('security-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('security-mobile-dark.png'), fullPage: true });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await sections.getByRole('link', { name: 'MarketMesh ID', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'MarketMesh ID' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('id-desktop.png'), fullPage: true });
@@ -1032,6 +1038,10 @@ test('ID changes the photo from the header, protects the draft and compares all 
   await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeEnabled();
   expect(api.avatarWrites()).toBe(1);
   await page.screenshot({ path: testInfo.outputPath('id-photo-saved.png') });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('id-photo-dark.png') });
+  await page.emulateMedia({ colorScheme: 'light' });
 
   api.rejectNextPhoto();
   await choosePhoto(page, 'Изменить фото', '#3a5577');

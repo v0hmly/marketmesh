@@ -447,7 +447,7 @@ onBeforeUnmount(() => {
   </div>
   <div class="avatar-feedback">
     <p v-if="failure" class="notice error" role="alert">{{ failure }}</p>
-    <div class="avatar-status" role="status">
+    <div role="status">
       <p v-if="stage" class="avatar-progress">
         <span class="loading-dot" aria-hidden="true"></span>{{ stage }}
       </p>
@@ -460,14 +460,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
-  <input
-    ref="field"
-    type="file"
-    accept="image/png,image/jpeg"
-    hidden
-    data-avatar-file
-    @change="select"
-  />
+  <input ref="field" type="file" accept="image/png,image/jpeg" hidden @change="select" />
   <Teleport to="body">
     <ConfirmDialog
       v-if="choice"
